@@ -1,6 +1,21 @@
 # Instructions en cours de route
 
-**Agent actif : libre** (12/11/2026 22:11 UTC). Passation à Claude — `Mcodea/testt`, `claude/referentiel-v2`.
+**Agent actif : Codex** (12/11/2026 22:20 UTC). Diagnostic du job navigateur CI ; dépôt `Mcodea/testt`.
+
+## En cours — diagnostic de la CI du lot Formulaires
+
+Le run **43317537003** (66c1005) a passé Windows/Linux, qualité et portable,
+mais échoué au job navigateur. Les 65 tests locaux restent verts ; la cause
+distante n’est pas encore établie. Les journaux détaillés ne sont pas accessibles
+par les pages publiques sans authentification, l’API étant filtrée ici.
+
+Ajout **tests_web/conftest.py** : en cas d’échec sur GitHub Actions uniquement,
+annotation contenant le test et l’assertion, sans changer résultat, seuil ou
+sélection de test. Vérifié par un échec volontaire hors dépôt : code retour 1
+conservé, une annotation, échappement %/retours à la ligne. Cinq tests ciblés
+et 18 sous-cas passent aussi avec GITHUB_ACTIONS=true. Attendre ce diagnostic,
+puis corriger la cause démontrée et obtenir une CI verte avant la vraie passation.
+Les anciennes mentions de fin de lot ci-dessous précèdent cet échec distant.
 
 ## Passation à Claude — contraste des formulaires terminé
 

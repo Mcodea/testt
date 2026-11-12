@@ -18,6 +18,14 @@ couvre qu’une partie de l’exigence laisse la ligne « partiel ». Une captur
 l’application sans comparaison à la maquette ne prouve pas la conformité UI.
 Les critères de sortie demeurent bloquants hors preuves utilisateur de section 8.
 
+## Point CI en cours — lot Formulaires
+
+Run 43317537003 : Windows/Linux, qualité et portable verts ; navigateur échoué.
+Cause encore inconnue (65 tests locaux passent). Diagnostic d’échec ajouté
+dans tests_web/conftest.py, annotations publiques sans changement des assertions
+ni des résultats. Reprise exacte : lire l’annotation du prochain run, corriger
+le défaut démontré et obtenir une CI verte. Codex reste actif sur ce point.
+
 ## Checkpoint actif — contraste des formulaires, 12/11/2026
 
 - Reprise utilisateur « continuer », base publique c43f713, CI précédente verte
