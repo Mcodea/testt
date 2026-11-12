@@ -1,5 +1,38 @@
 # Instructions en cours de route
 
+## [nouveau] 12/11/2026 16 h 40 — PASSATION À CODEX : tout ce qui a changé pendant ton arrêt (à lire en premier)
+
+**Agent actif : libre** (Claude s'arrête ; Codex reprend). Règles du binôme inchangées (`docs/BINOME.md`).
+
+1. **Nouveau dépôt** : on travaille désormais dans **`Mcodea/testt`** (public, CI gratuite), plus dans
+   `Mcodea/OGIAS` (resté privé : son historique contient d'anciennes données de sites réels, ne jamais le
+   rendre public ni y recopier d'historique). `testt` repart sans historique de l'état du 12/11 (`b5cae68`).
+   Branches : `claude/referentiel-v2` (seule branche où les agents poussent), `release/1.0` (stable, fusion
+   par l'utilisateur uniquement), `main`. Licence : tous droits réservés (`LICENCE.md`). CI complète (Linux,
+   Windows, navigateur, zip portable) verte au départ (run 43247608193).
+2. **Retours d'essai du 12/11** (`docs/RETOURS_ESSAI_12_11.md`) — moteur fait par Claude : M1 gamme non
+   décrite sans repli M340 ; M2 `GET /api/parcours` (points bloquants / à vérifier par étape) ; M3 suppression
+   et récupération d'un brouillon de référentiel ; M4 dossier de recette (`quoi=dossier_recette`) ; M5
+   répartition des E/S (groupes de secours proposés puis confirmés, cartes distinctes, emplacements libres
+   par rack, motif de chaque voie) ; M6 gamme Advantys STB (`genvar/data/materiel_stb.json`, îlot numéroté
+   comme le logiciel Advantys `1/127`, `2/-`, `3/1`…, image d'E/S Modbus 40001 / 45392).
+3. **Interface faite par Claude pendant ton arrêt** (ne pas refaire) : U1 défilement du référentiel ; U2
+   « Supprimer le brouillon » / « Récupérer » ; U3 protocoles en liste déroulante à cases à cocher ; U4
+   panneau « Pour passer à l'étape suivante » + état vide de l'étape 1 ; U5 bouton soleil / lune (icônes
+   ajoutées au sprite Lucide, empreinte du manifeste mise à jour) ; U6 « télétransmission » au lieu de « table
+   d'échange » ; U7 bloc « Répartition des E/S », îlot STB, **vue des voies d'une carte** avec déplacement /
+   placement ; U8 bouton « Dossier de recette ». Tests : `tests_web/test_retours_essai_12_11.py`.
+4. **Ton lot** : **U9 cohérence générale** des écrans (navigation, tableaux, commandes groupées, lisibilité),
+   à partir des prochaines remarques de l'utilisateur ; ne rien changer au moteur (`genvar/`).
+5. **Décisions de l'utilisateur à respecter** : S2 validé (secours sur cartes distinctes, désactivable) ;
+   S1 STB décrit, **périmètre arrêté aux registres Modbus de l'îlot, pas d'adresses %MW** (ne pas lui
+   redemander de captures) ; D5-b et A1 toujours **en attente** : ne pas les appliquer.
+6. **Contrôles avant chaque envoi** : `pytest tests`, `pytest tests_web`, `ruff check --config ruff.toml .`,
+   `node --check` sur les JS, `python outils/verifier_donnees.py` (0 détection, jamais de liste blanche).
+   État au départ : 675 tests moteur et 44 tests navigateur verts.
+7. **Version** : le numéro affiché est encore 0.32 ; la prochaine version stable (0.33) sera proposée à
+   l'utilisateur après son essai, par pull request vers `release/1.0` qu'il fusionne lui-même.
+
 ## [nouveau] 12/11/2026 16 h 30 — Dépôt de travail : `Mcodea/testt` (public)
 
 Le travail continue dans **`Mcodea/testt`**, public pour que la CI soit gratuite. Il repart de l'état du
