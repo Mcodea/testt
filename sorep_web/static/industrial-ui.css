@@ -92,6 +92,26 @@ button.prim:hover:not(:disabled),.v31-primary:hover:not(:disabled){background:#1
 #vue .repere-live b{color:var(--v31-text)}
 #vue .repere-live .mono,#vue .code-ouvrage-affiche,.bandeau-materiel b{font-family:var(--mono);font-variant-numeric:tabular-nums}
 #vue table input[type="checkbox"]{display:block;width:24px;height:24px;min-height:24px;padding:0;margin:0}
+/* Création : même palette que la fiche, une seule carte et des libellés lisibles. */
+#vue>.creation-page .creation-contenu{padding:0!important;border:0!important;border-radius:0!important;background:transparent!important}
+#vue .creation-contenu .bloc-tete{border-color:var(--v31-separator);padding-bottom:12px;margin-bottom:12px}
+#vue .creation-contenu .bloc-tete h2,#vue .creation-champ>label{color:var(--v31-text)}
+#vue .creation-grille{gap:12px 16px}
+#vue .creation-champ input,#vue .creation-champ select,#vue .creation-champ .selection-multiple{min-height:36px;border-color:var(--v31-separator);border-radius:4px}
+#vue .creation-projet{background:var(--v31-indigo-light);color:var(--v31-indigo);border-color:var(--v31-separator);border-radius:4px;padding:5px 10px;margin-bottom:14px}
+#vue .creation-avance{border-color:var(--v31-separator);margin-top:16px;padding-top:12px}
+#vue .creation-avance summary{color:var(--v31-text);padding-bottom:10px}
+#vue .creation-avance summary span{color:var(--v31-muted)}
+#vue .creation-contenu #gerer-listes,#vue .creation-contenu #proposer-numero{color:var(--v31-text);background:var(--v31-white);border-color:var(--v31-separator)}
+#vue .creation-champ .code-ouvrage-affiche{background:var(--workspace-panel)!important;color:var(--v31-text)!important;border:1px solid var(--v31-separator);border-radius:4px;padding:8px 10px;min-height:36px;display:flex;align-items:center;overflow-wrap:anywhere}
+#vue .creation-champ .selection-multiple{display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left}
+#vue .creation-contenu .fiche-actions{margin-top:16px;padding-top:12px;border-color:var(--v31-separator)}
+/* Onglets des listes : contraste constant dans les deux thèmes. */
+.onglets-listes button{background:var(--v31-white);color:var(--v31-text);border:1px solid var(--v31-separator);border-radius:4px}
+.onglets-listes button.active{background:#2563eb;color:#fff;border-color:#2563eb}
+/* Garder un repère de sélection après suppression des anciennes ombres. */
+#vue .carte-niv{background:var(--v31-white);color:var(--v31-text);border-radius:4px}
+#vue .carte-niv.on{outline:2px solid var(--v31-indigo);outline-offset:2px}
 /* Tableaux : en-têtes fixes et colonnes techniques alignées. */
 #vue th,.voies-carte th{position:sticky;top:0;z-index:2;background:var(--v31-subtle)!important;color:var(--v31-muted);border-bottom:1px solid var(--v31-separator);padding:8px 10px}
 #vue td,.voies-carte td{padding:7px 10px;border-bottom:1px solid var(--v31-separator);vertical-align:middle}

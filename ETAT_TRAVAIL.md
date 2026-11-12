@@ -18,7 +18,35 @@ couvre qu’une partie de l’exigence laisse la ligne « partiel ». Une captur
 l’application sans comparaison à la maquette ne prouve pas la conformité UI.
 Les critères de sortie demeurent bloquants hors preuves utilisateur de section 8.
 
-## Checkpoint actif — report UI terminé sur le dépôt public Mcodea/testt
+## Checkpoint actif — contraste des formulaires, 12/11/2026
+
+- Reprise utilisateur « continuer », base publique c43f713, CI précédente verte
+  run 43286205755. Aucun commit nouveau de Claude à reprendre.
+- Périmètre strict conservé : présentation uniquement. Une feuille produit
+  modifiée, **industrial-ui.css : 20 lignes** ; aucun JavaScript, moteur,
+  état, API, structure, événement, donnée ni export changé.
+- Anomalies reproduites : labels/titre de création trop sombres, boutons/badge
+  conservant leur ancienne palette, double bordure du formulaire, contraste
+  de l’onglet actif des listes et repère de sélection des niveaux d’adressage
+  supprimé avec les ombres. Correction par les couleurs du thème et un contour
+  de sélection ; aucun comportement ni règle de validation remanié.
+- **Cinq nouveaux tests et 18 sous-cas** : contraste WCAG au moins 4,5:1 sur
+  les éléments ciblés, Neuf/Existant, clair/sombre, trois résolutions ; parcours
+  des quatre listes, trois niveaux, focus/actions accessibles ; données API
+  et listes inchangées, projet de test identique à l’octet.
+- **730 Python / 18 sous-cas**, 0 ignoré, 194,22 s ; **65 navigateur / 70
+  sous-cas**, 0 ignoré, 110,68 s. Couverture moteur **89,283831 %**, exports
+  **100 %**. Statique et dépendances conformes. Sept seuils du banc inchangés
+  passent : rendu **75,9 ms**, filtre **97,4 ms**, adressage **0,719 s**.
+- **16 captures avant/après non retouchées** et preuves :
+  validation/interface_v1/formulaires_12_11/. Aucune maquette de création
+  n’étant fournie, comparaison à l’écran antérieur et à la palette du chat ;
+  les maquettes originales ne sont pas modifiées. Pas de certification WCAG
+  globale ; la ligne V1-4-45 reste partielle.
+- Audit données et statut CI du lot : verification.json / Actions publiques.
+  A1, D5-b et qualification réelle restent dans leur état ; aucune release.
+
+## Checkpoint historique — report UI terminé sur le dépôt public Mcodea/testt
 
 - Le nom testt désigne le **nouveau dépôt public**, pas une branche de l’ancien.
   Base publique conservée : **085b1c7**, racine **4d084b4**. Aucun historique privé
@@ -235,7 +263,7 @@ Les critères de sortie demeurent bloquants hors preuves utilisateur de section 
 | V1-4-42 (L122) | Le panneau de détail propose : Valider, Saisir (avec contrôle immédiat), Déverrouiller (avec motif), Réserver. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
 | V1-4-43 (L123) | Un blocage (référentiel non publié, propositions non décidées, conflit) laisse le bouton visible mais désactivé, avec la raison et un lien vers la correction. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
 | V1-4-44 (L124) | Projet existant : les adresses importées sont validées et protégées. Aucune n'est recalculée. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
-| V1-4-45 (L128) | Accessibilité WCAG AA et navigation complète au clavier. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
+| V1-4-45 (L128) | Accessibilité WCAG AA et navigation complète au clavier. | partiel | Contraste des labels/titres, onglets et cartes de niveau prouvé sur les formulaires ciblés (test_formulaires_industriels.py, 4,5:1 minimum) ; clavier/focus Variables conservés. Captures formulaires_12_11/. Audit WCAG complet encore partiel. |
 | V1-4-46 (L129) | Affichage correct de 1366×768 à 2560×1440. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
 | V1-4-47 (L130) | Annulation (Ctrl+Z) des modifications de l'ouvrage. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
 | V1-4-48 (L131) | Chaque action a un retour visible : chargement, succès, erreur avec la cause et la solution. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
