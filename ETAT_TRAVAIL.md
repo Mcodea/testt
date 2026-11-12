@@ -18,7 +18,7 @@ couvre qu’une partie de l’exigence laisse la ligne « partiel ». Une captur
 l’application sans comparaison à la maquette ne prouve pas la conformité UI.
 Les critères de sortie demeurent bloquants hors preuves utilisateur de section 8.
 
-## Checkpoint actif — report UI sur le dépôt public Mcodea/testt
+## Checkpoint actif — report UI terminé sur le dépôt public Mcodea/testt
 
 - Le nom testt désigne le **nouveau dépôt public**, pas une branche de l’ancien.
   Base publique conservée : **085b1c7**, racine **4d084b4**. Aucun historique privé
@@ -31,6 +31,8 @@ Les critères de sortie demeurent bloquants hors preuves utilisateur de section 
   Variables 44 px et cases 24 px, état vide/redimensionnement, fermeture Échap
   respectant les fenêtres au premier plan et retour du focus. Tests ciblés :
   25 tests et 29 sous-cas, avec la nouvelle composition matérielle de Claude.
+- Passation à Claude : dernier commit fonctionnel **01287a2**, agent libre.
+  Reprise exacte dans docs/INSTRUCTIONS_EN_COURS.md.
 - Lot visuel : couche industrial-ui.css, lien index.html, gabarit latéral et
   deux classes S4W d’app.js. Fonctions, événements, identifiants, état, API,
   structures et export inchangés dans ce lot. Les catalogues, nomenclature et

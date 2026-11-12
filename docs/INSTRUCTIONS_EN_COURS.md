@@ -1,8 +1,77 @@
 # Instructions en cours de route
 
-**Agent actif : Codex** (12/11/2026 18:56 UTC). Dépôt public `Mcodea/testt`, branche `claude/referentiel-v2`.
+**Agent actif : libre** (12/11/2026 19:03 UTC). Passation à Claude — dépôt public `Mcodea/testt`, branche `claude/referentiel-v2`.
 
-## Reprise Codex — correction du dépôt de destination
+## Passation à Claude — lot UI reporté sur le bon dépôt public
+
+**Dernier commit fonctionnel : `01287a2`**, présentation industrielle adaptée
+aux ajouts matériels récents. **`7466f35`** : corrections U9 reportées. Ce commit
+de passation ne change que la documentation. Codex laisse la main à Claude.
+
+### Étape exacte de reprise
+
+1. Travailler dans **Mcodea/testt**, branche **claude/referentiel-v2** :
+   `git fetch origin && git checkout claude/referentiel-v2 && git pull --rebase`.
+   Workspace de cette session : **/workspace/testt**. L’ancien clone
+   /workspace/OGIAS pointe toujours sur le dépôt privé ; ne pas y reprendre
+   ce développement, ne pas lui ajouter une destination publique.
+2. Relire BINOME.md et les commits depuis **085b1c7**. Le dépôt public garde
+   sa racine **4d084b4** : seuls des fichiers UI/tests ont été reportés, aucun
+   historique privé, aucun ancien commit fusionné. Ne rien refaire des lots finis.
+3. Aucun lot UI Codex en cours ni fichier utile non commité. Poursuivre le
+   backlog moteur/documentation de Claude, puis proposer la prochaine stable
+   après essai utilisateur. Les écrans R3/R8, conflits R4 et rapports d’impact
+   restent à répartir dans un futur lot UI ; pas de changement métier dans la
+   refonte visuelle. Aucune fusion de PR, --force, étiquette ou release d’agent.
+
+### Réalisé et préservé
+
+- U9 : destinations correctes des points bloquants ; table Variables 44 px et
+  cases clavier 24 px ; vues inchangées (« Adresses automate », identifiant
+  exchange conservé), état vide/colonnes au resize, Échap et retour du focus
+  respectant modale/recherche au premier plan.
+- Refonte : industrial-ui.css après v031.css ; gabarit latéral libellé et
+  deux classes S4W seulement dans app.js. Palette sombre #0B0F19 / #0F1623 /
+  #111827, bordures #1E293B ; fontes locales et nombres tabulaires, commandes
+  et tableaux compacts, racks/voies lisibles. La préférence de thème et son
+  stockage ne changent pas : lune = sombre, soleil = variante claire technique.
+- Les ajouts matériels de Claude (CPS, CPU, communication, grilles et catalogue,
+  nomenclature), ses algorithmes, ses exports et leurs correctifs récents sont
+  préservés. Composition présentée en grille ; références « à choisir » jamais
+  devinées. Les fonctions, événements, identifiants, état et appels API restent
+  inchangés dans le lot visuel. Aucun moteur/donnée/serveur/workflow modifié.
+- Les maquettes d’origine restent intactes ; la demande visuelle du chat du
+  12/11 remplace leur palette/formes. Pas de contenu de démonstration ajouté
+  au produit. Les captures montrent uniquement l’API de projets de tests isolés.
+- **validation/interface_v1/industriel_12_11/** : 28 captures régénérées sur
+  la version publique, comparaison.html, mesures, SHA-256, verification.json
+  et performance.json. Nouveau test de composition/rack sans écriture.
+
+### Vérifications de cette version publique
+
+- **730 tests Python**, 18 sous-cas, 0 ignoré (201,87 s), couverture moteur
+  **89,283831 %**, exports **100 %**. **60 tests navigateur**, 52 sous-cas,
+  0 ignoré (97,98 s), dont sept cas de présentation. Projets inchangés à l’octet
+  après les interactions visuelles ; aucun POST lors du thème/détail.
+- Ruff, mypy 49 fichiers, JS et audit strict des dépendances conformes ;
+  audit données **0 détection / 0 échec de lecture**. Sept seuils du banc
+  inchangés passent : rendu **84 ms**, filtre **100,2 ms**, adressage **0,621 s**.
+- **CI publique active et gratuite sur les runners standards**. La base
+  de Claude a passé le run **43276436661**, cinq jobs. Le push de ce lot
+  déclenche la même CI complète Windows/Linux, navigateur/performance, qualité
+  et portable. Suivre son statut réel (ne pas reprendre l’ancienne mention de
+  quota privé) : https://github.com/Mcodea/testt/actions?query=branch%3Aclaude%2Freferentiel-v2.
+- L’API GitHub est filtrée par l’environnement, mais les pages publiques
+  Actions sont lisibles ; aucun blocage de quota en déduire. PR_DESCRIPTION.md
+  est prêt pour une PR utilisateur vers release/1.0 ; aucune fusion automatique.
+- A1 et D5-b restent en décision : pas de 193 E/S ni renommages V1, pas de
+  CT/FDC_/CMD_/CONS_ réintroduit. R1 validé, STB limité aux registres de l’îlot,
+  aucune adresse maître inventée. Preuves réelles Control Expert 14.1, TOPKAPI
+  et S4W-Tools toujours attendues ; pas de qualification ou de livraison 1.0
+  annoncée sur la seule base des tests. Dépassement matériel non fabriqué pour
+  une capture ; sa bordure reprend l’état existant du moteur.
+
+## Historique de cette session — correction du dépôt de destination
 
 La consigne « testt » désigne le nouveau dépôt public, pas une branche de l’ancien.
 La visibilité publique et la CI verte du run 43276436661 ont été vérifiées.
