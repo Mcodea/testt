@@ -1,4 +1,7 @@
 """Écrans des retours d'essai du 12/11/2026 : points bloquants, thème, dossier de recette, répartition, îlot STB."""
+from pathlib import Path
+import os
+
 from support import ServeurNavigateur
 
 
@@ -29,6 +32,43 @@ class TestRetoursEssai(ServeurNavigateur):
         self.assertIn("Pour passer à l'étape suivante", panneau.inner_text())
         self.assertIn('MV01', panneau.inner_text())
         self.assertGreaterEqual(panneau.locator('button[data-pp-vue]').count(), 1)
+
+    def test_point_bloquant_ouvre_le_bon_equipement_sans_ecriture(self):
+        for numero in ('01', '02'):
+            ident = self.api('/api/equipement/ajouter', {'type': 'MV', 'numero': numero, 'se': '00'})['ident']
+        fichier = Path(self.api('/api/ouvrage')['chemin'])
+        avant = fichier.read_bytes()
+        self.page.goto(self.url + '#/inventaire', wait_until='networkidle')
+        lien = self.page.locator(f'.pp-bloquants [data-pp-vue="ouvrage"][data-pp-eq="{ident}"]').first
+        lien.wait_for()
+        with self.page.expect_response(lambda r: '/api/equipement?ident=' + ident in r.url, timeout=5000) as reponse:
+            lien.click()
+        self.assertEqual(reponse.value.json()['ident'], ident)
+        self.page.wait_for_selector('#e-val')
+        self.assertIn('MV02', self.page.locator('#contenu h1').inner_text())
+        self.assertEqual(fichier.read_bytes(), avant)
+        self.capture('u9-point-equipement.png')
+
+    def test_point_es_ouvre_la_liste_es_et_non_la_fiche_equipement(self):
+        ident = self.equipement_valide('01')
+        fichier = Path(self.api('/api/ouvrage')['chemin'])
+        avant = fichier.read_bytes()
+        self.page.goto(self.url + '#/es', wait_until='networkidle')
+        lien = self.page.locator(f'.pp-bloquants [data-pp-vue="es"][data-pp-eq="{ident}"]').first
+        lien.wait_for()
+        with self.page.expect_response(lambda r: r.url.endswith('/api/es'), timeout=5000) as reponse:
+            lien.click()
+        self.assertEqual(reponse.value.status, 200)
+        self.page.wait_for_function("document.querySelector('#v31-title')?.textContent === 'Liste des E/S'")
+        self.assertEqual(self.page.url, self.url + '#/es')
+        self.assertEqual(self.page.locator('#e-val').count(), 0)
+        self.assertEqual(fichier.read_bytes(), avant)
+        self.capture('u9-point-es.png')
+
+    def capture(self, nom):
+        dossier = Path(os.environ.get('OGIAS_CAPTURE_DIR', 'artifacts/ci/captures'))
+        dossier.mkdir(parents=True, exist_ok=True)
+        self.page.screenshot(path=str(dossier / nom), full_page=True)
 
     def test_bouton_de_theme_soleil_lune(self):
         self.page.goto(self.url + '#/ouvrages', wait_until='networkidle')

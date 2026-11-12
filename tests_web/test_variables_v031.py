@@ -69,6 +69,97 @@ class TestVariablesV031(ServeurNavigateur):
         self.assertTrue(checkbox.is_checked())
         self.assertEqual(self.page.locator("#v31-close-detail").count(), 0)
 
+    def test_presets_describe_columns_without_changing_variables(self):
+        fichier = Path(self.api('/api/ouvrage')['chemin'])
+        avant = fichier.read_bytes()
+        noms = self.page.locator('.v31-variable-row').evaluate_all("els => els.map(e => e.dataset.variable)")
+        for vue, libelle in (('all', 'Toutes'), ('exchange', 'Adresses automate'), ('tele', 'Télétransmission')):
+            with self.subTest(vue=vue):
+                bouton = self.page.locator(f'[data-var-view="{vue}"]')
+                self.assertEqual(bouton.inner_text(), libelle)
+                bouton.click()
+                self.assertEqual(self.page.locator('.v31-variable-row').evaluate_all(
+                    "els => els.map(e => e.dataset.variable)"), noms)
+        self.assertEqual(fichier.read_bytes(), avant)
+
+    def test_rows_match_mockup_density_and_keep_accessible_selection(self):
+        fichier = Path(self.api('/api/ouvrage')['chemin'])
+        avant = fichier.read_bytes()
+        for largeur, hauteur in ((1366, 768), (1920, 1080), (2560, 1440)):
+            with self.subTest(largeur=largeur):
+                self.page.set_viewport_size({'width': largeur, 'height': hauteur})
+                ligne = self.page.locator('.v31-variable-row').first
+                self.assertAlmostEqual(ligne.bounding_box()['height'], 44, delta=1)
+                case = ligne.locator('.v31-choose')
+                self.assertGreaterEqual(case.bounding_box()['width'], 24)
+                self.assertGreaterEqual(case.bounding_box()['height'], 24)
+                case.uncheck()
+                case.focus()
+                case.press('Space')
+                self.assertTrue(case.is_checked())
+                self.assertEqual(self.page.locator('#v31-close-detail').count(), 0)
+                self.assertTrue(self.page.evaluate('document.documentElement.scrollWidth <= innerWidth'))
+        self.assertEqual(fichier.read_bytes(), avant)
+
+    def test_empty_filter_uses_empty_state_without_zero_counter(self):
+        fichier = Path(self.api('/api/ouvrage')['chemin'])
+        avant = fichier.read_bytes()
+        self.page.locator('#v31-var-search').fill('aucune-variable-fictive-correspondante')
+        compteur = self.page.locator('.v31-table-footer > span').inner_text()
+        self.assertIn('Aucun résultat', compteur)
+        self.assertNotRegex(compteur, r'\b0\b')
+        self.assertEqual(self.page.locator('.v31-variable-row').count(), 0)
+        self.assertEqual(fichier.read_bytes(), avant)
+
+    def test_empty_filter_with_detail_spans_visible_columns_after_resize(self):
+        fichier = Path(self.api('/api/ouvrage')['chemin'])
+        avant = fichier.read_bytes()
+        self.page.locator('.v31-variable-row').first.click()
+        for vue in ('all', 'exchange', 'tele'):
+            self.page.locator(f'[data-var-view="{vue}"]').click()
+            self.page.locator('#v31-var-search').fill('aucune-variable-fictive-correspondante')
+            for largeur in (1366, 1920, 2560):
+                with self.subTest(vue=vue, largeur=largeur):
+                    self.page.set_viewport_size({'width': largeur, 'height': 1080})
+                    self.page.wait_for_function("""() => {
+                      const table=document.querySelector('.v31-table'), vide=table.querySelector('td[colspan]');
+                      return vide.colSpan === [...table.tHead.rows[0].cells].filter(e => getComputedStyle(e).display !== 'none').length;
+                    }""", timeout=3000)
+                    self.assertTrue(self.page.locator('#v31-close-detail').is_visible())
+            self.page.locator('#v31-var-search').fill('')
+        self.assertEqual(fichier.read_bytes(), avant)
+
+    def test_escape_closes_detail_and_restores_row_focus_without_write(self):
+        fichier = Path(self.api('/api/ouvrage')['chemin'])
+        avant = fichier.read_bytes()
+        ligne = self.page.locator('.v31-variable-row').first
+        nom = ligne.get_attribute('data-variable')
+        ligne.focus()
+        ligne.press('Enter')
+        self.page.wait_for_selector('#v31-close-detail')
+        self.page.keyboard.press('Escape')
+        self.page.wait_for_selector('#v31-close-detail', state='detached', timeout=3000)
+        self.assertTrue(self.page.locator(f'[data-variable="{nom}"]').evaluate('e => e === document.activeElement'))
+        self.assertEqual(fichier.read_bytes(), avant)
+
+    def test_escape_closes_foreground_before_variable_detail(self):
+        fichier = Path(self.api('/api/ouvrage')['chemin'])
+        avant = fichier.read_bytes()
+        self.page.locator('.v31-variable-row').first.click()
+        self.page.locator('#v31-edit-single').click()
+        self.page.wait_for_selector('#modale:not([hidden])')
+        self.page.keyboard.press('Escape')
+        self.assertFalse(self.page.locator('#modale').is_visible())
+        self.assertTrue(self.page.locator('#v31-close-detail').is_visible())
+        self.page.keyboard.press('Control+k')
+        self.page.wait_for_selector('#v31-search-dialog')
+        self.page.keyboard.press('Escape')
+        self.assertEqual(self.page.locator('#v31-search-dialog').count(), 0)
+        self.assertTrue(self.page.locator('#v31-close-detail').is_visible())
+        self.page.keyboard.press('Escape')
+        self.assertEqual(self.page.locator('#v31-close-detail').count(), 0)
+        self.assertEqual(fichier.read_bytes(), avant)
+
     def test_captures_aux_dimensions_des_maquettes(self):
         dossier = Path(os.environ.get("OGIAS_CAPTURE_DIR", "artifacts/ci/captures"))
         dossier.mkdir(parents=True, exist_ok=True)

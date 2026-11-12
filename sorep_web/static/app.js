@@ -222,7 +222,8 @@ async function panneauParcours(vue, zone) {
     + (et.a_verifier.length ? `<details class="pp-verifier"><summary>À vérifier (${et.a_verifier.length})</summary><ul>${et.a_verifier.map(ligne).join("")}</ul></details>` : "");
   zone.querySelector(".pied-etape")?.before(bloc);
   bloc.querySelectorAll("[data-pp-vue]").forEach(b => b.onclick = () => {
-    if (b.dataset.ppEq) return allerOuvrage(b.dataset.ppEq);
+    if (b.dataset.ppVue === "ouvrage" && b.dataset.ppEq)
+      return allerOuvrage({nature: "eq", valeur: b.dataset.ppEq});
     naviguer(ROUTE_VUE[b.dataset.ppVue] || "#/inventaire");
   });
 }

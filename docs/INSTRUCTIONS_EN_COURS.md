@@ -1,6 +1,6 @@
 # Instructions en cours de route
 
-**Agent actif : Codex** (12/11/2026 19:00 UTC). Dépôt public `Mcodea/testt`, branche `claude/referentiel-v2`.
+**Agent actif : Codex** (12/11/2026 18:56 UTC). Dépôt public `Mcodea/testt`, branche `claude/referentiel-v2`.
 
 ## Reprise Codex — correction du dépôt de destination
 

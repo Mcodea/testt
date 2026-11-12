@@ -39,6 +39,24 @@ function v31Status(t){const kind=t==='validée'?'success':t==='en conflit'||t===
 function v31VarFilter(rows){const st=E.v31Status||'',q=(E.v31Query||'').toLocaleLowerCase('fr'),view=E.v31VarView||'all';
  return rows.filter(v=>{if(st&&v.etat_adressage!==st)return false;if(q&&!`${v.nom} ${v.source_es} ${v.famille} ${v.regle}`.toLocaleLowerCase('fr').includes(q))return false;
   return true; /* Les vues changent les colonnes, pas les familles. */});}
+function v31EmptyColumns(){
+ const cell=document.querySelector('.v31-table tbody td[colspan]');
+ if(!cell)return;
+ const headers=cell.closest('table').tHead.rows[0].cells;
+ cell.colSpan=[...headers].filter(h=>getComputedStyle(h).display!=='none').length||1;
+}
+window.addEventListener('resize',v31EmptyColumns);
+function v31CloseVariableDetail(){
+ const selected=E.v31Selected;
+ E.v31VarDetail=false;vueVariablesV31();
+ const row=[...document.querySelectorAll('.v31-variable-row')].find(r=>r.dataset.variable===selected);
+ (row||document.querySelector('#v31-var-search'))?.focus();
+}
+document.addEventListener('keydown',ev=>{
+ if(ev.key!=='Escape'||document.querySelector('#modale:not([hidden])')||document.querySelector('#v31-search-dialog'))return;
+ const close=document.querySelector('#v31-close-detail');
+ if(close){ev.preventDefault();close.click();}
+},true); // Lire l'état des fenêtres avant leur fermeture par les gestionnaires en phase de bulle.
 function vueVariablesV31(){
  const d=E.detailEtape||{}, rows=d.lignes||[], neuf=d.mode==='Neuf',selected=E.v31Selected||'', opened=!!E.v31VarDetail;
  const shown=v31VarFilter(rows);const page=Math.max(0,Math.min(E.v31Page||0,Math.floor(Math.max(shown.length-1,0)/150)));E.v31Page=page;const pageRows=shown.slice(page*150,(page+1)*150);const selectedVar=rows.find(x=>x.nom===selected)||null;
@@ -72,7 +90,7 @@ function vueVariablesV31(){
  ${selectedVar.ident_eq?'<button type="button" class="v31-text-button" id="v31-source-equip">Ouvrir la fiche équipement</button>':''}</aside>`:'';
  const errCount=rows.filter(x=>['en conflit','non résolue'].includes(x.etat_adressage)).length;
  document.getElementById('vue').innerHTML=`<section class="v31-variable-screen ${withDetail?'has-detail':''}"><div class="v31-card v31-main-table">
- <div class="v31-table-toolbar"><div class="v31-view-switch">${filter('all','Toutes')}${filter('exchange','Table d’échange')}${filter('tele','Télétransmission')}</div>
+ <div class="v31-table-toolbar"><div class="v31-view-switch">${filter('all','Toutes')}${filter('exchange','Adresses automate')}${filter('tele','Télétransmission')}</div>
  <label class="v31-search-field">${V31.icon('search',16)}<input id="v31-var-search" value="${V31.esc(E.v31Query||'')}" aria-label="Filtrer les variables" placeholder="Filtrer"></label>
  <div class="v31-status-filters">${statuses}</div>
  <div class="v31-actions"><button type="button" class="v31-secondary" id="v31-calculate" ${!neuf?'disabled':''} title="Calculer un aperçu sans appliquer les adresses">${V31.icon('spark',15)} Calculer</button>
@@ -82,13 +100,14 @@ function vueVariablesV31(){
  ${errCount?`<div class="v31-inform warning">${errCount} point(s) bloquant(s) ou non résolu(s). Les conflits doivent être corrigés avant la validation.</div>`:''}
  <div class="v31-table-area"><table class="v31-table"><thead><tr><th><input type="checkbox" id="v31-select-all" aria-label="Tout sélectionner" ${!neuf?'disabled':''}></th><th>Variable</th><th>Famille</th><th class="v31-source">Source</th><th>Adresse automate</th><th class="v31-col-tele ${view==='exchange'?'v31-hide-in-exchange':''}">Télétransmission</th><th>Statut</th><th class="v31-rule ${view==='tele'?'v31-hide-in-tele':''}">Règle</th></tr></thead><tbody>
  ${body||`<tr><td colspan="${view==='all'?8:7}"><div class="v31-blank">Aucune variable à afficher avec ces filtres.</div></td></tr>`}</tbody></table></div>
- <footer class="v31-table-footer"><span>${rows.length} variable(s) · ${shown.length} filtrée(s) · page ${page+1}/${Math.max(1,Math.ceil(shown.length/150))}</span><div class="v31-page-controls"><button type="button" id="v31-prev-page" ${page===0?'disabled':''}>Précédent</button><button type="button" id="v31-next-page" ${(page+1)*150>=shown.length?'disabled':''}>Suivant</button></div>
+ <footer class="v31-table-footer"><span>${rows.length?`${rows.length} variable(s) · ${shown.length?`${shown.length} filtrée(s)`:'Aucun résultat'}`:'Aucune variable'} · page ${page+1}/${Math.max(1,Math.ceil(shown.length/150))}</span><div class="v31-page-controls"><button type="button" id="v31-prev-page" ${page===0?'disabled':''}>Précédent</button><button type="button" id="v31-next-page" ${(page+1)*150>=shown.length?'disabled':''}>Suivant</button></div>
  <button type="button" id="v31-adr-settings" class="v31-text-button">Paramètres d’adressage</button></footer></div>${detail}</section>`;
+ v31EmptyColumns();
  document.querySelectorAll('[data-var-view]').forEach(el=>el.onclick=()=>{E.v31VarView=el.dataset.varView;E.v31Page=0;vueVariablesV31();});
  document.querySelectorAll('[data-var-status]').forEach(el=>el.onclick=()=>{E.v31Status=E.v31Status===el.dataset.varStatus?'':el.dataset.varStatus;E.v31Page=0;vueVariablesV31();});
  document.getElementById('v31-var-search').oninput=e=>{E.v31Query=e.target.value;E.v31Page=0;vueVariablesV31();const inp=document.getElementById('v31-var-search');inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);};
  document.querySelectorAll('.v31-variable-row').forEach(row=>{const pick=()=>{E.v31Selected=row.dataset.variable;E.v31VarDetail=true;vueVariablesV31();};row.onclick=ev=>{if(!ev.target.closest('input'))pick();};row.onkeydown=ev=>{if(ev.target===row&&(ev.key==='Enter'||ev.key===' ')){ev.preventDefault();pick();}};});
- document.querySelector('#v31-close-detail')?.addEventListener('click',()=>{E.v31VarDetail=false;vueVariablesV31();});
+ document.querySelector('#v31-close-detail')?.addEventListener('click',v31CloseVariableDetail);
  document.querySelector('#v31-select-all')?.addEventListener('change',ev=>{document.querySelectorAll('.v31-choose:not(:disabled)').forEach(c=>c.checked=ev.target.checked);});
  document.querySelector('#v31-validate-single')?.addEventListener('click',async()=>{try{const v=selectedVar;if(!v||!v.adresse||!neuf)return;
    const res=await api('/api/variables/action',{action:'valider',paires:[{ident_eq:v.ident_eq,cle:v.cle}]});if(res.refus?.length)throw Error(res.refus.join(' | '));toast('Adresse validée et protégée.');await v31ReloadVariables();}catch(e){toast(e.message,true);}});
