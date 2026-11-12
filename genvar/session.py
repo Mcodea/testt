@@ -2395,6 +2395,59 @@ class Session:
         from .cartes_es import bilan_modules
         return bilan_modules(self.points(), self.ouvrage.modules, self.ouvrage.reserve_min)
 
+    def definir_config_materiel(self, alimentation=None, processeur=None, communication=None, cartes=None):
+        """Choix matériel M340 / M580 de l'automaticien, contrôlé contre le catalogue (référence inconnue refusée).
+        Une valeur None laisse le choix actuel ; une chaîne vide le retire. Le matériel repasse « à valider »."""
+        from . import materiel
+        try:
+            plat = materiel.plateforme_materiel(self.ouvrage.automate)[0]
+            cat = materiel.catalogue()
+        except materiel.CatalogueMaterielErreur as exc:
+            raise RegleMetier(str(exc)) from exc
+        if plat not in cat["plateformes"]:
+            raise RegleMetier(f"Choix d'alimentation, de processeur et de communication réservés aux M340 / M580 "
+                              f"(plateforme {plat}).")
+        actuel = dict(self.ouvrage.materiel_config or {})
+        demande = {k: v for k, v in (("alimentation", alimentation), ("processeur", processeur),
+                                     ("communication", communication), ("cartes", cartes)) if v is not None}
+        nouveau = {**actuel, **demande}
+        retenu = materiel.config_materiel(cat, plat, "", nouveau)
+        for cle in ("alimentation", "processeur"):
+            if str(demande.get(cle) or "").strip() and not retenu[cle]:
+                raise RegleMetier(f"Référence inconnue du catalogue {plat} : {demande[cle]}.")
+        if "communication" in demande and len(retenu["communication"]) != len([c for c in demande["communication"] if c]):
+            raise RegleMetier(f"Module de communication inconnu du catalogue {plat}.")
+        if "cartes" in demande and len(retenu["cartes"]) != len([r for r in demande["cartes"].values() if r]):
+            raise RegleMetier("Carte inconnue ou de mauvaise nature.")
+        self.ouvrage.materiel_config = {"alimentation": retenu["alimentation"], "processeur": retenu["processeur"],
+                                        "communication": retenu["communication"], "cartes": retenu["cartes"]}
+        self.ouvrage.materiel_valide = False
+        self._change(devalider=False)
+        return self.ouvrage.materiel_config
+
+    def nomenclature_materiel(self):
+        """Nomenclature de commande du matériel retenu (M340 / M580) ; [] sans racks retenus."""
+        from . import materiel
+        if not self.ouvrage.racks or any(r.get("nim") for r in self.ouvrage.racks):
+            return []
+        return materiel.nomenclature(self.ouvrage.racks, self.ouvrage.modules)
+
+    def exporter_nomenclature(self, chemin):
+        from .export_xlsx import ecrire_xlsx
+        lignes = self.nomenclature_materiel()
+        if not lignes:
+            raise RegleMetier("Aucun matériel retenu : calculez et appliquez d'abord le matériel.")
+        o = self.ouvrage
+        ecrire_xlsx(chemin, [("Nomenclature", ["Référence", "Désignation", "Quantité", "Rôle"],
+                              [[x["reference"], x["designation"], x["quantite"], x["role"]] for x in lignes],
+                              [26, 60, 10, 26]),
+                             ("Ouvrage", ["Champ", "Valeur"], [["Ouvrage", o.prefixe()], ["Libellé", o.libelle],
+                                                               ["Automate", o.automate], ["Révision", o.revision],
+                                                               ["Matériel validé", "oui" if o.materiel_valide else "non"],
+                                                               ["Remarque", "Bilan de consommation à vérifier ; "
+                                                                "références à confirmer à la commande."]], [24, 60])])
+        return chemin
+
     def exporter_cartes_es(self, chemin):
         from .export_cartes_es import exporter
         return self._marquer_exporte(exporter(chemin, self.ouvrage, self.points()))
@@ -2508,7 +2561,8 @@ class Session:
             cables = [p for p in pts if p.raccordement != "Communication"]
             return proposer(pts, self.ouvrage.automate, profil if profil is not None else self.ouvrage.profil_cartes,
                             self.ouvrage.reserve_min, min_cartes=self._cartes_minimales_secours(cables),
-                            emplacements_libres=self.ouvrage.emplacements_libres_rack)
+                            emplacements_libres=self.ouvrage.emplacements_libres_rack,
+                            config=self.ouvrage.materiel_config)
         except CatalogueMaterielErreur as exc:
             raise RegleMetier(str(exc)) from exc
 

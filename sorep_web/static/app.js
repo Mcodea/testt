@@ -2066,10 +2066,19 @@ function racksAffiches(m, modules) {
   modules.forEach(x => { const [r, pos] = x.module.split(".").map(Number); parRack[r] = Math.max(parRack[r] ?? 0, pos + 1); });
   return Object.entries(parRack).map(([r, n]) => ({numero: +r, reference: "rack déclaré", positions: n, cpu: []}));
 }
-function vueRack(rack, modules) {
+function vueRack(rack, modules, plusieurs) {
   const cases = [];
+  const occ = Object.fromEntries((rack.occupation || []).map(o => [o.position, o]));
+  const poste = String(rack.reference).startsWith("S4W");
+  if (!poste && rack.alimentation !== undefined) {
+    const choisie = rack.alimentation && !/à choisir/.test(rack.alimentation);
+    cases.push(`<div class="emplacement alim ${choisie ? "" : "a-choisir"}" title="Emplacement CPS : alimentation"><span class="pos">CPS</span><b>${esc(choisie ? rack.alimentation : "Alimentation")}</b><small>${choisie ? "alimentation" : "à choisir"}</small></div>`);
+  }
   for (let pos = 0; pos < rack.positions; pos++) {
     const carte = modules.find(x => x.module === `${rack.numero}.${pos}`);
+    const o = occ[pos];
+    if (o) { const role = o.role === "processeur" ? "Processeur" : "Communication";
+      cases.push(`<div class="emplacement ${o.role === "processeur" ? "cpu" : "com"} ${/à choisir/.test(o.reference) ? "a-choisir" : ""}" title="Emplacement ${pos} : ${role.toLowerCase()}"><span class="pos">${pos}</span><b>${esc(/à choisir/.test(o.reference) ? role : o.reference)}</b><small>${/à choisir/.test(o.reference) ? "à choisir" : role.toLowerCase()}</small></div>`); continue; }
     if (rack.cpu.includes(pos)) { cases.push(`<div class="emplacement cpu" title="Position ${pos} : processeur"><span class="pos">${pos}</span><b>CPU</b></div>`); continue; }
     if (!carte) { cases.push(`<div class="emplacement libre" title="Position ${pos} libre"><span class="pos">${pos}</span><span>libre</span></div>`); continue; }
     const taux = carte.voies ? carte.occupees / carte.voies : 0;
@@ -2078,9 +2087,45 @@ function vueRack(rack, modules) {
       <span class="pos">${pos}</span><span class="tag p-${carte.nature}">${carte.nature}</span><b>${esc(carte.reference || "carte " + carte.nature)}</b>
       <span class="jauge ${etat}"><i style="width:${Math.min(100, Math.round(taux * 100))}%"></i></span><small>${carte.occupees}/${carte.voies} voies · réserve ${Math.round(carte.taux * 100)} %</small></button>`);
   }
-  const poste = String(rack.reference).startsWith("S4W");
+  if (!poste && plusieurs) cases.push(`<div class="emplacement ext" title="Emplacement XBE : module d'extension de rack"><span class="pos">XBE</span><b>BMX XBE 1000</b><small>extension</small></div>`);
   return `<div class="rack"><div class="rack-tete"><b>${poste ? "Poste de télégestion" : "Rack " + rack.numero}</b><span>${esc(rack.reference)} · ${poste ? `voies intégrées + ${Math.max(0, modules.filter(x => x.reference.startsWith("Module")).length)} module(s) d'extension` : `${rack.positions} positions${rack.numero === 0 ? " · rack local" : " · extension"}`}</span></div>
-    <div class="rack-corps" style="grid-template-columns:repeat(${rack.positions},minmax(96px,1fr))">${cases.join("")}</div></div>`;
+    <div class="rack-corps" style="grid-template-columns:repeat(${cases.length},minmax(96px,1fr))">${cases.join("")}</div></div>`;
+}
+// Composition de l'automate (M340 / M580) : alimentation, processeur, communication, carte par nature.
+function blocComposition(m) {
+  if (!["M340", "M580"].includes(m.plateforme)) return "";
+  const c = m.config || {}, cartes = c.cartes || {};
+  const opt = (liste, val, vide) => `<option value="">${vide}</option>` + liste.map(x => `<option value="${esc(x.reference)}" ${x.reference === val ? "selected" : ""}>${esc(x.reference)} — ${esc(x.description || ((x.entree || "") + (x.puissance_w ? ", " + x.puissance_w + " W" : "") + (x.redondante ? ", redondante" : "")))}</option>`).join("");
+  const parNature = n => m.cartes_catalogue.filter(x => x.nature === n);
+  const nat = {ET: "Entrées TOR", ST: "Sorties TOR", EA: "Entrées analogiques", SA: "Sorties analogiques"};
+  return `<div class="bloc"><div class="bloc-tete"><h2>Composition de l'automate</h2><span class="aide">vos choix ; ce qui n'est pas choisi reste « à choisir », jamais deviné</span></div>
+    <div class="grille-compo">
+      <label>Alimentation (emplacement CPS)<select data-cfg="alimentation">${opt(m.alimentations || [], c.alimentation, "— à choisir —")}</select></label>
+      <label>Processeur<select data-cfg="processeur">${opt(m.processeurs || [], c.processeur, "— d'après la fiche ouvrage —")}</select></label>
+      <fieldset><legend>Modules de communication</legend>${(m.communications || []).length ? m.communications.map(x => `<label class="case"><input type="checkbox" data-cfg-com value="${esc(x.reference)}" ${(c.communication || []).includes(x.reference) ? "checked" : ""}> <span class="mono">${esc(x.reference)}</span> <small>${esc(x.description)}</small></label>`).join("") : '<small>Aucun module décrit pour cette gamme.</small>'}</fieldset>
+      ${["ET", "ST", "EA", "SA"].map(n => `<label>${nat[n]}<select data-cfg-carte="${n}"><option value="">Selon la densité choisie</option>${parNature(n).map(x => `<option value="${esc(x.reference)}" ${cartes[n] === x.reference ? "selected" : ""}>${esc(x.reference)} — ${esc(x.description)}</option>`).join("")}</select></label>`).join("")}
+    </div>
+    <details class="catalogue-cartes"><summary>Catalogue des cartes (${m.cartes_catalogue.length} + ${(m.cartes_speciales || []).length} spéciales)</summary>
+      <table><thead><tr><th>Référence</th><th>Nature</th><th>Voies</th><th>Signal</th><th>Raccordement</th></tr></thead><tbody>
+      ${m.cartes_catalogue.map(x => `<tr><td class="mono">${esc(x.reference)}</td><td>${esc(x.nature)}</td><td>${x.voies}</td><td>${esc(x.signal || x.description)}</td><td>${esc(x.raccordement || "")}${/à confirmer/.test(x.source || "") ? ' <span class="badge b-al">à confirmer</span>' : ""}</td></tr>`).join("")}
+      ${(m.cartes_speciales || []).map(x => `<tr><td class="mono">${esc(x.reference)}</td><td>mixte / comptage</td><td>—</td><td>${esc(x.description)}</td><td>${esc(x.raccordement || "")}</td></tr>`).join("")}</tbody></table>
+      <p class="aide-bloc">${esc(m.remarque_speciales || "")}</p></details></div>`;
+}
+function blocNomenclature(m) {
+  if (!(m.nomenclature || []).length) return "";
+  return `<div class="bloc"><div class="bloc-tete"><h2>Nomenclature de commande</h2><span class="aide">matériel retenu · références à confirmer à la commande</span><div class="droite"><button id="m-nomenclature">Exporter (Excel)</button></div></div>
+    <table><thead><tr><th>Référence</th><th>Désignation</th><th class="num">Quantité</th><th>Rôle</th></tr></thead><tbody>
+    ${m.nomenclature.map(x => `<tr><td class="mono">${esc(x.reference)}</td><td>${esc(x.designation)}</td><td class="num">${x.quantite}</td><td>${esc(x.role)}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function liaisonsComposition() {
+  const envoyer = corps => agir(api("/api/materiel/action", {action: "config", ...corps}), "Choix enregistré : recalculez le matériel pour l'appliquer.").then(rechargerMateriel);
+  document.querySelectorAll("[data-cfg]").forEach(x => x.onchange = () => envoyer({[x.dataset.cfg]: x.value}));
+  document.querySelectorAll("[data-cfg-com]").forEach(x => x.onchange = () => envoyer({communication: [...document.querySelectorAll("[data-cfg-com]:checked")].map(y => y.value)}));
+  document.querySelectorAll("[data-cfg-carte]").forEach(x => x.onchange = () => {
+    const cartes = {}; document.querySelectorAll("[data-cfg-carte]").forEach(y => { if (y.value) cartes[y.dataset.cfgCarte] = y.value; });
+    envoyer({cartes});
+  });
+  if ($("#m-nomenclature")) $("#m-nomenclature").onclick = () => telecharger("nomenclature");
 }
 // Îlot Advantys STB : composition dans l'ordre du logiciel Advantys (emplacement / nœud) et image d'E/S.
 function blocIlotsSTB(prop) {
@@ -2148,6 +2193,7 @@ function vueMateriel() {
        <div class="boutons-ligne"><button class="prim" id="m-impl" ${rien || !(cables.length - places.length) ? "disabled" : ""}>Implanter les E/S sans voie</button><button id="m-lib" ${aValider.length ? "" : "disabled"}>Libérer les voies non validées</button></div>
        <p class="aide-bloc">Les E/S d'un même équipement restent groupées sur une carte. Une E/S validée sur sa voie ne bouge plus.</p></div>
    </div>
+   ${blocComposition(m)}
    ${m.plateforme === "STB" && prop ? blocIlotsSTB(prop) : ""}
    ${m.repartition ? blocRepartition(m.repartition) : ""}
    <div class="bloc"><div class="bloc-tete"><h2>Racks</h2><span class="aide">${rien ? "aucune carte retenue" : `${d.modules.length} carte(s) · cliquez une carte pour la modifier`}</span>
@@ -2155,8 +2201,9 @@ function vueMateriel() {
      ${s4w && prop && prop.racks.length ? `<p class="aide-bloc"><b>Proposition indicative S4W</b> — voies intégrées au boîtier puis modules d'extension (la CPU est intégrée au boîtier).</p>`
          + prop.racks.map(r => vueRack(r, prop.modules.map(x => ({module: `${x.rack}.${x.position}`, nature: x.nature, voies: x.voies, reference: x.reference, occupees: 0, reserve: x.voies, taux: 1, sous_seuil: false})))).join("") : ""}
      ${rien ? (s4w ? "" : `<div class="vide-bloc">${prop ? "Cliquez sur « Calculer le matériel » : OGIAS propose les racks et les cartes à partir du besoin ci-dessus." : "Le matériel sera proposé une fois la liste des E/S validée."}</div>`)
-       : (s4w ? `<p class="aide-bloc"><b>Matériel actuellement retenu</b></p>` : "") + racksAffiches(m, d.modules).map(r => vueRack(r, d.modules)).join("")}
+       : (s4w ? `<p class="aide-bloc"><b>Matériel actuellement retenu</b></p>` : "") + racksAffiches(m, d.modules).map((r, _i, t) => vueRack(r, d.modules, t.length > 1)).join("")}
      <p class="note">${esc(m.statut_catalogue)}</p></div>
+   ${blocNomenclature(m)}
    <div class="bloc"><div class="bloc-tete"><h2>Liste des E/S par voie</h2><input id="x-q" type="search" placeholder="Rechercher une E/S, une adresse…" value="${esc(E.rechercheES || "")}" style="width:260px" aria-label="Rechercher">
      ${f ? '<button class="lien" id="x-tout">Tout afficher</button>' : ""}<span class="aide">${pts.length} / ${cables.length}</span>
      <div class="droite"><button id="x-val-tout" ${pts.some(p => p.adresse && !p.validee) ? "" : "disabled"}>Valider les voies affichées</button><button class="prim" id="x-val" disabled>Valider la sélection</button></div></div>
@@ -2188,6 +2235,7 @@ function vueMateriel() {
   $("#m-lib").onclick = () => confirmer("Libérer les voies non validées ?", "Les E/S dont la voie n'est pas validée perdent leur carte, leur voie et leur adresse. Les voies validées restent.", "Libérer",
     async () => { const r = await agir(api("/api/modules", {action: "liberer"})); toast(`${r.liberees} voie(s) libérée(s).`); rechargerMateriel(); });
   liaisonsRepartition();
+  liaisonsComposition();
   $("#x-xl").onclick = () => telecharger("liste_es");
   $("#x-ca").onclick = () => telecharger("cartes");
   $("#x-xsy").onclick = () => telecharger("es_xsy");

@@ -513,10 +513,16 @@ class Application:
                 "profil": o.profil_cartes or cat["profil_defaut"], "statut_catalogue": cat["statut"],
                 "profils": [{"code": k, "libelle": v["libelle"]} for k, v in cat["profils"].items()],
                 "cartes_catalogue": [{"reference": c["reference"], "nature": c["nature"], "voies": c["voies"],
-                                      "description": c.get("description", "")} for c in cat["cartes"]],
+                                      "description": c.get("description", ""), "signal": c.get("signal", ""),
+                                      "raccordement": c.get("raccordement", ""), "source": c.get("source", "")}
+                                     for c in cat["cartes"]],
                 "proposition": prop, "blocage": blocage, "racks": o.racks, "materiel_valide": o.materiel_valide,
                 "a_placer": len(aff), "manquantes": manq, "reserve_min": o.reserve_min,
-                "repartition": self.s.regles_repartition()}
+                "repartition": self.s.regles_repartition(),
+                "config": o.materiel_config or {}, "nomenclature": self.s.nomenclature_materiel(),
+                "alimentations": cat.get("alimentations", []), "processeurs": cat.get("processeurs", {}).get(plat, []),
+                "communications": cat.get("communication", {}).get(plat, []),
+                "cartes_speciales": cat.get("cartes_speciales", []), "remarque_speciales": cat.get("remarque_speciales", "")}
 
     def materiel_action(self, d):
         a = d.get("action")
@@ -537,6 +543,9 @@ class Application:
             self.s.retirer_groupe_secours(d.get("membres") or [])
         elif a == "refuser_groupe_secours":
             self.s.refuser_groupe_secours(d.get("membres") or [])
+        elif a == "config":
+            self.s.definir_config_materiel(d.get("alimentation"), d.get("processeur"), d.get("communication"),
+                                           d.get("cartes"))
         elif a == "regles_repartition":
             self.s.regles_repartition(d.get("separation_secours"), d.get("emplacements_libres_rack"))
         else:
@@ -610,6 +619,9 @@ class Application:
                 raise RegleMetier("Déclarez d'abord les cartes d'E/S (modules).")
             nom = f"{base}_cartes_ES.xlsx"
             self.s.exporter_cartes_es(os.path.join(dossier, nom))
+        elif quoi == "nomenclature":
+            nom = f"{base}_nomenclature_materiel.xlsx"
+            self.s.exporter_nomenclature(os.path.join(dossier, nom))
         elif quoi == "variables":
             nom = f"{base}_variables_controle.xlsx"
             self.s.exporter_excel(os.path.join(dossier, nom))

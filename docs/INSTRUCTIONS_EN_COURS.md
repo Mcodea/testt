@@ -1,5 +1,20 @@
 # Instructions en cours de route
 
+## [nouveau] 12/11/2026 17 h 30 — Matériel M340 / M580 complet (Claude, demande de l'utilisateur)
+
+L'utilisateur trouvait la partie matériel incomplète. Ajouts (choix utilisateur : alimentation / CPU / racks,
+communication, toutes les cartes d'E/S, rack réaliste + nomenclature ; **pas** de borniers ni câbles) :
+- catalogue `genvar/data/materiel_schneider.json` sourcé : 8 alimentations BMX CPS, processeurs M340 (5) et
+  M580 (4 confirmés), 5 modules de communication M340, extension BMX XBE 1000 / câbles / TSX TLY EX / cache
+  BMX XEM 010, 20 cartes (dont 48 V, CA, relais, triac, température) et 6 cartes mixtes / comptage (listées,
+  non placées automatiquement). 3 cartes de départ sont marquées « à confirmer » (absentes des sources lues) ;
+- choix de l'automaticien `Ouvrage.materiel_config` (`POST /api/materiel/action {action: "config", …}`),
+  contrôlés contre le catalogue ; processeur déduit du champ Automate s'il en porte la référence exacte ;
+  rien n'est deviné (« à choisir ») ; consommations non intégrées (« bilan à vérifier ») ;
+- rack réaliste : emplacement CPS, processeur (00, ou 00-01 en M580), communication, cartes, libres, XBE ;
+- nomenclature de commande (`GET /api/materiel` → `nomenclature`, export `quoi=nomenclature`).
+Tests : `tests/test_materiel_complet.py`, `tests_web/test_retours_essai_12_11.py::TestMaterielComplet`.
+
 ## [nouveau] 12/11/2026 16 h 40 — PASSATION À CODEX : tout ce qui a changé pendant ton arrêt (à lire en premier)
 
 **Agent actif : libre** (Claude s'arrête ; Codex reprend). Règles du binôme inchangées (`docs/BINOME.md`).

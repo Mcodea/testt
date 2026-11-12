@@ -169,6 +169,8 @@ class Ouvrage:
     groupes_secours_refuses: list = field(default_factory=list)  # propositions écartées : [[ident, …]] triés
     separation_secours: bool = True                     # B4 actif (désactivable par ouvrage)
     emplacements_libres_rack: int = 2                   # B3 : emplacements laissés libres par rack
+    # Choix matériel de l'automaticien (M340 / M580) : alimentation, processeur, communication, carte par nature
+    materiel_config: dict = field(default_factory=dict)
     localisation: str = ""                              # commune / adresse du site
     type_ouvrage: str = ""                              # réservoir, station de pompage…
     environnement: str = "Control Expert"               # Control Expert, Unity Pro, PL7

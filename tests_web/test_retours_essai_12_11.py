@@ -172,3 +172,40 @@ class TestVoiesCarte(ServeurNavigateur):
         self.assertEqual((apres['module'], str(apres['voie'])), (module, voie))
         self.assertFalse(apres['validee'])
         self.assertEqual(erreurs, [])
+
+
+class TestMaterielComplet(ServeurNavigateur):
+    def test_composition_rack_et_nomenclature(self):
+        self.api('/api/nouveau', {'mode': 'Neuf'})
+        if not any(x['code'] == 'XTST' for x in self.api('/api/listes-ouvrage')['lieux']):
+            self.api('/api/listes-ouvrage/action', {'action': 'ajouter', 'groupe': 'lieux',
+                                                   'code': 'XTST', 'libelle': 'Lieu fictif'})
+        self.api('/api/fiche-ouvrage', {'action': 'creer', 'identification': {
+            'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': '66', 'libelle': 'Matériel',
+            'automate': 'M340', 'revision': 'A'}})
+        i = self.api('/api/equipement/ajouter', {'type': 'PM', 'numero': '01', 'se': '00'})['ident']
+        self.api('/api/equipement/proposition', {'ident_eq': i, 'decision': 'retenir'})
+        self.api('/api/equipement/valider', {'idents': [i], 'valide': True})
+        pts = self.api('/api/es')['points']
+        self.api('/api/es/valider', {'niveau': 'contenu',
+                                     'paires': [{'ident_eq': p['ident_eq'], 'cle': p['cle']} for p in pts]})
+        context = self.browser.new_context(viewport={'width': 1500, 'height': 1000})
+        self.addCleanup(context.close)
+        page = context.new_page()
+        erreurs = []
+        page.on('pageerror', lambda e: erreurs.append(str(e)))
+        page.goto(self.url + '#/materiel', wait_until='networkidle')
+        page.locator('[data-cfg="alimentation"]').select_option('BMX CPS 3500')
+        page.wait_for_function("() => document.querySelector('[data-cfg=\"alimentation\"]')?.value === 'BMX CPS 3500'")
+        page.locator('[data-cfg="processeur"]').select_option('BMX P34 2020')
+        page.wait_for_function("() => document.querySelector('[data-cfg=\"processeur\"]')?.value === 'BMX P34 2020'")
+        self.api('/api/materiel/action', {'action': 'appliquer'})
+        page.reload(wait_until='networkidle')
+        page.locator('.emplacement.alim').first.wait_for()
+        self.assertIn('BMX CPS 3500', page.locator('.emplacement.alim').first.inner_text())
+        self.assertIn('BMX P34 2020', page.locator('.emplacement.cpu').first.inner_text())
+        self.assertIn('Nomenclature de commande', page.locator('#vue').inner_text())
+        with page.expect_download() as dl:
+            page.locator('#m-nomenclature').click()
+        self.assertTrue(dl.value.suggested_filename.endswith('_nomenclature_materiel.xlsx'))
+        self.assertEqual(erreurs, [])
