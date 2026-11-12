@@ -1,5 +1,15 @@
 # Instructions en cours de route
 
+**Agent actif : Codex** (12/11/2026 19:00 UTC). Dépôt public `Mcodea/testt`, branche `claude/referentiel-v2`.
+
+## Reprise Codex — correction du dépôt de destination
+
+La consigne « testt » désigne le nouveau dépôt public, pas une branche de l’ancien.
+La visibilité publique et la CI verte du run 43276436661 ont été vérifiées.
+Report de fichiers UI/tests uniquement depuis le lot déjà testé, sans import
+d’historique privé ; ajouts matériels et exports de Claude préservés.
+BINOME.md et la passation du 12/11 à 16 h 40 font foi.
+
 ## [nouveau] 12/11/2026 17 h 30 — Matériel M340 / M580 complet (Claude, demande de l'utilisateur)
 
 L'utilisateur trouvait la partie matériel incomplète. Ajouts (choix utilisateur : alimentation / CPU / racks,
