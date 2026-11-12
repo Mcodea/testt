@@ -1,6 +1,15 @@
 # Instructions en cours de route
 
-**Agent actif : libre** (12/11/2026 19:03 UTC). Passation à Claude — dépôt public `Mcodea/testt`, branche `claude/referentiel-v2`.
+**Agent actif : Codex** (12/11/2026 21:58 UTC). Reprise de la refonte visuelle sur `Mcodea/testt`, `claude/referentiel-v2`.
+
+## Reprise Codex — contrôle visuel des formulaires et fenêtres secondaires
+
+Demande du chat : continuer. Périmètre prudent : présentation uniquement,
+selon la consigne visuelle du 12/11 ; aucune intégration fonctionnelle R3/R8,
+aucun changement de moteur, état, API, données ou export. Base c43f713 et
+CI publique verte du run 43286205755, aucune nouvelle contribution distante.
+Audit navigateur des formulaires/création et fenêtres secondaires ; corriger
+uniquement les anomalies CSS/layout reproduites, avec tests et captures.
 
 ## Passation à Claude — lot UI reporté sur le bon dépôt public
 
