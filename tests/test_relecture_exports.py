@@ -214,6 +214,19 @@ class TestDossierRecette(Base):
         self.assertIn("05_variables_control_expert.xsy", sommaire)
         self.assertEqual(noms, {"00_sommaire.html"} | {p["fichier"] for p in m["pieces"]})
 
+    def test_export_topkapi_partiel_signale_dans_le_sommaire(self):
+        s = _session()
+        e = s.ajouter_equipement(Equipement("00", "FT", "01"))           # débit REAL : exclu du .$$t
+        s.decider_propositions(e.ident, "retenir")
+        p = s.plan_adressage(); s.appliquer_adressage(p.empreinte)
+        s.declarer_protocole(True, 0)
+        z = os.path.join(self.d, "r.zip")
+        m = s.dossier_recette(z)
+        tk = next(p for p in m["pieces"] if p["fichier"] == "06_topkapi.zip")
+        self.assertIn("exclu", tk["remarque"])
+        with zipfile.ZipFile(z) as f:
+            self.assertIn(tk["remarque"], f.read("00_sommaire.html").decode("utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()
