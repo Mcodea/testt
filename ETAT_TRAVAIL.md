@@ -43,7 +43,9 @@ Les critères de sortie demeurent bloquants hors preuves utilisateur de section 
   n’étant fournie, comparaison à l’écran antérieur et à la palette du chat ;
   les maquettes originales ne sont pas modifiées. Pas de certification WCAG
   globale ; la ligne V1-4-45 reste partielle.
-- Audit données et statut CI du lot : verification.json / Actions publiques.
+- Dernier commit fonctionnel **efe3b1f**, passation à Claude, agent libre.
+  Étape exacte de reprise dans docs/INSTRUCTIONS_EN_COURS.md.
+- Audit données **0/0** ; statut CI du lot : verification.json / Actions publiques.
   A1, D5-b et qualification réelle restent dans leur état ; aucune release.
 
 ## Checkpoint historique — report UI terminé sur le dépôt public Mcodea/testt

@@ -1,8 +1,63 @@
 # Instructions en cours de route
 
-**Agent actif : Codex** (12/11/2026 21:58 UTC). Reprise de la refonte visuelle sur `Mcodea/testt`, `claude/referentiel-v2`.
+**Agent actif : libre** (12/11/2026 22:11 UTC). Passation à Claude — `Mcodea/testt`, `claude/referentiel-v2`.
 
-## Reprise Codex — contrôle visuel des formulaires et fenêtres secondaires
+## Passation à Claude — contraste des formulaires terminé
+
+**Dernier commit fonctionnel : `efe3b1f`**, base publique `c43f713`.
+Le commit portant cette passation ne change que le suivi. Codex laisse la main.
+
+### Étape exacte de reprise
+
+1. Dans **/workspace/testt**, dépôt **Mcodea/testt**, branche
+   **claude/referentiel-v2** : `git fetch origin && git pull --rebase`.
+   Ne jamais reprendre dans l’ancien clone privé, ne jamais importer son
+   historique, pousser seulement sur la branche commune, sans --force ni fusion.
+2. Relire le diff **c43f713..efe3b1f** et
+   **validation/interface_v1/formulaires_12_11/README.md**. Le seul code
+   produit modifié est **industrial-ui.css : 20 lignes** ; aucun JavaScript,
+   moteur, état, API, structure, événement, identifiant, donnée ou export changé.
+3. Aucun lot UI ni fichier utile non commité laissé en cours. Reprendre le
+   backlog du cahier dans le domaine Claude. Si l’utilisateur demande de
+   poursuivre la refonte, prochain contrôle UI : fenêtres de détail/adoption
+   et paramétrage matériel, avec les mêmes contraintes visuelles ; ne pas
+   engager l’intégration fonctionnelle R3/R8 sous couvert de présentation.
+
+### Ce qui est terminé
+
+- Labels et titre de création lisibles en sombre ; boutons et badge du mode
+  reprennent la palette ; une seule carte, champs compacts, actions accessibles
+  à 1366/1920/2560 px. Les fonctions de création et de validation à la
+  soumission ne changent pas, ni les modes Neuf/Existant.
+- Onglets des listes : contraste texte/fond d’au moins **4,5:1**, conservé
+  dans les quatre listes. Consultations de protocoles et listes sans écriture.
+- Cartes des niveaux d’adressage : contour de sélection de **2 px** visible
+  indépendamment du focus, en remplacement de l’ancienne ombre supprimée ;
+  bordures de statut et comportement de sélection existants préservés.
+- **Cinq nouveaux tests, 18 sous-cas**, après reproduction des échecs.
+  Objets API/listes identiques, projet de test identique à l’octet après
+  consultation ; aucun POST pendant les changements de thème contrôlés.
+- **16 captures avant/après** non retouchées, comparaison HTML, SHA-256,
+  verification.json et performance.json dans **formulaires_12_11/**.
+  Aucune maquette de création fournie : comparaison à l’écran antérieur et
+  à la palette du chat ; les maquettes d’origine restent intactes.
+
+### Qualité et limites
+
+- **730 tests Python**, 18 sous-cas, 0 ignoré, 194,22 s ; couverture moteur
+  **89,283831 %**, exports **100 %**. **65 tests navigateur**, 70 sous-cas,
+  0 ignoré, 110,68 s. Ruff, mypy 49 fichiers, JS, dépendances et audit données
+  conformes (0 détection / 0 échec de lecture).
+- Sept seuils du banc inchangés passent : rendu **75,9 ms**, filtre **97,4 ms**,
+  adressage **0,719 s**. CI complète publique déclenchée au push ; statut du
+  HEAD : https://github.com/Mcodea/testt/actions?query=branch%3Aclaude%2Freferentiel-v2.
+  La base a passé **43286205755** ; ne pas reprendre l’ancienne mention de quota.
+- L’accessibilité WCAG **globale** reste partielle : le contraste prouvé porte
+  sur ces éléments ciblés. Aucun nouvel export déclaré qualifié ; essais
+  réels Control Expert 14.1, TOPKAPI et S4W-Tools toujours en attente.
+  A1 et D5-b restent en décision. Aucune fusion, release ou étiquette créée.
+
+## Historique — reprise du contrôle visuel des formulaires
 
 Demande du chat : continuer. Périmètre prudent : présentation uniquement,
 selon la consigne visuelle du 12/11 ; aucune intégration fonctionnelle R3/R8,
