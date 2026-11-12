@@ -169,7 +169,7 @@ class TestVariablesV031(ServeurNavigateur):
                                ("#/variables", "maquette-2-variables-1920.png")):
             self.page.goto(self.url + route, wait_until="networkidle")
             self.page.evaluate("document.fonts.ready")
-            self.assertEqual(self.page.locator("#v31-sidebar").bounding_box()["width"], 80)
+            self.assertEqual(self.page.locator("#v31-sidebar").bounding_box()["width"], 188)
             self.assertTrue(self.page.evaluate("document.documentElement.scrollWidth <= innerWidth"))
             self.page.screenshot(path=str(dossier / fichier), full_page=True)
             mesures[route] = {"navigation": self.page.locator("#v31-sidebar").bounding_box(),

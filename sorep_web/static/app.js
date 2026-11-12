@@ -2089,7 +2089,7 @@ function vueRack(rack, modules, plusieurs) {
       <span class="jauge ${etat}"><i style="width:${Math.min(100, Math.round(taux * 100))}%"></i></span><small>${carte.occupees}/${carte.voies} voies · réserve ${Math.round(carte.taux * 100)} %</small></button>`);
   }
   if (!poste && plusieurs) cases.push(`<div class="emplacement ext" title="Emplacement XBE : module d'extension de rack"><span class="pos">XBE</span><b>BMX XBE 1000</b><small>extension</small></div>`);
-  return `<div class="rack"><div class="rack-tete"><b>${poste ? "Poste de télégestion" : "Rack " + rack.numero}</b><span>${esc(rack.reference)} · ${poste ? `voies intégrées + ${Math.max(0, modules.filter(x => x.reference.startsWith("Module")).length)} module(s) d'extension` : `${rack.positions} positions${rack.numero === 0 ? " · rack local" : " · extension"}`}</span></div>
+  return `<div class="rack ${poste ? "v31-platform-sofrel" : ""}"><div class="rack-tete"><b>${poste ? "Poste de télégestion" : "Rack " + rack.numero}</b><span>${esc(rack.reference)} · ${poste ? `voies intégrées + ${Math.max(0, modules.filter(x => x.reference.startsWith("Module")).length)} module(s) d'extension` : `${rack.positions} positions${rack.numero === 0 ? " · rack local" : " · extension"}`}</span></div>
     <div class="rack-corps" style="grid-template-columns:repeat(${cases.length},minmax(96px,1fr))">${cases.join("")}</div></div>`;
 }
 // Composition de l'automate (M340 / M580) : alimentation, processeur, communication, carte par nature.
@@ -2173,7 +2173,7 @@ function vueMateriel() {
    <div class="titre"><div><h1>Matériel automate</h1><div class="sous">Racks et cartes calculés à partir des E/S validées, avec ${Math.round(m.reserve_min * 100)} % de réserve par carte. OGIAS propose, vous ajustez et validez.</div></div>
      <div class="actions">${m.materiel_valide ? '<span class="badge b-ok grand">Matériel validé</span><button id="m-deval">Repasser à valider</button>'
        : `<button class="${rien ? "" : "prim"}" id="m-valider" ${rien ? "disabled" : ""}>Valider le matériel</button>`}</div></div>
-   <div class="bandeau-materiel">
+   <div class="bandeau-materiel ${s4w ? "v31-platform-sofrel" : ""}">
      <div><span class="etiq">Plateforme</span><b>${esc(m.plateforme)}</b><small>${m.automate ? "fiche ouvrage : " + esc(m.automate) : "automate non renseigné"}</small></div>
      ${s4w ? `<div><span class="etiq">Poste de télégestion</span><b>${esc(prop && prop.racks[0] ? prop.racks[0].reference : "—")}</b><small>boîtier proposé</small></div>`
        : `<div><span class="etiq">Densité des cartes</span><select id="m-profil" aria-label="Densité des cartes">${m.profils.map(x => `<option value="${esc(x.code)}" ${x.code === m.profil ? "selected" : ""}>${esc(x.libelle)}</option>`).join("")}</select></div>`}

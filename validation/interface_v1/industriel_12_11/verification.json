@@ -1,0 +1,54 @@
+{
+  "date_utc": "2026-11-12",
+  "depot": "https://github.com/Mcodea/testt",
+  "branche": "claude/referentiel-v2",
+  "base_claude": "085b1c72cf8f397c4ce52c3068c530e20303739a",
+  "racine_publique_conservee": "4d084b4d0050cbb9f0491046e688d768f3498812",
+  "python": {
+    "reussis": 730,
+    "sous_cas": 18,
+    "ignores": 0,
+    "secondes": 201.87,
+    "couverture_moteur": 89.2838308195338,
+    "couverture_exports": 100
+  },
+  "navigateur": {
+    "reussis": 60,
+    "sous_cas": 52,
+    "ignores": 0,
+    "secondes": 97.98,
+    "nouveaux_cas_design": 7,
+    "captures_png": 28,
+    "resolutions": [
+      [
+        1366,
+        768
+      ],
+      [
+        1920,
+        1080
+      ],
+      [
+        2560,
+        1440
+      ]
+    ]
+  },
+  "statique": {
+    "ruff": "conforme",
+    "mypy_fichiers": 49,
+    "javascript": "conforme"
+  },
+  "donnees": {
+    "detections": 0,
+    "echecs_lecture": 0
+  },
+  "dependances": "aucune vulnerabilite connue, audit strict du 12 novembre",
+  "performance": "sept seuils inchanges passes : rendu 84 ms, filtre 100,2 ms ; voir performance.json",
+  "ci_publique": {
+    "base_validee": "https://github.com/Mcodea/testt/actions/runs/43276436661",
+    "suivi_du_commit": "https://github.com/Mcodea/testt/actions?query=branch%3Aclaude%2Freferentiel-v2",
+    "workflow": "Linux et Windows, navigateur/performance, qualite, portable Windows ; declenche au push"
+  },
+  "qualification_industrielle": "preuves utilisateur en attente ; aucune compatibilite revendiquee"
+}

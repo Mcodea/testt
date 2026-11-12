@@ -1,49 +1,34 @@
-# Référentiel V2 et interface : gestion et adoption contrôlée
+# OGIAS 0.32 — refonte visuelle industrielle et corrections U9
 
-Cette branche applique les décisions V2 validées : nomenclature physique limitée,
-consolidation CT dans FT pour les nouveaux projets, gouvernance documentaire et
-cycle unique de gestion du référentiel. Elle conserve les référentiels figés des
-ouvrages existants. **PR #1 à conserver ouverte, sans fusion automatique.**
+Le parcours ouvre le bon équipement et la bonne vue E/S. Variables retrouve
+des lignes de 44 px, des cases de 24 px utilisables au clavier, des états vides
+alignés et une fermeture Échap qui respecte les fenêtres au premier plan.
 
-Le lot UI ajoute les vues Lexique, Dictionnaire et Correspondances, l'archivage
-réversible d'un type et sa conservation dans Excel, y compris lorsqu'un ancien
-classeur n'a pas cette colonne. Un modèle explicitement sans E/S conserve cette
-propriété au réimport. Les commandes métier existantes restent accessibles.
+La nouvelle consigne du 12/11 remplace la palette lavande par une présentation
+industrielle : sombre #0B0F19 / #0F1623 / #111827, bordures nettes, navigation
+libellée, tableaux fixes et commandes compactes. La préférence de thème reste
+conservée. La refonte ne modifie aucune fonction, état, API, donnée ou export.
+Les champs matériels, racks complets et nomenclature ajoutés par Claude sont
+préservés et leur présentation est adaptée sans toucher leurs événements.
 
-L'adoption montre les noms par équipement et exige chaque confirmation, décochée
-par défaut. L'aperçu périmé est refusé. La fiche donne accès à la sauvegarde et à
-l'annulation exacte du fichier, avec une autre copie avant annulation. Le retour
-arrière est limité au fichier et à la session courants. Les modèles figés restent
-conservés ; une migration de leur clé est bloquée dans le parcours web tant qu'un
-traitement dédié n'existe pas. Voir docs/ADOPTION_REFERENTIEL.md.
+Report sur **Mcodea/testt**, branche **claude/referentiel-v2**, depuis la base
+publique de Claude 085b1c7. Aucun historique de l’ancien dépôt privé importé ;
+la racine publique 4d084b4 est conservée. Aucun changement moteur, serveur,
+données, dépendances, tests unitaires ou workflow dans ce lot.
 
-Inter, JetBrains Mono et les géométries Lucide sont embarquées, avec leurs licences
-accessibles depuis À propos et leurs sources/empreintes consignées. Les en-têtes
-Variables restent alignés avec les cellules lorsque le détail est ouvert. Les
-trois captures à 1920×1080 sont comparées aux maquettes dans
-validation/interface_v2/maquettes/COMPARAISON.html ; les écarts restants sont listés
-dans son README, sans déclarer la conformité globale terminée.
+Validation locale :
 
-Validation locale : 557 tests Python, 0 ignoré ; couverture moteur 88,58 %, exports
-industriels 100 % ; Ruff, mypy et syntaxe JavaScript conformes ; audit données 0.
-Navigateur : 35 tests et 34 sous-cas réussis ; captures dans validation/interface_v2/.
+- 730 tests Python et 18 sous-cas, 0 ignoré ; couverture 89,283831 %, exports 100 %.
+- 60 tests navigateur et 52 sous-cas, 0 ignoré ; sept nouveaux cas de présentation.
+- Ruff, mypy (49 fichiers), JS et audit strict des dépendances conformes.
+- Performance et audit données consignés dans verification.json/performance.json.
+- 28 captures de l’application, sans retouche ni contenu injecté ; sept écrans
+  en trois tailles, détail, voies, composition et rack. Comparaison et décisions :
+  validation/interface_v1/industriel_12_11/.
 
-Le tableau de bord répartit les E/S depuis les points du moteur et donne accès aux
-cinq étapes sans modifier le projet. Les zéros connus sont des états vides, les
-sources indisponibles sont signalées et aucun taux de recette n'est fabriqué.
-
-A1 (49 ajouts / renommages V1), R1 (conversion des projets CT avec repère préservé)
-et D5-b restent en décision. Aucune donnée du catalogue n'est modifiée par le lot UI.
-Les preuves dans Control Expert 14.1, TOPKAPI et S4W-Tools sont encore attendues.
-L'API GitHub répond Forbidden dans cet environnement ; la CI distante doit être
-vérifiée pour le commit poussé avant toute fusion ou livraison.
-
-Session Claude du 11/11/2026 (moteur) : course de navigation du tableau de bord
-corrigée (CI Windows intermittente) ; profil VANNE_MV (options arrêt câblé
-`ST_<repère>_AR` et défauts de manœuvre détaillés, à valider) ; homonymes entre
-ouvrages d'un même projet Control Expert ; version calculée par profil et état de
-synchronisation ; conflits de surcharge locale et retour au standard ; rapport
-d'impact multi-ouvrages ; journal des décisions ; acceptation en un geste limitée
-aux ouvrages neufs jamais validés ni exportés ; reprise contrôlée d'un modèle figé ;
-alerte P3. 590 tests Python et 36 tests navigateur verts en local ; écrans
-correspondants à faire. A1, R1 et D5-b toujours non appliqués.
+CI publique complète déclenchée au push ; statut du commit dans
+https://github.com/Mcodea/testt/actions?query=branch%3Aclaude%2Freferentiel-v2.
+La base a passé le run 43276436661 (Windows, Linux, navigateur, qualité, portable).
+A1 et D5-b restent en attente ; aucun renommage V1 ni intégration des 193 E/S.
+Aucun import Control Expert 14.1, TOPKAPI ou S4W-Tools déclaré qualifié sans
+preuve réelle. Aucune fusion ni release par les agents.

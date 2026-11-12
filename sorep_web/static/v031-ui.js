@@ -17,9 +17,14 @@ const V31 = (() => {
  function init(){
   const bar=document.createElement('nav');bar.id='v31-sidebar';bar.className='v31-sidebar';bar.setAttribute('aria-label','Navigation principale');
   bar.innerHTML=`<a class="v31-logo" href="#/ouvrages" data-nav="#/ouvrages" title="OGIAS"><img src="assets/ogias-icone-512.png" alt="OGIAS"></a>
-   <div class="v31-side-links"><a href="#/dashboard" data-nav="#/dashboard" data-view="dashboard" title="Tableau de bord" aria-label="Tableau de bord">${icon('home')}</a>
-   <a href="#/ouvrages" data-nav="#/ouvrages" data-view="accueil" title="Mes ouvrages" aria-label="Mes ouvrages">${icon('folder')}</a>
-   <a href="#/referentiel" data-nav="#/referentiel" data-view="referentiel" title="Référentiel métier" aria-label="Référentiel métier">${icon('layers')}</a></div>
+   <div class="v31-side-links"><a href="#/dashboard" data-nav="#/dashboard" data-view="dashboard" title="Tableau de bord" aria-label="Tableau de bord">${icon('home')}<span>Tableau de bord</span></a>
+   <a href="#/ouvrages" data-nav="#/ouvrages" data-view="accueil" title="Mes ouvrages" aria-label="Mes ouvrages">${icon('folder')}<span>Ouvrages</span></a>
+   <a href="#/referentiel" data-nav="#/referentiel" data-view="referentiel" title="Référentiel métier" aria-label="Référentiel métier">${icon('layers')}<span>Référentiel modèles</span></a>
+   <a href="#/inventaire" data-nav="#/inventaire" data-view="ouvrage" title="Ouvrages / Équipements" aria-label="Équipements">${icon('folder')}<span>Équipements</span></a>
+   <a href="#/es" data-nav="#/es" data-view="es" title="Liste des E/S" aria-label="Liste des E/S">${icon('list')}<span>Liste des E/S</span></a>
+   <a href="#/materiel" data-nav="#/materiel" data-view="materiel" title="Configuration matérielle" aria-label="Configuration matérielle">${icon('cpu')}<span>Config. matérielle</span></a>
+   <a href="#/variables" data-nav="#/variables" data-view="variables" title="Tags / Variables" aria-label="Tags / Variables">${icon('layers')}<span>Tags / Variables</span></a>
+   <a href="#/recette" data-nav="#/recette" data-view="recette" title="Recette / Exports" aria-label="Recette / Exports">${icon('clipboard')}<span>Recette / Exports</span></a></div>
    <div class="v31-side-bottom"><button type="button" id="v31-settings" title="Thème clair / sombre" aria-label="Thème clair / sombre">${icon(document.documentElement.dataset.theme==='dark'?'sun':'moon')}</button>
    <button type="button" id="v31-about" title="À propos" aria-label="À propos">${icon('info')}</button></div>`;
   document.body.prepend(bar);
