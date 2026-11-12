@@ -1,0 +1,5 @@
+Fichier: exemple_DDT_reconstitue.xsy
+SHA256: 3ad6c31623c40a9d780310e141fbc7180f194af93537ff2c41f3a11825731e46
+Principales: 3  | DDT: 4  | Champs développés: 7
+Avertissements: 0
+Rapport: /mnt/data/SOREP_DDT_integre/validation/ddt/resultats/rapport_lecture_xsy.json

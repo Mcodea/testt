@@ -1,0 +1,5 @@
+﻿adresse;symbole;commentaire;page;source
+%IW0.2;Pt_100;Sonde fictive;2;Tableau de variables imprimé : association à vérifier
+%IW0.2;Pt_100;Mesure entrante;5;Tableau de variables imprimé : association à vérifier
+%MW10;TEMP_C;Valeur calculee;5;Tableau de variables imprimé : association à vérifier
+%MW11;TEMP_X100;Mise a echelle;5;Tableau de variables imprimé : association à vérifier

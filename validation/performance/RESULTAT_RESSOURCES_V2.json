@@ -1,0 +1,24 @@
+{
+  "equipements": 300,
+  "variables": 5000,
+  "fichiers_topkapi": 70,
+  "seconds": {
+    "ouverture": 0.017829976000939496,
+    "generation": 0.02104895599950396,
+    "adressage": 0.38865588500084414,
+    "import_topkapi_70": 0.01203343599991058,
+    "exports": 0.28721575000054145,
+    "interface": 0.06009999999962747,
+    "filtrage": 0.08710000000149011
+  },
+  "limits_seconds": {
+    "ouverture": 2,
+    "generation": 3,
+    "adressage": 2,
+    "import_topkapi_70": 10,
+    "exports": 5,
+    "interface": 0.2,
+    "filtrage": 0.2
+  },
+  "failures": []
+}

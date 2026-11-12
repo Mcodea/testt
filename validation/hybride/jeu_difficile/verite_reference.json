@@ -1,0 +1,24 @@
+{
+ "description": "Second jeu difficile fictif : désignations obscures, sources ambiguës, fausses pistes; vérité de référence déclarée indépendamment des propositions.",
+ "liens": [
+    ["MV03", "TS_FER", "M002"],
+    ["MV03", "TS_OUV", "A_G11"],
+    ["MV03", "TS_DEF", "ALARME_V3_1"],
+    ["MV03", "TC_FER", "V3_CLOSE_CMD"],
+    ["MV03", "TC_OUV", "TC_93"],
+    ["PM01", "TS_MA", "RUN_P1"],
+    ["PM01", "TS_DEF", "X_302"],
+    ["PM01", "TC_MA", "CMD_P1_RUN"],
+    ["PM01", "CP_HF", "H_PUMP01"],
+    ["PM01", "TM_INT", "MEAS_P1_I"],
+    ["FT02", "TM_DEB", "FLO_R02"],
+    ["FT02", "TS_DEF", "MEM_302"],
+    ["FT02", "CP_VOL", "COUNTER_V2"],
+    ["PT01", "TM_PRE", "X_402"],
+    ["PT01", "TS_B", "ALM_PT01"],
+    ["LT01", "TM_NIV", "T_18"],
+    ["LT01", "TS_TH", "MEM_12"],
+    ["LT01", "TS_B", "L1_B"]
+ ],
+ "sans_variable": [["MV03", "TS_DISC"], ["PM01", "TS_DEFTH"], ["PT01", "TS_H"]]
+}

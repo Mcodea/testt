@@ -1,0 +1,22 @@
+[
+  {
+    "chaine": [
+      "%MW11",
+      "%MW10",
+      "%IW0.2"
+    ],
+    "preuves": [
+      {
+        "page": 3,
+        "expression": "%MW11:=%MW10*100",
+        "destination": "%MW11"
+      },
+      {
+        "page": 2,
+        "expression": "%MW10:=%IW0.2/10",
+        "destination": "%MW10"
+      }
+    ],
+    "fin": "aucune affectation directe retrouvée"
+  }
+]

@@ -1,0 +1,33 @@
+{
+  "statut": "Catalogue de départ à confirmer par l'automaticien (références, voies, emplacements CPU).",
+  "cartes": [
+    {"reference": "BMX DDI 6402K", "nature": "ET", "voies": 64, "description": "64 entrées TOR 24 V CC"},
+    {"reference": "BMX DDI 3202K", "nature": "ET", "voies": 32, "description": "32 entrées TOR 24 V CC"},
+    {"reference": "BMX DDI 1602",  "nature": "ET", "voies": 16, "description": "16 entrées TOR 24 V CC"},
+    {"reference": "BMX DDO 6402K", "nature": "ST", "voies": 64, "description": "64 sorties TOR transistor 24 V CC"},
+    {"reference": "BMX DDO 3202K", "nature": "ST", "voies": 32, "description": "32 sorties TOR transistor 24 V CC"},
+    {"reference": "BMX DDO 1602",  "nature": "ST", "voies": 16, "description": "16 sorties TOR transistor 24 V CC"},
+    {"reference": "BMX AMI 0810",  "nature": "EA", "voies": 8,  "description": "8 entrées analogiques"},
+    {"reference": "BMX AMI 0410",  "nature": "EA", "voies": 4,  "description": "4 entrées analogiques isolées"},
+    {"reference": "BMX AMO 0802",  "nature": "SA", "voies": 8,  "description": "8 sorties analogiques courant"},
+    {"reference": "BMX AMO 0410",  "nature": "SA", "voies": 4,  "description": "4 sorties analogiques isolées"},
+    {"reference": "BMX AMO 0210",  "nature": "SA", "voies": 2,  "description": "2 sorties analogiques isolées"}
+  ],
+  "profils": {
+    "64_8": {"libelle": "64 voies TOR · 8 voies analogiques",
+             "ET": "BMX DDI 6402K", "ST": "BMX DDO 6402K", "EA": "BMX AMI 0810", "SA": "BMX AMO 0802"},
+    "32_8": {"libelle": "32 voies TOR · 8 voies analogiques",
+             "ET": "BMX DDI 3202K", "ST": "BMX DDO 3202K", "EA": "BMX AMI 0810", "SA": "BMX AMO 0802"},
+    "16_4": {"libelle": "16 voies TOR · 4 voies analogiques",
+             "ET": "BMX DDI 1602", "ST": "BMX DDO 1602", "EA": "BMX AMI 0410", "SA": "BMX AMO 0410"}
+  },
+  "profil_defaut": "64_8",
+  "plateformes": {
+    "M340": {"racks": [{"reference": "BMX XBP 0400", "positions": 4}, {"reference": "BMX XBP 0600", "positions": 6},
+                        {"reference": "BMX XBP 0800", "positions": 8}, {"reference": "BMX XBP 1200", "positions": 12}],
+             "positions_cpu": [0]},
+    "M580": {"racks": [{"reference": "BME XBP 0400", "positions": 4}, {"reference": "BME XBP 0800", "positions": 8},
+                        {"reference": "BME XBP 1200", "positions": 12}],
+             "positions_cpu": [0, 1]}
+  }
+}

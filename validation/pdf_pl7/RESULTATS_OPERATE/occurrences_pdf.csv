@@ -1,0 +1,14 @@
+﻿adresse;page;contexte;rubrique;usage;section;symbole
+%MW10;2;%MW10:=%IW0.2/10;Programme (indice de rubrique);;MAST-PRL;
+%IW0.2;2;%MW10:=%IW0.2/10;Programme (indice de rubrique);;MAST-PRL;
+%IW0.2;2;%IW0.2;Programme (indice de rubrique);;MAST-PRL;
+%MW11;3;%MW11:=%MW10*100;Programme (indice de rubrique);;MAST-POST;
+%MW10;3;%MW11:=%MW10*100;Programme (indice de rubrique);;MAST-POST;
+%MW11;3;%MW11:=%MW10*100;Programme (indice de rubrique);;MAST-POST;
+%MW10;3;%MW11:=%MW10*100;Programme (indice de rubrique);;MAST-POST;
+%IW0.2;4;%IW0.2 MAST-PRL R;Références croisées (indice de rubrique);R;MAST-PRL;
+%MW10;4;%MW10 MAST-POST R;Références croisées (indice de rubrique);R;MAST-POST;
+%MW11;4;%MW11 MAST-POST W;Références croisées (indice de rubrique);W;MAST-POST;
+%IW0.2;5;%IW0.2 Pt_100 Mesure entrante;Variables (indice de rubrique);;;Pt_100
+%MW10;5;%MW10 TEMP_C Valeur calculee;Variables (indice de rubrique);;;TEMP_C
+%MW11;5;%MW11 TEMP_X100 Mise a echelle;Variables (indice de rubrique);;;TEMP_X100

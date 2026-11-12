@@ -1,0 +1,65 @@
+ID règle;Type;Libellé;Mode (historique);Logique automate (texte d origine, audit seulement, ne pas réimporter)
+MV-01;MV;Fin de course ouverte → TS ouverte;auto;"Recopie directe de l'entrée ; vérifier une éventuelle inversion (contact NF) ou temporisation."
+MV-02;MV;Fin de course fermée → TS fermée;auto;"Recopie directe de l'entrée ; vérifier une éventuelle inversion (contact NF) ou temporisation."
+MV-03;MV;Contact de défaut → TS défaut;auto;
+MV-04;MV;Sélecteur local → TS mode local;auto;
+MV-05;MV;Deux fins de course → discordance et position intermédiaire;proposition;Calculées dans l'automate. Discordance : les deux fins de course actives simultanément au-delà de T_DISC. Aucune fin de course active : manœuvre en cours si une commande est active, sinon position intermédiaire (TS_INT) après T_TRANSIT. Les défauts liés à un ordre (temps dépassé, commande sans effet) relèvent des règles MV-06 / MV-07, seulement si la vanne est commandée.
+MV-06;MV;Commande d'ouverture + retour ouvert → surveillance de manœuvre;proposition;En manœuvre : commande active et position finale non atteinte. Temps dépassé : commande active et fin de course non atteinte après T_MAN (paramétrable). Défaut de manœuvre : commande active et fin de course de départ toujours actif après T_DEPART. Temps mesuré : chronométrage commande → retour. Une sortie seule ne suffit pas : le retour de position est indispensable.
+MV-07;MV;Commande de fermeture + retour fermé → surveillance de manœuvre;proposition;Mêmes conditions que MV-06 dans le sens de la fermeture.
+MV-08;MV;Sortie de commande ouverture → TC ouverture;auto;Impulsion ou maintien de la sortie, interverrouillages et mode distance à programmer.
+MV-09;MV;Sortie de commande fermeture → TC fermeture;auto;Impulsion ou maintien de la sortie, interverrouillages et mode distance à programmer.
+MV-10;MV;Recopie de position → TM position;auto;
+MV-11;MV;Consigne analogique → TR position;auto;Limitation et mise à l'échelle de la consigne avant écriture sur la sortie.
+HV-01;HV;Fin de course ouverte → TS ouverte;auto;
+HV-02;HV;Fin de course fermée → TS fermée;auto;
+HV-03;HV;Deux fins de course → discordance et position intermédiaire;proposition;"Calculées dans l'automate, sans entrée supplémentaire. Discordance : les deux fins de course actives simultanément au-delà de T_DISC (paramétrable). Position intermédiaire : aucune fin de course active au-delà de T_TRANSIT ; à traiter en anomalie seulement si l'exploitation le décide. Vanne manuelle non commandée : aucun défaut de manœuvre ni temps de manœuvre (il n'existe pas d'ordre)."
+PM-01;PM;Retour de marche → TS en marche;auto;
+PM-02;PM;Relais thermique → TS défaut thermique;auto;Vérifier la logique du contact (souvent NF : défaut = entrée à 0).
+PM-03;PM;Sélecteur local → TS mode local;auto;
+PM-04;PM;Défaut variateur → TS défaut variateur;auto;
+PM-05;PM;Retour de marche → compteurs;auto;"Totalisation par l'automate à partir du retour de marche (heures, fronts montants) ; sauvegarde des compteurs à prévoir."
+PM-06;PM;Commande + retour de marche → discordance et défaut démarrage;proposition;Défaut démarrage : commande de marche active sans retour de marche après T_DEM (paramétrable). Discordance : retour de marche sans commande, ou commande sans retour, au-delà de T_DISC.
+PM-07;PM;Sortie de marche → TC marche;auto;Impulsion ou maintien, mode distance et interverrouillages à programmer.
+PM-08;PM;Sortie d'arrêt → TC arrêt;auto;
+PM-09;PM;Mesure d'intensité → TM intensité;auto;
+PM-10;PM;Intensité + marche → intensité anormale;proposition;Intensité hors seuils bas / haut pendant la marche, après la phase de démarrage (seuils à définir).
+PM-11;PM;Retour de fréquence → TM fréquence;auto;
+PM-12;PM;Consigne de fréquence → TR fréquence;auto;Limitation et mise à l'échelle de la consigne avant écriture sur la sortie.
+CU-01;CU;Mesure analogique → TM niveau;auto;
+CU-02;CU;Mesure analogique → seuils calculés;proposition;"Comparaison de la mesure à un seuil paramétrable, avec hystérésis et temporisation ; seuils à définir avec l'exploitant. Sans contact physique, ces TS sont CALCULÉES par l'automate."
+CU-03;CU;Mesure analogique → défaut de mesure;auto;Mesure hors plage (< 3,8 mA ou > 20,5 mA) ou défaut transmis par le capteur, temporisé.
+CU-04;CU;Mesure analogique → volume calculé;proposition;"Volume = f(niveau) selon la géométrie de la cuve (section constante ou table de barémage) : géométrie à fournir ; sans elle, ne pas générer."
+CU-05;CU;Contact très bas → TS très bas;auto;
+CU-06;CU;Contact bas → TS bas;auto;
+CU-07;CU;Contact haut → TS haut;auto;
+CU-08;CU;Contact très haut → TS très haut;auto;
+CU-09;CU;Détection trop-plein → TS trop-plein;auto;
+CU-10;CU;Mesure + contact haut → discordance;proposition;Contact haut actif alors que la mesure est sous le seuil haut (ou l'inverse) pendant T_DISC.
+CU-11;CU;Contacts bas + haut → incohérence;proposition;Contact haut actif et contact bas inactif : ordre physique impossible, défaut de contact démontré.
+LT-01;LT;Entrée analogique → TM niveau;auto;
+LT-02;LT;Entrée analogique → défaut capteur;auto;Mesure hors plage (< 3,8 mA ou > 20,5 mA) ou défaut transmis par le capteur, temporisé.
+PT-01;PT;Entrée analogique → TM pression;auto;
+PT-02;PT;Entrée analogique → défaut capteur;auto;Mesure hors plage (< 3,8 mA ou > 20,5 mA) ou défaut transmis par le capteur, temporisé.
+TT-01;TT;Entrée analogique → TM température;auto;
+TT-02;TT;Entrée analogique → défaut capteur;auto;Mesure hors plage (< 3,8 mA ou > 20,5 mA) ou défaut transmis par le capteur, temporisé.
+AT-01;AT;Entrée analogique → TM valeur;auto;
+AT-02;AT;Entrée analogique → défaut capteur;auto;Mesure hors plage (< 3,8 mA ou > 20,5 mA) ou défaut transmis par le capteur, temporisé.
+FT-01;FT;Entrée analogique → TM débit;auto;
+FT-02;FT;Entrée analogique → défaut capteur;auto;Mesure hors plage (< 3,8 mA ou > 20,5 mA) ou défaut transmis par le capteur, temporisé.
+FT-03;FT;Impulsions de comptage → CP volume;auto;"Comptage des impulsions (poids d'impulsion à paramétrer) ; sauvegarde du compteur à prévoir."
+FT-04;FT;Mesure de débit → volume par intégration;proposition;Intégration du débit par l'automate : précision limitée, à n'employer qu'en l'absence d'impulsions.
+FT-05;FT;Mesure + impulsions → absence d'impulsions;proposition;Débit mesuré supérieur au seuil sans impulsion reçue pendant T (défaut de comptage).
+GEN-01;*;Téléréglage → retour de téléréglage;auto;Recopie par l'automate de la consigne effectivement prise en compte, pour confirmer la réception côté supervision.
+FT-06;FT;Contact défaut câblé → TS défaut externe;auto;
+FT-07;FT;Contact sens câblé → TS sens;auto;
+EV-01;EV;Deux retours de position → discordance;proposition;Calculée dans l'automate à partir des deux retours de position : les deux actifs simultanément au-delà de T_DISC (paramétrable) = discordance. Aucun retour actif = position intermédiaire ou manœuvre en cours, pas une discordance.
+EV-02;EV;Ordre d'ouverture + retour ouvert → surveillance de manœuvre;proposition;Seulement si l'appareil est commandé : ordre actif et position demandée non atteinte après T_MAN (paramétrable). Sans ordre, aucun défaut de manœuvre n'est calculé.
+EV-03;EV;Ordre de fermeture + retour fermé → surveillance de manœuvre;proposition;Seulement si l'appareil est commandé : ordre actif et position demandée non atteinte après T_MAN (paramétrable). Sans ordre, aucun défaut de manœuvre n'est calculé.
+SV-01;SV;Deux retours de position → discordance;proposition;Calculée dans l'automate à partir des deux retours de position : les deux actifs simultanément au-delà de T_DISC (paramétrable) = discordance. Aucun retour actif = position intermédiaire ou manœuvre en cours, pas une discordance.
+SV-02;SV;Ordre d'ouverture + retour ouvert → surveillance de manœuvre;proposition;Seulement si l'appareil est commandé : ordre actif et position demandée non atteinte après T_MAN (paramétrable). Sans ordre, aucun défaut de manœuvre n'est calculé.
+SV-03;SV;Ordre de fermeture + retour fermé → surveillance de manœuvre;proposition;Seulement si l'appareil est commandé : ordre actif et position demandée non atteinte après T_MAN (paramétrable). Sans ordre, aucun défaut de manœuvre n'est calculé.
+XV-01;XV;Deux retours de position → discordance;proposition;Calculée dans l'automate à partir des deux retours de position : les deux actifs simultanément au-delà de T_DISC (paramétrable) = discordance. Aucun retour actif = position intermédiaire ou manœuvre en cours, pas une discordance.
+XV-02;XV;Ordre d'ouverture + retour ouvert → surveillance de manœuvre;proposition;Seulement si l'appareil est commandé : ordre actif et position demandée non atteinte après T_MAN (paramétrable). Sans ordre, aucun défaut de manœuvre n'est calculé.
+XV-03;XV;Ordre de fermeture + retour fermé → surveillance de manœuvre;proposition;Seulement si l'appareil est commandé : ordre actif et position demandée non atteinte après T_MAN (paramétrable). Sans ordre, aucun défaut de manœuvre n'est calculé.
+IV-01;IV;Deux positions de l'inverseur → discordance;proposition;Calculée dans l'automate : position normale et position secours actives simultanément, ou aucune des deux, au-delà d'une temporisation T_DISC (paramétrable).
+DA-01;DA;Mesure analogique → défaut capteur;auto;Mesure hors plage (< 3,8 mA ou > 20,5 mA) ou défaut transmis par le capteur, temporisé.

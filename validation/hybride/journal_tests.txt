@@ -1,0 +1,147 @@
+SOREP — vérification sur une copie fictive, sans communication automate
+Python : 3.13.5 ; Projet : /mnt/data/SOREP_travail_hybride
+
+======================================================================
+Tests du moteur (unittest)
+======================================================================
+test_a01_exacte_non_confirmee_interdite (test_audit_correctifs.AuditCorrectifs.test_a01_exacte_non_confirmee_interdite) ... ok
+test_a02_conflit_import_atomique (test_audit_correctifs.AuditCorrectifs.test_a02_conflit_import_atomique) ... ok
+test_a03_type_absent_ne_devient_pas_vert (test_audit_correctifs.AuditCorrectifs.test_a03_type_absent_ne_devient_pas_vert) ... ok
+test_adresse_absente_et_type_absent_reste_en_attente (test_audit_correctifs.AuditCorrectifs.test_adresse_absente_et_type_absent_reste_en_attente) ... ok
+test_identiques_dedoubles_trace (test_audit_correctifs.AuditCorrectifs.test_identiques_dedoubles_trace) ... ok
+test_nom_invalide_non_ignore (test_audit_correctifs.AuditCorrectifs.test_nom_invalide_non_ignore) ... ok
+test_valide_apres_confirmation_avec_type (test_audit_correctifs.AuditCorrectifs.test_valide_apres_confirmation_avec_type) ... ok
+test_aller_retour (test_coeur.TestCatalogueExcel.test_aller_retour) ... ok
+test_adresses_stables (test_coeur.TestCoeur.test_adresses_stables) ... ok
+test_boutons_locaux (test_coeur.TestCoeur.test_boutons_locaux) ... ok
+test_catalogue_sans_anomalie (test_coeur.TestCoeur.test_catalogue_sans_anomalie) ... ok
+test_controles (test_coeur.TestCoeur.test_controles) ... ok
+test_exclusion_et_ajout (test_coeur.TestCoeur.test_exclusion_et_ajout) ... ok
+test_fichier_ouvrage (test_coeur.TestCoeur.test_fichier_ouvrage) ... ok
+test_nom_trop_long (test_coeur.TestCoeur.test_nom_trop_long) ... ok
+test_noms (test_coeur.TestCoeur.test_noms) ... ok
+test_sens_fonctionnel (test_coeur.TestCoeur.test_sens_fonctionnel) ... ok
+test_xlsx (test_coeur.TestCoeur.test_xlsx) ... ok
+test_xsy (test_coeur.TestCoeur.test_xsy) ... ok
+test_controle_adresses (test_coeur.TestExistant.test_controle_adresses) ... ok
+test_doublon_en_erreur (test_coeur.TestExistant.test_doublon_en_erreur) ... ok
+test_ecarts_et_non_applicable (test_coeur.TestExistant.test_ecarts_et_non_applicable) ... ok
+test_export_et_fichier (test_coeur.TestExistant.test_export_et_fichier) ... ok
+test_import_et_identification (test_coeur.TestExistant.test_import_et_identification) ... ok
+test_manuel_conserve (test_coeur.TestExistant.test_manuel_conserve) ... ok
+test_noms_et_adresses_intacts (test_coeur.TestExistant.test_noms_et_adresses_intacts) ... ok
+test_ajout_sans_decalage_et_trou_reutilise (test_coeur.TestPlanMemoire.test_ajout_sans_decalage_et_trou_reutilise) ... ok
+test_chevauchement_bit_et_mot (test_coeur.TestPlanMemoire.test_chevauchement_bit_et_mot) ... ok
+test_modbus_et_ancien_fichier (test_coeur.TestPlanMemoire.test_modbus_et_ancien_fichier) ... ok
+test_plage_pleine_sans_hors_zone (test_coeur.TestPlanMemoire.test_plage_pleine_sans_hors_zone) ... ok
+test_simulation_sans_modification (test_coeur.TestPlanMemoire.test_simulation_sans_modification) ... ok
+test_tr_rtr_en_miroir (test_coeur.TestPlanMemoire.test_tr_rtr_en_miroir) ... ok
+test_analogique_int_vers_real_refuse_en_correspondance (test_controle_consolide.ControleConsolide.test_analogique_int_vers_real_refuse_en_correspondance) ... ok
+test_bool_et_ebool_sont_compatibles (test_controle_consolide.ControleConsolide.test_bool_et_ebool_sont_compatibles) ... ok
+test_changement_champ_invalide_statut (test_controle_consolide.ControleConsolide.test_changement_champ_invalide_statut) ... ok
+test_changer_mode_apres_adressage_refuse_et_ne_change_rien (test_controle_consolide.ControleConsolide.test_changer_mode_apres_adressage_refuse_et_ne_change_rien) ... ok
+test_choix_explicite_statut_valide_reste_possible (test_controle_consolide.ControleConsolide.test_choix_explicite_statut_valide_reste_possible) ... ok
+test_colonnes_source_conflit_mapping_refuse (test_controle_consolide.ControleConsolide.test_colonnes_source_conflit_mapping_refuse) ... ok
+test_lignes_non_mappees_non_ignorees (test_controle_consolide.ControleConsolide.test_lignes_non_mappees_non_ignorees) ... ok
+test_nouveau_signal_dans_projet_valide_declasse (test_controle_consolide.ControleConsolide.test_nouveau_signal_dans_projet_valide_declasse) ... ok
+test_opc_non_localise_n_est_pas_certifie_par_correspondance (test_controle_consolide.ControleConsolide.test_opc_non_localise_n_est_pas_certifie_par_correspondance) ... ok
+test_reimport_absentes_non_supprimees (test_controle_consolide.ControleConsolide.test_reimport_absentes_non_supprimees) ... ok
+test_reimport_commentaire_annule_validation_et_statut (test_controle_consolide.ControleConsolide.test_reimport_commentaire_annule_validation_et_statut) ... ok
+test_reimport_identique_ne_devalide_pas (test_controle_consolide.ControleConsolide.test_reimport_identique_ne_devalide_pas) ... ok
+test_scy_en_tete_avec_adresse_invalide_ne_passe_pas (test_controle_consolide.ControleConsolide.test_scy_en_tete_avec_adresse_invalide_ne_passe_pas) ... ok
+test_scy_sans_en_tete_ligne_non_lue_bloque (test_controle_consolide.ControleConsolide.test_scy_sans_en_tete_ligne_non_lue_bloque) ... ok
+test_miroir_deja_incoherent_bloque_plan (test_controle_consolide.ControleMiroirTRRTR.test_miroir_deja_incoherent_bloque_plan) ... ok
+test_miroir_manuel_incoherent_refuse (test_controle_consolide.ControleMiroirTRRTR.test_miroir_manuel_incoherent_refuse) ... ok
+test_miroir_tr_rtr_genere (test_controle_consolide.ControleMiroirTRRTR.test_miroir_tr_rtr_genere) ... ok
+test_adresse_reelle_pair_et_miroir_rtr (test_fiabilisation_v06.TestAdressageSecurise.test_adresse_reelle_pair_et_miroir_rtr) ... ok
+test_bit_hors_plage_rejete_et_aucun_changement (test_fiabilisation_v06.TestAdressageSecurise.test_bit_hors_plage_rejete_et_aucun_changement) ... ok
+test_collision_refusee_et_transaction_atomique (test_fiabilisation_v06.TestAdressageSecurise.test_collision_refusee_et_transaction_atomique) ... ok
+test_projet_existant_non_redit_editable (test_fiabilisation_v06.TestAdressageSecurise.test_projet_existant_non_redit_editable) ... ok
+test_refus_plan_partiel_sans_effacer_adresse (test_fiabilisation_v06.TestAdressageSecurise.test_refus_plan_partiel_sans_effacer_adresse) ... ok
+test_accueil_liste_archivage_sans_suppression (test_fiabilisation_v06.TestRegistreProjets.test_accueil_liste_archivage_sans_suppression) ... ok
+test_duplication_identite_independante (test_fiabilisation_v06.TestRegistreProjets.test_duplication_identite_independante) ... ok
+test_fichier_illisible_sans_faire_disparaitre_les_autres (test_fiabilisation_v06.TestRegistreProjets.test_fichier_illisible_sans_faire_disparaitre_les_autres) ... ok
+test_import_anciens_projets_sans_doublon (test_fiabilisation_v06.TestRegistreProjets.test_import_anciens_projets_sans_doublon) ... ok
+test_csv_garder_adresse_et_commentaire (test_import_sources_v07.ImportSourcesTests.test_csv_garder_adresse_et_commentaire) ... ok
+test_doublon_contradictoire_bloque (test_import_sources_v07.ImportSourcesTests.test_doublon_contradictoire_bloque) ... ok
+test_reimport_preserve_confirmation (test_import_sources_v07.ImportSourcesTests.test_reimport_preserve_confirmation) ... ok
+test_scy_inconnu_refuse (test_import_sources_v07.ImportSourcesTests.test_scy_inconnu_refuse) ... ok
+test_scy_sans_entete (test_import_sources_v07.ImportSourcesTests.test_scy_sans_entete) ... ok
+test_scy_textuel_pl7 (test_import_sources_v07.ImportSourcesTests.test_scy_textuel_pl7) ... ok
+test_xlsx (test_import_sources_v07.ImportSourcesTests.test_xlsx) ... ok
+test_chevauchement_plages_refuse (test_plan_v08.TestPlanV08.test_chevauchement_plages_refuse) ... ok
+test_collision_existante_bloque_toute_attribution (test_plan_v08.TestPlanV08.test_collision_existante_bloque_toute_attribution) ... ok
+test_mauvaise_adresse_existante_bloque (test_plan_v08.TestPlanV08.test_mauvaise_adresse_existante_bloque) ... ok
+test_doublon_rouge_meme_si_confirme (test_qualification_v08.TestQualification.test_doublon_rouge_meme_si_confirme) ... ok
+test_exacte_reste_orange_avant_validation (test_qualification_v08.TestQualification.test_exacte_reste_orange_avant_validation) ... ok
+test_hors_supervision_ne_devient_pas_rouge (test_qualification_v08.TestQualification.test_hors_supervision_ne_devient_pas_rouge) ... ok
+test_reimport_changement_adresse_demande_validation (test_qualification_v08.TestQualification.test_reimport_changement_adresse_demande_validation) ... ok
+test_txs_sans_faux_controle_alignement_m580 (test_qualification_v08.TestQualification.test_txs_sans_faux_controle_alignement_m580) ... ok
+test_type_incompatible_rouge (test_qualification_v08.TestQualification.test_type_incompatible_rouge) ... ok
+test_benchmarks_deux_scenarios (test_rapprochement_hybride.RapprochementHybride.test_benchmarks_deux_scenarios) ... ok
+test_doublon_de_signal_refuse (test_rapprochement_hybride.RapprochementHybride.test_doublon_de_signal_refuse) ... ok
+test_es_physique_associee_manuellement_ne_devient_pas_verte_sans_verification (test_rapprochement_hybride.RapprochementHybride.test_es_physique_associee_manuellement_ne_devient_pas_verte_sans_verification) ... ok
+test_es_physique_n_est_pas_proposee_comme_ts (test_rapprochement_hybride.RapprochementHybride.test_es_physique_n_est_pas_proposee_comme_ts) ... ok
+test_import_es_n_accepte_pas_les_doublons (test_rapprochement_hybride.RapprochementHybride.test_import_es_n_accepte_pas_les_doublons) ... ok
+test_import_es_rejette_les_colonnes_insuffisantes (test_rapprochement_hybride.RapprochementHybride.test_import_es_rejette_les_colonnes_insuffisantes) ... ok
+test_liste_es_est_enregistree_et_relue (test_rapprochement_hybride.RapprochementHybride.test_liste_es_est_enregistree_et_relue) ... ok
+test_propositions_n_modifient_jamais_le_referentiel (test_rapprochement_hybride.RapprochementHybride.test_propositions_n_modifient_jamais_le_referentiel) ... ok
+test_sans_type_les_propositions_sont_refusees (test_rapprochement_hybride.RapprochementHybride.test_sans_type_les_propositions_sont_refusees) ... ok
+test_source_es_renforce_sans_creation_de_variable (test_rapprochement_hybride.RapprochementHybride.test_source_es_renforce_sans_creation_de_variable) ... ok
+test_source_et_adresse_conservees_a_confirmation (test_rapprochement_hybride.RapprochementHybride.test_source_et_adresse_conservees_a_confirmation) ... ok
+test_type_incompatible_refuse_meme_selection_manuel (test_rapprochement_hybride.RapprochementHybride.test_type_incompatible_refuse_meme_selection_manuel) ... ok
+test_anomalies_par_variable (test_session.TestSession.test_anomalies_par_variable) ... ok
+test_basculer_et_option (test_session.TestSession.test_basculer_et_option) ... ok
+test_equipements (test_session.TestSession.test_equipements) ... ok
+test_identification_en_majuscules (test_session.TestSession.test_identification_en_majuscules) ... ok
+test_plan_et_export (test_session.TestSession.test_plan_et_export) ... ok
+test_signal_propre_et_sens (test_session.TestSession.test_signal_propre_et_sens) ... ok
+test_sous_ensembles (test_session.TestSession.test_sous_ensembles) ... ok
+
+----------------------------------------------------------------------
+Ran 93 tests in 1.066s
+
+OK
+[OK] Tests du moteur (unittest)
+
+======================================================================
+Parcours fonctionnels fictifs (neuf et existant)
+======================================================================
+[RÉUSSI] Neuf : génération + plan mémoire + contrôle (0.002s) : 38 variables, 13 E/S, TR/RTR cohérents
+[RÉUSSI] Neuf : enregistrer / rouvrir (0.017s) : sauvegarde, réouverture, catalogue figé, sauvegarde .bak
+[RÉUSSI] Neuf : exports XSY et Excel analysables (0.012s) : 38 variables XSY XML, Excel lisible
+[RÉUSSI] Neuf : ajout équipement sans décaler (0.001s) : 15 variables ajoutées, 38 adresses préservées
+[RÉUSSI] Neuf : collision bloquée et données conservées (0.001s) : collision refusée sans altération
+[RÉUSSI] Existant : CSV → correspondances (0.002s) : 2 variables reprises, adresses préservées, non validées automatiquement
+[RÉUSSI] Existant : validation métier bloquante (0.000s) : statut « Validé » refusé tant que les correspondances sont orange
+[RÉUSSI] Existant : réimport adresse modifiée (0.000s) : écart détecté, adresse source actualisée et confirmation révoquée
+[RÉUSSI] Existant : export correspondances Excel (0.004s) : table de correspondance Excel générée
+[RÉUSSI] Existant : import contradictoire atomique (0.000s) : import contradictoire refusé sans modification
+[RÉUSSI] Charge fictive : plusieurs centaines de variables (0.145s) : 120 équipements, 1520 variables, 520 E/S, aucun conflit mémoire
+BILAN : 11/11 parcours réussis
+[OK] Parcours fonctionnels fictifs (neuf et existant)
+
+======================================================================
+Comparaison reproductible des stratégies d’identification
+======================================================================
+# Comparaison de trois stratégies de rapprochement — ouvrage fictif
+
+**Méthode d'évaluation :** vérité de référence enregistrée dans les fichiers `verite_reference.json` ; pour chaque signal présent, seule la première proposition est comparée au nom source attendu.
+
+
+## Bilan agrégé (sur les deux jeux fictifs)
+
+| Méthode | Bonnes / liens réels | Taux de réussite | Précision | F1 | Faux sur signaux absents |
+|---|---:|---:|---:|---:|---:|
+| Programme seul | 5/36 | 13.9% | 100.0% | 24.4% | 0/6 |
+| Catalogue → programme | 25/36 | 69.4% | 96.2% | 80.6% | 2/6 |
+| Méthode hybride | 30/36 | 83.3% | 96.8% | 89.6% | 2/6 |
+
+## Interprétation et limites
+
+- Les méthodes sont comparées sur **les mêmes variables sources, le même catalogue et les mêmes signaux attendus**. Seule la méthode hybride utilise en plus la liste documentaire d'E/S.
+Rapport : /mnt/data/SOREP_travail_hybride/validation/hybride/rapport_comparaison.md
+[OK] Comparaison reproductible des stratégies d’identification
+
+[NON TESTÉ] Interface PySide6 absente : les tests Qt NE SONT PAS validés.
+Installation Windows : py -m pip install -r requirements-qt.txt

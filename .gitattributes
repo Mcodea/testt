@@ -1,0 +1,6 @@
+# Références fournies : octets conservés à l'identique, y compris sous Windows.
+docs/CAHIER_DES_CHARGES_V1.md -text
+# Ressources tierces embarquées : empreintes SHA-256 du manifeste, octets identiques sous Windows.
+sorep_web/static/assets/fonts/** -text
+sorep_web/static/assets/lucide/** -text
+sorep_web/static/assets/tiers/** -text

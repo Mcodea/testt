@@ -1,0 +1,411 @@
+{
+ "statut": "Catalogue Advantys STB établi le 12/11/2026 à partir des guides de référence Schneider Electric 31002947 (E/S TOR) et 31002948 (E/S analogiques) et de la fiche STBNIP2212 ; gamme commercialisée avec annonce de fin de vie (fin de fabrication 01/12/2027, remplacement Edge I/O NTS). Courants : plage 0 à 60 °C.",
+ "sources": [
+  "https://download.se.com/files?p_Doc_Ref=31002947K01000&p_File_Name=31002947K01000.pdf&p_enDocType=User+guide",
+  "https://download.se.com/files?p_Doc_Ref=31002948K01000",
+  "https://www.se.com/fr/fr/product/STBNIP2212/",
+  "https://bpx.ie/dbdocument/105659/STBNIP2212.pdf",
+  "https://www.mroelectric.com/static/app/product/pdfs/31003688_K01_000_11.pdf"
+ ],
+ "nim": {
+  "reference": "STB NIP 2212",
+  "description": "Interface réseau Ethernet Modbus TCP/IP 10 Mbit/s",
+  "courant_bus_ma": 1200,
+  "modules_max": 32,
+  "segments_extension_max": 6,
+  "source": "https://www.se.com/fr/fr/product/STBNIP2212/"
+ },
+ "pdm": {
+  "reference": "STB PDT 3100",
+  "description": "Distribution d'alimentation 24 V CC, standard",
+  "embase": "STB XBA 2200",
+  "source": "https://download.se.com/files?p_Doc_Ref=31002947K01000&p_File_Name=31002947K01000.pdf&p_enDocType=User+guide"
+ },
+ "terminaison": {
+  "reference": "STB XMP 1100",
+  "description": "Plaque de terminaison du bus d'îlot (120 Ω)",
+  "source": "https://download.se.com/files?p_Doc_Ref=31002947K01000&p_File_Name=31002947K01000.pdf&p_enDocType=User+guide"
+ },
+ "extension": {
+  "eos": "STB XBE 1000",
+  "bos": "STB XBE 1200",
+  "embase_bos": "STB XBA 2300",
+  "embase_eos": "STB XBA 2400",
+  "remarque": "Courant logique fourni par le module BOS à confirmer sur sa fiche.",
+  "source": "https://download.se.com/files?p_Doc_Ref=31002947K01000&p_File_Name=31002947K01000.pdf&p_enDocType=User+guide"
+ },
+ "profils": {
+  "standard": {
+   "libelle": "16 voies TOR 24 V CC · 8 entrées / 2 sorties 4-20 mA",
+   "ET": "STB DDI 3725",
+   "ST": "STB DDO 3705",
+   "EA": "STB ACI 1400",
+   "SA": "STB ACO 0220"
+  }
+ },
+ "profil_defaut": "standard",
+ "cartes": [
+  {
+   "reference": "STB DDI 3725",
+   "nature": "ET",
+   "voies": 16,
+   "description": "16 entrées TOR 24 V CC, 2 fils, de base",
+   "embase": "STB XBA 3000",
+   "courant_bus_ma": 100,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002947K01000&p_File_Name=31002947K01000.pdf&p_enDocType=User+guide",
+   "image_es": {
+    "registres_sortie": 0,
+    "registres_entree": 1,
+    "type": "TOR_E",
+    "source": "Capture Advantys de l'utilisateur, onglet Image d'E/S (12/11/2026)"
+   }
+  },
+  {
+   "reference": "STB DDI 3610",
+   "nature": "ET",
+   "voies": 6,
+   "description": "6 entrées TOR 24 V CC, 2 fils, standard",
+   "embase": "STB XBA 1000",
+   "courant_bus_ma": 55,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002947K01000&p_File_Name=31002947K01000.pdf&p_enDocType=User+guide",
+   "image_es": {
+    "registres_sortie": 0,
+    "registres_entree": 2,
+    "source": "https://www.mroelectric.com/static/app/product/pdfs/31003688_K01_000_11.pdf",
+    "type": "TOR_E"
+   }
+  },
+  {
+   "reference": "STB DDI 3615",
+   "nature": "ET",
+   "voies": 6,
+   "description": "6 entrées TOR 24 V CC, 2 fils, de base",
+   "embase": "STB XBA 1000",
+   "courant_bus_ma": 45,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002947K01000&p_File_Name=31002947K01000.pdf&p_enDocType=User+guide"
+  },
+  {
+   "reference": "STB DDI 3425",
+   "nature": "ET",
+   "voies": 4,
+   "description": "4 entrées TOR 24 V CC, 3 fils, de base",
+   "embase": "STB XBA 1000",
+   "courant_bus_ma": 45,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002947K01000&p_File_Name=31002947K01000.pdf&p_enDocType=User+guide"
+  },
+  {
+   "reference": "STB DDI 3420",
+   "nature": "ET",
+   "voies": 2,
+   "description": "2 entrées TOR 24 V CC, 3 fils, standard",
+   "embase": "STB XBA 1000",
+   "courant_bus_ma": 45,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002947K01000&p_File_Name=31002947K01000.pdf&p_enDocType=User+guide",
+   "image_es": {
+    "registres_sortie": 0,
+    "registres_entree": 2,
+    "source": "https://www.mroelectric.com/static/app/product/pdfs/31003688_K01_000_11.pdf",
+    "type": "TOR_E"
+   }
+  },
+  {
+   "reference": "STB DDI 3230",
+   "nature": "ET",
+   "voies": 2,
+   "description": "2 entrées TOR 24 V CC, 4 fils, standard",
+   "embase": "STB XBA 1000",
+   "courant_bus_ma": 55,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002947K01000&p_File_Name=31002947K01000.pdf&p_enDocType=User+guide",
+   "image_es": {
+    "registres_sortie": 0,
+    "registres_entree": 2,
+    "source": "https://www.mroelectric.com/static/app/product/pdfs/31003688_K01_000_11.pdf",
+    "type": "TOR_E"
+   }
+  },
+  {
+   "reference": "STB DDO 3705",
+   "nature": "ST",
+   "voies": 16,
+   "description": "16 sorties TOR 24 V CC 0,5 A, de base",
+   "embase": "STB XBA 3000",
+   "courant_bus_ma": 135,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002947K01000&p_File_Name=31002947K01000.pdf&p_enDocType=User+guide",
+   "image_es": {
+    "registres_sortie": 1,
+    "registres_entree": 0,
+    "type": "TOR_S",
+    "source": "Capture Advantys de l'utilisateur, onglet Image d'E/S (12/11/2026)"
+   }
+  },
+  {
+   "reference": "STB DDO 3600",
+   "nature": "ST",
+   "voies": 6,
+   "description": "6 sorties TOR 24 V CC 0,5 A, standard",
+   "embase": "STB XBA 1000",
+   "courant_bus_ma": 90,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002947K01000&p_File_Name=31002947K01000.pdf&p_enDocType=User+guide",
+   "image_es": {
+    "registres_sortie": 1,
+    "registres_entree": 2,
+    "source": "https://www.mroelectric.com/static/app/product/pdfs/31003688_K01_000_11.pdf",
+    "type": "TOR_S"
+   }
+  },
+  {
+   "reference": "STB DDO 3605",
+   "nature": "ST",
+   "voies": 6,
+   "description": "6 sorties TOR 24 V CC 0,25 A, de base",
+   "embase": "STB XBA 1000",
+   "courant_bus_ma": 90,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002947K01000&p_File_Name=31002947K01000.pdf&p_enDocType=User+guide"
+  },
+  {
+   "reference": "STB DDO 3410",
+   "nature": "ST",
+   "voies": 4,
+   "description": "4 sorties TOR 24 V CC 0,5 A, standard",
+   "embase": "STB XBA 1000",
+   "courant_bus_ma": 70,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002947K01000&p_File_Name=31002947K01000.pdf&p_enDocType=User+guide",
+   "image_es": {
+    "registres_sortie": 1,
+    "registres_entree": 2,
+    "source": "https://www.mroelectric.com/static/app/product/pdfs/31003688_K01_000_11.pdf",
+    "type": "TOR_S"
+   }
+  },
+  {
+   "reference": "STB DDO 3415",
+   "nature": "ST",
+   "voies": 4,
+   "description": "4 sorties TOR 24 V CC 0,25 A, de base",
+   "embase": "STB XBA 1000",
+   "courant_bus_ma": 70,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002947K01000&p_File_Name=31002947K01000.pdf&p_enDocType=User+guide"
+  },
+  {
+   "reference": "STB DDO 3200",
+   "nature": "ST",
+   "voies": 2,
+   "description": "2 sorties TOR 24 V CC 0,5 A, standard",
+   "embase": "STB XBA 1000",
+   "courant_bus_ma": 50,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002947K01000&p_File_Name=31002947K01000.pdf&p_enDocType=User+guide",
+   "image_es": {
+    "registres_sortie": 1,
+    "registres_entree": 2,
+    "source": "https://www.mroelectric.com/static/app/product/pdfs/31003688_K01_000_11.pdf",
+    "type": "TOR_S"
+   }
+  },
+  {
+   "reference": "STB DDO 3230",
+   "nature": "ST",
+   "voies": 2,
+   "description": "2 sorties TOR 24 V CC 0,2 A, standard",
+   "embase": "STB XBA 1000",
+   "courant_bus_ma": 45,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002947K01000&p_File_Name=31002947K01000.pdf&p_enDocType=User+guide"
+  },
+  {
+   "reference": "STB DRA 3290",
+   "nature": "ST",
+   "voies": 2,
+   "description": "2 sorties relais 7 A, standard",
+   "embase": "STB XBA 3000",
+   "courant_bus_ma": 55,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002947K01000&p_File_Name=31002947K01000.pdf&p_enDocType=User+guide"
+  },
+  {
+   "reference": "STB DRC 3210",
+   "nature": "ST",
+   "voies": 2,
+   "description": "2 sorties relais 2 A, standard",
+   "embase": "STB XBA 2000",
+   "courant_bus_ma": 55,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002947K01000&p_File_Name=31002947K01000.pdf&p_enDocType=User+guide"
+  },
+  {
+   "reference": "STB ACI 1400",
+   "nature": "EA",
+   "voies": 8,
+   "description": "8 entrées 4-20 mA, 16 bits, standard",
+   "embase": "STB XBA 2000",
+   "courant_bus_ma": 90,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002948K01000",
+   "image_es": {
+    "registres_sortie": 0,
+    "registres_entree": 16,
+    "type": "ANA_E",
+    "source": "Capture Advantys de l'utilisateur, onglet Image d'E/S (12/11/2026)"
+   }
+  },
+  {
+   "reference": "STB ACI 0320",
+   "nature": "EA",
+   "voies": 4,
+   "description": "4 entrées 4-20 mA, 16 bits, standard",
+   "embase": "STB XBA 2000",
+   "courant_bus_ma": 95,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002948K01000"
+  },
+  {
+   "reference": "STB ACI 8320",
+   "nature": "EA",
+   "voies": 4,
+   "description": "4 entrées 4-20 mA compatibles HART, 16 bits",
+   "embase": "STB XBA 2000",
+   "courant_bus_ma": 95,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002948K01000"
+  },
+  {
+   "reference": "STB ACI 1230",
+   "nature": "EA",
+   "voies": 2,
+   "description": "2 entrées 0-20 mA, 12 bits, standard",
+   "embase": "STB XBA 1000",
+   "courant_bus_ma": 30,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002948K01000"
+  },
+  {
+   "reference": "STB ACI 1225",
+   "nature": "EA",
+   "voies": 2,
+   "description": "2 entrées 4-20 mA, 10 bits, de base",
+   "embase": "STB XBA 1000",
+   "courant_bus_ma": 30,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002948K01000"
+  },
+  {
+   "reference": "STB AVI 1400",
+   "nature": "EA",
+   "voies": 8,
+   "description": "8 entrées tension, 16 bits, standard",
+   "embase": "STB XBA 2000",
+   "courant_bus_ma": 90,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002948K01000"
+  },
+  {
+   "reference": "STB AVI 0300",
+   "nature": "EA",
+   "voies": 4,
+   "description": "4 entrées tension, 16 bits, standard",
+   "embase": "STB XBA 2000",
+   "courant_bus_ma": 90,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002948K01000"
+  },
+  {
+   "reference": "STB AVI 1270",
+   "nature": "EA",
+   "voies": 2,
+   "description": "2 entrées ±10 V, 11 bits + signe, standard",
+   "embase": "STB XBA 1000",
+   "courant_bus_ma": 30,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002948K01000",
+   "image_es": {
+    "registres_sortie": 0,
+    "registres_entree": 4,
+    "source": "https://www.mroelectric.com/static/app/product/pdfs/31003688_K01_000_11.pdf",
+    "type": "ANA_E"
+   }
+  },
+  {
+   "reference": "STB AVI 1255",
+   "nature": "EA",
+   "voies": 2,
+   "description": "2 entrées 0-10 V, 10 bits, de base",
+   "embase": "STB XBA 1000",
+   "courant_bus_ma": 30,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002948K01000"
+  },
+  {
+   "reference": "STB ART 0200",
+   "nature": "EA",
+   "voies": 2,
+   "description": "2 entrées RTD / thermocouple / mV, standard",
+   "embase": "STB XBA 1000",
+   "courant_bus_ma": 30,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002948K01000"
+  },
+  {
+   "reference": "STB ACO 0220",
+   "nature": "SA",
+   "voies": 2,
+   "description": "2 sorties 4-20 mA, 16 bits, standard",
+   "embase": "STB XBA 2000",
+   "courant_bus_ma": 210,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002948K01000",
+   "image_es": {
+    "registres_sortie": 2,
+    "registres_entree": 2,
+    "type": "ANA_S",
+    "source": "Capture Advantys de l'utilisateur, onglet Image d'E/S (12/11/2026)"
+   }
+  },
+  {
+   "reference": "STB ACO 0120",
+   "nature": "SA",
+   "voies": 1,
+   "description": "1 sortie 4-20 mA, 16 bits, standard",
+   "embase": "STB XBA 2000",
+   "courant_bus_ma": 155,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002948K01000"
+  },
+  {
+   "reference": "STB ACO 1225",
+   "nature": "SA",
+   "voies": 2,
+   "description": "2 sorties 4-20 mA, 10 bits, de base",
+   "embase": "STB XBA 1000",
+   "courant_bus_ma": 40,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002948K01000"
+  },
+  {
+   "reference": "STB ACO 1210",
+   "nature": "SA",
+   "voies": 2,
+   "description": "2 sorties 0-20 mA, 12 bits, standard",
+   "embase": "STB XBA 1000",
+   "courant_bus_ma": 40,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002948K01000"
+  },
+  {
+   "reference": "STB AVO 1250",
+   "nature": "SA",
+   "voies": 2,
+   "description": "2 sorties ±10 V, 11 bits + signe, standard",
+   "embase": "STB XBA 1000",
+   "courant_bus_ma": 45,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002948K01000",
+   "image_es": {
+    "registres_sortie": 2,
+    "registres_entree": 2,
+    "source": "https://www.mroelectric.com/static/app/product/pdfs/31003688_K01_000_11.pdf",
+    "type": "ANA_S"
+   }
+  },
+  {
+   "reference": "STB AVO 0200",
+   "nature": "SA",
+   "voies": 2,
+   "description": "2 sorties tension, 16 bits, standard",
+   "embase": "STB XBA 2000",
+   "courant_bus_ma": 265,
+   "source": "https://download.se.com/files?p_Doc_Ref=31002948K01000"
+  }
+ ],
+ "image_es": {
+  "debut_sortie": 40001,
+  "debut_entree": 45392,
+  "source": "https://www.mroelectric.com/static/app/product/pdfs/31003688_K01_000_11.pdf",
+  "regle": "Registres dans l'ordre des nœuds de l'îlot ; le NIM, le PDM et la terminaison n'en occupent pas. Le nombre de registres dépend du module (les modules « de base » n'ont ni état ni écho) : il est donné module par module (image_es). TOR : toutes les voies dans un registre ; entrée analogique : donnée puis état par voie ; sortie analogique : un registre de sortie par voie, un état par voie en entrée.",
+  "a_confirmer": "Rang du bit de chaque voie TOR dans son registre (le guide ne le précise pas).",
+  "sources": [
+   "https://www.mroelectric.com/static/app/product/pdfs/31003688_K01_000_11.pdf",
+   "Capture Advantys de l'utilisateur, onglet Image d'E/S (12/11/2026)"
+  ]
+ }
+}

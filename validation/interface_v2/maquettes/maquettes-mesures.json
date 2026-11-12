@@ -1,0 +1,36 @@
+{
+  "#/dashboard": {
+    "navigation": {
+      "x": 0,
+      "y": 0,
+      "width": 80,
+      "height": 1080
+    },
+    "contenu": {
+      "x": 110,
+      "y": 129,
+      "width": 1780,
+      "height": 925
+    }
+  },
+  "#/variables": {
+    "navigation": {
+      "x": 0,
+      "y": 0,
+      "width": 80,
+      "height": 1080
+    },
+    "contenu": {
+      "x": 110,
+      "y": 129,
+      "width": 1780,
+      "height": 925
+    }
+  },
+  "detail": {
+    "x": 1550,
+    "y": 129,
+    "width": 350,
+    "height": 925
+  }
+}

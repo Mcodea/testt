@@ -1,0 +1,14 @@
+﻿adresse;page;contexte;rubrique;usage;section;symbole
+%I0.3.2;2;LD  %I0.3.2;Programme (indice de rubrique);;;
+%M120;2;ST  %M120;Programme (indice de rubrique);;;
+%M120;2;LD  %M120;Programme (indice de rubrique);;;
+%MW1200:X3;2;ST  %MW1200:X3;Programme (indice de rubrique);;;
+%I0.3.2;3;%I0.3.2          FC_V3_FER           MAST-PRL         R;Références croisées (indice de rubrique);R;MAST-PRL;FC_V3_FER
+%M120;3;%M120            V3_FER              MAST-POST        W;Références croisées (indice de rubrique);W;MAST-POST;V3_FER
+%MW1200:X3;3;%MW1200:X3       TS_V3_FER           MAST-POST        W;Références croisées (indice de rubrique);W;MAST-POST;TS_V3_FER
+%I0.3.2;4;%I0.3.2          FC_V3_FER         Fin de course ferme;Variables (indice de rubrique);;;FC_V3_FER
+%M120;4;%M120            V3_FER            Etat interieur;Variables (indice de rubrique);;;V3_FER
+%MW1200:X3;4;%MW1200:X3       TS_V3_FER         Bit accessible dans un mot;Variables (indice de rubrique);;;TS_V3_FER
+%MW100;4;%MW100           A                 Reserve 1;Variables (indice de rubrique);;;
+%MW101;4;%MW101           B                 Reserve 2;Variables (indice de rubrique);;;
+%MW102;4;%MW102           C                 Reserve 3;Variables (indice de rubrique);;;

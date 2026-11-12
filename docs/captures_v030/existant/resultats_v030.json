@@ -1,0 +1,362 @@
+[
+  {
+    "theme": "light",
+    "width": 1440,
+    "screen": "Accueil",
+    "view": "accueil",
+    "docW": 1440,
+    "viewW": 1440,
+    "displayTitle": "Mes ouvrages",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1440,
+    "screen": "Ouvrage_Equipements",
+    "view": "ouvrage",
+    "docW": 1440,
+    "viewW": 1440,
+    "displayTitle": "Équipements",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1440,
+    "screen": "Referentiel",
+    "view": "referentiel",
+    "docW": 1440,
+    "viewW": 1440,
+    "displayTitle": "Référentiel métier",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1440,
+    "screen": "Liste_ES",
+    "view": "es",
+    "docW": 1440,
+    "viewW": 1440,
+    "displayTitle": "Liste des E/S",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1440,
+    "screen": "Materiel",
+    "view": "materiel",
+    "docW": 1440,
+    "viewW": 1440,
+    "displayTitle": "Matériel et architecture",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1440,
+    "screen": "Table_echange",
+    "view": "variables",
+    "docW": 1440,
+    "viewW": 1440,
+    "displayTitle": "Variables et adressage",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1440,
+    "screen": "Teletransmission",
+    "view": "supervision",
+    "docW": 1440,
+    "viewW": 1440,
+    "displayTitle": "Variables et adressage",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1440,
+    "screen": "Adressage",
+    "view": "adressage",
+    "docW": 1440,
+    "viewW": 1440,
+    "displayTitle": "Variables et adressage",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1440,
+    "screen": "Recette",
+    "view": "recette",
+    "docW": 1440,
+    "viewW": 1440,
+    "displayTitle": "Recette et livrables",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1440,
+    "screen": "Accueil",
+    "view": "accueil",
+    "docW": 1440,
+    "viewW": 1440,
+    "displayTitle": "Recette et livrables",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1440,
+    "screen": "Ouvrage_Equipements",
+    "view": "ouvrage",
+    "docW": 1440,
+    "viewW": 1440,
+    "displayTitle": "Équipements",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1440,
+    "screen": "Referentiel",
+    "view": "referentiel",
+    "docW": 1440,
+    "viewW": 1440,
+    "displayTitle": "Référentiel métier",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1440,
+    "screen": "Liste_ES",
+    "view": "es",
+    "docW": 1440,
+    "viewW": 1440,
+    "displayTitle": "Liste des E/S",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1440,
+    "screen": "Materiel",
+    "view": "materiel",
+    "docW": 1440,
+    "viewW": 1440,
+    "displayTitle": "Matériel et architecture",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1440,
+    "screen": "Table_echange",
+    "view": "variables",
+    "docW": 1440,
+    "viewW": 1440,
+    "displayTitle": "Variables et adressage",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1440,
+    "screen": "Teletransmission",
+    "view": "supervision",
+    "docW": 1440,
+    "viewW": 1440,
+    "displayTitle": "Variables et adressage",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1440,
+    "screen": "Adressage",
+    "view": "adressage",
+    "docW": 1440,
+    "viewW": 1440,
+    "displayTitle": "Variables et adressage",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1440,
+    "screen": "Recette",
+    "view": "recette",
+    "docW": 1440,
+    "viewW": 1440,
+    "displayTitle": "Recette et livrables",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1280,
+    "screen": "Accueil",
+    "view": "accueil",
+    "docW": 1280,
+    "viewW": 1280,
+    "displayTitle": "Mes ouvrages",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1280,
+    "screen": "Ouvrage_Equipements",
+    "view": "ouvrage",
+    "docW": 1280,
+    "viewW": 1280,
+    "displayTitle": "Équipements",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1280,
+    "screen": "Referentiel",
+    "view": "referentiel",
+    "docW": 1280,
+    "viewW": 1280,
+    "displayTitle": "Référentiel métier",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1280,
+    "screen": "Liste_ES",
+    "view": "es",
+    "docW": 1280,
+    "viewW": 1280,
+    "displayTitle": "Liste des E/S",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1280,
+    "screen": "Materiel",
+    "view": "materiel",
+    "docW": 1280,
+    "viewW": 1280,
+    "displayTitle": "Matériel et architecture",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1280,
+    "screen": "Table_echange",
+    "view": "variables",
+    "docW": 1280,
+    "viewW": 1280,
+    "displayTitle": "Variables et adressage",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1280,
+    "screen": "Teletransmission",
+    "view": "supervision",
+    "docW": 1280,
+    "viewW": 1280,
+    "displayTitle": "Variables et adressage",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1280,
+    "screen": "Adressage",
+    "view": "adressage",
+    "docW": 1280,
+    "viewW": 1280,
+    "displayTitle": "Variables et adressage",
+    "errors": []
+  },
+  {
+    "theme": "light",
+    "width": 1280,
+    "screen": "Recette",
+    "view": "recette",
+    "docW": 1280,
+    "viewW": 1280,
+    "displayTitle": "Recette et livrables",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1280,
+    "screen": "Accueil",
+    "view": "accueil",
+    "docW": 1280,
+    "viewW": 1280,
+    "displayTitle": "Recette et livrables",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1280,
+    "screen": "Ouvrage_Equipements",
+    "view": "ouvrage",
+    "docW": 1280,
+    "viewW": 1280,
+    "displayTitle": "Équipements",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1280,
+    "screen": "Referentiel",
+    "view": "referentiel",
+    "docW": 1280,
+    "viewW": 1280,
+    "displayTitle": "Référentiel métier",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1280,
+    "screen": "Liste_ES",
+    "view": "es",
+    "docW": 1280,
+    "viewW": 1280,
+    "displayTitle": "Liste des E/S",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1280,
+    "screen": "Materiel",
+    "view": "materiel",
+    "docW": 1280,
+    "viewW": 1280,
+    "displayTitle": "Matériel et architecture",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1280,
+    "screen": "Table_echange",
+    "view": "variables",
+    "docW": 1280,
+    "viewW": 1280,
+    "displayTitle": "Variables et adressage",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1280,
+    "screen": "Teletransmission",
+    "view": "supervision",
+    "docW": 1280,
+    "viewW": 1280,
+    "displayTitle": "Variables et adressage",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1280,
+    "screen": "Adressage",
+    "view": "adressage",
+    "docW": 1280,
+    "viewW": 1280,
+    "displayTitle": "Variables et adressage",
+    "errors": []
+  },
+  {
+    "theme": "dark",
+    "width": 1280,
+    "screen": "Recette",
+    "view": "recette",
+    "docW": 1280,
+    "viewW": 1280,
+    "displayTitle": "Recette et livrables",
+    "errors": []
+  }
+]

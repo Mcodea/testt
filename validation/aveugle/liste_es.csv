@@ -1,0 +1,7 @@
+Nom;Adresse;Equipement;Fonction;Commentaire;Variable_liee
+I_V1_OUV;%I0.1.0;MV01;Fin de course ouverte;Contact FDC ouvert vanne sortie;TS_RV21MV01_OUV
+I_V1_FER;%I0.1.1;MV01;Fin de course fermée;Contact FDC fermé vanne sortie;TS_RV21MV01_FER
+I_P2_MA;%I0.1.4;PM02;Retour marche;Contacteur pompe 2;P2_MARCHE
+I_P2_TH;%I0.1.5;PM02;Défaut thermique;Relais thermique pompe 2;P2_DEF_THERMIQUE
+I_P3_MA;%I0.1.8;PM03;Retour marche;Contacteur pompe 3;
+IW_NIV;%IW0.4.0;LT01;Niveau mesuré;Capteur niveau 4-20mA;NIV_CUVE_BRUT

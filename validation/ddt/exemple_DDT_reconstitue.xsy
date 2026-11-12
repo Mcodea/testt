@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FICHIER DE TEST SYNTHETIQUE. Inspiré de structures publiques XSY, mais PAS le fichier GitHub réel. -->
+<VariablesExchangeFile>
+  <fileHeader company="Schneider Automation" product="Control Expert V15.0" />
+  <dataBlock>
+    <variables name="IO_BALLUFF_A1_F0" typeName="ECH_BALUFF_A1_F0" topologicalAddress="%MW500">
+      <comment>Répartiteur — côté A1</comment>
+    </variables>
+    <variables name="CELL_CMD" typeName="DDT_CMD_CELL" topologicalAddress="%MW1000" />
+    <variables name="TM_TEST" typeName="REAL" topologicalAddress="%MW2000"><comment>Mesure test</comment></variables>
+  </dataBlock>
+  <DDTSource DDTName="ECH_BALUFF_A1_F0">
+    <structure>
+      <variables name="IN" typeName="ECH_BALUFF_A1_F0_IN" />
+      <variables name="OUT" typeName="ECH_BALUFF_A1_F0_OUT" />
+    </structure>
+  </DDTSource>
+  <DDTSource DDTName="ECH_BALUFF_A1_F0_IN">
+    <structure>
+      <variables name="Word_00" typeName="WORD" />
+      <variables name="I_VERIN_1_BRIDAGE_AVANCE" typeName="BOOL">
+        <comment>Vérin 1 en position avancée</comment>
+        <attribute name="ExtractBit" value="0" />
+      </variables>
+      <variables name="I_VERIN_1_BRIDAGE_RECULE" typeName="BOOL">
+        <comment>Vérin 1 en position reculée</comment>
+        <attribute name="ExtractBit" value="2" />
+      </variables>
+    </structure>
+  </DDTSource>
+  <DDTSource DDTName="ECH_BALUFF_A1_F0_OUT">
+    <structure>
+      <variables name="Word_00" typeName="WORD" />
+      <variables name="CMD_BRIDAGE" typeName="BOOL">
+        <comment>Commande de bridage</comment>
+        <attribute name="ExtractBit" value="4" />
+      </variables>
+    </structure>
+  </DDTSource>
+  <DDTSource DDTName="DDT_CMD_CELL"><structure>
+    <variables name="Word_0" typeName="WORD" />
+    <variables name="BP_MES" typeName="BOOL"><comment>BP mise en service</comment><attribute name="ExtractBit" value="1" /></variables>
+  </structure></DDTSource>
+</VariablesExchangeFile>

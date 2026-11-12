@@ -1,0 +1,4 @@
+Nom;Adresse;Equipement;Fonction;Commentaire;Variable_liee
+ET_RV11MV03_FDC_FER;%I0.2.1;MV03;Fin de course fermée;Contact de fermeture;
+I_25;%I0.2.5;FT02;Défaut capteur;Signal défaut débitmètre;MEM_302
+I_17;%I0.2.7;LT01;Niveau très haut;Seuil analogique traité;

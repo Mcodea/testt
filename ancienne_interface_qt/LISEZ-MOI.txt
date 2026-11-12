@@ -1,0 +1,3 @@
+Ancienne interface (PySide6), gardée seulement pendant la transition.
+L'interface à utiliser est la nouvelle : double-cliquer SOREP.bat à la racine du dossier.
+Pour lancer quand même l'ancienne : depuis le dossier principal, « py lancer_qt.py ».

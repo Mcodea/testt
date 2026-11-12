@@ -1,0 +1,46 @@
+Nom;Type;Adresse;Commentaire
+TS_RV21MV01_OUV;BOOL;%MW1000.0;VANNE SORTIE OUVERTE
+TS_RV21MV01_FER;BOOL;%MW1000.1;VANNE SORTIE FERMEE
+V1_DEF;BOOL;%MW1000.2;DEFAUT VANNE V1 SORTIE
+V1_EN_MANOEUVRE;BOOL;%MW1000.3;Vanne V1 en mouvement
+V1_TPS_DEP;BOOL;%MW1000.4;Temps manoeuvre depasse V1
+V1_DISC;BOOL;%MW1000.5;Discordance position V1
+TC_RV21MV01_OUVERTURE;BOOL;%MW2000.0;COMMANDE OUVERTURE VANNE SORTIE
+TC_RV21MV01_FERMETURE;BOOL;%MW2000.1;COMMANDE FERMETURE VANNE SORTIE
+V1_ARRET_URG;BOOL;%M310;Arret urgence vanne V1 (local)
+P2_MARCHE;BOOL;%MW1001.0;POMPE 2 EN MARCHE
+P2_DEF_GEN;BOOL;%MW1001.1;POMPE 2 DEFAUT GENERAL
+P2_DEF_THERMIQUE;BOOL;%MW1001.2;Defaut thermique pompe 2
+P2_DISPO;BOOL;%MW1001.3;Pompe 2 disponible
+P2_AUTO;BOOL;%MW1001.4;Pompe 2 mode auto
+P2_DEF_VAR;BOOL;%MW1001.5;Defaut variateur ATV pompe 2
+P2_NON_DISPO_MAINT;BOOL;%M402;Pompe 2 non disponible pour maintenance (calcul interne)
+CMD_MARCHE_P2;BOOL;%MW2001.0;Telecommande marche pompe 2
+CMD_ARRET_P2;BOOL;%MW2001.1;Telecommande arret pompe 2
+P2_HEURES;DINT;%MW3500;Compteur heures fonctionnement P2
+P2_NB_DEM;DINT;%MW3502;Nombre demarrages pompe 2
+P2_FREQ;REAL;%MW2600;Frequence variateur pompe 2 Hz
+P2_CONS_FREQ;REAL;%MW120;Consigne frequence P2 depuis supervision
+P2_RET_CONS_FREQ;REAL;%MW4020;Retour consigne frequence P2
+P2_FREQ_BRUTE;INT;%IW0.3.0;Entree analogique brute frequence P2
+P3_MARCHE;BOOL;%MW1002.0;POMPE 3 EN MARCHE
+P3_DEFAUT;BOOL;%MW1002.1;POMPE 3 DEFAUT
+P3_HEURES;DINT;%MW3504;Compteur horaire pompe 3
+TEMPO_P3;INT;%MW600;Temporisation redemarrage P3
+NIV_CUVE;REAL;%MW2500;Niveau cuve en m
+NIV_CUVE_BRUT;INT;%IW0.4.0;Niveau cuve brut 4-20mA
+ALA_NIV_TB;BOOL;%MW1003.0;Alarme niveau tres bas cuve
+ALA_NIV_B;BOOL;%MW1003.1;Alarme niveau bas cuve
+ALA_NIV_H;BOOL;%MW1003.2;Alarme niveau haut cuve
+DEF_CAPT_NIV;BOOL;%MW1003.4;Defaut capteur niveau cuve
+SEUIL_H_NIV;REAL;%MW130;Seuil haut niveau reglable
+RET_SEUIL_H_NIV;REAL;%MW4030;Retour seuil haut niveau
+DEBIT_REF;REAL;%MW2502;Debit refoulement m3/h
+VOL_REF;DINT;%MW3506;Volume totalise refoulement
+DEF_DEBITMETRE;BOOL;%MW1004.0;Defaut debitmetre refoulement
+CHLORE_VAL;REAL;%MW2504;Chlore libre mg/l
+CHLORE_BAS;BOOL;%MW1005.0;Chlore bas
+CHLORE_HAUT;BOOL;%MW1005.1;Chlore haut
+DEF_ANALYSEUR_CL;BOOL;%MW1005.2;Defaut analyseur chlore
+MOT_ETAT_1;INT;%MW700;Mot etat general automate
+BIT_VIE;BOOL;%MW1006.0;Bit de vie supervision

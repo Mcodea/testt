@@ -1,0 +1,52 @@
+{
+  "archives": [
+    {
+      "archive": "Inter-4.1.zip",
+      "sha256": "9883fdd4a49d4fb66bd8177ba6625ef9a64aa45899767dde3d36aa425756b11e",
+      "source": "https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip",
+      "licence": "OFL-1.1"
+    },
+    {
+      "archive": "JetBrainsMono-2.304.zip",
+      "sha256": "6f6376c6ed2960ea8a963cd7387ec9d76e3f629125bc33d1fdcd7eb7012f7bbf",
+      "source": "https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip",
+      "licence": "OFL-1.1"
+    },
+    {
+      "archive": "lucide-static-0.468.0.tgz",
+      "sha256": "d87c47325f0b2ac3ad2d6f056889da32b8f1216eafe4ed6534bc02786effe8cc",
+      "source": "https://registry.npmjs.org/lucide-static/-/lucide-static-0.468.0.tgz",
+      "licence": "ISC"
+    }
+  ],
+  "icones": [
+    "house",
+    "folder",
+    "layers",
+    "settings",
+    "info",
+    "search",
+    "check",
+    "arrow-right",
+    "x",
+    "zap",
+    "triangle-alert",
+    "chart-pie",
+    "cpu",
+    "list",
+    "chevron-right",
+    "clipboard-list",
+    "menu",
+    "sparkles",
+    "shield-check"
+  ],
+  "transformation_lucide": "Éléments SVG originaux regroupés en symboles, géométrie inchangée.",
+  "files": {
+    "fonts/InterVariable.woff2": "693b77d4f32ee9b8bfc995589b5fad5e99adf2832738661f5402f9978429a8e3",
+    "fonts/JetBrainsMono-Regular.woff2": "a9cb1cd82332b23a47e3a1239d25d13c86d16c4220695e34b243effa999f45f2",
+    "fonts/LICENSE-Inter.txt": "262481e844521b326f5ecd053e59b98c8b2da78c8ee1bdbb6e8174305e54935a",
+    "fonts/LICENSE-JetBrainsMono.txt": "30f0c136e3c88e422d0791acd97238870f9054a9729bc34cf2ff0d4ed8cac4ad",
+    "lucide/LICENSE.txt": "1e7290b35280a048667bbf0ebabac1c7fd52a75300e8b2946ac165715997f2bc",
+    "lucide/sprite.svg": "48d58713f9302b09ddfc8b8a75964fa47dc3bbc8ec04c61e84b6cea731d19478"
+  }
+}

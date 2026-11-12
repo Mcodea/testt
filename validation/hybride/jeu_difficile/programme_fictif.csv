@@ -1,0 +1,30 @@
+Nom;Type;Adresse;Commentaire
+M002;BOOL;%M101;Fin course vanne V3 fermeture
+A_G11;BOOL;%M102;Position ouverte vanne V3
+ALARME_V3_1;BOOL;%M103;Signal de surveillance vanne V3
+V3_CLOSE_CMD;BOOL;%M104;Ordre de fermeture vanne V3
+TC_93;BOOL;%M105;Ordre ouverture vanne V3
+RUN_P1;BOOL;%M201;Pompe P1 marche détectée
+X_302;BOOL;%M203;Sécurité moteur bit 302
+CMD_P1_RUN;BOOL;%M205;Commande marche pompe P1
+H_PUMP01;DINT;%MD220;Compteur heures pompe P1
+MEAS_P1_I;REAL;%MF230;Mesure courant pompe P1
+FLO_R02;REAL;%MF302;Transmetteur débit FT02
+MEM_302;BOOL;%M304;Traitement entrée I_25
+COUNTER_V2;DINT;%MD320;Volume total FT02
+X_402;REAL;%MF407;Voie process PT01
+ALM_PT01;BOOL;%M408;Seuil bas pression PT01
+T_18;REAL;%MF502;Capteur LT01 hauteur d'eau
+MEM_12;BOOL;%M514;Traitement entrée I_17
+L1_B;BOOL;%M516;Niveau seuil bas LT01
+X_999;BOOL;%M900;V3 fermer interdit pendant maintenance
+V3_FER_NON;BOOL;%M901;V3 non fermée surveillance
+V3_STOP;BOOL;%M902;Commande arrêt vanne V3
+V3_MARCHE;BOOL;%M903;En marche pompe P1 (commentaire contradictoire)
+L1_THERMO;BOOL;%M904;Température LT01 élevée
+SIM_DISCORD_V3;BOOL;%M906;Discordance de position vanne V3 simulée uniquement
+INHIB_PM1_TH;BOOL;%M907;Défaut thermique pompe PM01 inhibé hors supervision
+VAR_200;INT;%MW905;Valeur automate libre
+ET_RV11MV03_FDC_FER;EBOOL;%I0.2.1;Entrée fin de course vanne
+I_25;EBOOL;%I0.2.5;Contact défaut débitmètre
+I_17;EBOOL;%I0.2.7;Contact seuil niveau haut

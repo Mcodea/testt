@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+Donnees/
+.coverage
+.coverage.*
+htmlcov/
+artifacts/
+.mypy_cache/
+.ruff_cache/
+.ms-playwright/

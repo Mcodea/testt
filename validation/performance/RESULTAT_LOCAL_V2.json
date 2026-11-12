@@ -1,0 +1,26 @@
+{
+  "equipements": 300,
+  "variables": 5000,
+  "fichiers_topkapi": 70,
+  "seconds": {
+    "ouverture": 0.019148743000187096,
+    "generation": 0.0211897469998803,
+    "adressage": 0.42293200800122577,
+    "import_topkapi_70": 0.009531125999274082,
+    "exports": 0.293354299999919,
+    "interface": 0.04329999999888241,
+    "filtrage": 0.05559999999962747
+  },
+  "limits_seconds": {
+    "ouverture": 2,
+    "generation": 3,
+    "adressage": 2,
+    "import_topkapi_70": 10,
+    "exports": 5,
+    "interface": 0.2,
+    "filtrage": 0.2
+  },
+  "failures": [],
+  "commit_code": "84bdd22",
+  "portee": "Lancement local Linux/Chromium ; ne remplace pas le run GitHub ni la recette Windows propre."
+}

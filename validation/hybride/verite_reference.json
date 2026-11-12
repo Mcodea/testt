@@ -1,0 +1,24 @@
+{
+  "description": "Ouvrage fictif; liens vérifiés manuellement dans ce scénario et non représentatifs d'une installation réelle.",
+  "liens": [
+    ["MV03", "TS_FER", "TS_RV11MV03_FER"],
+    ["MV03", "TS_OUV", "TS_RV11MV03_OUV"],
+    ["MV03", "TS_DEF", "ALM_V3_DEF"],
+    ["MV03", "TC_FER", "ORDRE_V3_FER"],
+    ["MV03", "TC_OUV", "TC_RV11MV03_OUV"],
+    ["PM01", "TS_MA", "ETAT_PM1_RUN"],
+    ["PM01", "TS_DEF", "TS_RV11PM01_DEF"],
+    ["PM01", "TC_MA", "CMD_P1_RUN"],
+    ["PM01", "CP_HF", "HOURS_PM01"],
+    ["PM01", "TM_INT", "MESURE_PM01_I"],
+    ["FT02", "TM_DEB", "FLOW_FT02"],
+    ["FT02", "TS_DEF", "MEM_11"],
+    ["FT02", "CP_VOL", "CP_RV11FT02_VOL"],
+    ["PT01", "TM_PRE", "PRESSION_PT01"],
+    ["PT01", "TS_B", "LAST_16"],
+    ["LT01", "TM_NIV", "AN_LT01_NIV"],
+    ["LT01", "TS_TH", "MEM_12"],
+    ["LT01", "TS_B", "BS_LT01_NIV_BAS"]
+  ],
+  "sans_variable": [["MV03", "TS_DISC"], ["PM01", "TS_DEFTH"], ["PT01", "TS_H"]]
+}

@@ -1,0 +1,98 @@
+[
+  {
+    "name": "Echelle_analogique",
+    "theme": "dark",
+    "width": 1280,
+    "shown": true,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "name": "Impulsions",
+    "theme": "dark",
+    "width": 1280,
+    "shown": true,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "name": "ES_personnalisee",
+    "theme": "dark",
+    "width": 1280,
+    "shown": true,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "name": "Ligne_modele",
+    "theme": "dark",
+    "width": 1280,
+    "shown": true,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "name": "Saisie",
+    "theme": "dark",
+    "width": 1280,
+    "shown": true,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "name": "Choix",
+    "theme": "dark",
+    "width": 1280,
+    "shown": true,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "name": "Communications",
+    "theme": "dark",
+    "width": 1280,
+    "shown": true,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "name": "Point_ES_contenu",
+    "theme": "dark",
+    "width": 1280,
+    "shown": true,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "name": "Point_ES_voie",
+    "theme": "dark",
+    "width": 1280,
+    "shown": true,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "name": "Signal_referentiel",
+    "theme": "dark",
+    "width": 1280,
+    "shown": true,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "name": "Regle_referentiel",
+    "theme": "dark",
+    "width": 1280,
+    "shown": true,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "name": "Type_referentiel",
+    "theme": "dark",
+    "width": 1280,
+    "shown": true,
+    "overflow": false,
+    "errors": []
+  }
+]

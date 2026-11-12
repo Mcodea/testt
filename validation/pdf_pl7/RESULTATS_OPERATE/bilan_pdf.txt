@@ -1,0 +1,43 @@
+ANALYSE DOCUMENTAIRE PDF — SOREP (non qualifiante)
+Fichier : EXEMPLE_FICTIF_OPERATE_PL7.pdf
+SHA256 : 7d7adb5e4bc4d8572b3a3e4fbfee35597a3e2ea40a11415e6856f475a178b965
+Pages : 5 | Pages avec texte : 5
+Occurrences d’adresses : 13 | Adresses uniques : 3
+Pages « références croisées » repérées : 4
+Groupes %MW consécutifs (simples indices) : 0
+Indices de dépendance IL stricts LD/ST : 0
+Affectations textuelles OPERATE : 2
+Associations adresse / symbole (indices documentaires) : 4
+AUCUNE correspondance fonctionnelle, adresse TOPKAPI ni relation R/W n’est validée automatiquement.
+
+AVERTISSEMENTS :
+ - Les indices R/W, les symboles, les commentaires et les sections sont extraits au mieux de la mise en page ; vérification visuelle nécessaire.
+ - Les liens LD/ST et les affectations OPERATE sont des dépendances syntaxiques documentaires, pas une interprétation Ladder/FBD ni une preuve d’acquisition TOPKAPI.
+ - Une proximité de mots %MW ne démontre ni une table d’échanges ni une liaison TOPKAPI.
+
+LIENS IL POSSIBLES (textes seulement, à vérifier) :
+
+AFFECTATIONS DOCUMENTÉES (pas de preuve d’accès TOPKAPI) :
+  p.2 | %MW10 <- %IW0.2 | %MW10:=%IW0.2/10
+  p.3 | %MW11 <- %MW10 | %MW11:=%MW10*100
+
+SYMBOLISATION RETROUVÉE DANS LES TABLEAUX (à vérifier visuellement) :
+  p.2 | %IW0.2 -> Pt_100 | Sonde fictive
+  p.5 | %IW0.2 -> Pt_100 | Mesure entrante
+  p.5 | %MW10 -> TEMP_C | Valeur calculee
+  p.5 | %MW11 -> TEMP_X100 | Mise a echelle
+
+EXEMPLES D’OCCURRENCES DOCUMENTÉES :
+  p.2 | %MW10 | ? | MAST-PRL | %MW10:=%IW0.2/10
+  p.2 | %IW0.2 | ? | MAST-PRL | %MW10:=%IW0.2/10
+  p.2 | %IW0.2 | ? | MAST-PRL | %IW0.2
+  p.3 | %MW11 | ? | MAST-POST | %MW11:=%MW10*100
+  p.3 | %MW10 | ? | MAST-POST | %MW11:=%MW10*100
+  p.3 | %MW11 | ? | MAST-POST | %MW11:=%MW10*100
+  p.3 | %MW10 | ? | MAST-POST | %MW11:=%MW10*100
+  p.4 | %IW0.2 | R | MAST-PRL | %IW0.2 MAST-PRL R
+  p.4 | %MW10 | R | MAST-POST | %MW10 MAST-POST R
+  p.4 | %MW11 | W | MAST-POST | %MW11 MAST-POST W
+  p.5 | %IW0.2 | ? | section non établie | %IW0.2 Pt_100 Mesure entrante
+  p.5 | %MW10 | ? | section non établie | %MW10 TEMP_C Valeur calculee
+  p.5 | %MW11 | ? | section non établie | %MW11 TEMP_X100 Mise a echelle

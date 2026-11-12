@@ -1,0 +1,298 @@
+{
+ "statut": "Catalogue SOFREL S4W fourni par l'utilisateur le 9 novembre 2026 (fiche LACROIX DC54, 09-2026) ; références de commande à confirmer auprès de LACROIX.",
+ "source": "https://www.lacroix-group.com/app/uploads/3/2026/11/02/dc54-datasheet-s4w-fr-09-2026.pdf",
+ "boitiers": [
+  {
+   "modele": "S4W Dual",
+   "DI": 8,
+   "AI": 0,
+   "DO": 0,
+   "extensions_es": 2,
+   "extensions_com": 3,
+   "ext_bus": 0,
+   "infos": 1000,
+   "reference": "À confirmer",
+   "statut": "Désignation confirmée ; réf. achat non fournie"
+  },
+  {
+   "modele": "S4W Small",
+   "DI": 8,
+   "AI": 2,
+   "DO": 2,
+   "extensions_es": 0,
+   "extensions_com": 3,
+   "ext_bus": 0,
+   "infos": 500,
+   "reference": "À confirmer",
+   "statut": "Désignation confirmée ; réf. achat non fournie"
+  },
+  {
+   "modele": "S4W Medium",
+   "DI": 12,
+   "AI": 2,
+   "DO": 4,
+   "extensions_es": 2,
+   "extensions_com": 3,
+   "ext_bus": 0,
+   "infos": 1000,
+   "reference": "À confirmer",
+   "statut": "Désignation confirmée ; réf. achat non fournie"
+  },
+  {
+   "modele": "S4W Large",
+   "DI": 16,
+   "AI": 4,
+   "DO": 4,
+   "extensions_es": 10,
+   "extensions_com": 3,
+   "ext_bus": 2,
+   "infos": 1000,
+   "reference": "À confirmer",
+   "statut": "Désignation confirmée ; réf. achat non fournie"
+  }
+ ],
+ "modules_es": [
+  {
+   "designation": "16DI",
+   "famille": "Entrées TOR",
+   "DI": 16,
+   "AI": 0,
+   "DO": 0,
+   "AO": 0,
+   "specificite": "Entrées logiques / comptage",
+   "voies": 16,
+   "reference": "À confirmer",
+   "statut": "Confirmé sur fiche 09-2026"
+  },
+  {
+   "designation": "8DI",
+   "famille": "Entrées TOR",
+   "DI": 8,
+   "AI": 0,
+   "DO": 0,
+   "AO": 0,
+   "specificite": "Entrées logiques / comptage",
+   "voies": 8,
+   "reference": "À confirmer",
+   "statut": "Confirmé sur fiche 09-2026"
+  },
+  {
+   "designation": "8AI T°",
+   "famille": "Entrées analogiques",
+   "DI": 0,
+   "AI": 8,
+   "DO": 0,
+   "AO": 0,
+   "specificite": "Mesure température ; type de sonde à confirmer",
+   "voies": 8,
+   "reference": "À confirmer",
+   "statut": "Confirmé sur fiche 09-2026"
+  },
+  {
+   "designation": "4AI T°",
+   "famille": "Entrées analogiques",
+   "DI": 0,
+   "AI": 4,
+   "DO": 0,
+   "AO": 0,
+   "specificite": "Mesure température ; type de sonde à confirmer",
+   "voies": 4,
+   "reference": "À confirmer",
+   "statut": "Confirmé sur fiche 09-2026"
+  },
+  {
+   "designation": "8DO 3,6 VA",
+   "famille": "Sorties TOR",
+   "DI": 0,
+   "AI": 0,
+   "DO": 8,
+   "AO": 0,
+   "specificite": "24 V max ; 150 mA max par sortie selon fiche",
+   "voies": 8,
+   "reference": "À confirmer",
+   "statut": "Confirmé sur fiche 09-2026"
+  },
+  {
+   "designation": "4DO 3,6 VA",
+   "famille": "Sorties TOR",
+   "DI": 0,
+   "AI": 0,
+   "DO": 4,
+   "AO": 0,
+   "specificite": "24 V max ; 150 mA max par sortie selon fiche",
+   "voies": 4,
+   "reference": "À confirmer",
+   "statut": "Confirmé sur fiche 09-2026"
+  },
+  {
+   "designation": "4DO+ 60 VA",
+   "famille": "Sorties TOR",
+   "DI": 0,
+   "AI": 0,
+   "DO": 4,
+   "AO": 0,
+   "specificite": "24 V max ; 1 A permanent / 2,5 A impulsionnel",
+   "voies": 4,
+   "reference": "À confirmer",
+   "statut": "Confirmé sur fiche 09-2026"
+  },
+  {
+   "designation": "8AI 4–20 mA",
+   "famille": "Entrées analogiques",
+   "DI": 0,
+   "AI": 8,
+   "DO": 0,
+   "AO": 0,
+   "specificite": "Courant 4–20 mA",
+   "voies": 8,
+   "reference": "À confirmer",
+   "statut": "Confirmé sur fiche 09-2026"
+  },
+  {
+   "designation": "4AI 4–20 mA",
+   "famille": "Entrées analogiques",
+   "DI": 0,
+   "AI": 4,
+   "DO": 0,
+   "AO": 0,
+   "specificite": "Courant 4–20 mA",
+   "voies": 4,
+   "reference": "À confirmer",
+   "statut": "Confirmé sur fiche 09-2026"
+  },
+  {
+   "designation": "8AO multistandard",
+   "famille": "Sorties analogiques",
+   "DI": 0,
+   "AI": 0,
+   "DO": 0,
+   "AO": 8,
+   "specificite": "0–20 mA / 4–20 mA / 0–10 V",
+   "voies": 8,
+   "reference": "À confirmer",
+   "statut": "Confirmé sur fiche 09-2026"
+  },
+  {
+   "designation": "4AO multistandard",
+   "famille": "Sorties analogiques",
+   "DI": 0,
+   "AI": 0,
+   "DO": 0,
+   "AO": 4,
+   "specificite": "0–20 mA / 4–20 mA / 0–10 V",
+   "voies": 4,
+   "reference": "À confirmer",
+   "statut": "Confirmé sur fiche 09-2026"
+  },
+  {
+   "designation": "8AI 0–10 V",
+   "famille": "Entrées analogiques",
+   "DI": 0,
+   "AI": 8,
+   "DO": 0,
+   "AO": 0,
+   "specificite": "Tension 0–10 V",
+   "voies": 8,
+   "reference": "À confirmer",
+   "statut": "Confirmé sur fiche 09-2026"
+  },
+  {
+   "designation": "4AI 0–10 V",
+   "famille": "Entrées analogiques",
+   "DI": 0,
+   "AI": 4,
+   "DO": 0,
+   "AO": 0,
+   "specificite": "Tension 0–10 V",
+   "voies": 4,
+   "reference": "À confirmer",
+   "statut": "Confirmé sur fiche 09-2026"
+  }
+ ],
+ "modules_com": [
+  {
+   "categorie": "Intégré",
+   "designation": "Ethernet 100BASE-T",
+   "fonction": "Port Ethernet RJ45 intégré au S4W",
+   "reference": "Intégré"
+  },
+  {
+   "categorie": "Intégré",
+   "designation": "Modem 2G/3G/4G",
+   "fonction": "Modem cellulaire intégré au S4W ; variantes régionales à confirmer",
+   "reference": "Intégré"
+  },
+  {
+   "categorie": "Extension COM",
+   "designation": "RS232",
+   "fonction": "Communication série RS232 (TX/RX/RTS/CTS)",
+   "reference": "À confirmer"
+  },
+  {
+   "categorie": "Extension COM",
+   "designation": "RS485 / RS485i",
+   "fonction": "Série multipoint ; variante isolée ou non isolée",
+   "reference": "À confirmer"
+  },
+  {
+   "categorie": "Extension COM",
+   "designation": "EDF",
+   "fonction": "Téléinformation client de distribution électrique (type Enedis)",
+   "reference": "À confirmer"
+  },
+  {
+   "categorie": "Extension COM",
+   "designation": "DL",
+   "fonction": "Liaison ligne privée",
+   "reference": "À confirmer"
+  },
+  {
+   "categorie": "Extension COM",
+   "designation": "RD-RTU2",
+   "fonction": "Radio HF 869 MHz ; module déporté via RS485",
+   "reference": "À confirmer"
+  },
+  {
+   "categorie": "Extension COM",
+   "designation": "Badge HID",
+   "fonction": "Lecteur de badges / contrôle d'accès",
+   "reference": "À confirmer"
+  }
+ ],
+ "regles": [
+  "Règle 1 : La CPU est intégrée au boîtier S4W ; ne pas créer de carte CPU distincte.",
+  "Règle 2 : Les voies DI/AI/DO intégrées au boîtier doivent être créées une seule fois.",
+  "Règle 3 : Les modules I/O ne sont ajoutés qu'après choix du boîtier et contrôle du nombre d'extensions.",
+  "Règle 4 : Chaque module E/S ajouté crée exactement le nombre de voies physiques documentées.",
+  "Règle 5 : Les modules COM ne créent aucune E/S physiques supplémentaires.",
+  "Règle 6 : L'EXT est un prolongateur de bus, pas une carte d'E/S.",
+  "Règle 7 : Affectations et paramètres installation (voies, échelles, contacts, adresses) restent dans le projet, pas dans le catalogue.",
+  "Règle 8 : Aucune référence commerciale de commande n'est inventée : À confirmer auprès de LACROIX.",
+  "Règle 9 : Compatibilités détaillées et version de firmware à vérifier dans S4W-Tools et la notice de matériel.",
+  "Règle 10 : Les anciens projets OGIAS ne doivent pas être migrés automatiquement.",
+  "Règle 11 : Pas de confusion entre points d'E/S physiques et informations de télétransmission (TS/TM/TC/TR/RTR/CP)."
+ ],
+ "modules_proposes": {
+  "ET": [
+   "16DI",
+   "8DI"
+  ],
+  "ST": [
+   "8DO 3,6 VA",
+   "4DO 3,6 VA"
+  ],
+  "EA": [
+   "8AI 4–20 mA",
+   "4AI 4–20 mA"
+  ],
+  "SA": [
+   "8AO multistandard",
+   "4AO multistandard"
+  ]
+ },
+ "boitiers_proposes": [
+  "S4W Small",
+  "S4W Medium",
+  "S4W Large"
+ ]
+}

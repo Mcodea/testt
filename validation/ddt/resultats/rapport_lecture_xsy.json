@@ -1,0 +1,18 @@
+{
+  "fichier_analysé": "exemple_DDT_reconstitue.xsy",
+  "sha256_source": "3ad6c31623c40a9d780310e141fbc7180f194af93537ff2c41f3a11825731e46",
+  "variables_principales": 3,
+  "ddt_definis": 4,
+  "champs_ddt_developpes": 7,
+  "lignes_importees_ouvrages_test": 10,
+  "lignes_nouvelles": 10,
+  "champs_ddt_avec_adresse_calculee": 0,
+  "exhaustivite_developpement_ddt": "complète selon le lecteur",
+  "avertissements": [],
+  "limites": [
+    "Une adresse %MW d’un DDT parent ne donne pas automatiquement une adresse Modbus de ses champs.",
+    "ExtractBit est conservé mais ne fournit pas à lui seul un offset valide.",
+    "L’existence d’un chemin symbolique ne garantit pas son exposition via OPC/OFS.",
+    "Aucune correspondance métier TOPKAPI ni compatibilité industrielle validée."
+  ]
+}

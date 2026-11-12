@@ -1,0 +1,254 @@
+[
+  {
+    "name": "Creation_ouvrage",
+    "theme": "light",
+    "width": 1440,
+    "document": 1440,
+    "viewport": 1440,
+    "modal": false,
+    "errors": []
+  },
+  {
+    "name": "Gestion_des_listes",
+    "theme": "light",
+    "width": 1440,
+    "document": 1440,
+    "viewport": 1440,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Ajout_equipement",
+    "theme": "light",
+    "width": 1440,
+    "document": 1440,
+    "viewport": 1440,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Import_inventaire",
+    "theme": "light",
+    "width": 1440,
+    "document": 1440,
+    "viewport": 1440,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Nouvelle_UF",
+    "theme": "light",
+    "width": 1440,
+    "document": 1440,
+    "viewport": 1440,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Configuration_cartes",
+    "theme": "light",
+    "width": 1440,
+    "document": 1440,
+    "viewport": 1440,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Import_referentiel",
+    "theme": "light",
+    "width": 1440,
+    "document": 1440,
+    "viewport": 1440,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Creation_ouvrage",
+    "theme": "dark",
+    "width": 1440,
+    "document": 1440,
+    "viewport": 1440,
+    "modal": false,
+    "errors": []
+  },
+  {
+    "name": "Gestion_des_listes",
+    "theme": "dark",
+    "width": 1440,
+    "document": 1440,
+    "viewport": 1440,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Ajout_equipement",
+    "theme": "dark",
+    "width": 1440,
+    "document": 1440,
+    "viewport": 1440,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Import_inventaire",
+    "theme": "dark",
+    "width": 1440,
+    "document": 1440,
+    "viewport": 1440,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Nouvelle_UF",
+    "theme": "dark",
+    "width": 1440,
+    "document": 1440,
+    "viewport": 1440,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Configuration_cartes",
+    "theme": "dark",
+    "width": 1440,
+    "document": 1440,
+    "viewport": 1440,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Import_referentiel",
+    "theme": "dark",
+    "width": 1440,
+    "document": 1440,
+    "viewport": 1440,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Creation_ouvrage",
+    "theme": "light",
+    "width": 1280,
+    "document": 1280,
+    "viewport": 1280,
+    "modal": false,
+    "errors": []
+  },
+  {
+    "name": "Gestion_des_listes",
+    "theme": "light",
+    "width": 1280,
+    "document": 1280,
+    "viewport": 1280,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Ajout_equipement",
+    "theme": "light",
+    "width": 1280,
+    "document": 1280,
+    "viewport": 1280,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Import_inventaire",
+    "theme": "light",
+    "width": 1280,
+    "document": 1280,
+    "viewport": 1280,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Nouvelle_UF",
+    "theme": "light",
+    "width": 1280,
+    "document": 1280,
+    "viewport": 1280,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Configuration_cartes",
+    "theme": "light",
+    "width": 1280,
+    "document": 1280,
+    "viewport": 1280,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Import_referentiel",
+    "theme": "light",
+    "width": 1280,
+    "document": 1280,
+    "viewport": 1280,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Creation_ouvrage",
+    "theme": "dark",
+    "width": 1280,
+    "document": 1280,
+    "viewport": 1280,
+    "modal": false,
+    "errors": []
+  },
+  {
+    "name": "Gestion_des_listes",
+    "theme": "dark",
+    "width": 1280,
+    "document": 1280,
+    "viewport": 1280,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Ajout_equipement",
+    "theme": "dark",
+    "width": 1280,
+    "document": 1280,
+    "viewport": 1280,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Import_inventaire",
+    "theme": "dark",
+    "width": 1280,
+    "document": 1280,
+    "viewport": 1280,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Nouvelle_UF",
+    "theme": "dark",
+    "width": 1280,
+    "document": 1280,
+    "viewport": 1280,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Configuration_cartes",
+    "theme": "dark",
+    "width": 1280,
+    "document": 1280,
+    "viewport": 1280,
+    "modal": true,
+    "errors": []
+  },
+  {
+    "name": "Import_referentiel",
+    "theme": "dark",
+    "width": 1280,
+    "document": 1280,
+    "viewport": 1280,
+    "modal": true,
+    "errors": []
+  }
+]

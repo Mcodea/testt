@@ -1,0 +1,30 @@
+[
+  {
+    "width": 1440,
+    "theme": "light",
+    "overflow": false,
+    "jsErrors": [],
+    "dialogue": 1
+  },
+  {
+    "width": 1440,
+    "theme": "dark",
+    "overflow": false,
+    "jsErrors": [],
+    "dialogue": 1
+  },
+  {
+    "width": 1280,
+    "theme": "light",
+    "overflow": false,
+    "jsErrors": [],
+    "dialogue": 1
+  },
+  {
+    "width": 1280,
+    "theme": "dark",
+    "overflow": false,
+    "jsErrors": [],
+    "dialogue": 1
+  }
+]

@@ -1,0 +1,5 @@
+Nom;Adresse;Equipement;Fonction;Commentaire;Variable_liee
+ET_RV11MV03_FDC_FER;%I0.2.1;MV03;Fin de course fermée;Entrée physique de position;
+I_15;%I0.2.2;FT02;Défaut capteur;Entrée contact défaut débitmètre;
+I_16;%I0.2.3;PT01;Pression basse;Pressostat de pression basse;
+I_17;%I0.2.4;LT01;Niveau très haut;Contact de seuil très haut;

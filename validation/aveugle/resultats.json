@@ -1,0 +1,328 @@
+{
+ "lignes_table": 66,
+ "associations_proposees": 21,
+ "liens_attendus": 38,
+ "bonnes": 19,
+ "fausses": 1,
+ "omises": 18,
+ "faux_sur_absents": 1,
+ "pieges_associes": [
+  "V1_ARRET_URG"
+ ],
+ "candidat_juste_dans_la_liste": 21,
+ "rappel_pct": 50.0,
+ "precision_pct": 90.5,
+ "details": [
+  {
+   "equipement": "21MV01",
+   "signal": "TS_OUV",
+   "attendu": "TS_RV21MV01_OUV",
+   "propose": "TS_RV21MV01_OUV",
+   "decision": "bonne",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21MV01",
+   "signal": "TS_FER",
+   "attendu": "TS_RV21MV01_FER",
+   "propose": "TS_RV21MV01_FER",
+   "decision": "bonne",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21MV01",
+   "signal": "TS_DEF",
+   "attendu": "V1_DEF",
+   "propose": "V1_DEF",
+   "decision": "bonne",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21MV01",
+   "signal": "TS_MNV",
+   "attendu": "V1_EN_MANOEUVRE",
+   "propose": "",
+   "decision": "omise",
+   "candidat_juste_dans_la_liste": false
+  },
+  {
+   "equipement": "21MV01",
+   "signal": "TS_DEFTPS",
+   "attendu": "V1_TPS_DEP",
+   "propose": "",
+   "decision": "omise",
+   "candidat_juste_dans_la_liste": false
+  },
+  {
+   "equipement": "21MV01",
+   "signal": "TS_DISC",
+   "attendu": "V1_DISC",
+   "propose": "V1_DISC",
+   "decision": "bonne",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21MV01",
+   "signal": "TC_OUV",
+   "attendu": "TC_RV21MV01_OUVERTURE",
+   "propose": "TC_RV21MV01_OUVERTURE",
+   "decision": "bonne",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21MV01",
+   "signal": "TC_FER",
+   "attendu": "TC_RV21MV01_FERMETURE",
+   "propose": "TC_RV21MV01_FERMETURE",
+   "decision": "bonne",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21PM02",
+   "signal": "TS_MA",
+   "attendu": "P2_MARCHE",
+   "propose": "P2_MARCHE",
+   "decision": "bonne",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21PM02",
+   "signal": "TS_DEF",
+   "attendu": "P2_DEF_GEN",
+   "propose": "P2_DEF_THERMIQUE",
+   "decision": "fausse",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21PM02",
+   "signal": "TS_DEFTH",
+   "attendu": "P2_DEF_THERMIQUE",
+   "propose": "",
+   "decision": "omise",
+   "candidat_juste_dans_la_liste": false
+  },
+  {
+   "equipement": "21PM02",
+   "signal": "TS_DISPO",
+   "attendu": "P2_DISPO",
+   "propose": "",
+   "decision": "omise",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21PM02",
+   "signal": "TS_AUTO",
+   "attendu": "P2_AUTO",
+   "propose": "P2_AUTO",
+   "decision": "bonne",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21PM02",
+   "signal": "TS_DEFVAR",
+   "attendu": "P2_DEF_VAR",
+   "propose": "P2_DEF_VAR",
+   "decision": "bonne",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21PM02",
+   "signal": "TC_MA",
+   "attendu": "CMD_MARCHE_P2",
+   "propose": "CMD_MARCHE_P2",
+   "decision": "bonne",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21PM02",
+   "signal": "TC_AR",
+   "attendu": "CMD_ARRET_P2",
+   "propose": "CMD_ARRET_P2",
+   "decision": "bonne",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21PM02",
+   "signal": "CP_HF",
+   "attendu": "P2_HEURES",
+   "propose": "P2_HEURES",
+   "decision": "bonne",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21PM02",
+   "signal": "CP_NDEM",
+   "attendu": "P2_NB_DEM",
+   "propose": "P2_NB_DEM",
+   "decision": "bonne",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21PM02",
+   "signal": "TM_FREQ",
+   "attendu": "P2_FREQ",
+   "propose": "P2_FREQ",
+   "decision": "bonne",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21PM02",
+   "signal": "TR_FREQ",
+   "attendu": "P2_CONS_FREQ",
+   "propose": "P2_CONS_FREQ",
+   "decision": "bonne",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21PM02",
+   "signal": "RTR_FREQ",
+   "attendu": "P2_RET_CONS_FREQ",
+   "propose": "P2_RET_CONS_FREQ",
+   "decision": "bonne",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21PM03",
+   "signal": "TS_MA",
+   "attendu": "P3_MARCHE",
+   "propose": "P3_MARCHE",
+   "decision": "bonne",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21PM03",
+   "signal": "TS_DEF",
+   "attendu": "P3_DEFAUT",
+   "propose": "P3_DEFAUT",
+   "decision": "bonne",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "21PM03",
+   "signal": "CP_HF",
+   "attendu": "P3_HEURES",
+   "propose": "P3_HEURES",
+   "decision": "bonne",
+   "candidat_juste_dans_la_liste": true
+  },
+  {
+   "equipement": "22LT01",
+   "signal": "TM_NIV",
+   "attendu": "NIV_CUVE",
+   "propose": "",
+   "decision": "omise",
+   "candidat_juste_dans_la_liste": false
+  },
+  {
+   "equipement": "22LT01",
+   "signal": "TS_TB",
+   "attendu": "ALA_NIV_TB",
+   "propose": "",
+   "decision": "omise",
+   "candidat_juste_dans_la_liste": false
+  },
+  {
+   "equipement": "22LT01",
+   "signal": "TS_B",
+   "attendu": "ALA_NIV_B",
+   "propose": "",
+   "decision": "omise",
+   "candidat_juste_dans_la_liste": false
+  },
+  {
+   "equipement": "22LT01",
+   "signal": "TS_H",
+   "attendu": "ALA_NIV_H",
+   "propose": "",
+   "decision": "omise",
+   "candidat_juste_dans_la_liste": false
+  },
+  {
+   "equipement": "22LT01",
+   "signal": "TS_DEF",
+   "attendu": "DEF_CAPT_NIV",
+   "propose": "",
+   "decision": "omise",
+   "candidat_juste_dans_la_liste": false
+  },
+  {
+   "equipement": "22LT01",
+   "signal": "TR_SH",
+   "attendu": "SEUIL_H_NIV",
+   "propose": "",
+   "decision": "omise",
+   "candidat_juste_dans_la_liste": false
+  },
+  {
+   "equipement": "22LT01",
+   "signal": "RTR_SH",
+   "attendu": "RET_SEUIL_H_NIV",
+   "propose": "",
+   "decision": "omise",
+   "candidat_juste_dans_la_liste": false
+  },
+  {
+   "equipement": "22FT01",
+   "signal": "TM_DEB",
+   "attendu": "DEBIT_REF",
+   "propose": "",
+   "decision": "omise",
+   "candidat_juste_dans_la_liste": false
+  },
+  {
+   "equipement": "22FT01",
+   "signal": "CP_VOL",
+   "attendu": "VOL_REF",
+   "propose": "",
+   "decision": "omise",
+   "candidat_juste_dans_la_liste": false
+  },
+  {
+   "equipement": "22FT01",
+   "signal": "TS_DEF",
+   "attendu": "DEF_DEBITMETRE",
+   "propose": "",
+   "decision": "omise",
+   "candidat_juste_dans_la_liste": false
+  },
+  {
+   "equipement": "22AT01",
+   "signal": "TM_VAL",
+   "attendu": "CHLORE_VAL",
+   "propose": "",
+   "decision": "omise",
+   "candidat_juste_dans_la_liste": false
+  },
+  {
+   "equipement": "22AT01",
+   "signal": "TS_B",
+   "attendu": "CHLORE_BAS",
+   "propose": "",
+   "decision": "omise",
+   "candidat_juste_dans_la_liste": false
+  },
+  {
+   "equipement": "22AT01",
+   "signal": "TS_H",
+   "attendu": "CHLORE_HAUT",
+   "propose": "",
+   "decision": "omise",
+   "candidat_juste_dans_la_liste": false
+  },
+  {
+   "equipement": "22AT01",
+   "signal": "TS_DEF",
+   "attendu": "DEF_ANALYSEUR_CL",
+   "propose": "",
+   "decision": "omise",
+   "candidat_juste_dans_la_liste": false
+  },
+  {
+   "equipement": "21MV01",
+   "signal": "TS_LOC",
+   "attendu": "",
+   "propose": "V1_ARRET_URG",
+   "decision": "faux sur absent"
+  }
+ ]
+}

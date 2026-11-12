@@ -1,0 +1,165 @@
+{
+  "fichier": "EXEMPLE_FICTIF_PL7.pdf",
+  "empreinte_sha256": "d90b6013ebc920d227081b38179f46fb3475a90bb30a05e2ac3e4a5e60a545db",
+  "pages": 4,
+  "pages_texte": 4,
+  "occurrences": [
+    {
+      "adresse": "%I0.3.2",
+      "page": 2,
+      "contexte": "LD  %I0.3.2",
+      "rubrique": "Programme (indice de rubrique)",
+      "usage": "",
+      "section": "",
+      "symbole": ""
+    },
+    {
+      "adresse": "%M120",
+      "page": 2,
+      "contexte": "ST  %M120",
+      "rubrique": "Programme (indice de rubrique)",
+      "usage": "",
+      "section": "",
+      "symbole": ""
+    },
+    {
+      "adresse": "%M120",
+      "page": 2,
+      "contexte": "LD  %M120",
+      "rubrique": "Programme (indice de rubrique)",
+      "usage": "",
+      "section": "",
+      "symbole": ""
+    },
+    {
+      "adresse": "%MW1200:X3",
+      "page": 2,
+      "contexte": "ST  %MW1200:X3",
+      "rubrique": "Programme (indice de rubrique)",
+      "usage": "",
+      "section": "",
+      "symbole": ""
+    },
+    {
+      "adresse": "%I0.3.2",
+      "page": 3,
+      "contexte": "%I0.3.2          FC_V3_FER           MAST-PRL         R",
+      "rubrique": "Références croisées (indice de rubrique)",
+      "usage": "R",
+      "section": "MAST-PRL",
+      "symbole": "FC_V3_FER"
+    },
+    {
+      "adresse": "%M120",
+      "page": 3,
+      "contexte": "%M120            V3_FER              MAST-POST        W",
+      "rubrique": "Références croisées (indice de rubrique)",
+      "usage": "W",
+      "section": "MAST-POST",
+      "symbole": "V3_FER"
+    },
+    {
+      "adresse": "%MW1200:X3",
+      "page": 3,
+      "contexte": "%MW1200:X3       TS_V3_FER           MAST-POST        W",
+      "rubrique": "Références croisées (indice de rubrique)",
+      "usage": "W",
+      "section": "MAST-POST",
+      "symbole": "TS_V3_FER"
+    },
+    {
+      "adresse": "%I0.3.2",
+      "page": 4,
+      "contexte": "%I0.3.2          FC_V3_FER         Fin de course ferme",
+      "rubrique": "Variables (indice de rubrique)",
+      "usage": "",
+      "section": "",
+      "symbole": "FC_V3_FER"
+    },
+    {
+      "adresse": "%M120",
+      "page": 4,
+      "contexte": "%M120            V3_FER            Etat interieur",
+      "rubrique": "Variables (indice de rubrique)",
+      "usage": "",
+      "section": "",
+      "symbole": "V3_FER"
+    },
+    {
+      "adresse": "%MW1200:X3",
+      "page": 4,
+      "contexte": "%MW1200:X3       TS_V3_FER         Bit accessible dans un mot",
+      "rubrique": "Variables (indice de rubrique)",
+      "usage": "",
+      "section": "",
+      "symbole": "TS_V3_FER"
+    },
+    {
+      "adresse": "%MW100",
+      "page": 4,
+      "contexte": "%MW100           A                 Reserve 1",
+      "rubrique": "Variables (indice de rubrique)",
+      "usage": "",
+      "section": "",
+      "symbole": ""
+    },
+    {
+      "adresse": "%MW101",
+      "page": 4,
+      "contexte": "%MW101           B                 Reserve 2",
+      "rubrique": "Variables (indice de rubrique)",
+      "usage": "",
+      "section": "",
+      "symbole": ""
+    },
+    {
+      "adresse": "%MW102",
+      "page": 4,
+      "contexte": "%MW102           C                 Reserve 3",
+      "rubrique": "Variables (indice de rubrique)",
+      "usage": "",
+      "section": "",
+      "symbole": ""
+    }
+  ],
+  "adresses_uniques": [
+    "%I0.3.2",
+    "%M120",
+    "%MW100",
+    "%MW101",
+    "%MW102",
+    "%MW1200:X3"
+  ],
+  "pages_references_croisees": [
+    3
+  ],
+  "zones_memoires_candidates": [
+    {
+      "debut": "%MW100",
+      "fin": "%MW102",
+      "taille": 3,
+      "preuve": "seulement contiguïté des adresses"
+    }
+  ],
+  "liens_il_simples": [
+    {
+      "origine": "%I0.3.2",
+      "destination": "%M120",
+      "page": 2,
+      "justification": "Deux instructions IL consécutives LD puis ST, sans opération intermédiaire",
+      "statut": "Indice à vérifier : ne prouve pas une exposition à la supervision"
+    },
+    {
+      "origine": "%M120",
+      "destination": "%MW1200:X3",
+      "page": 2,
+      "justification": "Deux instructions IL consécutives LD puis ST, sans opération intermédiaire",
+      "statut": "Indice à vérifier : ne prouve pas une exposition à la supervision"
+    }
+  ],
+  "avertissements": [
+    "Les indices R/W, les symboles et les sections sont extraits au mieux de la mise en page ; vérification visuelle nécessaire.",
+    "Les liens LD/ST sont des indices syntaxiques sur du texte IL strict, pas une preuve de causalité industrielle ou une interprétation Ladder/FBD.",
+    "Une proximité de mots %MW ne démontre ni une table d’échanges ni une liaison TOPKAPI."
+  ]
+}

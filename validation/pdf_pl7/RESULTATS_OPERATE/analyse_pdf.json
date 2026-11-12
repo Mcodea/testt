@@ -1,0 +1,194 @@
+{
+  "fichier": "EXEMPLE_FICTIF_OPERATE_PL7.pdf",
+  "empreinte_sha256": "7d7adb5e4bc4d8572b3a3e4fbfee35597a3e2ea40a11415e6856f475a178b965",
+  "pages": 5,
+  "pages_texte": 5,
+  "occurrences": [
+    {
+      "adresse": "%MW10",
+      "page": 2,
+      "contexte": "%MW10:=%IW0.2/10",
+      "rubrique": "Programme (indice de rubrique)",
+      "usage": "",
+      "section": "MAST-PRL",
+      "symbole": ""
+    },
+    {
+      "adresse": "%IW0.2",
+      "page": 2,
+      "contexte": "%MW10:=%IW0.2/10",
+      "rubrique": "Programme (indice de rubrique)",
+      "usage": "",
+      "section": "MAST-PRL",
+      "symbole": ""
+    },
+    {
+      "adresse": "%IW0.2",
+      "page": 2,
+      "contexte": "%IW0.2",
+      "rubrique": "Programme (indice de rubrique)",
+      "usage": "",
+      "section": "MAST-PRL",
+      "symbole": ""
+    },
+    {
+      "adresse": "%MW11",
+      "page": 3,
+      "contexte": "%MW11:=%MW10*100",
+      "rubrique": "Programme (indice de rubrique)",
+      "usage": "",
+      "section": "MAST-POST",
+      "symbole": ""
+    },
+    {
+      "adresse": "%MW10",
+      "page": 3,
+      "contexte": "%MW11:=%MW10*100",
+      "rubrique": "Programme (indice de rubrique)",
+      "usage": "",
+      "section": "MAST-POST",
+      "symbole": ""
+    },
+    {
+      "adresse": "%MW11",
+      "page": 3,
+      "contexte": "%MW11:=%MW10*100",
+      "rubrique": "Programme (indice de rubrique)",
+      "usage": "",
+      "section": "MAST-POST",
+      "symbole": ""
+    },
+    {
+      "adresse": "%MW10",
+      "page": 3,
+      "contexte": "%MW11:=%MW10*100",
+      "rubrique": "Programme (indice de rubrique)",
+      "usage": "",
+      "section": "MAST-POST",
+      "symbole": ""
+    },
+    {
+      "adresse": "%IW0.2",
+      "page": 4,
+      "contexte": "%IW0.2 MAST-PRL R",
+      "rubrique": "Références croisées (indice de rubrique)",
+      "usage": "R",
+      "section": "MAST-PRL",
+      "symbole": ""
+    },
+    {
+      "adresse": "%MW10",
+      "page": 4,
+      "contexte": "%MW10 MAST-POST R",
+      "rubrique": "Références croisées (indice de rubrique)",
+      "usage": "R",
+      "section": "MAST-POST",
+      "symbole": ""
+    },
+    {
+      "adresse": "%MW11",
+      "page": 4,
+      "contexte": "%MW11 MAST-POST W",
+      "rubrique": "Références croisées (indice de rubrique)",
+      "usage": "W",
+      "section": "MAST-POST",
+      "symbole": ""
+    },
+    {
+      "adresse": "%IW0.2",
+      "page": 5,
+      "contexte": "%IW0.2 Pt_100 Mesure entrante",
+      "rubrique": "Variables (indice de rubrique)",
+      "usage": "",
+      "section": "",
+      "symbole": "Pt_100"
+    },
+    {
+      "adresse": "%MW10",
+      "page": 5,
+      "contexte": "%MW10 TEMP_C Valeur calculee",
+      "rubrique": "Variables (indice de rubrique)",
+      "usage": "",
+      "section": "",
+      "symbole": "TEMP_C"
+    },
+    {
+      "adresse": "%MW11",
+      "page": 5,
+      "contexte": "%MW11 TEMP_X100 Mise a echelle",
+      "rubrique": "Variables (indice de rubrique)",
+      "usage": "",
+      "section": "",
+      "symbole": "TEMP_X100"
+    }
+  ],
+  "adresses_uniques": [
+    "%IW0.2",
+    "%MW10",
+    "%MW11"
+  ],
+  "pages_references_croisees": [
+    4
+  ],
+  "zones_memoires_candidates": [],
+  "liens_il_simples": [],
+  "affectations_documentaires": [
+    {
+      "destination": "%MW10",
+      "dependances": [
+        "%IW0.2"
+      ],
+      "expression": "%MW10:=%IW0.2/10",
+      "page": 2,
+      "section": "MAST-PRL",
+      "nature": "OPERATE : expression d’affectation imprimée, dépendance syntaxique uniquement",
+      "statut": "À examiner : aucune qualification supervision"
+    },
+    {
+      "destination": "%MW11",
+      "dependances": [
+        "%MW10"
+      ],
+      "expression": "%MW11:=%MW10*100",
+      "page": 3,
+      "section": "MAST-POST",
+      "nature": "OPERATE : expression d’affectation imprimée, dépendance syntaxique uniquement",
+      "statut": "À examiner : aucune qualification supervision"
+    }
+  ],
+  "indices_symboles": [
+    {
+      "adresse": "%IW0.2",
+      "symbole": "Pt_100",
+      "commentaire": "Sonde fictive",
+      "page": 2,
+      "source": "Tableau de variables imprimé : association à vérifier"
+    },
+    {
+      "adresse": "%IW0.2",
+      "symbole": "Pt_100",
+      "commentaire": "Mesure entrante",
+      "page": 5,
+      "source": "Tableau de variables imprimé : association à vérifier"
+    },
+    {
+      "adresse": "%MW10",
+      "symbole": "TEMP_C",
+      "commentaire": "Valeur calculee",
+      "page": 5,
+      "source": "Tableau de variables imprimé : association à vérifier"
+    },
+    {
+      "adresse": "%MW11",
+      "symbole": "TEMP_X100",
+      "commentaire": "Mise a echelle",
+      "page": 5,
+      "source": "Tableau de variables imprimé : association à vérifier"
+    }
+  ],
+  "avertissements": [
+    "Les indices R/W, les symboles, les commentaires et les sections sont extraits au mieux de la mise en page ; vérification visuelle nécessaire.",
+    "Les liens LD/ST et les affectations OPERATE sont des dépendances syntaxiques documentaires, pas une interprétation Ladder/FBD ni une preuve d’acquisition TOPKAPI.",
+    "Une proximité de mots %MW ne démontre ni une table d’échanges ni une liaison TOPKAPI."
+  ]
+}

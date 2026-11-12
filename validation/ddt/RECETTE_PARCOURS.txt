@@ -1,0 +1,12 @@
+[RÉUSSI] Neuf : génération + plan mémoire + contrôle (0.002s) : 38 variables, 13 E/S, TR/RTR cohérents
+[RÉUSSI] Neuf : enregistrer / rouvrir (0.016s) : sauvegarde, réouverture, catalogue figé, sauvegarde .bak
+[RÉUSSI] Neuf : exports XSY et Excel analysables (0.011s) : 38 variables XSY XML, Excel lisible
+[RÉUSSI] Neuf : ajout équipement sans décaler (0.001s) : 15 variables ajoutées, 38 adresses préservées
+[RÉUSSI] Neuf : collision bloquée et données conservées (0.001s) : collision refusée sans altération
+[RÉUSSI] Existant : CSV → correspondances (0.004s) : 2 variables reprises, adresses préservées, non validées automatiquement
+[RÉUSSI] Existant : validation métier bloquante (0.000s) : statut « Validé » refusé tant que les correspondances sont orange
+[RÉUSSI] Existant : réimport adresse modifiée (0.000s) : écart détecté, adresse source actualisée et confirmation révoquée
+[RÉUSSI] Existant : export correspondances Excel (0.011s) : table de correspondance Excel générée
+[RÉUSSI] Existant : import contradictoire atomique (0.000s) : import contradictoire refusé sans modification
+[RÉUSSI] Charge fictive : plusieurs centaines de variables (0.162s) : 120 équipements, 1520 variables, 520 E/S, aucun conflit mémoire
+BILAN : 11/11 parcours réussis

@@ -1,0 +1,538 @@
+{
+  "jeu": {
+    "variables_source": 27,
+    "equipements": 5,
+    "es_documentaires": 4,
+    "liens_attendus": 18,
+    "signaux_absents": 3
+  },
+  "methodes": {
+    "programme": {
+      "corrects": 5,
+      "faux": 0,
+      "non_proposes": 13,
+      "precision_pct": 100.0,
+      "rappel_pct": 27.8,
+      "f1_pct": 43.5,
+      "couverture_pct": 27.8,
+      "premiers_candidats_ambigus": 0,
+      "faux_positifs_sur_absents": 0
+    },
+    "catalogue": {
+      "corrects": 15,
+      "faux": 0,
+      "non_proposes": 3,
+      "precision_pct": 100.0,
+      "rappel_pct": 83.3,
+      "f1_pct": 90.9,
+      "couverture_pct": 83.3,
+      "premiers_candidats_ambigus": 1,
+      "faux_positifs_sur_absents": 0
+    },
+    "hybride": {
+      "corrects": 18,
+      "faux": 0,
+      "non_proposes": 0,
+      "precision_pct": 100.0,
+      "rappel_pct": 100.0,
+      "f1_pct": 100.0,
+      "couverture_pct": 100.0,
+      "premiers_candidats_ambigus": 0,
+      "faux_positifs_sur_absents": 0
+    }
+  },
+  "details": {
+    "programme": [
+      {
+        "equipement": "MV03",
+        "signal": "TS_FER",
+        "attendu": "TS_RV11MV03_FER",
+        "propose": "TS_RV11MV03_FER",
+        "score": 96,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "MV03",
+        "signal": "TS_OUV",
+        "attendu": "TS_RV11MV03_OUV",
+        "propose": "TS_RV11MV03_OUV",
+        "score": 96,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "MV03",
+        "signal": "TS_DEF",
+        "attendu": "ALM_V3_DEF",
+        "propose": "",
+        "score": 0,
+        "decision": "non_proposé",
+        "ambigu": false
+      },
+      {
+        "equipement": "MV03",
+        "signal": "TC_FER",
+        "attendu": "ORDRE_V3_FER",
+        "propose": "",
+        "score": 0,
+        "decision": "non_proposé",
+        "ambigu": false
+      },
+      {
+        "equipement": "MV03",
+        "signal": "TC_OUV",
+        "attendu": "TC_RV11MV03_OUV",
+        "propose": "TC_RV11MV03_OUV",
+        "score": 96,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "PM01",
+        "signal": "TS_MA",
+        "attendu": "ETAT_PM1_RUN",
+        "propose": "",
+        "score": 0,
+        "decision": "non_proposé",
+        "ambigu": false
+      },
+      {
+        "equipement": "PM01",
+        "signal": "TS_DEF",
+        "attendu": "TS_RV11PM01_DEF",
+        "propose": "TS_RV11PM01_DEF",
+        "score": 96,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "PM01",
+        "signal": "TC_MA",
+        "attendu": "CMD_P1_RUN",
+        "propose": "",
+        "score": 0,
+        "decision": "non_proposé",
+        "ambigu": false
+      },
+      {
+        "equipement": "PM01",
+        "signal": "CP_HF",
+        "attendu": "HOURS_PM01",
+        "propose": "",
+        "score": 0,
+        "decision": "non_proposé",
+        "ambigu": false
+      },
+      {
+        "equipement": "PM01",
+        "signal": "TM_INT",
+        "attendu": "MESURE_PM01_I",
+        "propose": "",
+        "score": 0,
+        "decision": "non_proposé",
+        "ambigu": false
+      },
+      {
+        "equipement": "FT02",
+        "signal": "TM_DEB",
+        "attendu": "FLOW_FT02",
+        "propose": "",
+        "score": 0,
+        "decision": "non_proposé",
+        "ambigu": false
+      },
+      {
+        "equipement": "FT02",
+        "signal": "TS_DEF",
+        "attendu": "MEM_11",
+        "propose": "",
+        "score": 0,
+        "decision": "non_proposé",
+        "ambigu": false
+      },
+      {
+        "equipement": "FT02",
+        "signal": "CP_VOL",
+        "attendu": "CP_RV11FT02_VOL",
+        "propose": "CP_RV11FT02_VOL",
+        "score": 96,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "PT01",
+        "signal": "TM_PRE",
+        "attendu": "PRESSION_PT01",
+        "propose": "",
+        "score": 0,
+        "decision": "non_proposé",
+        "ambigu": false
+      },
+      {
+        "equipement": "PT01",
+        "signal": "TS_B",
+        "attendu": "LAST_16",
+        "propose": "",
+        "score": 0,
+        "decision": "non_proposé",
+        "ambigu": false
+      },
+      {
+        "equipement": "LT01",
+        "signal": "TM_NIV",
+        "attendu": "AN_LT01_NIV",
+        "propose": "",
+        "score": 0,
+        "decision": "non_proposé",
+        "ambigu": false
+      },
+      {
+        "equipement": "LT01",
+        "signal": "TS_TH",
+        "attendu": "MEM_12",
+        "propose": "",
+        "score": 0,
+        "decision": "non_proposé",
+        "ambigu": false
+      },
+      {
+        "equipement": "LT01",
+        "signal": "TS_B",
+        "attendu": "BS_LT01_NIV_BAS",
+        "propose": "",
+        "score": 0,
+        "decision": "non_proposé",
+        "ambigu": false
+      }
+    ],
+    "catalogue": [
+      {
+        "equipement": "MV03",
+        "signal": "TS_FER",
+        "attendu": "TS_RV11MV03_FER",
+        "propose": "TS_RV11MV03_FER",
+        "score": 74,
+        "decision": "correct",
+        "ambigu": true
+      },
+      {
+        "equipement": "MV03",
+        "signal": "TS_OUV",
+        "attendu": "TS_RV11MV03_OUV",
+        "propose": "TS_RV11MV03_OUV",
+        "score": 74,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "MV03",
+        "signal": "TS_DEF",
+        "attendu": "ALM_V3_DEF",
+        "propose": "ALM_V3_DEF",
+        "score": 64,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "MV03",
+        "signal": "TC_FER",
+        "attendu": "ORDRE_V3_FER",
+        "propose": "ORDRE_V3_FER",
+        "score": 74,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "MV03",
+        "signal": "TC_OUV",
+        "attendu": "TC_RV11MV03_OUV",
+        "propose": "TC_RV11MV03_OUV",
+        "score": 74,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "PM01",
+        "signal": "TS_MA",
+        "attendu": "ETAT_PM1_RUN",
+        "propose": "ETAT_PM1_RUN",
+        "score": 74,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "PM01",
+        "signal": "TS_DEF",
+        "attendu": "TS_RV11PM01_DEF",
+        "propose": "TS_RV11PM01_DEF",
+        "score": 64,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "PM01",
+        "signal": "TC_MA",
+        "attendu": "CMD_P1_RUN",
+        "propose": "CMD_P1_RUN",
+        "score": 74,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "PM01",
+        "signal": "CP_HF",
+        "attendu": "HOURS_PM01",
+        "propose": "HOURS_PM01",
+        "score": 64,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "PM01",
+        "signal": "TM_INT",
+        "attendu": "MESURE_PM01_I",
+        "propose": "MESURE_PM01_I",
+        "score": 64,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "FT02",
+        "signal": "TM_DEB",
+        "attendu": "FLOW_FT02",
+        "propose": "FLOW_FT02",
+        "score": 64,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "FT02",
+        "signal": "TS_DEF",
+        "attendu": "MEM_11",
+        "propose": "",
+        "score": 0,
+        "decision": "non_proposé",
+        "ambigu": false
+      },
+      {
+        "equipement": "FT02",
+        "signal": "CP_VOL",
+        "attendu": "CP_RV11FT02_VOL",
+        "propose": "CP_RV11FT02_VOL",
+        "score": 74,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "PT01",
+        "signal": "TM_PRE",
+        "attendu": "PRESSION_PT01",
+        "propose": "PRESSION_PT01",
+        "score": 64,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "PT01",
+        "signal": "TS_B",
+        "attendu": "LAST_16",
+        "propose": "",
+        "score": 0,
+        "decision": "non_proposé",
+        "ambigu": false
+      },
+      {
+        "equipement": "LT01",
+        "signal": "TM_NIV",
+        "attendu": "AN_LT01_NIV",
+        "propose": "AN_LT01_NIV",
+        "score": 64,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "LT01",
+        "signal": "TS_TH",
+        "attendu": "MEM_12",
+        "propose": "",
+        "score": 0,
+        "decision": "non_proposé",
+        "ambigu": false
+      },
+      {
+        "equipement": "LT01",
+        "signal": "TS_B",
+        "attendu": "BS_LT01_NIV_BAS",
+        "propose": "BS_LT01_NIV_BAS",
+        "score": 64,
+        "decision": "correct",
+        "ambigu": false
+      }
+    ],
+    "hybride": [
+      {
+        "equipement": "MV03",
+        "signal": "TS_FER",
+        "attendu": "TS_RV11MV03_FER",
+        "propose": "TS_RV11MV03_FER",
+        "score": 100,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "MV03",
+        "signal": "TS_OUV",
+        "attendu": "TS_RV11MV03_OUV",
+        "propose": "TS_RV11MV03_OUV",
+        "score": 96,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "MV03",
+        "signal": "TS_DEF",
+        "attendu": "ALM_V3_DEF",
+        "propose": "ALM_V3_DEF",
+        "score": 64,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "MV03",
+        "signal": "TC_FER",
+        "attendu": "ORDRE_V3_FER",
+        "propose": "ORDRE_V3_FER",
+        "score": 74,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "MV03",
+        "signal": "TC_OUV",
+        "attendu": "TC_RV11MV03_OUV",
+        "propose": "TC_RV11MV03_OUV",
+        "score": 96,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "PM01",
+        "signal": "TS_MA",
+        "attendu": "ETAT_PM1_RUN",
+        "propose": "ETAT_PM1_RUN",
+        "score": 74,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "PM01",
+        "signal": "TS_DEF",
+        "attendu": "TS_RV11PM01_DEF",
+        "propose": "TS_RV11PM01_DEF",
+        "score": 96,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "PM01",
+        "signal": "TC_MA",
+        "attendu": "CMD_P1_RUN",
+        "propose": "CMD_P1_RUN",
+        "score": 74,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "PM01",
+        "signal": "CP_HF",
+        "attendu": "HOURS_PM01",
+        "propose": "HOURS_PM01",
+        "score": 64,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "PM01",
+        "signal": "TM_INT",
+        "attendu": "MESURE_PM01_I",
+        "propose": "MESURE_PM01_I",
+        "score": 64,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "FT02",
+        "signal": "TM_DEB",
+        "attendu": "FLOW_FT02",
+        "propose": "FLOW_FT02",
+        "score": 64,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "FT02",
+        "signal": "TS_DEF",
+        "attendu": "MEM_11",
+        "propose": "MEM_11",
+        "score": 57,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "FT02",
+        "signal": "CP_VOL",
+        "attendu": "CP_RV11FT02_VOL",
+        "propose": "CP_RV11FT02_VOL",
+        "score": 96,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "PT01",
+        "signal": "TM_PRE",
+        "attendu": "PRESSION_PT01",
+        "propose": "PRESSION_PT01",
+        "score": 69,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "PT01",
+        "signal": "TS_B",
+        "attendu": "LAST_16",
+        "propose": "LAST_16",
+        "score": 57,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "LT01",
+        "signal": "TM_NIV",
+        "attendu": "AN_LT01_NIV",
+        "propose": "AN_LT01_NIV",
+        "score": 69,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "LT01",
+        "signal": "TS_TH",
+        "attendu": "MEM_12",
+        "propose": "MEM_12",
+        "score": 57,
+        "decision": "correct",
+        "ambigu": false
+      },
+      {
+        "equipement": "LT01",
+        "signal": "TS_B",
+        "attendu": "BS_LT01_NIV_BAS",
+        "propose": "BS_LT01_NIV_BAS",
+        "score": 64,
+        "decision": "correct",
+        "ambigu": false
+      }
+    ]
+  }
+}

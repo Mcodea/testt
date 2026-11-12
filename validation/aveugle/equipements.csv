@@ -1,0 +1,7 @@
+SousEnsemble;Type;Numero;Libelle;Options
+21;MV;01;Vanne de sortie réservoir;Télécommandée
+21;PM;02;Pompe de reprise 2;Télécommandée|Variateur
+21;PM;03;Pompe de reprise 3;
+22;LT;01;Niveau cuve;Seuils réglables
+22;FT;01;Débitmètre refoulement;Avec totalisateur
+22;AT;01;Analyseur chlore;

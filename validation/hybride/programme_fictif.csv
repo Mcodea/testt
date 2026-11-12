@@ -1,0 +1,28 @@
+Nom;Type;Adresse;Commentaire
+TS_RV11MV03_FER;BOOL;%M120;Vanne 3 retour fermée
+TS_RV11MV03_OUV;BOOL;%M121;Vanne 3 retour ouverte
+ALM_V3_DEF;BOOL;%M122;Vanne V3 défaut général
+ORDRE_V3_FER;BOOL;%M180;Commande fermeture de vanne V3
+TC_RV11MV03_OUV;BOOL;%M181;Commande ouverture vanne 3
+ETAT_PM1_RUN;BOOL;%M200;Retour marche pompe PM01
+TS_RV11PM01_DEF;BOOL;%M201;Pompe 1 défaut général
+CMD_P1_RUN;BOOL;%M220;Commande marche pompe PM01
+HOURS_PM01;DINT;%MD100;Heures de fonctionnement pompe PM01
+MESURE_PM01_I;REAL;%MF210;Intensité moteur PM01
+FLOW_FT02;REAL;%MF300;Débit instantané FT02
+MEM_11;BOOL;%M310;Etat traitement entrée I_15
+CP_RV11FT02_VOL;DINT;%MD320;Volume totalisé FT02
+PRESSION_PT01;REAL;%MF400;Pression mesurée PT01
+LAST_16;BOOL;%M415;État recopie I_16
+AN_LT01_NIV;REAL;%MF500;Niveau mesuré LT01
+MEM_12;BOOL;%M514;Etat recopie I_17
+BS_LT01_NIV_BAS;BOOL;%M516;Niveau bas LT01
+TEMP_117;BOOL;%M700;Mémoire temporisation cycle
+WORK_22;INT;%MW701;Étape interne automate
+RESET_V3;BOOL;%M702;Réarmement séquence interne vanne 3
+ET_RV11MV03_FDC_FER;EBOOL;%I0.2.1;Fin de course fermeture
+I_15;EBOOL;%I0.2.2;Défaut physique capteur débit
+I_16;EBOOL;%I0.2.3;Pressostat bas
+I_17;EBOOL;%I0.2.4;Seuil niveau très haut
+ETAPE_15;BOOL;%M707;Variable interne de séquence
+V3_FER_NON;BOOL;%M708;Inhibition position fermée (pas un retour réel)

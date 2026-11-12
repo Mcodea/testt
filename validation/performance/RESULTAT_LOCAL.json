@@ -1,0 +1,25 @@
+{
+  "equipements": 300,
+  "variables": 5000,
+  "fichiers_topkapi": 70,
+  "seconds": {
+    "ouverture": 0.030980331000137085,
+    "generation": 0.026017726999270963,
+    "adressage": 0.6489528289994269,
+    "import_topkapi_70": 0.015509665000536188,
+    "exports": 1.0141898669999136,
+    "interface": 0.09240000000037253,
+    "filtrage": 0.11870000000018627
+  },
+  "limits_seconds": {
+    "ouverture": 2,
+    "generation": 3,
+    "adressage": 2,
+    "import_topkapi_70": 10,
+    "exports": 5,
+    "interface": 0.2,
+    "filtrage": 0.2
+  },
+  "failures": [],
+  "portee": "Mesure locale Linux, Chromium système ; ne remplace pas une exécution GitHub Actions ni un essai Windows."
+}

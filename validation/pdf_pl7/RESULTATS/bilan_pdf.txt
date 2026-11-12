@@ -1,0 +1,33 @@
+ANALYSE DOCUMENTAIRE PDF — SOREP (non qualifiante)
+Fichier : EXEMPLE_FICTIF_PL7.pdf
+SHA256 : d90b6013ebc920d227081b38179f46fb3475a90bb30a05e2ac3e4a5e60a545db
+Pages : 4 | Pages avec texte : 4
+Occurrences d’adresses : 13 | Adresses uniques : 6
+Pages « références croisées » repérées : 3
+Groupes %MW consécutifs (simples indices) : 1
+Indices de dépendance IL stricts LD/ST : 2
+AUCUNE correspondance fonctionnelle, adresse TOPKAPI ni relation R/W n’est validée automatiquement.
+
+AVERTISSEMENTS :
+ - Les indices R/W, les symboles et les sections sont extraits au mieux de la mise en page ; vérification visuelle nécessaire.
+ - Les liens LD/ST sont des indices syntaxiques sur du texte IL strict, pas une preuve de causalité industrielle ou une interprétation Ladder/FBD.
+ - Une proximité de mots %MW ne démontre ni une table d’échanges ni une liaison TOPKAPI.
+
+LIENS IL POSSIBLES (textes seulement, à vérifier) :
+  p.2 : %I0.3.2 -> %M120 (LD / ST consécutifs)
+  p.2 : %M120 -> %MW1200:X3 (LD / ST consécutifs)
+
+EXEMPLES D’OCCURRENCES DOCUMENTÉES :
+  p.2 | %I0.3.2 | ? | section non établie | LD  %I0.3.2
+  p.2 | %M120 | ? | section non établie | ST  %M120
+  p.2 | %M120 | ? | section non établie | LD  %M120
+  p.2 | %MW1200:X3 | ? | section non établie | ST  %MW1200:X3
+  p.3 | %I0.3.2 | R | MAST-PRL | %I0.3.2          FC_V3_FER           MAST-PRL         R
+  p.3 | %M120 | W | MAST-POST | %M120            V3_FER              MAST-POST        W
+  p.3 | %MW1200:X3 | W | MAST-POST | %MW1200:X3       TS_V3_FER           MAST-POST        W
+  p.4 | %I0.3.2 | ? | section non établie | %I0.3.2          FC_V3_FER         Fin de course ferme
+  p.4 | %M120 | ? | section non établie | %M120            V3_FER            Etat interieur
+  p.4 | %MW1200:X3 | ? | section non établie | %MW1200:X3       TS_V3_FER         Bit accessible dans un mot
+  p.4 | %MW100 | ? | section non établie | %MW100           A                 Reserve 1
+  p.4 | %MW101 | ? | section non établie | %MW101           B                 Reserve 2
+  p.4 | %MW102 | ? | section non établie | %MW102           C                 Reserve 3

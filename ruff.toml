@@ -1,0 +1,7 @@
+# Contrôles de correction du code hérité ; le style n'est pas réécrit en bloc.
+target-version = "py312"
+line-length = 120
+exclude = ["validation", "docs", "ancienne_interface_qt"]
+
+[lint]
+select = ["F", "E9"]

@@ -1,0 +1,6 @@
+# QtWidgets/QtCore/QtGui et QtTest. Python 3.14 pris en charge depuis PySide6 6.10.1.
+PySide6-Essentials>=6.10.1,<6.13
+openpyxl>=3.1.2,<4
+
+# Analyse documentaire PDF (hors OCR)
+PyMuPDF>=1.26.7,<1.30

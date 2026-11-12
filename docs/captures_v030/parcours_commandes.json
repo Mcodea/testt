@@ -1,0 +1,97 @@
+[
+  {
+    "step": "ouverture inventaire",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "step": "ouverture liste E/S",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "step": "ruban E/S relié au moteur",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "step": "ouverture Matériel",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "step": "édition des cartes via ruban",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "step": "table variables",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "step": "points télétransmission",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "step": "adressage automatique",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "step": "recalcul aperçu adressage",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "step": "recette",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "step": "référentiel",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "step": "contrôle publication",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "step": "commandes publication affichées",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "step": "retour brouillon",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "step": "nouvel équipement accessible",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "step": "fermeture modale clavier",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "step": "thème sombre",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "step": "thème clair",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "step": "absence erreur JavaScript",
+    "ok": true,
+    "detail": "[]"
+  }
+]

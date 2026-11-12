@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="fr" data-theme="light"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark"><title>OGIAS 0.32 — Ingénierie, Automatisme, Supervision</title>
+<link rel="icon" href="assets/ogias-application.ico"><link rel="stylesheet" href="app.css"><link rel="stylesheet" href="v031.css">
+</head><body>
+<header id="v30-title" class="v30-title">
+ <a class="v30-brand" href="#/ouvrages" data-nav="#/ouvrages" aria-label="OGIAS — Accueil"><img src="assets/ogias-logo-entete.png" alt="OGIAS"><span class="v30-version">0.32</span></a>
+ <span class="v30-signature">Ingénierie · Automatisme · Supervision</span>
+ <span class="v30-title-spacer"></span>
+ <button type="button" id="v30-notifications" class="v30-header-button" title="Afficher les anomalies et imports en attente" aria-label="Notifications"></button>
+ <button type="button" id="v30-help" class="v30-header-button" title="Aide et documentation" aria-label="Aide"></button>
+ <span id="v30-user" class="v30-user" hidden></span>
+</header>
+<section class="v30-ribbon" aria-label="Ruban d'outils">
+ <nav id="v30-ribbon-tabs" class="v30-ribbon-tabs" aria-label="Onglets du ruban"></nav>
+ <div id="v30-ribbon-actions" class="v30-ribbon-actions" role="toolbar" aria-label="Commandes de l'écran"></div>
+</section>
+<nav id="v30-documents" class="v30-documents" aria-label="Documents ouverts"></nav>
+<div id="v30-work-heading" class="v30-work-heading" hidden></div>
+<div id="v30-workspace" class="v30-workspace">
+ <aside id="v30-tree" class="v30-tree" aria-label="Arborescence de l'ouvrage" hidden></aside>
+ <main id="vue" class="v30-main" aria-live="polite"></main>
+ <aside id="v30-inspector" class="v30-inspector" aria-label="Synthèse, validation et détails"><div id="v30-inspector-body"></div></aside>
+</div>
+<footer id="v30-status" class="v30-status" role="status"></footer>
+<div id="etapes" hidden></div><div id="ouvrage-tete" hidden></div>
+<div id="modale" class="modale" hidden></div><div id="toasts" class="toasts" aria-live="polite"></div>
+<script src="v030-shell.js"></script><script src="v031-ui.js"></script><script src="v031-variables.js"></script><script src="referentiel-codes.js"></script><script src="app.js"></script>
+</body></html>

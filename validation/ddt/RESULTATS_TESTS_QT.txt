@@ -1,0 +1,17 @@
+test_actions_assistant_hybride_disponibles (test_fumee_qt.TestInterfaceQt.test_actions_assistant_hybride_disponibles) ... skipped "PySide6 n'est pas installé"
+test_affichage_statuts_existant (test_fumee_qt.TestInterfaceQt.test_affichage_statuts_existant) ... skipped "PySide6 n'est pas installé"
+test_attribution_par_la_session (test_fumee_qt.TestInterfaceQt.test_attribution_par_la_session) ... skipped "PySide6 n'est pas installé"
+test_dialogue_equipement (test_fumee_qt.TestInterfaceQt.test_dialogue_equipement) ... skipped "PySide6 n'est pas installé"
+test_dialogue_plan (test_fumee_qt.TestInterfaceQt.test_dialogue_plan) ... skipped "PySide6 n'est pas installé"
+test_ecran_ouvrage (test_fumee_qt.TestInterfaceQt.test_ecran_ouvrage) ... skipped "PySide6 n'est pas installé"
+test_ecran_variables (test_fumee_qt.TestInterfaceQt.test_ecran_variables) ... skipped "PySide6 n'est pas installé"
+test_navigation (test_fumee_qt.TestInterfaceQt.test_navigation) ... skipped "PySide6 n'est pas installé"
+test_registre_projets_et_synthese (test_fumee_qt.TestInterfaceQt.test_registre_projets_et_synthese) ... skipped "PySide6 n'est pas installé"
+test_saisie_identification (test_fumee_qt.TestInterfaceQt.test_saisie_identification) ... skipped "PySide6 n'est pas installé"
+test_statut_valide_declasse_visible_apres_modification (test_fumee_qt.TestInterfaceQt.test_statut_valide_declasse_visible_apres_modification) ... skipped "PySide6 n'est pas installé"
+test_vues_metier_sans_placeholder (test_fumee_qt.TestInterfaceQt.test_vues_metier_sans_placeholder) ... skipped "PySide6 n'est pas installé"
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.000s
+
+OK (skipped=12)

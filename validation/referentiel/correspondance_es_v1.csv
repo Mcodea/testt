@@ -1,0 +1,195 @@
+Identifiant V1;Évolution;Rapprochement;Index catalogue;Type;Nature;Code catalogue;Famille catalogue;Code V1;Télétransmission V1;Variante V1
+AL.ET.DEF;Inchangé;code;352;AL;ET;DEF;TS;DEF;TS_DEF;Base
+AR.EA.TMP;Harmonisé;code d'origine;351;AR;EA;TEMP;TM;TMP;TM_TMP;Ventilation
+AR.ET.DEF_ISOL;Harmonisé;code d'origine;348;AR;ET;ISOL;TS;DEF_ISOL;TS_DEF_ISOL;Base
+AR.ET.DEF_PARAF;Harmonisé;code d'origine;349;AR;ET;PARAF;TS;DEF_PARAF;TS_DEF_PARAF;Parafoudre
+AR.ET.DEF_VENT;Harmonisé;code d'origine;350;AR;ET;VENTIL;TS;DEF_VENT;TS_DEF_VENT;Ventilation
+AR.ET.MQ_24V;Harmonisé;code d'origine;347;AR;ET;MQ24;TS;MQ_24V;TS_MQ_24V;Base
+AR.ET.MQ_U;Harmonisé;code d'origine;346;AR;ET;MQU;TS;MQ_U;TS_MQ_U;Base
+AT.EA.VAL;Inchangé;code;306;AT;EA;VAL;ES;VAL;Selon les règles du type;Base
+CH.ET.DEF;Inchangé;code;108;CH;ET;DEF;TS;DEF;TS_DEF;Base
+CH.ET.MA;Inchangé;code;107;CH;ET;MA;TS;MA;TS_MA;Base
+CL.ET.FDC_OUV;Inchangé;télétransmission;336;CL;ET;OUV;TS;FDC_OUV;TS_OUV;Fin de course
+CM.ET.DEF;Inchangé;code;112;CM;ET;DEF;TS;DEF;TS_DEF;Base
+CM.ET.MA;Inchangé;code;111;CM;ET;MA;TS;MA;TS_MA;Base
+CU.EA.NIV;Inchangé;code;253;CU;EA;NIV;ES;NIV;Selon les règles du type;Mesure de niveau
+CU.ET.NIV_B;Harmonisé;code d'origine;255;CU;ET;PB;ES;NIV_B;Selon les règles du type;Contacts de niveau
+CU.ET.NIV_H;Harmonisé;code d'origine;256;CU;ET;PH;ES;NIV_H;Selon les règles du type;Contacts de niveau
+CU.ET.NIV_TB;Harmonisé;code d'origine;254;CU;ET;PTB;ES;NIV_TB;Selon les règles du type;Contacts de niveau
+CU.ET.NIV_TH;Harmonisé;code d'origine;257;CU;ET;PTH;ES;NIV_TH;Selon les règles du type;Contacts de niveau
+CU.ET.NIV_TP;Harmonisé;code d'origine;258;CU;ET;TP;ES;NIV_TP;Selon les règles du type;Trop-plein
+DA.EA.NIV;Inchangé;code;116;DA;EA;NIV;TM;NIV;TM_NIV;Base
+DE.ET.DEF;Inchangé;code;94;DE;ET;DEF;TS;DEF;TS_DEF;Base
+DE.ET.MA;Inchangé;code;93;DE;ET;MA;TS;MA;TS_MA;Base
+DJ.ET.DECL;Inchangé;code;139;DJ;ET;DECL;TS;DECL;TS_DECL;Base
+DJ.ET.FDC_FER;Inchangé;télétransmission;138;DJ;ET;FER;TS;FDC_FER;TS_FER;Base
+EL.ET.DEF_ALIM;Harmonisé;code d'origine;2;EL;ET;DALIM;TS;DEF_ALIM;TS_DEF_ALIM;Base
+EV.ET.BP_FER;Inchangé;code;72;EV;ET;BP_FER;ES;BP_FER;Selon les règles du type;Boutons locaux
+EV.ET.BP_OUV;Inchangé;code;71;EV;ET;BP_OUV;ES;BP_OUV;Selon les règles du type;Boutons locaux
+EV.ET.DEF;Inchangé;code;59;EV;ET;DEF;TS;DEF;TS_DEF;Base
+EV.ET.FDC_FER;Inchangé;télétransmission;58;EV;ET;FER;TS;FDC_FER;TS_FER;Base
+EV.ET.FDC_OUV;Inchangé;télétransmission;57;EV;ET;OUV;TS;FDC_OUV;TS_OUV;Base
+EV.ET.LOC;Inchangé;code;66;EV;ET;LOC;TS;LOC;TS_LOC;Base
+EV.ST.CMD_FER;Harmonisé;code d'origine;70;EV;ST;FER;TC;CMD_FER;TC_FER;Télécommandée
+EV.ST.CMD_OUV;Harmonisé;code d'origine;69;EV;ST;OUV;TC;CMD_OUV;TC_OUV;Télécommandée
+EX.ET.DEF;Inchangé;code;104;EX;ET;DEF;TS;DEF;TS_DEF;Base
+EX.ET.DISPO;Inchangé;code;364;EX;ET;DISPO;ES;DISPO;Selon les règles du type;Disponibilité câblée
+EX.ET.MA;Inchangé;code;103;EX;ET;MA;TS;MA;TS_MA;Base
+FQ.EA.DEB;Inchangé;code;130;FQ;EA;DEB;TM;DEB;TM_DEB;Base
+FS.ET.CIRC;Inchangé;code;343;FS;ET;CIRC;TS;CIRC;TS_CIRC;Base
+FT.EA.DEB;Inchangé;code;316;FT;EA;DEB;ES;DEB;Selon les règles du type;Base
+FT.ET.DEF;Harmonisé;code d'origine;365;FT;ET;DEF_EXT;ES;DEF;Selon les règles du type;Contact défaut TOR
+FT.ET.IMP;Inchangé;code;326;FT;ET;IMP;ES;IMP;Selon les règles du type;Sortie impulsions câblée
+FT.ET.SENS;Inchangé;code;366;FT;ET;SENS;ES;SENS;Selon les règles du type;Sens d’écoulement TOR
+GA.ET.INTRUS;Harmonisé;code d'origine;0;GA;ET;INTR;TS;INTRUS;TS_INTRUS;Base
+GA.ET.PORTE;Inchangé;code;1;GA;ET;PORTE;TS;PORTE;TS_PORTE;Base
+GE.ET.DEF;Inchangé;code;150;GE;ET;DEF;TS;DEF;TS_DEF;Base
+GE.ET.LOC;Inchangé;code;155;GE;ET;LOC;TS;LOC;TS_LOC;Base
+GE.ET.MA;Inchangé;code;149;GE;ET;MA;TS;MA;TS_MA;Base
+GE.ST.CMD_AR;Harmonisé;code d'origine;159;GE;ST;AR;TC;CMD_AR;TC_AR;Télécommandé
+GE.ST.CMD_MA;Harmonisé;code d'origine;158;GE;ST;MA;TC;CMD_MA;TC_MA;Télécommandé
+HV.ET.FDC_FER;Inchangé;code;215;HV;ET;FDC_FER;ES;FDC_FER;Selon les règles du type;Base
+HV.ET.FDC_OUV;Inchangé;code;214;HV;ET;FDC_OUV;ES;FDC_OUV;Selon les règles du type;Base
+IC.ET.INCEN;Inchangé;code;3;IC;ET;INCEN;TS;INCEN;TS_INCEN;Détection incendie
+IN.ET.INOND;Inchangé;code;115;IN;ET;INOND;TS;INOND;TS_INOND;Base
+IS.ET.DECL;Inchangé;code;143;IS;ET;DECL;TS;DECL;TS_DECL;Base
+IS.ET.FDC_FER;Inchangé;télétransmission;142;IS;ET;FER;TS;FDC_FER;TS_FER;Base
+IV.ET.POS_RES;Harmonisé;code d'origine;160;IV;ET;POSN;TS;POS_RES;TS_POS_RES;Base
+IV.ET.POS_SEC;Harmonisé;code d'origine;161;IV;ET;POSS;TS;POS_SEC;TS_POS_SEC;Base
+KM.ET.DEF;Inchangé;code;354;KM;ET;DEF;TS;DEF;TS_DEF;Base
+KM.ET.MA;Inchangé;code;353;KM;ET;MA;TS;MA;TS_MA;Base
+KM.ST.CMD_AR;Harmonisé;code d'origine;356;KM;ST;AR;TC;CMD_AR;TC_AR;Télécommandé
+KM.ST.CMD_MA;Harmonisé;code d'origine;355;KM;ST;MA;TC;CMD_MA;TC_MA;Télécommandé
+LH.ET.NIV;Inchangé;code;341;LH;ET;NIV;TS;NIV;TS_NIV;Base
+LS.ET.NIV_ARP;Harmonisé;code d'origine;122;LS;ET;ARP;TS;NIV_ARP;TS_NIV_ARP;Base
+LS.ET.NIV_H;Harmonisé;code d'origine;124;LS;ET;H;TS;NIV_H;TS_NIV_H;3 poires
+LS.ET.NIV_MAP1;Harmonisé;code d'origine;123;LS;ET;MAP1;TS;NIV_MAP1;TS_NIV_MAP1;Base
+LS.ET.NIV_MAP2;Harmonisé;code d'origine;125;LS;ET;MAP2;TS;NIV_MAP2;TS_NIV_MAP2;5 poires
+LS.ET.NIV_TB;Harmonisé;code d'origine;127;LS;ET;TB;TS;NIV_TB;TS_NIV_TB;5 poires
+LS.ET.NIV_TH;Harmonisé;code d'origine;126;LS;ET;TH;TS;NIV_TH;TS_NIV_TH;5 poires
+LT.EA.NIV;Inchangé;code;274;LT;EA;NIV;ES;NIV;Selon les règles du type;Base
+MV.EA.POS;Inchangé;code;176;MV;EA;POS;ES;POS;Selon les règles du type;Modulante
+MV.ET.BP_AR;Inchangé;code;180;MV;ET;BP_AR;ES;BP_AR;Selon les règles du type;Boutons locaux
+MV.ET.BP_FER;Inchangé;code;179;MV;ET;BP_FER;ES;BP_FER;Selon les règles du type;Boutons locaux
+MV.ET.BP_OUV;Inchangé;code;178;MV;ET;BP_OUV;ES;BP_OUV;Selon les règles du type;Boutons locaux
+MV.ET.DEF;Inchangé;code;172;MV;ET;DEF;ES;DEF;Selon les règles du type;Base
+MV.ET.FDC_FER;Inchangé;code;171;MV;ET;FDC_FER;ES;FDC_FER;Selon les règles du type;Base
+MV.ET.FDC_OUV;Inchangé;code;170;MV;ET;FDC_OUV;ES;FDC_OUV;Selon les règles du type;Base
+MV.ET.LOC;Inchangé;code;173;MV;ET;LOC;ES;LOC;Selon les règles du type;Base
+MV.SA.CONS_POS;Inchangé;code;177;MV;SA;CONS_POS;ES;CONS_POS;Selon les règles du type;Modulante
+MV.ST.CMD_FER;Harmonisé;code d'origine;175;MV;ST;FER;ES;CMD_FER;Selon les règles du type;Télécommandée
+MV.ST.CMD_OUV;Harmonisé;code d'origine;174;MV;ST;OUV;ES;CMD_OUV;Selon les règles du type;Télécommandée
+OD.ET.DEF;Inchangé;code;166;OD;ET;DEF;TS;DEF;TS_DEF;Base
+OD.ET.SUR_BAT;Harmonisé;code d'origine;165;OD;ET;SBAT;TS;SUR_BAT;TS_SUR_BAT;Base
+PD.EA.TAU;Harmonisé;code d'origine;82;PD;EA;TAUX;TM;TAU;TM_TAU;Base
+PD.ET.BP_AR;Inchangé;code;88;PD;ET;BP_AR;ES;BP_AR;Selon les règles du type;Boutons locaux
+PD.ET.BP_MA;Inchangé;code;87;PD;ET;BP_MA;ES;BP_MA;Selon les règles du type;Boutons locaux
+PD.ET.DEF;Inchangé;code;74;PD;ET;DEF;TS;DEF;TS_DEF;Base
+PD.ET.LOC;Inchangé;code;79;PD;ET;LOC;TS;LOC;TS_LOC;Base
+PD.ET.MA;Inchangé;code;73;PD;ET;MA;TS;MA;TS_MA;Base
+PD.SA.CONS_TAU;Harmonisé;code d'origine;83;PD;SA;TAUX;TR;CONS_TAU;TR_TAU / RTR_TAU;Taux réglable
+PD.ST.CMD_AR;Harmonisé;code d'origine;86;PD;ST;AR;TC;CMD_AR;TC_AR;Télécommandée
+PD.ST.CMD_MA;Harmonisé;code d'origine;85;PD;ST;MA;TC;CMD_MA;TC_MA;Télécommandée
+PE.ET.DEF;Inchangé;code;90;PE;ET;DEF;TS;DEF;TS_DEF;Base
+PE.ET.MA;Inchangé;code;89;PE;ET;MA;TS;MA;TS_MA;Base
+PM.EA.FRQ;Harmonisé;code d'origine;227;PM;EA;FREQ;ES;FRQ;Selon les règles du type;Variateur
+PM.EA.INT;Inchangé;code;225;PM;EA;INT;ES;INT;Selon les règles du type;Complément
+PM.ET.BP_AR;Inchangé;code;230;PM;ET;BP_AR;ES;BP_AR;Selon les règles du type;Boutons locaux
+PM.ET.BP_MA;Inchangé;code;229;PM;ET;BP_MA;ES;BP_MA;Selon les règles du type;Boutons locaux
+PM.ET.DEF_TH;Harmonisé;code d'origine;221;PM;ET;DEFTH;ES;DEF_TH;Selon les règles du type;Base
+PM.ET.DEF_VAR;Harmonisé;code d'origine;226;PM;ET;DEFVAR;ES;DEF_VAR;Selon les règles du type;Variateur
+PM.ET.LOC;Inchangé;code;222;PM;ET;LOC;ES;LOC;Selon les règles du type;Base
+PM.ET.MA;Inchangé;code;220;PM;ET;MA;ES;MA;Selon les règles du type;Base
+PM.SA.CONS_FRQ;Harmonisé;code d'origine;228;PM;SA;CONS_FREQ;ES;CONS_FRQ;Selon les règles du type;Variateur
+PM.ST.CMD_AR;Inchangé;code;224;PM;ST;CMD_AR;ES;CMD_AR;Selon les règles du type;Télécommandée
+PM.ST.CMD_MA;Inchangé;code;223;PM;ST;CMD_MA;ES;CMD_MA;Selon les règles du type;Télécommandée
+PS.ET.SEUIL;Inchangé;code;342;PS;ET;SEUIL;TS;SEUIL;TS_SEUIL;Base
+PT.EA.PRE;Inchangé;code;286;PT;EA;PRE;ES;PRE;Selon les règles du type;Base
+RP.EA.PRE_AM;Harmonisé;code d'origine;338;RP;EA;PAM;TM;PRE_AM;TM_PRE_AM;Pression amont
+RP.EA.PRE_AV;Harmonisé;code d'origine;339;RP;EA;PAV;TM;PRE_AV;TM_PRE_AV;Pression aval
+RT.ET.FUITE;Inchangé;code;128;RT;ET;FUITE;TS;FUITE;TS_FUITE;Base
+SP.EA.PRE;Inchangé;code;333;SP;EA;PRE;TM;PRE;TM_PRE;Base
+SP.ET.DEF;Inchangé;code;330;SP;ET;DEF;TS;DEF;TS_DEF;Base
+SP.ET.MA;Inchangé;code;329;SP;ET;MA;TS;MA;TS_MA;Base
+SP.ET.MQ_EAU;Harmonisé;code d'origine;331;SP;ET;MQEAU;TS;MQ_EAU;TS_MQ_EAU;Base
+SP.ST.CMD_AR;Harmonisé;code d'origine;335;SP;ST;AR;TC;CMD_AR;TC_AR;Télécommandée
+SP.ST.CMD_MA;Harmonisé;code d'origine;334;SP;ST;MA;TC;CMD_MA;TC_MA;Télécommandée
+SV.ET.BP_AR;Inchangé;code;35;SV;ET;BP_AR;ES;BP_AR;Selon les règles du type;Boutons locaux
+SV.ET.BP_FER;Inchangé;code;34;SV;ET;BP_FER;ES;BP_FER;Selon les règles du type;Boutons locaux
+SV.ET.BP_OUV;Inchangé;code;33;SV;ET;BP_OUV;ES;BP_OUV;Selon les règles du type;Boutons locaux
+SV.ET.DEF_CPL;Harmonisé;code d'origine;21;SV;ET;DEFCPL;TS;DEF_CPL;TS_DEF_CPL;Complément
+SV.ET.FDC_FER;Inchangé;télétransmission;16;SV;ET;FER;TS;FDC_FER;TS_FER;Base
+SV.ET.FDC_OUV;Inchangé;télétransmission;15;SV;ET;OUV;TS;FDC_OUV;TS_OUV;Base
+SV.ET.LOC;Inchangé;code;26;SV;ET;LOC;TS;LOC;TS_LOC;Base
+SV.ST.CMD_AR;Harmonisé;code d'origine;32;SV;ST;AR;TC;CMD_AR;TC_AR;Télécommandée
+SV.ST.CMD_FER;Harmonisé;code d'origine;31;SV;ST;FER;TC;CMD_FER;TC_FER;Télécommandée
+SV.ST.CMD_OUV;Harmonisé;code d'origine;30;SV;ST;OUV;TC;CMD_OUV;TC_OUV;Télécommandée
+TR.ET.DEF_TMP;Harmonisé;code d'origine;146;TR;ET;DEFTEMP;TS;DEF_TMP;TS_DEF_TMP;Base
+TR.ET.PRES_U;Harmonisé;code d'origine;145;TR;ET;STEN;TS;PRES_U;TS_PRES_U;Base
+TT.EA.TMP;Harmonisé;code d'origine;296;TT;EA;TEMP;ES;TMP;Selon les règles du type;Base
+VE.ET.DEF;Inchangé;code;100;VE;ET;DEF;TS;DEF;TS_DEF;Base
+VE.ET.MA;Inchangé;code;97;VE;ET;MA;TS;MA;TS_MA;Base
+VE.ET.MA_GV;Harmonisé;code d'origine;99;VE;ET;MAGV;TS;MA_GV;TS_MA_GV;Deux vitesses
+VE.ET.MA_PV;Harmonisé;code d'origine;98;VE;ET;MAPV;TS;MA_PV;TS_MA_PV;Deux vitesses
+XT.ET.DET;Inchangé;code;345;XT;ET;DET;TS;DET;TS_DET;Base
+XV.ET.BP_AR;Inchangé;code;56;XV;ET;BP_AR;ES;BP_AR;Selon les règles du type;Boutons locaux
+XV.ET.BP_FER;Inchangé;code;55;XV;ET;BP_FER;ES;BP_FER;Selon les règles du type;Boutons locaux
+XV.ET.BP_OUV;Inchangé;code;54;XV;ET;BP_OUV;ES;BP_OUV;Selon les règles du type;Boutons locaux
+XV.ET.DEF_CPL;Harmonisé;code d'origine;42;XV;ET;DEFCPL;TS;DEF_CPL;TS_DEF_CPL;Complément
+XV.ET.FDC_FER;Inchangé;télétransmission;37;XV;ET;FER;TS;FDC_FER;TS_FER;Base
+XV.ET.FDC_OUV;Inchangé;télétransmission;36;XV;ET;OUV;TS;FDC_OUV;TS_OUV;Base
+XV.ET.LOC;Inchangé;code;47;XV;ET;LOC;TS;LOC;TS_LOC;Base
+XV.ST.CMD_AR;Harmonisé;code d'origine;53;XV;ST;AR;TC;CMD_AR;TC_AR;Télécommandée
+XV.ST.CMD_FER;Harmonisé;code d'origine;52;XV;ST;FER;TC;CMD_FER;TC_FER;Télécommandée
+XV.ST.CMD_OUV;Harmonisé;code d'origine;51;XV;ST;OUV;TC;CMD_OUV;TC_OUV;Télécommandée
+AB.EA.PRE;Ajouté;absent du catalogue;;AB;EA;;;PRE;TM_PRE;Base
+AB.ET.DEF_COMP;Ajouté;absent du catalogue;;AB;ET;;;DEF_COMP;TS_DEF_COMP;Compresseur
+AB.ET.MA_COMP;Ajouté;absent du catalogue;;AB;ET;;;MA_COMP;TS_MA_COMP;Compresseur
+AB.ET.NIV_B;Ajouté;absent du catalogue;;AB;ET;;;NIV_B;TS_NIV_B;Base
+AB.ET.NIV_H;Ajouté;absent du catalogue;;AB;ET;;;NIV_H;TS_NIV_H;Base
+AL.ET.DEF_SEC;Ajouté;absent du catalogue;;AL;ET;;;DEF_SEC;TS_DEF_SEC;Redondante
+AR.ET.PORTE;Ajouté;absent du catalogue;;AR;ET;;;PORTE;TS_PORTE;Base
+CE.ET.IMP;Ajouté;absent du catalogue;;CE;ET;;;IMP;CP_ENER;Base
+CG.ET.DEF;Ajouté;absent du catalogue;;CG;ET;;;DEF;TS_DEF;Base
+CG.ET.FUITE;Ajouté;absent du catalogue;;CG;ET;;;FUITE;TS_FUITE;Base
+CG.ET.INV;Ajouté;absent du catalogue;;CG;ET;;;INV;TS_INV;Inverseur
+CG.ET.VIDE;Ajouté;absent du catalogue;;CG;ET;;;VIDE;TS_VIDE;Base
+CT.ET.IMP;Harmonisé;absent du catalogue;;CT;ET;;;IMP;CP_VOL;Base
+DG.EA.VAL;Ajouté;absent du catalogue;;DG;EA;;;VAL;TM_VAL;Base
+DG.ET.DEF;Ajouté;absent du catalogue;;DG;ET;;;DEF;TS_DEF;Base
+DG.ET.SEUIL_1;Ajouté;absent du catalogue;;DG;ET;;;SEUIL_1;TS_SEUIL_1;Base
+DG.ET.SEUIL_2;Ajouté;absent du catalogue;;DG;ET;;;SEUIL_2;TS_SEUIL_2;Base
+FI.EA.PRE_DIF;Ajouté;absent du catalogue;;FI;EA;;;PRE_DIF;TM_PRE_DIF;Base
+FI.ET.COLMAT;Ajouté;absent du catalogue;;FI;ET;;;COLMAT;TS_COLMAT;Base
+FI.ET.LAVAGE;Ajouté;absent du catalogue;;FI;ET;;;LAVAGE;TS_LAVAGE;Lavage automatique
+FV.EA.POS;Ajouté;absent du catalogue;;FV;EA;;;POS;TM_POS;Base
+FV.ET.DEF;Ajouté;absent du catalogue;;FV;ET;;;DEF;TS_DEF;Base
+FV.ET.FDC_FER;Ajouté;absent du catalogue;;FV;ET;;;FDC_FER;TS_FER;Base
+FV.ET.FDC_OUV;Ajouté;absent du catalogue;;FV;ET;;;FDC_OUV;TS_OUV;Base
+FV.ET.LOC;Ajouté;absent du catalogue;;FV;ET;;;LOC;TS_LOC;Base
+FV.SA.CONS_POS;Ajouté;absent du catalogue;;FV;SA;;;CONS_POS;TR_POS / RTR_POS;Télécommandée
+LT.ET.NIV_TB;Ajouté;absent du catalogue;;LT;ET;;;NIV_TB;TS_NIV_TB;Contact de sécurité
+LT.ET.NIV_TH;Ajouté;absent du catalogue;;LT;ET;;;NIV_TH;TS_NIV_TH;Contact de sécurité
+OU.ET.INTRUS;Ajouté;absent du catalogue;;OU;ET;;;INTRUS;TS_INTRUS;Base
+OU.ET.PORTE;Ajouté;absent du catalogue;;OU;ET;;;PORTE;TS_PORTE;Base
+PD.ET.NIV_B;Ajouté;absent du catalogue;;PD;ET;;;NIV_B;TS_NIV_B;Bac de réactif
+PD.ET.NIV_TB;Ajouté;absent du catalogue;;PD;ET;;;NIV_TB;TS_NIV_TB;Bac de réactif
+PM.ET.DEF_DEM;Ajouté;absent du catalogue;;PM;ET;;;DEF_DEM;TS_DEF_DEM;Démarreur progressif
+PM.ET.DEF_HUM;Ajouté;absent du catalogue;;PM;ET;;;DEF_HUM;TS_DEF_HUM;Pompe immergée
+PM.ET.DEF_PTC;Ajouté;absent du catalogue;;PM;ET;;;DEF_PTC;TS_DEF_PTC;Pompe immergée
+PM.ST.CMD_ACQ;Ajouté;absent du catalogue;;PM;ST;;;CMD_ACQ;TC_ACQ;Réarmement à distance
+TT.EA.TMP.2;Ajouté;absent du catalogue;;TT;EA;;;TMP;TM_TMP;Sonde PT100 directe
+UV.EA.INT_UV;Ajouté;absent du catalogue;;UV;EA;;;INT_UV;TM_INT_UV;Base
+UV.ET.DEF;Ajouté;absent du catalogue;;UV;ET;;;DEF;TS_DEF;Base
+UV.ET.DEF_LAMP;Ajouté;absent du catalogue;;UV;ET;;;DEF_LAMP;TS_DEF_LAMP;Base
+UV.ET.MA;Ajouté;absent du catalogue;;UV;ET;;;MA;TS_MA;Base
+UV.ST.CMD_MA;Ajouté;absent du catalogue;;UV;ST;;;CMD_MA;TC_MA;Télécommandé
+VV.EA.FRQ;Ajouté;absent du catalogue;;VV;EA;;;FRQ;TM_FRQ;Base
+VV.EA.INT;Ajouté;absent du catalogue;;VV;EA;;;INT;TM_INT;Base
+VV.ET.DEF;Ajouté;absent du catalogue;;VV;ET;;;DEF;TS_DEF;Base
+VV.ET.DISPO;Ajouté;absent du catalogue;;VV;ET;;;DISPO;TS_DISPO;Base
+VV.ET.MA;Ajouté;absent du catalogue;;VV;ET;;;MA;TS_MA;Base
+VV.SA.CONS_FRQ;Ajouté;absent du catalogue;;VV;SA;;;CONS_FRQ;TR_FRQ / RTR_FRQ;Commandé en câblé
+VV.ST.CMD_ACQ;Ajouté;absent du catalogue;;VV;ST;;;CMD_ACQ;TC_ACQ;Commandé en câblé
+VV.ST.CMD_MA;Ajouté;absent du catalogue;;VV;ST;;;CMD_MA;TC_MA;Commandé en câblé
+;;absent du classeur;181;MV;ST;ARR;ES;;;Arrêt dédié câblé
