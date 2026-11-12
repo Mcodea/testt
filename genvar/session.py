@@ -1812,7 +1812,6 @@ class Session:
     def exporter_topkapi(self, chemin_zip):
         """Fichier d'import de variables TOPKAPI (.$$t, format relevé sur un projet réel, NON qualifié en 6.3)
         et compte rendu des points exclus. Refusé s'il reste un conflit d'adressage."""
-        import zipfile
         from . import adressage, formats_topkapi as ft
         plan = adressage.calculer(self)
         if plan.conflits:
@@ -1852,9 +1851,12 @@ class Session:
                    "Dans le projet de référence, les télécommandes étaient des mots entiers (format 0 sur une adresse de mot) :",
                    "les TC d'OGIAS sont des bits ; vérifiez la commande attendue par le programme automate.", "",
                    f"{len(points)} point(s) exporté(s), {len(exclus)} exclu(s) :"] + [f"- {x}" for x in exclus]
-        with zipfile.ZipFile(chemin_zip, "w", zipfile.ZIP_DEFLATED) as z:
-            z.writestr(f"{base}.$$t", ft.ecrire_octets(points))
-            z.writestr("LISEZ-MOI_export_TOPKAPI.txt", "\r\n".join(rapport).encode("utf-8"))
+        try:                                    # fichier préparé avant l'archive : aucun zip partiel en cas de refus
+            table = ft.ecrire_octets(points)
+        except ft.FormatTopkapiInvalide as exc:
+            raise RegleMetier(f"Export TOPKAPI refusé : {exc}") from exc
+        ft.ecrire_archive(chemin_zip, {f"{base}.$$t": table,
+                                       "LISEZ-MOI_export_TOPKAPI.txt": "\r\n".join(rapport).encode("utf-8")})
         return self._marquer_exporte((len(points), exclus))
 
     def manque_adresses(self):

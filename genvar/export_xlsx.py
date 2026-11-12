@@ -5,8 +5,27 @@ nécessaire : plusieurs feuilles, une ligne d'en-tête mise en forme, des
 largeurs de colonnes, un filtre automatique et la première ligne figée.
 """
 
+import re
 import zipfile
 from xml.sax.saxutils import escape
+
+# Caractères interdits en XML 1.0 : écrits tels quels, ils rendent le classeur illisible par Excel.
+# Ils sont remplacés par U+FFFD (caractère de remplacement, visible) plutôt que supprimés en silence.
+_INTERDITS_XML = re.compile("[\x00-\x08\x0b\x0c\x0e-\x1f\ufffe\uffff]")
+# Date fixe des membres de l'archive : même contenu → mêmes octets (empreintes SHA-256 reproductibles).
+DATE_ZIP = (1980, 1, 1, 0, 0, 0)
+
+
+def _texte_xml(valeur):
+    return escape(_INTERDITS_XML.sub("\ufffd", str(valeur)))
+
+
+def ecrire_membre(z, nom, contenu):
+    """Membre d'archive zip à date fixe (octets reproductibles)."""
+    info = zipfile.ZipInfo(nom, DATE_ZIP)
+    info.compress_type = zipfile.ZIP_DEFLATED
+    info.external_attr = 0o644 << 16
+    z.writestr(info, contenu)
 
 
 def _col(n):
@@ -26,7 +45,7 @@ def _cellule(ref, valeur, style):
         valeur = "Oui" if valeur else ""
     if isinstance(valeur, (int, float)):
         return f'<c r="{ref}"{st}><v>{valeur}</v></c>'
-    texte = escape(str(valeur)).replace("\n", "&#10;")
+    texte = _texte_xml(valeur).replace("\n", "&#10;")
     return f'<c r="{ref}"{st} t="inlineStr"><is><t xml:space="preserve">{texte}</t></is></c>'
 
 
@@ -89,9 +108,9 @@ def ecrire_xlsx(chemin, feuilles):
     classeur = ['<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
                 '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
                 'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>']
-    classeur += [f'<sheet name="{escape(nom[:31])}" sheetId="{i}" r:id="rId{i}"/>' for i, (nom, *_) in enumerate(feuilles, 1)]
+    classeur += [f'<sheet name="{_texte_xml(nom[:31]).replace('"', '&quot;')}" sheetId="{i}" r:id="rId{i}"/>' for i, (nom, *_) in enumerate(feuilles, 1)]
     classeur.append("</sheets>")
-    filtres = [f'<definedName name="_xlnm._FilterDatabase" localSheetId="{i - 1}" hidden="1">\'{escape(nom[:31])}\'!$A$1:${_col(len(ent))}${len(lig) + 1}</definedName>'
+    filtres = [f'<definedName name="_xlnm._FilterDatabase" localSheetId="{i - 1}" hidden="1">\'{_texte_xml(nom[:31]).replace("'", "''")}\'!$A$1:${_col(len(ent))}${len(lig) + 1}</definedName>'
                for i, (nom, ent, lig, _) in enumerate(feuilles, 1) if lig]
     if filtres:
         classeur.append("<definedNames>" + "".join(filtres) + "</definedNames>")
@@ -104,13 +123,13 @@ def ecrire_xlsx(chemin, feuilles):
     rels_classeur.append("</Relationships>")
 
     with zipfile.ZipFile(chemin, "w", zipfile.ZIP_DEFLATED) as z:
-        z.writestr("[Content_Types].xml", "".join(types))
-        z.writestr("_rels/.rels", rels)
-        z.writestr("xl/workbook.xml", "".join(classeur))
-        z.writestr("xl/_rels/workbook.xml.rels", "".join(rels_classeur))
-        z.writestr("xl/styles.xml", STYLES)
+        ecrire_membre(z, "[Content_Types].xml", "".join(types))
+        ecrire_membre(z, "_rels/.rels", rels)
+        ecrire_membre(z, "xl/workbook.xml", "".join(classeur))
+        ecrire_membre(z, "xl/_rels/workbook.xml.rels", "".join(rels_classeur))
+        ecrire_membre(z, "xl/styles.xml", STYLES)
         for i, (nom, entetes, lignes, largeurs) in enumerate(feuilles, 1):
-            z.writestr(f"xl/worksheets/sheet{i}.xml", _feuille(entetes, lignes, largeurs))
+            ecrire_membre(z, f"xl/worksheets/sheet{i}.xml", _feuille(entetes, lignes, largeurs))
 
 
 def exporter_table(chemin, ouvrage, catalogue, variables, anomalies, points=()):

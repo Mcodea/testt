@@ -22,7 +22,10 @@ from xml.sax.saxutils import escape, quoteattr
 STATUT = "conforme à l'échantillon Control Expert V14.1 (import à essayer)"
 TAILLE_MAX = 20 * 1024 * 1024
 RE_ADRESSE = re.compile(r"^%(?:I|Q|M|IW|QW|MW|KW|MD|MF|S|SW)[0-9][0-9.]*$", re.I)
-RE_NOM = re.compile(r"^[A-Za-z_][A-Za-z0-9_À-ÿ]*$")
+# Lettres accentuées Latin-1 admises, sans les signes × (U+00D7) et ÷ (U+00F7) que contient la plage À-ÿ.
+RE_NOM = re.compile(r"^[A-Za-z_][A-Za-z0-9_À-ÖØ-öø-ÿ]*$")
+# Caractères interdits en XML 1.0 (un XSY qui en contient est mal formé et illisible).
+RE_INTERDIT_XML = re.compile("[\x00-\x08\x0b\x0c\x0e-\x1f\ufffe\uffff]")
 
 
 class FormatInvalide(ValueError):
@@ -44,7 +47,18 @@ def date_ce(maintenant=None):
     return f"date_and_time#{t.year}-{t.month}-{t.day}-{t.hour}:{t.minute:02d}:{t.second:02d}"
 
 
-def _verifier(v):
+def _verifier_texte(texte, quoi, txt=False):
+    """Refuse un texte qui casserait le fichier : caractère interdit en XML ; en TXT, tabulation ou retour à la
+    ligne (séparateurs de colonnes et de lignes). Rien n'est retiré ni remplacé en silence."""
+    if RE_INTERDIT_XML.search(texte or ""):
+        raise FormatInvalide(f"{quoi} : caractère de contrôle non admis ({texte!r}).")
+    if txt and any(c in (texte or "") for c in "\t\r\n"):
+        raise FormatInvalide(f"{quoi} : tabulation ou retour à la ligne non admis dans l'export texte.")
+
+
+def _verifier(v, txt=False):
+    _verifier_texte(v.commentaire, f"Commentaire de {v.nom or v.adresse}", txt)
+    _verifier_texte(v.valeur_init, f"Valeur initiale de {v.nom or v.adresse}", txt)
     if v.nom and not RE_NOM.fullmatch(v.nom):
         raise FormatInvalide(f"Nom de variable invalide pour Control Expert : « {v.nom} ».")
     if v.nom and len(v.nom) > 32:
@@ -59,6 +73,9 @@ def _verifier(v):
 
 def xsy(variables, projet, version="0.0.001", commentaire="", produit="OGIAS", maintenant=None):
     """Texte XSY (fins de ligne CRLF) au format de l'export Control Expert."""
+    _verifier_texte(projet, "Nom du projet")
+    _verifier_texte(commentaire, "Commentaire du projet")
+    _verifier_texte(produit, "Produit")
     noms = set()
     for v in variables:
         _verifier(v)
@@ -93,7 +110,7 @@ def xsy(variables, projet, version="0.0.001", commentaire="", produit="OGIAS", m
 def txt(variables):
     """Texte TXT (tabulations, CRLF) au format de l'export Control Expert."""
     for v in variables:
-        _verifier(v)
+        _verifier(v, txt=True)
     return "".join(f'{v.nom}\t{v.adresse.upper()}\t{v.type}\t"{v.commentaire}"\t'
                    f'{"(" + v.valeur_init + ")" if v.valeur_init else ""}\r\n' for v in variables)
 

@@ -33,16 +33,27 @@ def _equipements(chemin, session):
                           [16, 8, 36, 30, 40, 12])])
 
 
+def _non_applicable(motif):
+    """Écriture d'une pièce sans objet pour cet ouvrage : elle est listée avec son motif, jamais remplacée."""
+    def ecrire(_chemin):
+        raise ValueError(motif)
+    return ecrire
+
+
 def _pieces(session):
-    """[(nom, libellé, fonction d'écriture(chemin))] dans l'ordre du dossier."""
+    """[(nom, libellé, fonction d'écriture(chemin))] dans l'ordre du dossier. Une pièce sans objet garde sa place
+    et lève son motif : elle figure parmi les pièces non produites du sommaire."""
     s, o = session, session.ouvrage
     pieces = [("01_equipements.xlsx", "Liste des équipements", lambda c: _equipements(c, s)),
-              ("02_liste_es.xlsx", "Liste des E/S (matériel et affectation)", s.exporter_liste_es)]
-    if o.modules:
-        pieces.append(("03_cartes_es.xlsx", "Cartes et voies", s.exporter_cartes_es))
+              ("02_liste_es.xlsx", "Liste des E/S (matériel et affectation)", s.exporter_liste_es),
+              ("03_cartes_es.xlsx", "Cartes et voies",
+               s.exporter_cartes_es if o.modules else
+               _non_applicable("Aucune carte d'E/S déclarée : matériel non encore retenu pour cet ouvrage."))]
     pieces.append(("04_variables.xlsx", "Variables et table de télétransmission", s.exporter_excel))
-    if o.mode == "Neuf":
-        pieces.append(("05_variables_control_expert.xsy", "Variables Control Expert (XSY)", s.exporter_xsy))
+    pieces.append(("05_variables_control_expert.xsy", "Variables Control Expert (XSY)",
+                   s.exporter_xsy if o.mode == "Neuf" else
+                   _non_applicable("Projet existant : le programme automate existe déjà ; aucun XSY n'est produit "
+                                   "(table de correspondances Excel en pièce 04).")))
     pieces.append(("06_topkapi.zip", "Table de télétransmission TOPKAPI (.$$t et compte rendu)", s.exporter_topkapi))
     return pieces
 
