@@ -82,7 +82,7 @@ class TestDesignIndustriel(ServeurNavigateur):
                     self.page.evaluate('document.fonts.ready')
                     self.assertTrue(self.page.evaluate('document.documentElement.scrollWidth <= innerWidth'))
                     sidebar = self.page.locator('#v31-sidebar').bounding_box()
-                    self.assertEqual(sidebar['width'], 80 if width <= 1400 else 188)
+                    self.assertEqual(sidebar['width'], 124 if width <= 1400 else 188)
                     self.assertLessEqual(self.page.locator('#v31-top').bounding_box()['height'], 80)
                     self.assertTrue(self.page.locator('#v31-about').is_visible())
                     self.assertTrue(self.page.locator('#v31-sidebar [data-nav="#/recette"] span').is_visible())
@@ -96,8 +96,12 @@ class TestDesignIndustriel(ServeurNavigateur):
                 self.assertTrue(self.page.locator('#v31-close-detail').is_visible())
                 self.assertAlmostEqual(self.page.locator('.v31-variable-row').first.bounding_box()['height'], 44, delta=1)
                 folder = self.capture(f'industriel-detail-{width}.png')
+                detail_box = self.page.locator('.v31-variable-detail').bounding_box()
+                self.assertGreaterEqual(detail_box['x'], 0)
+                self.assertLessEqual(detail_box['x'] + detail_box['width'], width + 1)
+                self.assertGreaterEqual(detail_box['width'], 249)
                 measurements[width] = {'sidebar': sidebar, 'table': self.page.locator('.v31-main-table').bounding_box(),
-                                       'detail': self.page.locator('.v31-variable-detail').bounding_box()}
+                                       'detail': detail_box}
         (folder / 'industriel-mesures.json').write_text(json.dumps(measurements, indent=2) + '\n', encoding='utf-8')
         self.assertEqual(project.read_bytes(), before)
 
@@ -164,6 +168,9 @@ class TestDesignIndustriel(ServeurNavigateur):
             self.assertTrue(self.page.locator(f'[data-cfg="{field}"]').is_visible())
         self.capture('industriel-composition-1366.png')
         self.page.locator('.rack').first.scroll_into_view_if_needed()
+        rack_top = self.page.locator('.rack-tete').first.bounding_box()['y']
+        header_bottom = self.page.locator('#v31-top').bounding_box()['y'] + self.page.locator('#v31-top').bounding_box()['height']
+        self.assertGreaterEqual(rack_top, header_bottom - 1, 'Le titre du rack ne doit pas passer sous l’en-tête')
         self.assertEqual(self.style('.emplacement.a-choisir', 'borderTopStyle'), 'dashed')
         self.assertEqual(self.style('.emplacement.a-choisir', 'borderTopColor'), 'rgb(139, 92, 246)')
         self.assertEqual(self.style('.emplacement.alim', 'backgroundColor'), 'rgb(15, 22, 35)')
