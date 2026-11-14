@@ -86,6 +86,13 @@ class TestDesignIndustriel(ServeurNavigateur):
                     self.assertLessEqual(self.page.locator('#v31-top').bounding_box()['height'], 80)
                     self.assertTrue(self.page.locator('#v31-about').is_visible())
                     self.assertTrue(self.page.locator('#v31-sidebar [data-nav="#/recette"] span').is_visible())
+                    if width <= 1400:
+                        for nav_label in self.page.locator('#v31-sidebar [data-nav] span').all():
+                            self.assertLessEqual(
+                                nav_label.evaluate('el => el.scrollWidth'),
+                                nav_label.evaluate('el => el.clientWidth') + 1,
+                                'Un libellé de navigation ne doit pas être tronqué',
+                            )
                     if route == '#/inventaire':
                         self.assertEqual(self.style('#communication-choix', 'backgroundColor'), 'rgb(17, 24, 39)')
                         self.assertEqual(self.style('.repere-live', 'backgroundColor'), 'rgb(15, 22, 35)')
