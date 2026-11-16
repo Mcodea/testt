@@ -215,7 +215,8 @@ class TestDesignIndustriel(ServeurNavigateur):
         self.assertTrue(self.page.locator('.cv-deplacer').first.is_visible())
         self.assertIn('OGIAS-Mono', self.style('.voies-carte select', 'fontFamily'))
         self.capture('industriel-voies-1366.png')
-        self.page.locator('#modale [data-fermer]').click()
+        # Poste de travail (16/11) : les voies s'affichent dans l'inspecteur, sans fenêtre à fermer
+        self.assertTrue(self.page.locator('#pt-inspecteur .voies-carte').is_visible())
         self.assertEqual(project.read_bytes(), before)
 
     def test_entete_reste_visible_au_defilement_sans_modifier_les_variables(self):

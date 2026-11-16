@@ -220,7 +220,10 @@ async function panneauParcours(vue, zone) {
   bloc.innerHTML = (et.bloquants.length ? `<div class="pp-bloquants"><h3>Pour passer à l'étape suivante (${et.bloquants.length})</h3><ul>${et.bloquants.map(ligne).join("")}</ul></div>`
       : `<div class="pp-pret"><b>${precedente ? "Cette étape est prête ; terminez d'abord l'étape « " + esc(precedente.libelle) + " »." : "Étape prête : vous pouvez passer à la suivante."}</b></div>`)
     + (et.a_verifier.length ? `<details class="pp-verifier"><summary>À vérifier (${et.a_verifier.length})</summary><ul>${et.a_verifier.map(ligne).join("")}</ul></details>` : "");
-  zone.querySelector(".pied-etape")?.before(bloc);
+  const cible = zone.querySelector("#pt-controles");
+  if (cible) { cible.innerHTML = ""; cible.appendChild(bloc); const n = et.bloquants.length + et.a_verifier.length;
+    const t = zone.querySelector('[data-pt-onglet="controles"] .pt-compte'); if (t) t.textContent = n; }
+  else zone.querySelector(".pied-etape")?.before(bloc);
   bloc.querySelectorAll("[data-pp-vue]").forEach(b => b.onclick = () => {
     if (b.dataset.ppVue === "ouvrage" && b.dataset.ppEq)
       return allerOuvrage({nature: "eq", valeur: b.dataset.ppEq});
@@ -2238,7 +2241,12 @@ function modaleEmplacement(cle, role) {
 function liaisonsComposition() {
   document.querySelectorAll("[data-emplacement]").forEach(x => {
     const ouvrir = () => modaleEmplacement(x.dataset.emplacement, x.dataset.role);
-    x.onclick = ouvrir; x.onkeydown = ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); ouvrir(); } };
+    // Poste de travail : un clic sélectionne (ou installe l'élément choisi dans le catalogue), le double-clic ou
+    // Entrée ouvre la fenêtre de l'emplacement.
+    const poste = !!document.querySelector("#pt-inspecteur");
+    x.onclick = () => poste ? cliquerEmplacement(x) : ouvrir();
+    x.ondblclick = () => { if (poste) ouvrir(); };
+    x.onkeydown = ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); ouvrir(); } };
   });
   const envoyer = corps => agir(api("/api/materiel/action", {action: "config", ...corps}), "Choix enregistré : recalculez le matériel pour l'appliquer.").then(rechargerMateriel);
   document.querySelectorAll("[data-cfg]").forEach(x => x.onchange = () => envoyer({[x.dataset.cfg]: x.value}));
@@ -2278,6 +2286,138 @@ function liaisonsRepartition() {
   document.querySelectorAll("[data-rp-confirmer]").forEach(b => b.onclick = () => act({action: "confirmer_groupe_secours", membres: JSON.parse(b.dataset.rpConfirmer)}, "Groupe de secours confirmé."));
   document.querySelectorAll("[data-rp-refuser]").forEach(b => b.onclick = () => act({action: "refuser_groupe_secours", membres: JSON.parse(b.dataset.rpRefuser)}, "Proposition écartée."));
   document.querySelectorAll("[data-rp-retirer]").forEach(b => b.onclick = () => act({action: "retirer_groupe_secours", membres: JSON.parse(b.dataset.rpRetirer)}, "Groupe retiré."));
+}
+/* Poste de travail matériel (16/11, 12 h) — comme les logiciels d'ingénierie (TIA Portal, Control Expert) :
+   éditeur au centre (rack), catalogue à droite, inspecteur en bas (propriétés, voies, contrôles) de ce qui est
+   sélectionné. On installe un élément du catalogue par clic puis clic sur un emplacement compatible, ou par
+   glisser-déposer. Les commandes passent par les mêmes appels que la fenêtre de l'emplacement. */
+const CAT_TYPES = {alim: "Alimentations", cpu: "Processeurs", com: "Communication", ET: "Entrées TOR", ST: "Sorties TOR", EA: "Entrées analogiques", SA: "Sorties analogiques"};
+function elementsCatalogue(m) {
+  const desc = x => x.description || [x.entree, x.puissance_w ? x.puissance_w + " W" : ""].filter(Boolean).join(", ");
+  const g = [["alim", m.alimentations || []], ["cpu", m.processeurs || []], ["com", m.communications || []]]
+    .map(([t, l]) => [t, l.map(x => ({type: t, reference: x.reference, description: desc(x)}))]);
+  ["ET", "ST", "EA", "SA"].forEach(n => g.push([n, (m.cartes_catalogue || []).filter(x => x.nature === n)
+    .map(x => ({type: "carte", nature: n, voies: x.voies, reference: x.reference, description: desc(x) || `${x.voies} voies`}))]));
+  return g.filter(([, l]) => l.length);
+}
+const ROLE_CIBLE = {alim: ["alimentation"], cpu: ["processeur"], com: ["libre", "communication"], carte: ["libre"]};
+function compatible(el, item) { return !!item && !!el.dataset.emplacement && (ROLE_CIBLE[item.type] || []).includes(el.dataset.role); }
+async function installerDepuisCatalogue(el, item) {
+  const [rack, position] = el.dataset.emplacement.split(".");
+  try {
+    if (item.type === "alim") await api("/api/materiel/action", {action: "config", alimentation: item.reference});
+    else if (item.type === "cpu") await api("/api/materiel/action", {action: "config", processeur: item.reference});
+    else if (item.type === "com") {
+      const occ = el.dataset.role === "communication" ? el.querySelector("b")?.textContent : "";
+      if (occ) await api("/api/materiel/action", {action: "retirer_communication", rack, position});
+      try { await api("/api/materiel/action", {action: "installer_communication", rack, position, reference: item.reference}); }
+      catch (err) { if (occ) await api("/api/materiel/action", {action: "installer_communication", rack, position, reference: occ}); throw err; }
+    } else await api("/api/modules", {action: "ajouter", rack, position, nature: item.nature, voies: item.voies, reference: item.reference});
+    E.catArme = null; E.selMat = el.dataset.emplacement;
+    toast(`${item.reference} installé en ${el.dataset.emplacement} : matériel à valider.`);
+    E.es = await api("/api/es"); rechargerMateriel();
+  } catch (err) { toast(err.message, true); }
+}
+function cliquerEmplacement(el) {
+  if (E.catArme && compatible(el, E.catArme)) return installerDepuisCatalogue(el, E.catArme);
+  if (E.catArme) toast(`${E.catArme.reference} ne se pose pas sur cet emplacement (${el.dataset.role}).`, true);
+  E.selMat = el.dataset.emplacement || el.dataset.carte; majSelectionMateriel();
+}
+function majCibles() {
+  document.querySelectorAll(".rack .emplacement").forEach(x => x.classList.toggle("cible", compatible(x, E.catArme)));
+  document.querySelectorAll("#pt-catalogue .cat-item").forEach(b => b.setAttribute("aria-pressed", String(!!E.catArme && b.dataset.ref === E.catArme.reference && b.dataset.type === E.catArme.type)));
+  const aide = $("#pt-cat-aide");
+  if (aide) aide.textContent = E.catArme ? `${E.catArme.reference} → cliquez un emplacement en surbrillance (Échap : annuler).` : "Choisissez un élément puis un emplacement, ou glissez-le sur le rack.";
+}
+function posteMateriel() {
+  const m = E.mat, cat = $("#pt-catalogue"), ins = $("#pt-inspecteur");
+  if (!cat || !ins) return;
+  const equipable = !!document.querySelector(".rack [data-emplacement]");
+  const groupes = elementsCatalogue(m);
+  // Le rack d'abord (comme la vue des appareils) ; plateforme et réserve juste en dessous.
+  const bandeau = document.querySelector("#pt-editeur .bandeau-materiel"), onglets = $("#onglets-mat");
+  if (bandeau && onglets) onglets.before(bandeau);
+  cat.innerHTML = `<div class="pt-tete"><h2>Catalogue</h2><span class="aide">${esc(m.plateforme || "")}</span></div>
+    <label class="pt-recherche"><input type="search" id="pt-cat-q" placeholder="Filtrer : référence, description…" aria-label="Filtrer le catalogue" value="${esc(E.catQ || "")}"></label>
+    <p class="pt-cat-aide" id="pt-cat-aide"></p>
+    <div class="pt-cat-liste">${groupes.length ? groupes.map(([t, l]) => `<details class="cat-groupe" ${E.catFerme && E.catFerme[t] ? "" : "open"} data-groupe="${t}"><summary>${CAT_TYPES[t]} <span class="pt-compte">${l.length}</span></summary>
+      ${l.map(x => `<button type="button" class="cat-item" draggable="${equipable}" data-type="${x.type}" data-ref="${esc(x.reference)}" ${x.nature ? `data-nature="${x.nature}" data-voies="${x.voies}"` : ""} aria-pressed="false" title="${esc(x.reference + " — " + x.description)}">
+        <b class="mono">${esc(x.reference)}</b><small>${esc(x.description)}</small></button>`).join("")}</details>`).join("")
+      : '<div class="vide-bloc">Aucun catalogue matériel pour cette plateforme.</div>'}</div>
+    ${equipable ? "" : '<p class="pt-cat-aide">Catalogue en consultation : ce rack ne s\'équipe pas emplacement par emplacement.</p>'}`;
+  const item = b => ({type: b.dataset.type, reference: b.dataset.ref, nature: b.dataset.nature, voies: b.dataset.voies});
+  const filtrer = () => { const q = (E.catQ || "").toLowerCase();
+    cat.querySelectorAll(".cat-item").forEach(b => b.hidden = !!q && !b.title.toLowerCase().includes(q)); };
+  cat.querySelector("#pt-cat-q").oninput = ev => { E.catQ = ev.target.value; filtrer(); };
+  cat.querySelectorAll(".cat-groupe").forEach(g => g.ontoggle = () => { (E.catFerme ||= {})[g.dataset.groupe] = !g.open; });
+  cat.querySelectorAll(".cat-item").forEach(b => {
+    b.onclick = () => { if (!equipable) return; const it = item(b);
+      E.catArme = E.catArme && E.catArme.reference === it.reference && E.catArme.type === it.type ? null : it; majCibles(); };
+    b.ondragstart = ev => { E.catArme = item(b); ev.dataTransfer.setData("text/plain", b.dataset.ref); ev.dataTransfer.effectAllowed = "copy"; majCibles(); };
+    b.ondragend = () => { document.querySelectorAll(".emplacement.survol").forEach(x => x.classList.remove("survol")); };
+  });
+  document.querySelectorAll(".rack [data-emplacement]").forEach(el => {
+    el.ondragover = ev => { if (compatible(el, E.catArme)) { ev.preventDefault(); el.classList.add("survol"); } };
+    el.ondragleave = () => el.classList.remove("survol");
+    el.ondrop = ev => { ev.preventDefault(); el.classList.remove("survol"); if (compatible(el, E.catArme)) installerDepuisCatalogue(el, E.catArme); };
+  });
+  document.querySelectorAll(".rack [data-carte]").forEach(b => b.onclick = () => { E.selMat = b.dataset.carte; E.ongletInsp = "voies"; majSelectionMateriel(); });
+  if (!document.body.dataset.echapPoste) { document.body.dataset.echapPoste = "1";
+    document.addEventListener("keydown", ev => { if (ev.key === "Escape" && E.catArme && $("#modale").hidden) { E.catArme = null; majCibles(); } }); }
+  filtrer(); majCibles(); majSelectionMateriel();
+}
+function majSelectionMateriel() {
+  const ins = $("#pt-inspecteur"); if (!ins) return;
+  const m = E.mat, d = E.es, cle = E.selMat || "";
+  const el = cle ? document.querySelector(`.rack [data-emplacement="${CSS.escape(cle)}"], .rack [data-carte="${CSS.escape(cle)}"]`) : null;
+  document.querySelectorAll(".rack .emplacement.selection").forEach(x => x.classList.remove("selection"));
+  if (el) el.classList.add("selection");
+  const carte = el && el.dataset.carte ? d.modules.find(x => x.module === el.dataset.carte) : null;
+  const ligne = (k, v) => `<dt>${k}</dt><dd>${v}</dd>`;
+  let titre, props, actions = "";
+  if (carte) {
+    titre = `Carte ${esc(carte.module)} — ${esc(carte.reference)}`;
+    const info = (m.cartes_catalogue || []).find(x => x.reference === carte.reference) || {};
+    props = ligne("Emplacement", `<span class="mono">${esc(carte.module)}</span>`) + ligne("Référence", `<span class="mono">${esc(carte.reference)}</span>`)
+      + ligne("Nature", `<span class="tag p-${carte.nature}">${carte.nature}</span> ${carte.voies} voies`) + (info.description ? ligne("Description", esc(info.description)) : "")
+      + ligne("Occupation", `${carte.occupees} / ${carte.voies} voies`) + ligne("Réserve", `${carte.reserve} voie(s) · ${Math.round(carte.taux * 100)} %${carte.sous_seuil && carte.occupees ? ' <span class="badge b-al">sous le seuil</span>' : ""}`);
+    actions = `<button id="pt-carte">Modifier la carte…</button>`;
+  } else if (el) {
+    const role = el.dataset.role, ref = el.querySelector("b")?.textContent || "";
+    const R = {alimentation: "Alimentation (emplacement CPS)", processeur: "Processeur", communication: "Module de communication", libre: "Emplacement libre"};
+    titre = `Rack ${esc(cle.split(".")[0])} — ${role === "alimentation" ? "CPS" : "emplacement " + esc(cle.split(".")[1])}`;
+    props = ligne("Rôle", R[role] || role) + (role !== "libre" ? ligne("Module", `<span class="mono">${esc(ref)}</span>`) : "")
+      + ligne("Peut recevoir", role === "libre" ? "carte d'E/S ou module de communication" : role === "communication" ? "module de communication (remplacement) ou rien" : R[role]);
+    actions = `<button class="${role === "libre" ? "prim" : ""}" id="pt-modifier">${role === "libre" ? "Installer…" : "Changer…"}</button>`;
+  } else {
+    titre = "Rack";
+    const racks = racksAffiches(m, d.modules);
+    props = ligne("Plateforme", esc(m.plateforme || "")) + ligne("Racks", racks.map(r => `<span class="mono">${esc(r.reference)}</span>`).join(", ") || "—")
+      + ligne("Cartes d'E/S", d.modules.length) + ligne("Matériel", m.materiel_valide ? '<span class="badge b-ok">validé</span>' : '<span class="badge b-al">à valider</span>');
+  }
+  const v = carte ? voiesCarte(carte.module) : null;
+  const ancien = document.querySelector("#vue .parcours-points");
+  let onglet = E.ongletInsp || "props";
+  if (onglet === "voies" && !v) onglet = "props";
+  ins.innerHTML = `<div class="pt-tete"><div class="pt-onglets" role="tablist" aria-label="Inspecteur">
+      <button role="tab" data-pt-onglet="props" aria-selected="${onglet === "props"}">Propriétés</button>
+      ${v ? `<button role="tab" data-pt-onglet="voies" aria-selected="${onglet === "voies"}">Voies et E/S</button>` : ""}
+      <button role="tab" data-pt-onglet="controles" aria-selected="${onglet === "controles"}">Contrôles <span class="pt-compte"></span></button></div>
+      <h2 class="pt-titre">${titre}</h2><div class="droite">${actions}</div></div>
+    <div class="pt-corps">
+      <div data-pt-panneau="props" ${onglet === "props" ? "" : "hidden"}><dl class="pt-props">${props}</dl>
+        ${!el ? '<p class="pt-cat-aide">Sélectionnez un emplacement du rack pour voir ses propriétés et, pour une carte, ses voies.</p>' : ""}</div>
+      ${v ? `<div data-pt-panneau="voies" ${onglet === "voies" ? "" : "hidden"}><p class="pt-resume">${v.resume}</p>${v.table}<div class="erreur-form"></div></div>` : ""}
+      <div data-pt-panneau="controles" id="pt-controles" ${onglet === "controles" ? "" : "hidden"}><p class="pt-cat-aide">Aucun point bloquant signalé pour cette étape.</p></div>
+    </div>`;
+  if (ancien) ins.querySelector("#pt-controles").replaceChildren(ancien);
+  const n = ancien ? ancien.querySelectorAll("li").length : 0; ins.querySelector('[data-pt-onglet="controles"] .pt-compte').textContent = n || "";
+  ins.querySelectorAll("[data-pt-onglet]").forEach(t => t.onclick = () => { E.ongletInsp = t.dataset.ptOnglet;
+    ins.querySelectorAll("[data-pt-onglet]").forEach(x => x.setAttribute("aria-selected", String(x === t)));
+    ins.querySelectorAll("[data-pt-panneau]").forEach(p => p.hidden = p.dataset.ptPanneau !== t.dataset.ptOnglet); });
+  if (v) v.brancher(ins.querySelector('[data-pt-panneau="voies"]'), null);
+  if ($("#pt-carte")) $("#pt-carte").onclick = () => modaleModules(carte.module);
+  if ($("#pt-modifier")) $("#pt-modifier").onclick = () => modaleEmplacement(el.dataset.emplacement, el.dataset.role);
 }
 /* Retour du 16/11 (11 h 03) : écran matériel trop chargé. Le rack reste en tête ; une seule « prochaine
    action » ; la suite est rangée en trois onglets (voies des E/S, réglages du calcul, nomenclature et
@@ -2322,7 +2462,7 @@ function vueMateriel() {
   const besoins = prop ? prop.besoins.filter(x => x.es) : [];
   const s4w = m.plateforme === "S4W";
   const differe = prop && prop.applicable && d.modules.length && JSON.stringify(prop.modules.map(x => `${x.rack}.${x.position}:${x.reference}`)) !== JSON.stringify(d.modules.map(x => `${x.module}:${x.reference}`));
-  $("#vue").innerHTML = `<section class="contenu">
+  $("#vue").innerHTML = `<section class="contenu poste-travail" data-poste="materiel"><div class="poste-grille"><div class="poste-editeur" id="pt-editeur">
    <div class="titre"><div><h1>Matériel automate</h1><div class="sous">Proposé à partir des E/S validées, ${Math.round(m.reserve_min * 100)} % de réserve par carte · cliquez un emplacement du rack pour l'équiper</div></div>
      <div class="actions">${m.materiel_valide ? '<span class="badge b-ok grand">Matériel validé</span><button id="m-deval">Repasser à valider</button>'
        : `<button class="${rien ? "" : "prim"}" id="m-valider" ${rien ? "disabled" : ""}>Valider le matériel</button>`}</div></div>
@@ -2337,7 +2477,7 @@ function vueMateriel() {
    ${m.remarque_plateforme ? `<div class="avert">${esc(m.remarque_plateforme)}</div>` : ""}
    ${m.blocage ? `<div class="alerte-bloc"><b>Calcul impossible :</b> ${esc(m.blocage)} <button class="lien" data-nav="#/es">Aller à la liste des E/S</button></div>` : ""}
    ${differe ? `<div class="avert">Les cartes retenues diffèrent de la proposition actuelle (densité ou E/S modifiées). « Recalculer le matériel » applique la proposition.</div>` : ""}
-   <div class="bloc"><div class="bloc-tete"><h2>Racks</h2><span class="aide">${rien ? "aucune carte retenue" : `${d.modules.length} carte(s) · cliquez une carte pour la modifier`}</span>
+   <div class="bloc"><div class="bloc-tete"><h2>Racks</h2><span class="aide">${rien ? "aucune carte retenue" : `${d.modules.length} carte(s) · cliquez un emplacement pour l'inspecter, double-cliquez pour le changer`}</span>
      <span class="legende"><i class="l-ok"></i>réserve respectée <i class="l-al"></i>sous la réserve <i class="l-err"></i>dépassement</span></div>
      ${s4w && prop && prop.racks.length ? `<p class="aide-bloc"><b>Proposition indicative S4W</b> — voies intégrées au boîtier puis modules d'extension (la CPU est intégrée au boîtier).</p>`
          + prop.racks.map(r => vueRack(r, prop.modules.map(x => ({module: `${x.rack}.${x.position}`, nature: x.nature, voies: x.voies, reference: x.reference, occupees: 0, reserve: x.voies, taux: 1, sous_seuil: false})))).join("") : ""}
@@ -2379,6 +2519,9 @@ function vueMateriel() {
      <div class="boutons-ligne"><button id="x-xl" ${cables.length ? "" : "disabled"}>Liste d'E/S (Excel)</button><button id="x-ca" ${rien ? "disabled" : ""}>Cartes d'E/S (Excel)</button>
      <button id="x-xsy" ${places.length ? "" : "disabled"} title="Format de l'export des variables de Control Expert V14.1, voies de réserve comprises">E/S pour Control Expert (XSY)</button><button id="x-txt" ${places.length ? "" : "disabled"}>E/S pour Control Expert (TXT)</button>
      <span class="aide">${places.length < cables.length ? `${cables.length - places.length} E/S n'ont pas encore de voie : elles figureront sans adresse.` : "Toutes les E/S câblées ont une voie."}</span></div></div></div>
+  </div>
+  <aside class="poste-catalogue" id="pt-catalogue" aria-label="Catalogue matériel"></aside>
+  <div class="poste-inspecteur" id="pt-inspecteur" aria-label="Inspecteur"></div></div>
   </section>`;
   parcoursMateriel({m, rien, sansVoie: cables.length - places.length, aValider: aValider.length, prop});
   brancherListeES(pts, "voie");
@@ -2399,6 +2542,7 @@ function vueMateriel() {
     async () => { const r = await agir(api("/api/modules", {action: "liberer"})); toast(`${r.liberees} voie(s) libérée(s).`); rechargerMateriel(); });
   liaisonsRepartition();
   liaisonsComposition();
+  posteMateriel();
   $("#x-xl").onclick = () => telecharger("liste_es");
   $("#x-ca").onclick = () => telecharger("cartes");
   $("#x-xsy").onclick = () => telecharger("es_xsy");
@@ -2483,6 +2627,17 @@ function placeES(p) {
 function modaleVoiesCarte(cleCarte) {
   const d = E.es, carte = d.modules.find(x => x.module === cleCarte);
   if (!carte) return modaleModules(cleCarte);
+  const v = voiesCarte(cleCarte);
+  const m = ouvrirModale(`<div class="boite-tete"><h2>Carte ${esc(cleCarte)} — ${esc(carte.reference)}</h2>
+      <p>${v.resume}</p></div>
+    <div class="boite-corps">${v.table}<div class="erreur-form" id="m-err"></div></div>
+    <div class="boite-pied"><button id="cv-carte">Modifier la carte…</button><button class="prim" data-fermer>Fermer</button></div>`, true);
+  v.brancher(m, () => modaleVoiesCarte(cleCarte));
+}
+/* Voies d'une carte : tableau et commandes de réaffectation, affichés dans l'inspecteur du poste matériel
+   ou dans une fenêtre (même code, mêmes classes). */
+function voiesCarte(cleCarte) {
+  const d = E.es, carte = d.modules.find(x => x.module === cleCarte);
   const cables = d.points.filter(p => p.raccordement !== "Communication");
   const occupant = {}, occupees = {};
   cables.forEach(p => { const [k, v] = placeES(p); if (k) { (occupees[k] ||= new Set()).add(v); if (k === cleCarte) occupant[v] = p; } });
@@ -2497,16 +2652,16 @@ function modaleVoiesCarte(cleCarte) {
       : `<tr class="libre"><td class="mono">${v}</td><td colspan="3" class="sec">libre</td>
         <td>${sansVoie.length ? `<select class="cv-placer" data-voie="${v}" aria-label="Placer une E/S sur la voie ${v}"><option value="">Placer une E/S sans voie…</option>${sansVoie.map(p => `<option value="${esc(p.ident_eq)}|${esc(p.cle)}">${esc(p.nom)}</option>`).join("")}</select>` : ""}</td></tr>`;
   }).join("");
-  const m = ouvrirModale(`<div class="boite-tete"><h2>Carte ${esc(cleCarte)} — ${esc(carte.reference)}</h2>
-      <p>${carte.voies} voies ${esc(carte.nature)} · ${carte.occupees} occupée(s) · réserve ${carte.reserve} (${Math.round(carte.taux * 100)} %)${carte.sous_seuil && carte.occupees ? " · sous le seuil" : ""}</p></div>
-    <div class="boite-corps"><table class="voies-carte"><thead><tr><th>Voie</th><th>E/S</th><th>Équipement</th><th>État</th><th>Réaffecter</th></tr></thead><tbody>${lignes}</tbody></table>
-    <div class="erreur-form" id="m-err"></div></div>
-    <div class="boite-pied"><button id="cv-carte">Modifier la carte…</button><button class="prim" data-fermer>Fermer</button></div>`, true);
+  const resume = `${carte.voies} voies ${esc(carte.nature)} · ${carte.occupees} occupée(s) · réserve ${carte.reserve} (${Math.round(carte.taux * 100)} %)${carte.sous_seuil && carte.occupees ? " · sous le seuil" : ""}`;
+  const table = `<table class="voies-carte"><thead><tr><th>Voie</th><th>E/S</th><th>Équipement</th><th>État</th><th>Réaffecter</th></tr></thead><tbody>${lignes}</tbody></table>`;
+  return {carte, resume, table, brancher: (m, rouvrir) => brancherVoiesCarte(m, cleCarte, rouvrir)};
+}
+function brancherVoiesCarte(m, cleCarte, rouvrir) {
   const q = x => m.querySelector(x);
   const deplacer = async (ident_eq, cle, cible) => {
     const [module, voie] = cible.split("|");
-    try { await api("/api/es/definir", {ident_eq, cle, module, voie}); E.es = await api("/api/es"); toast(`E/S placée sur ${module} voie ${voie} : à valider.`); modaleVoiesCarte(cleCarte); rechargerMateriel(); }
-    catch (e) { q("#m-err").textContent = e.message; }
+    try { await api("/api/es/definir", {ident_eq, cle, module, voie}); E.es = await api("/api/es"); toast(`E/S placée sur ${module} voie ${voie} : à valider.`); if (rouvrir) rouvrir(); rechargerMateriel(); }
+    catch (e) { const z = q("#m-err") || q(".erreur-form"); if (z) z.textContent = e.message; else toast(e.message, true); }
   };
   m.querySelectorAll(".cv-deplacer").forEach(s => s.onchange = () => {
     if (!s.value) return;
@@ -2518,7 +2673,7 @@ function modaleVoiesCarte(cleCarte) {
     const [ident_eq, cle] = s.value.split("|");
     deplacer(ident_eq, cle, `${cleCarte}|${s.dataset.voie}`);
   });
-  q("#cv-carte").onclick = () => modaleModules(cleCarte);
+  if (q("#cv-carte")) q("#cv-carte").onclick = () => modaleModules(cleCarte);
 }
 function modaleModules(edition) {
   const d = E.es, x0 = edition ? d.modules.find(x => x.module === edition) : null;

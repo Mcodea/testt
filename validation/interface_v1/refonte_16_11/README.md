@@ -97,3 +97,21 @@ Captures : `retours_11h03/` (1366 × 768 ; `avant_equipement_1366.png` = fiche a
   variables) ; tests existants adaptés pour ouvrir l'onglet voulu avant de lire la composition ou la
   nomenclature. Résultats : `pytest tests` 707 réussis (5 ignorés : Qt), `pytest tests_web` 77 réussis,
   `ruff`, `mypy`, `node --check`, audit des données (0 détection).
+
+## Poste de travail « logiciel d'ingénierie » — pilote sur l'écran Matériel (16/11, 12 h)
+
+Retour : OGIAS ressemble à un site web (pages qui défilent, fenêtres pour chaque détail), pas à un logiciel
+d'ingénierie (TIA Portal, AVEVA, Control Expert). Captures : `poste_travail/`.
+
+- **Cadre fixe, sans défilement de page** : éditeur au centre (rack, puis voies / réglages / nomenclature),
+  **catalogue à droite**, **inspecteur en bas** ; chaque panneau défile seul.
+- **Catalogue** (alimentations, processeurs, communication, cartes TOR / analogiques de la plateforme) avec
+  filtre. Un clic sur un élément met en surbrillance les emplacements qui peuvent le recevoir ; un clic sur l'un
+  d'eux l'installe. Glisser-déposer possible. Échap annule. Mêmes appels au moteur que la fenêtre de
+  l'emplacement (emplacements réservés toujours contrôlés par le moteur).
+- **Inspecteur** de la sélection : *Propriétés* (rack, emplacement ou carte), *Voies et E/S* d'une carte
+  (réaffectation sur place, sans fenêtre), *Contrôles* (points bloquants de l'étape).
+- Un clic sélectionne ; double-clic ou Entrée ouvre la fenêtre de l'emplacement (inchangée).
+- Titre redondant masqué, plateforme et réserve sous le rack.
+- Tests : `TestPosteDeTravailMateriel` (géométrie aux 4 résolutions, installation par clic et glisser,
+  inspecteur, filtre). Résultats : `pytest tests_web` 80 réussis.

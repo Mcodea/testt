@@ -45,7 +45,7 @@ class TestRetours1611(ServeurNavigateur):
         libres = self.page.locator('.emplacement.libre[data-emplacement]')
         libres.first.wait_for()
         cle = libres.first.get_attribute('data-emplacement')
-        libres.first.click()
+        libres.first.dblclick()          # poste de travail : double-clic = fenêtre de l'emplacement
         self.page.locator('#e-ref').select_option('BMX DRA 1605')
         self.page.locator('#e-ok').click()
         self.page.wait_for_function('c => !!document.querySelector(`[data-carte="${c}"]`)', arg=cle)
@@ -53,7 +53,7 @@ class TestRetours1611(ServeurNavigateur):
         self.assertEqual((module['reference'], module['nature'], module['voies']), ('BMX DRA 1605', 'ST', 16))
         # Un autre emplacement libre reçoit un module de communication
         cle2 = self.page.locator('.emplacement.libre[data-emplacement]').first.get_attribute('data-emplacement')
-        self.page.locator('.emplacement.libre[data-emplacement]').first.click()
+        self.page.locator('.emplacement.libre[data-emplacement]').first.dblclick()
         self.page.locator('input[name="e-type"][value="com"]').check()
         self.page.locator('#e-com-ref').select_option('BMX NOM 0200')
         self.page.locator('#e-ok').click()
@@ -64,19 +64,19 @@ class TestRetours1611(ServeurNavigateur):
         with self.assertRaisesRegex(RuntimeError, 'réservé'):
             self.api('/api/modules', {'action': 'ajouter', 'rack': rack, 'position': pos, 'nature': 'ET',
                                       'voies': 16, 'reference': 'BMX DDI 1602'})
-        self.page.locator(f'[data-emplacement="{cle2}"]').click()
+        self.page.locator(f'[data-emplacement="{cle2}"]').dblclick()
         self.page.locator('#e-liberer').click()
         self.page.wait_for_function('c => document.querySelector(`[data-emplacement="${c}"]`)?.dataset.role === "libre"', arg=cle2)
 
     def test_emplacements_reserves_proposent_seulement_leur_module(self):
         self.page.goto(self.url + '#/materiel', wait_until='networkidle')
-        self.page.locator('.emplacement.alim[data-emplacement]').click()
+        self.page.locator('.emplacement.alim[data-emplacement]').dblclick()
         options = self.page.locator('#e-ref option').all_text_contents()
         self.assertTrue(all(o.startswith('BMX CPS') or o.startswith('—') for o in options))
         self.page.locator('#e-ref').select_option('BMX CPS 2010')
         self.page.locator('#e-ok').click()
         self.page.wait_for_function('() => document.querySelector(".emplacement.alim b")?.textContent === "BMX CPS 2010"')
-        self.page.locator('.emplacement.cpu[data-emplacement]').first.click()
+        self.page.locator('.emplacement.cpu[data-emplacement]').first.dblclick()
         options = self.page.locator('#e-ref option').all_text_contents()
         self.assertTrue(all(o.startswith('BMX P34') or o.startswith('—') for o in options))
         self.page.locator('#modale [data-fermer]').click()
@@ -164,3 +164,69 @@ class TestRetours1611Parcours(ServeurNavigateur):
         attendu = v.get('libelle') or v.get('commentaire') or '—'
         ligne = self.page.locator(f'.v31-variable-row[data-variable="{v["nom"]}"] .v31-libelle')
         self.assertEqual(ligne.inner_text().strip(), attendu.strip())
+
+
+class TestPosteDeTravailMateriel(ServeurNavigateur):
+    """16/11, 12 h : écran Matériel en poste de travail (éditeur, catalogue à droite, inspecteur en bas)."""
+    BASE = 60
+    setUp = TestRetours1611.setUp
+    tearDown = TestRetours1611.tearDown
+
+    def ouvrir(self, largeur=1366, hauteur=768):
+        self.page.set_viewport_size({'width': largeur, 'height': hauteur})
+        self.page.goto(self.url + '#/materiel', wait_until='networkidle')
+        self.page.locator('#pt-catalogue .cat-item').first.wait_for()
+
+    def test_panneaux_sans_chevauchement_ni_defilement_de_page(self):
+        for largeur, hauteur in ((1366, 768), (1440, 900), (1920, 1080), (2560, 1440)):
+            with self.subTest(resolution=f'{largeur}x{hauteur}'):
+                self.ouvrir(largeur, hauteur)
+                b = {k: self.page.locator(s).bounding_box() for k, s in
+                     (('ed', '#pt-editeur'), ('cat', '#pt-catalogue'), ('ins', '#pt-inspecteur'), ('pied', '.pied-etape'))}
+                self.assertLessEqual(b['ed']['x'] + b['ed']['width'], b['cat']['x'] + 1)
+                self.assertLessEqual(b['ed']['y'] + b['ed']['height'], b['ins']['y'] + 1)
+                self.assertLessEqual(b['ins']['y'] + b['ins']['height'], b['pied']['y'] + 1)
+                self.assertLessEqual(b['cat']['y'] + b['cat']['height'], b['pied']['y'] + 1)
+                self.assertGreaterEqual(b['ins']['height'], 150)
+                self.assertGreaterEqual(b['cat']['width'], 239)
+                self.assertEqual(self.page.evaluate("(() => { const v = document.querySelector('#vue'); return v.scrollHeight - v.clientHeight })()"), 0)
+                self.assertLess(self.page.locator('.rack').first.bounding_box()['y'], b['ins']['y'], 'Rack visible au-dessus de l\'inspecteur')
+
+    def test_installer_depuis_le_catalogue_par_clic_et_par_glisser(self):
+        self.ouvrir()
+        avant = len(self.api('/api/es')['modules'])
+        self.page.locator('.cat-item[data-ref="BMX DDO 1602"]').click()
+        self.assertEqual(self.page.locator('.cat-item[data-ref="BMX DDO 1602"]').get_attribute('aria-pressed'), 'true')
+        cibles = self.page.locator('.rack .emplacement.cible')
+        self.assertGreaterEqual(cibles.count(), 1)
+        self.assertEqual(self.page.locator('.rack .emplacement.cible:not(.libre)').count(), 0, 'Une carte ne vise que les emplacements libres')
+        self.page.keyboard.press('Escape')
+        self.assertEqual(self.page.locator('.rack .emplacement.cible').count(), 0)
+        self.page.locator('.cat-item[data-ref="BMX DDO 1602"]').click()
+        cle = cibles.first.get_attribute('data-emplacement')
+        cibles.first.click()
+        self.page.wait_for_function('c => !!document.querySelector(`[data-carte="${c}"]`)', arg=cle)
+        self.assertEqual(len(self.api('/api/es')['modules']), avant + 1)
+        self.assertIn('BMX DDO 1602', self.page.locator('#pt-inspecteur .pt-titre').inner_text())
+        # Glisser-déposer d'une alimentation sur l'emplacement CPS
+        self.page.locator('.cat-item[data-ref="BMX CPS 2010"]').drag_to(self.page.locator('.emplacement.alim[data-emplacement]'))
+        self.page.wait_for_function('() => document.querySelector(".emplacement.alim b")?.textContent === "BMX CPS 2010"')
+
+    def test_inspecteur_proprietes_voies_et_controles(self):
+        self.ouvrir()
+        self.assertIn('Rack', self.page.locator('#pt-inspecteur .pt-titre').inner_text())
+        carte = self.page.locator('.rack [data-carte]').first
+        carte.click()
+        self.assertIn('selection', carte.get_attribute('class'))
+        self.assertTrue(self.page.locator('#pt-inspecteur .voies-carte').is_visible())
+        self.page.locator('[data-pt-onglet="props"]').click()
+        self.assertIn('Référence', self.page.locator('#pt-inspecteur .pt-props').inner_text())
+        self.page.locator('.emplacement.cpu[data-emplacement]').first.click()
+        self.assertIn('Processeur', self.page.locator('#pt-inspecteur .pt-props').inner_text())
+        self.assertEqual(self.page.locator('#modale').is_visible(), False, 'Un clic ne doit pas ouvrir de fenêtre')
+        self.page.locator('[data-pt-onglet="controles"]').click()
+        self.assertTrue(self.page.locator('#pt-controles').is_visible())
+        # Filtre du catalogue
+        self.page.locator('#pt-cat-q').fill('NOE')
+        visibles = [t for t in self.page.locator('.cat-item:visible b').all_text_contents()]
+        self.assertTrue(visibles and all('NOE' in t for t in visibles))

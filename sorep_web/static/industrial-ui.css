@@ -374,6 +374,62 @@ details.aide-pliable>p{margin:var(--sp-1) 0 0;max-width:90ch}
 /* Variables : libellé lisible à la place de l'ancienne colonne « Source » */
 .v31-variable-screen .v31-libelle{max-width:clamp(180px,24vw,420px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
+/* Poste de travail (16/11, 12 h) : éditeur au centre, catalogue à droite, inspecteur en bas ; aucun défilement de
+   page, chaque panneau défile seul (modèle des logiciels d'ingénierie). Pilote : écran Matériel. */
+#vue:has(>.poste-travail){padding:0!important;overflow-y:auto!important}
+#vue>.contenu.poste-travail{display:flex!important;flex-direction:column;height:100%;min-height:0!important;max-width:none!important;
+ margin:0!important;padding:var(--sp-2) var(--sp-3) 0!important;gap:var(--sp-2)}
+.poste-travail>.v31-page-actions{flex:none;margin:0!important}
+.poste-grille{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) clamp(240px,19vw,320px);
+ grid-template-rows:minmax(0,1fr) clamp(170px,36%,380px);gap:var(--sp-2)}
+.poste-editeur{grid-column:1;grid-row:1;min-width:0;min-height:0;overflow:auto;padding-right:2px}
+.poste-editeur>.bloc:first-child,.poste-editeur>:first-child{margin-top:0}
+/* Titre déjà porté par l'en-tête de l'application ; bandeaux resserrés pour laisser le rack visible */
+.poste-editeur>.titre{display:none!important}
+.poste-editeur>:is(.prochaine-action,.avert,.alerte-bloc){margin-bottom:var(--sp-2)!important;min-height:0;padding-block:6px}
+.poste-editeur .bloc-tete .legende{white-space:nowrap}
+:is(.poste-catalogue,.poste-inspecteur){display:flex;flex-direction:column;min-height:0;min-width:0;background:var(--v31-white);
+ border:1px solid var(--v31-separator);border-radius:var(--radius-m);overflow:hidden}
+.poste-catalogue{grid-column:2;grid-row:1 / span 2}
+.poste-inspecteur{grid-column:1;grid-row:2}
+.poste-travail>.pied-etape{flex:none;position:static!important;margin:0 calc(-1 * var(--sp-3))!important}
+.pt-tete{flex:none;display:flex;align-items:center;gap:var(--sp-3);min-height:36px;padding:0 var(--sp-3);border-bottom:1px solid var(--v31-separator);background:var(--v31-subtle)}
+.pt-tete h2{margin:0;font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--v31-muted)}
+.pt-tete .pt-titre{text-transform:none;letter-spacing:0;color:var(--v31-text);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pt-tete .droite{margin-left:auto;display:flex;gap:var(--sp-2)}
+.pt-tete .droite button{min-height:26px;padding:0 var(--sp-3)}
+.pt-compte{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--v31-row);color:var(--v31-muted);font-size:11px;text-align:center}
+.pt-compte:empty{display:none}
+.pt-recherche{flex:none;display:block;padding:var(--sp-2) var(--sp-2) 0}
+.pt-recherche input{width:100%;height:28px}
+.pt-cat-aide{flex:none;margin:var(--sp-1) var(--sp-3) var(--sp-2);font-size:12px;color:var(--v31-muted)}
+.pt-cat-liste{flex:1 1 auto;min-height:0;overflow:auto;border-top:1px solid var(--v31-separator)}
+.cat-groupe>summary{position:sticky;top:0;z-index:1;display:flex;align-items:center;gap:var(--sp-2);padding:6px var(--sp-3);cursor:pointer;
+ font-weight:600;font-size:12px;background:var(--v31-subtle);border-bottom:1px solid var(--v31-separator)}
+.cat-item{display:grid;width:100%;gap:1px;text-align:left;padding:5px var(--sp-3) 5px calc(var(--sp-3) + 4px);border:0!important;border-radius:0!important;
+ border-bottom:1px solid var(--v31-row)!important;border-left:3px solid transparent!important;background:transparent;cursor:grab;min-height:0}
+.cat-item[hidden]{display:none}
+.cat-item b{font-size:12px;font-weight:600}
+.cat-item small{font-size:11px;color:var(--v31-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat-item:hover:not(:disabled){background:var(--v31-row)}
+.cat-item[aria-pressed="true"]{background:var(--ogias-primary-light)!important;border-left-color:var(--ogias-primary)!important}
+.cat-item[draggable="false"]{cursor:default}
+.pt-onglets{display:flex;align-self:stretch;gap:0;margin-left:calc(-1 * var(--sp-3))}
+.pt-onglets [role=tab]{border:0;border-radius:0;border-right:1px solid var(--v31-separator);border-bottom:2px solid transparent;background:transparent;
+ padding:0 var(--sp-3);min-height:0;font-weight:600;color:var(--v31-muted);display:inline-flex;align-items:center;gap:var(--sp-1)}
+.pt-onglets [role=tab][aria-selected="true"]{color:var(--v31-text);background:var(--v31-white);border-bottom-color:var(--ogias-primary)}
+.pt-corps{flex:1 1 auto;min-height:0;overflow:auto;padding:var(--sp-2) var(--sp-3)}
+.pt-corps [hidden]{display:none!important}
+.pt-props{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:var(--sp-1) var(--sp-5);margin:0}
+.pt-props dt{color:var(--v31-muted)}.pt-props dd{margin:0}
+.pt-resume{margin:0 0 var(--sp-2);color:var(--v31-muted)}
+.pt-corps .voies-carte select{max-width:240px}
+.pt-corps .parcours-points{margin:0;border:0;padding:0}
+/* Emplacements : cible d'installation, survol au glisser, sélection */
+.rack .emplacement.cible{outline:2px dashed var(--ogias-primary);outline-offset:-3px;background:var(--ogias-primary-light)}
+.rack .emplacement.survol{outline-style:solid}
+.rack .emplacement.selection{outline:2px solid var(--ogias-primary);outline-offset:1px}
+
 /* ===================================================================== 6. LARGEURS D'ÉCRAN
    Postes de référence : 1366 × 768, 1440 × 900, 1920 × 1080, 2560 × 1440. */
 /* 1121 à 1400 px (dont 1366) : navigation de 176 px, libellés sur une ou deux lignes coupées entre les mots */
