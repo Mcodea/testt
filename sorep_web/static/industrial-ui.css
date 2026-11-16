@@ -232,7 +232,19 @@ body{grid-template-columns:188px minmax(0,1fr);grid-template-rows:auto auto minm
  body[data-ecran="ouvrage"] #vue:has(>aside)>#contenu{min-width:0;min-height:0;overflow-x:hidden!important;overflow-y:auto!important;padding:0 2px 0 0!important}
  body[data-ecran="ouvrage"] #vue.v31-show-tree:has(>aside){grid-template-columns:minmax(0,1fr)}
  body[data-ecran="ouvrage"] #vue.v31-show-tree:has(>aside)>aside{display:none!important}
+ /* Poste de travail : catalogue des modèles à droite */
+ body[data-ecran="ouvrage"] #vue:has(>aside):has(>#eq-catalogue){grid-template-columns:clamp(250px,19vw,330px) minmax(0,1fr) clamp(220px,16vw,300px)}
+ body[data-ecran="ouvrage"] #vue.v31-show-tree:has(>aside):has(>#eq-catalogue){grid-template-columns:minmax(0,1fr) clamp(220px,16vw,300px)}
+ body[data-ecran="ouvrage"] #vue>#eq-catalogue{display:flex;grid-column:auto;grid-row:auto}
 }
+#vue>#eq-catalogue{display:none}
+/* Fiche plus étroite avec le catalogue : les commandes passent à la ligne au lieu de déborder */
+body[data-ecran="ouvrage"] #contenu .bloc>.titre{flex-wrap:wrap;row-gap:var(--sp-2)}
+body[data-ecran="ouvrage"] #contenu .bloc>.titre>.actions{flex-wrap:wrap;justify-content:flex-start}
+#arbre .noeud.cible{outline:2px dashed var(--ogias-primary);outline-offset:-2px}
+#arbre .noeud.survol{outline-style:solid;background:var(--ogias-primary-light)}
+.eq-catalogue .cat-item b{display:flex;align-items:center;gap:var(--sp-2);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eq-catalogue .cat-item .tag{flex:none}
 /* En-tête de l'arborescence : titre, filtre, barre d'outils sur une ligne (commandes de même gabarit) */
 #vue>aside .aside-tete{display:flex;flex-direction:column;gap:var(--sp-2);padding:10px var(--sp-3);border-bottom:1px solid var(--v31-separator);background:var(--v31-subtle)}
 #vue>aside .aside-titre{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp-2)}
@@ -425,6 +437,34 @@ details.aide-pliable>p{margin:var(--sp-1) 0 0;max-width:90ch}
 .pt-resume{margin:0 0 var(--sp-2);color:var(--v31-muted)}
 .pt-corps .voies-carte select{max-width:240px}
 .pt-corps .parcours-points{margin:0;border:0;padding:0}
+.poste-travail>.parcours-points{flex:none;max-height:112px;overflow:auto;margin:0!important}
+/* Liste des E/S en poste de travail : une ligne par E/S, tableau sur toute la hauteur, détail ancré à droite */
+.es-page.poste-travail>.titre,.es-page.poste-travail>.es-ruban{display:none!important}
+.es-page.poste-travail>:is(.es-compteurs,.es-filtres,.avert){flex:none;margin:0!important}
+.es-page.poste-travail>.es-filtres{align-items:end;gap:var(--sp-2) var(--sp-3)}
+.es-page.poste-travail>.es-corps{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:var(--sp-2)}
+.es-page.poste-travail>.es-corps:has(>.es-panneau){grid-template-columns:minmax(0,1fr) clamp(300px,27vw,420px)}
+.es-page.poste-travail .es-table{display:flex;flex-direction:column;min-height:0;margin:0!important}
+.es-page.poste-travail .es-scroll{flex:1 1 auto;min-height:0;max-height:none!important}
+.es-page.poste-travail .es-panneau{position:static!important;inset:auto!important;width:auto!important;min-height:0;max-height:none;overflow:auto;align-self:stretch!important;margin:0}
+.es-page.poste-travail .es-pc,.es-page.poste-travail .es-nom{display:table-cell;white-space:nowrap;font-size:12px;margin:0}
+.es-page.poste-travail .es-pc{font-weight:600}
+.es-page.poste-travail .t-es td{padding-block:5px}
+.es-page.poste-travail .t-es td:is(.es-des,.es-sens){white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* La désignation prend la place restante et s'abrège (texte complet en infobulle et dans le détail) */
+#vue .es-page.poste-travail .t-es td.es-des{width:100%;max-width:0}
+#vue .es-page.poste-travail .t-es td.es-sens{max-width:220px}
+#vue .es-page.poste-travail .t-es td.es-voie{white-space:nowrap}
+/* Clé du signal sur la même ligne quand la place le permet ; sinon en infobulle et dans le détail */
+#vue .es-page.poste-travail .t-es .es-code{display:inline;margin-left:var(--sp-2);font-size:11px;color:var(--v31-muted)}
+@media (max-width:1700px){#vue .es-page.poste-travail .t-es .es-code{display:none}}
+#vue .es-page.poste-travail aside.es-panneau{border-radius:var(--radius-m)!important;padding:var(--sp-3)!important}
+#vue .es-page.poste-travail .t-es td{padding:4px 8px!important}
+#vue .es-page.poste-travail .t-es{min-width:0!important;width:100%}
+#vue .es-page.poste-travail .t-es td:is(.es-pc,.es-nom){width:1%}
+#vue .es-page.poste-travail .t-es th{padding-inline:8px!important;min-width:0!important;width:auto!important}
+/* Détail ouvert sur un écran moyen : sens et raccordement se lisent dans le détail, pas dans le tableau */
+@media (max-width:1700px){.es-page.poste-travail>.es-corps:has(>.es-panneau) .t-es :is(th,td):is(:nth-child(6),:nth-child(7)){display:none}}
 /* Emplacements : cible d'installation, survol au glisser, sélection */
 .rack .emplacement.cible{outline:2px dashed var(--ogias-primary);outline-offset:-3px;background:var(--ogias-primary-light)}
 .rack .emplacement.survol{outline-style:solid}

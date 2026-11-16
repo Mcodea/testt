@@ -230,3 +230,46 @@ class TestPosteDeTravailMateriel(ServeurNavigateur):
         self.page.locator('#pt-cat-q').fill('NOE')
         visibles = [t for t in self.page.locator('.cat-item:visible b').all_text_contents()]
         self.assertTrue(visibles and all('NOE' in t for t in visibles))
+
+
+class TestPosteDeTravailEquipementsEtES(ServeurNavigateur):
+    """16/11, 13 h : catalogue des modèles sur l'écran Équipements ; liste des E/S sur une ligne par E/S."""
+    BASE = 80
+    setUp = TestRetours1611.setUp
+    tearDown = TestRetours1611.tearDown
+
+    def test_catalogue_des_modeles_preremplit_l_ajout(self):
+        self.page.goto(self.url + '#/inventaire', wait_until='networkidle')
+        cat = self.page.locator('#eq-catalogue')
+        cat.locator('.cat-item').first.wait_for()
+        self.assertTrue(cat.is_visible())
+        contenu = self.page.locator('#contenu').bounding_box()
+        self.assertGreaterEqual(contenu['width'], 600)
+        self.assertLessEqual(contenu['x'] + contenu['width'], cat.bounding_box()['x'] + 1)
+        item = cat.locator('.cat-item[data-eq-type="PM"]').first
+        modele = item.get_attribute('data-eq-modele')
+        item.click()
+        self.page.locator('#q-type').wait_for()
+        self.assertEqual(self.page.locator('#q-type').input_value(), 'PM')
+        if modele:
+            self.assertEqual(self.page.locator('#q-modele').input_value(), modele)
+        self.page.wait_for_function('() => /^\\d{2}$/.test(document.querySelector("#q-num").value)')
+        self.page.locator('#modale [data-fermer]').first.click()
+        # Commandes de la fiche dans la colonne centrale
+        self.page.locator('#arbre .noeud.eq').first.click()
+        bouton = self.page.locator('#e-val').bounding_box()
+        self.assertLessEqual(bouton['x'] + bouton['width'], contenu['x'] + contenu['width'] + 1)
+
+    def test_liste_des_es_une_ligne_par_es_sans_debordement(self):
+        self.page.goto(self.url + '#/es', wait_until='networkidle')
+        lignes = self.page.locator('.es-ligne')
+        lignes.first.wait_for()
+        defile = "(() => { const s = document.querySelector('.es-scroll'); return s.scrollWidth - s.clientWidth })()"
+        self.assertLessEqual(lignes.first.bounding_box()['height'], 46)
+        self.assertEqual(self.page.evaluate(defile), 0)
+        lignes.nth(1).click()
+        self.page.locator('.es-panneau').wait_for()
+        self.assertEqual(self.page.evaluate(defile), 0)
+        self.assertEqual(self.page.locator('.pied-etape').count(), 1, 'Le pied d\'étape reste après la sélection')
+        vue = "(() => { const v = document.querySelector('#vue'); return v.scrollHeight - v.clientHeight })()"
+        self.assertEqual(self.page.evaluate(vue), 0)

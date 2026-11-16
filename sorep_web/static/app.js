@@ -605,14 +605,53 @@ function vueOuvrage() {
       ${E.ouvrage.en_conception ? `<p class="aide-champs">Validez d’abord la création de l’ouvrage avant d’ajouter des équipements.</p>` : `<label class="aside-recherche" title="Rechercher un repère, un libellé, un type">${V31.icon("search",14)}<input id="recherche" placeholder="Filtrer : repère, libellé, type…" aria-label="Rechercher un repère, un libellé, un type" value="${esc(E.recherche)}"></label>`}
       <div class="aside-btns" role="toolbar" aria-label="Commandes de l'arborescence" ${E.ouvrage.en_conception ? "hidden" : ""}><button class="prim" id="b-eq" title="Ajouter un équipement">+ Équipement</button><button id="b-uf" title="Ajouter une unité fonctionnelle">+ UF</button>
       <button id="b-import" title="Importer une liste d'équipements">Importer…</button></div></div><div class="arbre" id="arbre"></div></aside>
-    <section class="contenu" id="contenu"></section>`;
+    <section class="contenu" id="contenu"></section>
+    <div class="poste-catalogue eq-catalogue" id="eq-catalogue" role="complementary" aria-label="Catalogue des modèles d'équipement"></div>`;
   if (!E.ouvrage.en_conception) {
     $("#recherche").oninput = ev => { E.recherche = ev.target.value; arbre(); };
     $("#b-uf").onclick = () => modaleUF();
     $("#b-eq").onclick = () => modaleEquipement(null, ufSelectionnee());
     $("#b-import").onclick = modaleImport;
   }
-  arbre(); contenu();
+  arbre(); contenu(); catalogueEquipements();
+}
+/* Catalogue des modèles d'équipement (poste de travail, 16/11) : on ajoute un équipement en cliquant un modèle
+   (fenêtre d'ajout pré-remplie : type, modèle, UF sélectionnée, numéro libre) ou en le glissant sur une UF
+   de l'arborescence. Données : types et modèles du référentiel publiés dans l'ouvrage. */
+function catalogueEquipements() {
+  const cat = $("#eq-catalogue"), o = E.ouvrage;
+  if (!cat) return;
+  const parDomaine = {};
+  (o.types || []).forEach(t => (parDomaine[t.domaine || "Autres"] ||= []).push(t));
+  const domaines = Object.keys(parDomaine).sort((a, b) => a === "Autres" ? 1 : b === "Autres" ? -1 : a.localeCompare(b, "fr"));
+  const item = (t, m) => `<button type="button" class="cat-item" draggable="true" data-eq-type="${esc(t.code)}" data-eq-modele="${esc(m || "")}"
+      title="${esc(t.code.replace(/--$/, "") + " — " + t.designation + (m ? " · " + m : ""))}"><b><span class="tag">${esc(t.code.replace(/--$/, ""))}</span> ${esc(m || t.designation)}</b>
+      <small>${esc(m ? t.designation : "sans modèle")}</small></button>`;
+  cat.innerHTML = `<div class="pt-tete"><h2>Modèles</h2><span class="pt-compte">${(o.types || []).length}</span></div>
+    <label class="pt-recherche"><input type="search" id="eq-cat-q" placeholder="Filtrer : type, modèle…" aria-label="Filtrer les modèles" value="${esc(E.eqCatQ || "")}"></label>
+    <p class="pt-cat-aide">Cliquez un modèle pour l'ajouter${o.unites.length ? ", ou glissez-le sur une unité fonctionnelle" : ""}.</p>
+    <div class="pt-cat-liste">${domaines.map(d => `<details class="cat-groupe" data-groupe="${esc(d)}" ${E.eqCatFerme && E.eqCatFerme[d] ? "" : "open"}><summary>${esc(d)} <span class="pt-compte">${parDomaine[d].length}</span></summary>
+      ${parDomaine[d].map(t => (t.modeles && t.modeles.length ? t.modeles : [""]).map(m => item(t, m)).join("")).join("")}</details>`).join("")
+      || '<div class="vide-bloc">Aucun type d\'équipement dans le référentiel.</div>'}</div>`;
+  const filtrer = () => { const q = (E.eqCatQ || "").toLowerCase();
+    cat.querySelectorAll(".cat-item").forEach(b => b.hidden = !!q && !b.title.toLowerCase().includes(q)); };
+  cat.querySelector("#eq-cat-q").oninput = ev => { E.eqCatQ = ev.target.value; filtrer(); };
+  cat.querySelectorAll(".cat-groupe").forEach(g => g.ontoggle = () => { (E.eqCatFerme ||= {})[g.dataset.groupe] = !g.open; });
+  const choix = b => ({type: b.dataset.eqType, modele: b.dataset.eqModele});
+  cat.querySelectorAll(".cat-item").forEach(b => {
+    b.onclick = () => modaleEquipement(null, ufSelectionnee(), choix(b));
+    b.ondragstart = ev => { E.eqGlisse = choix(b); ev.dataTransfer.setData("text/plain", b.dataset.eqType); ev.dataTransfer.effectAllowed = "copy";
+      document.querySelectorAll("#arbre .noeud:is(.uf,.racine)").forEach(n => n.classList.add("cible")); };
+    b.ondragend = () => document.querySelectorAll("#arbre .noeud.cible, #arbre .noeud.survol").forEach(n => n.classList.remove("cible", "survol"));
+  });
+  filtrer();
+}
+function cibleArbre(n) {
+  n.ondragover = ev => { if (E.eqGlisse) { ev.preventDefault(); n.classList.add("survol"); } };
+  n.ondragleave = () => n.classList.remove("survol");
+  n.ondrop = ev => { ev.preventDefault(); const c = E.eqGlisse; E.eqGlisse = null;
+    document.querySelectorAll("#arbre .noeud.cible, #arbre .noeud.survol").forEach(x => x.classList.remove("cible", "survol"));
+    if (c) modaleEquipement(null, n.dataset.n === "uf" ? n.dataset.v : "", c); };
 }
 function ufSelectionnee() {
   const s = E.sel;
@@ -657,6 +696,7 @@ function arbre() {
   document.querySelectorAll("#arbre .noeud").forEach(n => {
     n.onclick = () => { E.sel = {nature: n.dataset.n, valeur: n.dataset.v}; E.filtreRole = "Toutes"; arbre(); contenu(); };
     if (n.dataset.n === "eq") n.ondblclick = () => modaleEquipement(eqParIdent(n.dataset.v));
+    if (n.dataset.n === "uf" || n.dataset.n === "ouvrage") cibleArbre(n);
   });
   document.querySelectorAll("[data-ajout-uf]").forEach(a => a.onclick = () => modaleEquipement(null, a.dataset.ajoutUf));
   const ajouterUF = document.querySelector("[data-ajout-uf-nouvelle]");
@@ -1456,7 +1496,7 @@ function modaleUF(u) {
     catch (e) { m.querySelector("#m-err").textContent = e.message; }
   };
 }
-function modaleEquipement(eq, ufDefaut) {
+function modaleEquipement(eq, ufDefaut, depuisCatalogue) {
   const o = E.ouvrage;
   if (!eq && !(o.identification.lieu && o.identification.code_ouvrage)) {
     toast("Renseignez d'abord le lieu et le code de l'ouvrage (identification).", true);
@@ -1498,6 +1538,11 @@ function modaleEquipement(eq, ufDefaut) {
     q("#q-num").value = r.numero; majRepere();
   };
   majModeles(true); majRepere();
+  if (!eq && depuisCatalogue && depuisCatalogue.type) {        // ajout depuis le catalogue des modèles
+    q("#q-type").value = depuisCatalogue.type; majModeles(false);
+    if (depuisCatalogue.modele) q("#q-modele").value = depuisCatalogue.modele;
+    numeroLibre(); setTimeout(() => q("#q-lib").focus(), 0);
+  }
   q("#q-type").onchange = () => { majModeles(false); numeroLibre(); };
   q("#q-se").oninput = numeroLibre; q("#q-num").oninput = majRepere;
   q("#q-uf").onchange = () => { const s = (o.unites.find(u => u.code === q("#q-uf").value) || {}).se; if (s && !eq) { q("#q-se").value = s; numeroLibre(); } };
@@ -1949,7 +1994,7 @@ function vueES() {
   if (erreurs) compteurs.push(["ERR", erreurs, "Erreurs", "err"]);
   const a = p && p.analogique;
   const analogique = p && typesANA.has(p.point);
-  $("#vue").innerHTML = `<section class="contenu es-page">
+  $("#vue").innerHTML = `<section class="contenu es-page poste-travail" data-poste="es">
     <div class="titre"><div><div class="fil">Ouvrage › Étape 2 / 5</div><h1>Liste des E/S physiques</h1>
       <div class="sous">Contrôlez chaque signal avant la configuration du matériel ; la voie ne se renseigne pas ici.</div></div>
       <span class="es-progression ${invalides ? "al" : "ok"}">${invalides ? `${invalides} E/S à valider` : "Contenu validé"}</span></div>
@@ -1974,12 +2019,12 @@ function vueES() {
        ${p ? '<button type="button" id="es-detail-toggle">' + (E.esPanneauOuvert ? 'Masquer le détail' : 'Afficher le détail') + '</button>' : ''}</div>
        <div class="es-scroll"><table class="t-es" aria-label="Liste des E/S physiques"><thead><tr>
        <th><input type="checkbox" id="x-coche-tout" aria-label="Sélectionner les E/S affichées"></th>
-       <th>Équipement / variable automate</th><th>Point</th><th>Désignation</th><th>Sens / Échelle</th><th>Raccordement</th><th>Voie</th><th>État</th></tr></thead><tbody>
+       <th>Équipement</th><th>Variable automate</th><th>Point</th><th>Désignation</th><th>Sens / Échelle</th><th>Raccordement</th><th>Voie</th><th>État</th></tr></thead><tbody>
        ${visibles.map(x => {const sid = cleVueES(x), i = indices.get(sid);return `<tr data-i="${i}" role="button" tabindex="0" aria-label="Ouvrir le détail de ${esc(x.nom)}" class="es-ligne ${p && p === x ? "es-active" : ""}">
          <td><input type="checkbox" class="x-coche" value="${i}" ${E.esSelection.has(sid) ? "checked" : ""} aria-label="Sélectionner ${esc(x.nom)}"></td>
-         <td><strong class="mono es-pc">${esc(x.pcf)}</strong><small class="mono es-nom">${esc(x.nom)}</small><small class="mono es-code">${esc(x.cle)}</small></td>
+         <td class="mono es-pc" title="${esc(x.pcf)}">${esc(x.pcf)}</td><td class="mono es-nom" title="${esc(x.nom + " · clé " + x.cle)}">${esc(x.nom)} <small class="mono es-code">${esc(x.cle)}</small></td>
          <td><span class="tag p-${esc(x.point)}">${esc(x.point)}</span></td>
-         <td>${esc(x.designation || x.commentaire || x.information)}</td><td>${texteSens(x)}</td>
+         <td class="es-des" title="${esc(x.designation || x.commentaire || x.information)}">${esc(x.designation || x.commentaire || x.information)}</td><td class="es-sens">${texteSens(x)}</td>
          <td>${esc(x.raccordement === "Communication" ? "Communication" : "Câblé")}</td><td class="es-voie">${localisationES(x)}</td>
          <td>${etatContenuES(x)}</td></tr>`;}).join("")}</tbody></table>
        ${!visibles.length ? '<div class="vide-bloc">Aucune E/S correspondant aux filtres.</div>' : ''}</div></div>
@@ -2005,7 +2050,7 @@ function vueES() {
 }
 function brancherVueES(visibles, actif) {
   const d = E.es;
-  const rerendre = () => vueES();
+  const rerendre = () => rendre();          // pied d'étape et barre de commandes reconstruits avec la liste
   const avantPerteES = () => {
     if (!E.esFormDirty) return true;
     if (!window.confirm("Les modifications du point E/S ne sont pas enregistrées. Les abandonner ?")) return false;

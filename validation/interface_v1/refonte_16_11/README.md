@@ -115,3 +115,18 @@ d'ingénierie (TIA Portal, AVEVA, Control Expert). Captures : `poste_travail/`.
 - Titre redondant masqué, plateforme et réserve sous le rack.
 - Tests : `TestPosteDeTravailMateriel` (géométrie aux 4 résolutions, installation par clic et glisser,
   inspecteur, filtre). Résultats : `pytest tests_web` 80 réussis.
+
+### Extension du poste de travail (16/11, 13 h)
+
+- **Équipements** : catalogue des **modèles d'équipement** à droite (par domaine, filtrable). Un clic sur un
+  modèle ouvre l'ajout pré-rempli (type, modèle, UF sélectionnée, numéro libre) : il ne reste que le libellé.
+  On peut aussi glisser un modèle sur une UF ou sur l'ouvrage dans l'arborescence. Les commandes de la fiche
+  passent à la ligne au lieu de déborder.
+- **Liste des E/S** : plus de défilement de page ; tableau sur toute la hauteur, **une ligne par E/S**
+  (≈ 44 px au lieu de ≈ 65 px : équipement et variable automate en colonnes séparées, clé en infobulle,
+  désignation abrégée avec texte complet en infobulle et dans le détail ; clé du signal sur la même ligne au-delà de 1 700 px). Détail ancré à droite ; sur un écran
+  ≤ 1 700 px, sens et raccordement se lisent dans le détail. Correction : le pied d'étape et la barre de
+  commandes disparaissaient après la sélection d'une E/S (rendu partiel) ; l'écran est désormais reconstruit
+  en entier.
+- **Variables** : déjà en tableau + panneau de propriétés sans défilement de page ; inchangé.
+- Tests : `TestPosteDeTravailEquipementsEtES` (+2). `pytest tests_web` : 82 réussis.
