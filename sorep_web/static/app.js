@@ -697,6 +697,9 @@ function detailOuvrage(c) {
   o.equipements.forEach(e => parDomaine[e.domaine || "Non classé"] = (parDomaine[e.domaine || "Non classé"] || 0) + 1);
   const acoder = o.equipements.filter(e => e.etat === "à coder").length;
   const typeActuel = l.types_ouvrage.find(t => t.code === i.code_ouvrage);
+  // Fiche enregistrée et complète : repliée sur une ligne de résumé pour laisser la place aux équipements.
+  // Elle reste dépliée si elle est incomplète, modifiée et non enregistrée, ou si l'utilisateur l'a ouverte.
+  const ficheOuverte = o.en_conception || E.ficheDirty || !okLieu || !okCode || E.ficheOuverte === true;
   const ancienType = i.code_ouvrage && !typeActuel ? `<option value="${esc(i.code_ouvrage)}" selected>${esc(i.code_ouvrage)} — ${esc(i.type_ouvrage || "Ancien type hors référentiel")}</option>` : "";
   c.innerHTML = `<div class="fil">${esc(o.prefixe || "Nouvel ouvrage")} · ${o.en_conception ? (o.creation_en_attente ? "Création non confirmée" : "Brouillon") : "Fiche enregistrée"}</div>
    ${(o.referentiel && o.referentiel.ecarts.length) ? `<div class="avert"><b>Référentiel figé dans cet ouvrage :</b> ${esc(o.referentiel.version_ouvrage || "version antérieure")}.
@@ -708,7 +711,7 @@ function detailOuvrage(c) {
      ${o.referentiel.adoption_annulable ? `<button id="ref-annuler-adoption">Annuler l'adoption</button>` : ""}
      ${o.referentiel.sauvegarde_annulation_adoption ? `<a href="/api/export?quoi=sauvegarde_annulation_adoption" download>Télécharger l'état avant annulation</a>` : ""}</div>` : ""}
    ${!o.en_conception && (!okLieu || !okCode) ? `<div class="avert" id="fiche-identification-avert">Pour commencer : sélectionnez un lieu (4 caractères) et un type d'ouvrage (code à 2 lettres). Vous pouvez enrichir ces listes avec « Gérer les listes ».</div>` : ""}
-   <div class="bloc"><div class="bloc-tete"><h2>Identification de l'ouvrage</h2><span class="aide">${esc(i.mode === "Existant" ? "Projet existant" : "Projet neuf")}</span><div class="droite"><button id="gerer-listes" type="button">${V31.icon("settings",14)} Gérer les listes…</button></div></div>
+   ${o.en_conception ? `<div class="bloc">` : `<details class="bloc fiche-ouvrage" id="fiche-ouvrage" ${ficheOuverte ? "open" : ""}>`}${o.en_conception ? `<div class="bloc-tete">` : `<summary class="bloc-tete" title="Afficher ou replier la fiche d'identification">`}<h2>Identification de l'ouvrage</h2><span class="aide">${esc(i.mode === "Existant" ? "Projet existant" : "Projet neuf")}</span>${o.en_conception ? "" : `<span class="fiche-resume"><b class="mono">${esc(o.prefixe || "")}</b> · ${esc(i.libelle || "sans libellé")} · automate ${esc(i.automate || "non renseigné")} · révision ${esc(i.revision || "—")}</span>`}<div class="droite"><button id="gerer-listes" type="button">${V31.icon("settings",14)} Gérer les listes…</button></div>${o.en_conception ? `</div>` : `</summary>`}
      ${o.en_conception ? `<div class="creation-identite">
        <div class="creation-projet">${esc(i.mode === "Existant" ? "Projet existant — conservation des adresses" : "Projet neuf — génération et adressage")}</div>
        <div class="creation-grille">
@@ -747,7 +750,7 @@ function detailOuvrage(c) {
          : `<button type="button" class="prim" id="fiche-modifier" disabled>Enregistrer les modifications</button>`}
      </div>
      ${o.en_conception ? "" : `<div class="repere-live">${texteRepere(i.lieu || "????", i.code_ouvrage || "??", actuelNumero || "--", okLieu, okCode)}</div>`}
-   </div>
+   ${o.en_conception ? `</div>` : `</details>`}
    ${o.en_conception ? "" : `   <div class="chiffres">
      <div class="chiffre"><b>${o.equipements.length}</b><span>équipements</span></div>
      <div class="chiffre"><b>${o.unites.length}</b><span>unités fonctionnelles</span></div>
@@ -818,7 +821,8 @@ function detailOuvrage(c) {
   };
   if (o.en_conception && !actuelNumero && !E.ficheDraft?.numero_ouvrage) suggererNumero();
   miseAJour();
-  c.querySelector("#gerer-listes").onclick = () => { E.ficheDraft = recueillir(); modaleListes("lieux"); };
+  c.querySelector("#gerer-listes").onclick = ev => { ev.preventDefault(); E.ficheDraft = recueillir(); modaleListes("lieux"); };
+  c.querySelector("#fiche-ouvrage")?.addEventListener("toggle", ev => { E.ficheOuverte = ev.target.open; });
   c.querySelector("#communication-choix").onchange = miseAJour;
   c.querySelector("#communication-choix").onclick = ev => deroulantCommunications(ev.currentTarget, () => { E.ficheDraft = recueillir(); });
   c.querySelector("#fiche-annuler").onclick = async () => {

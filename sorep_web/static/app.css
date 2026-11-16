@@ -53,7 +53,8 @@ tr.cliquable:hover td{background:#f6f8fb}
 .vide{color:var(--disc);font-style:italic}
 .vide-bloc{padding:28px;text-align:center;color:var(--sec)}
 /* ---------- explorateur */
-aside{width:350px;flex:none;background:var(--surface);border-right:1px solid var(--bord);display:flex;flex-direction:column;min-height:0}
+/* Arborescence historique (aside sans classe) : la règle ne s'applique plus aux panneaux de détail classés. */
+aside:not([class]){width:350px;flex:none;background:var(--surface);border-right:1px solid var(--bord);display:flex;flex-direction:column;min-height:0}
 .aside-tete{padding:14px 14px 10px;border-bottom:1px solid var(--bord)}
 .aside-tete h2{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--sec)}
 .aside-tete input{width:100%}

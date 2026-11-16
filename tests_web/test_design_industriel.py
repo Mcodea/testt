@@ -45,7 +45,7 @@ class TestDesignIndustriel(ServeurNavigateur):
             self.assertIn('OGIAS-Mono', self.style(selector, 'fontFamily'))
             self.assertEqual(self.style(selector, 'fontVariantNumeric'), 'tabular-nums')
         for token, color in (('--brand-schneider', '#10b981'), ('--brand-sofrel', '#0ea5e9'),
-                             ('--brand-topkapi', '#f59e0b'), ('--status-review', '#8b5cf6'),
+                             ('--brand-topkapi', '#f59e0b'), ('--status-review', '#f59e0b'),
                              ('--status-error', '#ef4444')):
             self.assertEqual(self.page.locator('html').evaluate(
                 '(el, token) => getComputedStyle(el).getPropertyValue(token).trim().toLowerCase()', token), color)
@@ -82,7 +82,8 @@ class TestDesignIndustriel(ServeurNavigateur):
                     self.page.evaluate('document.fonts.ready')
                     self.assertTrue(self.page.evaluate('document.documentElement.scrollWidth <= innerWidth'))
                     sidebar = self.page.locator('#v31-sidebar').bounding_box()
-                    self.assertEqual(sidebar['width'], 124 if width <= 1400 else 188)
+                    # Refonte du 16/11 : 176 px entre 1121 et 1400 px (libellés coupés entre les mots), 188 px au-delà.
+                    self.assertEqual(sidebar['width'], 176 if width <= 1400 else 188)
                     self.assertLessEqual(self.page.locator('#v31-top').bounding_box()['height'], 80)
                     self.assertTrue(self.page.locator('#v31-about').is_visible())
                     self.assertTrue(self.page.locator('#v31-sidebar [data-nav="#/recette"] span').is_visible())
@@ -179,8 +180,10 @@ class TestDesignIndustriel(ServeurNavigateur):
         header_bottom = self.page.locator('#v31-top').bounding_box()['y'] + self.page.locator('#v31-top').bounding_box()['height']
         self.assertGreaterEqual(rack_top, header_bottom - 1, 'Le titre du rack ne doit pas passer sous l’en-tête')
         self.assertEqual(self.style('.emplacement.a-choisir', 'borderTopStyle'), 'dashed')
-        self.assertEqual(self.style('.emplacement.a-choisir', 'borderTopColor'), 'rgb(139, 92, 246)')
-        self.assertEqual(self.style('.emplacement.alim', 'backgroundColor'), 'rgb(15, 22, 35)')
+        # Refonte du 16/11 : « à choisir » est un avertissement, donc orange (cahier des charges § 2).
+        self.assertEqual(self.style('.emplacement.a-choisir', 'borderTopColor'), 'rgb(245, 158, 11)')
+        # Alimentation non choisie : emplacement « à choisir » sur fond d'avertissement (refonte du 16/11).
+        self.assertEqual(self.style('.emplacement.alim', 'backgroundColor'), 'rgb(51, 37, 15)')
         references = self.page.locator('.emplacement.carte b').all_text_contents()
         self.assertEqual(references, [m['reference'] for m in self.api('/api/es')['modules']])
         self.assertTrue(self.page.locator('#m-nomenclature').is_visible())

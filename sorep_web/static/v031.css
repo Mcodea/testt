@@ -25,7 +25,7 @@ button.prim:hover,.v31-primary:hover{background:var(--v31-indigo-dark)!important
 button:disabled{opacity:.52;cursor:not-allowed;box-shadow:none!important}
 input,select,textarea{border-radius:var(--v31-control-radius);background:var(--v31-white);border:1px solid var(--v31-separator)}
 .mono,code,td.mono{font-family:OGIAS-Mono,Consolas,monospace;font-size:13px}
-#v30-title,#v30-documents,#v30-work-heading,#v30-inspector,#v30-tree,#v30-status,.v30-ribbon,#etapes,#ouvrage-tete{display:none!important}
+#v30-title,#v30-documents,#v30-work-heading,#v30-inspector,#v30-tree,.v30-ribbon,#etapes,#ouvrage-tete{display:none!important}
 #v31-sidebar{grid-column:1;grid-row:1/4;z-index:30;position:relative}
 .v31-sidebar{background:linear-gradient(180deg,var(--v31-indigo2),var(--v31-indigo-dark));border-radius:0 24px 24px 0;display:flex;flex-direction:column;align-items:center;padding:22px 11px;gap:42px;color:var(--v31-white)}
 .v31-sidebar a,.v31-sidebar button{display:grid;place-items:center;border:0;background:transparent;color:rgba(255,255,255,.74);width:44px;height:44px;border-radius:13px;flex:none;text-decoration:none}

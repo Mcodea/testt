@@ -119,7 +119,8 @@ class TestCreationIndustrielle(_RecetteVisuelle):
             with self.subTest(groupe=groupe):
                 self.page.locator(f'[data-liste="{groupe}"]').click()
                 self.contraste('.onglets-listes button, .boite-tete h2, .boite-corps label')
-                self.assertEqual(self.page.locator('.onglets-listes button.active').evaluate('e=>getComputedStyle(e).backgroundColor'), 'rgb(37, 99, 235)')
+                # Bleu d'action unique du système graphique (jeton --ogias-primary, thème sombre).
+                self.assertEqual(self.page.locator('.onglets-listes button.active').evaluate('e=>getComputedStyle(e).backgroundColor'), 'rgb(47, 111, 214)')
         self.capture('formulaire-listes-sombre-1366.png')
         self.page.locator('#modale [data-fermer]').click()
         self.assertEqual(self.api('/api/ouvrage'), avant)

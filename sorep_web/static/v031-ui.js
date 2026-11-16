@@ -6,6 +6,16 @@ const V31 = (() => {
   search:'search',check:'check',arrow:'arrow-right',close:'x',bolt:'zap',alert:'triangle-alert',
   pie:'chart-pie',cpu:'cpu',list:'list',chevron:'chevron-right',clipboard:'clipboard-list',
   menu:'menu',spark:'sparkles',shield:'shield-check',sun:'sun',moon:'moon'};
+ // Arborescence des équipements : ancrée à gauche au-delà de 1280 px (le bouton la masque),
+ // tiroir au-dessous (le bouton l'ouvre). Seul l'affichage change : aucun événement métier.
+ const ARBRE_ANCRE=typeof matchMedia==='function'?matchMedia('(min-width:1280px)'):{matches:false};
+ function majArbre(){
+  const b=document.getElementById('v31-tree-trigger'),vue=document.getElementById('vue');if(!b||!vue)return;
+  const ouverte=ARBRE_ANCRE.matches?!vue.classList.contains('v31-show-tree'):vue.classList.contains('v31-show-tree');
+  b.setAttribute('aria-pressed',String(ouverte));
+  b.title=ouverte?"Masquer l'arborescence de l'ouvrage":"Afficher l'arborescence de l'ouvrage (UF, équipements, ajout et import)";
+ }
+ if(ARBRE_ANCRE.addEventListener)ARBRE_ANCRE.addEventListener('change',majArbre);
  const icon=(name,size=19)=>{
   const id=Object.hasOwn(icones,name)?icones[name]:icones.layers;
   const dimension=Number.isFinite(Number(size))?Math.max(8,Math.min(64,Number(size))):19;
@@ -59,8 +69,23 @@ const V31 = (() => {
    overlay.querySelector('#v31-results').innerHTML=matches.map(x=>`<button type="button" class="v31-result" data-id="${esc(x.ident)}"><b>${esc(x.pcf)}</b> ${esc(x.libelle)}</button>`).join('')||'<p class="v31-muted">Saisissez deux caractères pour chercher dans les équipements de l’ouvrage courant.</p>';
    overlay.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{overlay.remove();allerOuvrage({nature:'eq',valeur:b.dataset.id});});};
  }
+ // Barre d'état inférieure : uniquement des informations réelles de la session (ouvrage, étape, référentiel).
+ function barreEtat(E,ETAPES,etatEtape,vueEtape,has){
+  const el=document.getElementById('v30-status');if(!el)return;
+  const o=E.ouvrage||{};const etape=(ETAPES||[]).find(x=>x[1]===vueEtape(E.vue));
+  const rev=E.cycle?.revision?`R${String(E.cycle.revision).padStart(4,'0')}`:'non publié';
+  const sep='<span class="v30-status-separator" aria-hidden="true"></span>';
+  el.innerHTML=[`<span title="Ouvrage actif">${icon('folder',13)} ${has?esc(o.prefixe||'Ouvrage')+' · '+esc(o.identification?.mode||''):'Aucun ouvrage ouvert'}</span>`,
+   has&&etape?`<span title="Étape du parcours">${icon('list',13)} ${esc(etape[2])} : ${esc(etatEtape(etape[1],o))}</span>`:'',
+   `<span title="Révision du référentiel métier">${icon('layers',13)} Référentiel ${esc(rev)}</span>`,
+   `<span>${icon('shield',13)} Adresses validées protégées</span>`].filter(Boolean).join(sep)
+   +`<span class="v30-status-right">${icon('info',13)} Exports industriels non qualifiés · OGIAS 0.32</span>`;
+ }
  function render(E, ETAPES,etatEtape,vueEtape){
   const creation=E.vue==='ouvrage'&&E.ouvrage?.en_conception, has=E.ouvrage?.ouvert&&!creation;
+  // Écran courant exposé au CSS (attribut propre à cette couche : les anciennes règles data-view restent inactives).
+  document.body.dataset.ecran=E.vue||'';
+  barreEtat(E,ETAPES,etatEtape,vueEtape,has);
   const titles={accueil:'Mes ouvrages',dashboard:'Tableau de bord de l’ouvrage',ouvrage:creation?'Créer un ouvrage':'Équipements',es:'Liste des E/S',materiel:'Matériel',variables:'Variables',supervision:'Variables',adressage:'Variables',recette:'Recette',referentiel:'Référentiel métier'};
   const title=titles[E.vue]||'OGIAS';document.getElementById('v31-title').textContent=title;
   document.getElementById('v31-breadcrumb').textContent=has?`Ouvrages › ${E.ouvrage.prefixe||E.ouvrage.identification?.code_ouvrage||'Ouvrage'} › ${title}`:E.vue==='referentiel'?'OGIAS › Bibliothèque métier':'OGIAS › Ouvrages';
@@ -71,9 +96,11 @@ const V31 = (() => {
   let drawer=document.getElementById('v31-tree-trigger');
   if(!drawer){drawer=document.createElement('button');drawer.type='button';drawer.id='v31-tree-trigger';drawer.className='v31-secondary-header';drawer.innerHTML=icon('folder',16)+' Structure / ajouter';
     document.getElementById('v31-top').appendChild(drawer);
-    drawer.onclick=()=>document.getElementById('vue').classList.toggle('v31-show-tree');
+    // Au-delà de 1280 px l'arborescence est ancrée à gauche : le bouton la masque ou la réaffiche.
+    drawer.onclick=()=>{const vue=document.getElementById('vue');vue.classList.toggle('v31-show-tree');majArbre();};
   }
   drawer.hidden=E.vue!=='ouvrage'||creation;
+  majArbre();
   if(!progress.hidden){progress.innerHTML=steps.map(([v,label,link],i)=>{const s=etatEtape(v,E.ouvrage),active=vueEtape(E.vue)===v;
     return `<button class="v31-step ${active?'active':''} ${s==='validée'?'done':''}" type="button" data-nav="${link}" title="${esc(label)} : ${esc(s)}"><span class="v31-step-mark">${s==='validée'?icon('check',12):i+1}</span>${label}</button>${i<4?'<span class="v31-step-dots" aria-hidden="true">····</span>':''}`;}).join('');}
   document.querySelector('#v30-workspace').classList.toggle('v31-new-creation',creation);
@@ -101,7 +128,7 @@ const V31 = (() => {
   const actionGroups={
     materiel:{primary:['m-calc','m-valider','m-deval'],extra:['m-cartes','m-impl','x-val-tout','x-val','x-xl','x-ca','x-xsy','x-txt']},
     adressage:{primary:['ad-recalc','ad-app','ad-val'],extra:['ad-res','ad-tpk']},
-    recette:{primary:['r-actualiser'],extra:[]},
+    recette:{primary:['r-dossier','r-actualiser'],extra:[]},
     referentiel:{primary:['rf-creer','rf-ouvrir-b','rf-pub'],extra:['rf-hist','rf-exp','rf-voir-pub','rf-exp-b','rf-imp','rf-abandon'],inPlace:true}
   };
   if(actionGroups[E.vue]){
