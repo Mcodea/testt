@@ -213,6 +213,9 @@ body{grid-template-columns:188px minmax(0,1fr);grid-template-rows:auto auto minm
 .v31-kpi{padding:10px 14px;min-height:0}
 .v31-kpi-value{font-size:22px;margin:4px 0 0;line-height:1.2}
 .v31-dash-grid>.v31-card{padding:var(--sp-3) var(--sp-4);min-height:0}
+/* Écrans larges : les cartes gardent la hauteur de leur contenu (pas d'étirement sur toute la fenêtre) */
+.v31-dashboard{align-content:start;height:auto!important}
+.v31-dash-grid{align-items:start}
 .v31-card h2{margin-bottom:var(--sp-2);font-size:14px}
 .v31-project-card{padding:var(--sp-3) var(--sp-4);min-height:0;transition:border-color 120ms}
 .v31-project-card:hover{transform:none;border-color:var(--ogias-primary)}
@@ -285,6 +288,7 @@ body[data-ecran="referentiel"] #vue .ref-corps{padding-left:0;padding-right:0}
 .emplacement .pos{color:var(--v31-muted)}
 .emplacement.cpu{background:var(--ogias-navy);border-color:var(--ogias-navy);color:var(--ogias-navy-text)}
 .emplacement.cpu .pos,.emplacement.cpu small{color:var(--ogias-navy-muted)}
+html[data-theme="dark"] .emplacement.cpu{background:var(--ogias-primary-light);border-color:var(--ogias-primary);color:var(--v31-text)}
 .emplacement.libre{background:transparent;color:var(--v31-muted);border-style:dashed}
 .emplacement.carte:hover{border-color:var(--ogias-primary);background:var(--v31-row)}
 .emplacement.carte:has(.jauge.err){border:2px solid var(--ogias-danger-line)}

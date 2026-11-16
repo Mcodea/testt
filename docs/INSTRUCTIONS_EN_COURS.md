@@ -1,6 +1,19 @@
 # Instructions en cours de route
 
-**Agent actif : Codex** (12/11/2026 22:20 UTC). Diagnostic du job navigateur CI ; dépôt `Mcodea/testt`.
+## [nouveau] 16/11/2026 — Refonte industrielle de l'interface (Claude)
+
+Demande de l'utilisateur : refonte ergonomique complète (cahier en 15 points). Branche dédiée
+**`claude/refonte-ui-industrielle`**, partie de `cdb7299` (`codex/ui-validation-20261114`) ; aucune fusion,
+`main` et `release/1.0` intouchés. Bilan, causes et captures avant / après :
+`validation/interface_v1/refonte_16_11/README.md`. Points clés pour la suite :
+- **un seul système graphique** : `industrial-ui.css` (jetons, structure, composants, écrans, un bloc par
+  largeur d'écran). Ne plus ajouter de correctifs en fin de fichier ni de couleur en dur ;
+- l'écran courant est exposé au CSS par `body[data-ecran]` (les anciennes règles `data-view` restent
+  inactives volontairement) ; la barre d'état est remplie par `V31.render` ;
+- l'échec de la CI de `codex/ui-validation-20261114` (détail des variables + 13 px) est corrigé à sa cause ;
+- nouveaux tests `tests_web/test_geometrie_resolutions.py` (4 résolutions) : à garder verts.
+
+**Agent actif : libre** (16/11/2026, Claude) ; dépôt `Mcodea/testt`.
 
 ## En cours — diagnostic de la CI du lot Formulaires
 
