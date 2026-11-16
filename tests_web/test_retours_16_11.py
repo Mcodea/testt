@@ -418,10 +418,13 @@ class TestRetours1611Apres15h(ServeurNavigateur):
         bloc = self.page.locator('#r-exports')
         bloc.wait_for()
         texte = bloc.inner_text()
-        for attendu in ('Automate — M580', 'Supervision', 'TOPKAPI', 'SOFREL', 'Configuration automate', 'Liste des entrées / sorties'):
+        for attendu in ('Automate — M580', 'Supervision', 'TOPKAPI', 'SOFREL', 'Configuration automate', 'Liste des E/S par carte'):
             self.assertIn(attendu, texte)
         quoi = set(bloc.locator('[data-export]').evaluate_all('b => b.map(x => x.dataset.export)'))
-        self.assertTrue({'es_xsy', 'es_txt', 'xsy', 'topkapi', 'liste_es', 'cartes', 'nomenclature', 'variables'} <= quoi)
+        self.assertTrue({'es_xsy', 'es_txt', 'xsy', 'topkapi', 'es_cartes', 'liste_es', 'cartes', 'nomenclature', 'variables'} <= quoi)
         with self.page.expect_download() as dl:
             bloc.locator('[data-export="liste_es"]').click()
         self.assertTrue(dl.value.suggested_filename.endswith('_liste_ES.xlsx'))
+        with self.page.expect_download() as dl:                      # trame du 16/11 : une feuille par carte
+            bloc.locator('[data-export="es_cartes"]').click()
+        self.assertTrue(dl.value.suggested_filename.endswith('_ES_par_carte.xlsx'))

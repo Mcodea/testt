@@ -2547,6 +2547,18 @@ class Session:
                                                                 "références à confirmer à la commande."]], [24, 60])])
         return chemin
 
+    def exporter_es_cartes(self, chemin):
+        """Liste des E/S par carte d'après la trame de l'utilisateur (architecture + une feuille par carte)."""
+        from .export_es_cartes import exporter
+        from .materiel import plateforme
+        if not self.ouvrage.modules:
+            raise RegleMetier("Aucune carte d'E/S : calculez ou déclarez d'abord le matériel.")
+        erreurs = self.erreurs_materiel()
+        if erreurs:
+            raise RegleMetier(f"Export refusé : {len(erreurs)} erreur(s) de cartes ou de voies (ex. {erreurs[0]})")
+        plat = plateforme(self.ouvrage.automate)[0] if self.ouvrage.automate else ""
+        return self._marquer_exporte(exporter(chemin, self.ouvrage, self.points(), plat))
+
     def exporter_cartes_es(self, chemin):
         from .export_cartes_es import exporter
         return self._marquer_exporte(exporter(chemin, self.ouvrage, self.points()))

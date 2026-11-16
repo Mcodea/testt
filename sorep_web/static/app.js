@@ -591,7 +591,8 @@ function blocExportsRecette() {
         ? "Aucun format d'import SOFREL n'est décrit dans OGIAS : fournissez un fichier de référence (export SOFTOOLS) pour le reproduire."
         : "Sans objet pour cette source, et aucun format SOFREL n'est encore décrit."))}
     ${groupe("Documents Excel",
-      ligne("Liste des entrées / sorties", "Excel (.xlsx)", "liste_es", "prêt", "Mise en forme à revoir d'après la trame que vous fournirez.")
+      ligne("Liste des E/S par carte", "Excel (.xlsx) — architecture + une feuille par carte, colonne de validation SAT", "es_cartes", "prêt", "D'après votre trame du 16/11.")
+      + ligne("Liste des E/S (tableau de travail)", "Excel (.xlsx), une ligne par E/S", "liste_es", "prêt")
       + ligne("Cartes d'E/S", "Excel (.xlsx)", "cartes", "prêt") + ligne("Nomenclature de commande", "Excel (.xlsx)", "nomenclature", "prêt")
       + ligne("Variables de contrôle", "Excel (.xlsx)", "variables", "prêt"))}
     </tbody></table></div>`;
@@ -2653,7 +2654,7 @@ function vueMateriel() {
    <div class="panneau-mat" id="panneau-mat-livrables" data-panneau-mat="livrables" role="tabpanel" aria-labelledby="onglet-mat-livrables">
    ${blocNomenclature(m) || '<div class="bloc"><div class="vide-bloc">La nomenclature de commande apparaît une fois le matériel calculé.</div></div>'}
    <div class="bloc livrables"><div class="bloc-tete"><h2>Livrables matériel</h2><span class="aide">XSY et TXT au format des exports Control Expert V14.1 fournis : import dans Control Expert à essayer</span></div>
-     <div class="boutons-ligne"><button id="x-xl" ${cables.length ? "" : "disabled"}>Liste d'E/S (Excel)</button><button id="x-ca" ${rien ? "disabled" : ""}>Cartes d'E/S (Excel)</button>
+     <div class="boutons-ligne"><button id="x-es-cartes" data-export="es_cartes" ${rien ? "disabled" : ""}>E/S par carte (Excel)</button><button id="x-xl" ${cables.length ? "" : "disabled"}>Liste d'E/S (Excel)</button><button id="x-ca" ${rien ? "disabled" : ""}>Cartes d'E/S (Excel)</button>
      <button id="x-xsy" ${places.length ? "" : "disabled"} title="Format de l'export des variables de Control Expert V14.1, voies de réserve comprises">E/S pour Control Expert (XSY)</button><button id="x-txt" ${places.length ? "" : "disabled"}>E/S pour Control Expert (TXT)</button>
      <span class="aide">${places.length < cables.length ? `${cables.length - places.length} E/S n'ont pas encore de voie : elles figureront sans adresse.` : "Toutes les E/S câblées ont une voie."}</span></div></div></div>
   </div>
@@ -2688,6 +2689,7 @@ function vueMateriel() {
   posteMateriel();
   if (rien && (["M340", "M580"].includes(m.plateforme) || !m.automate)) demarrageMateriel({m, d, prop, cables});
   $("#x-xl").onclick = () => telecharger("liste_es");
+  $("#x-es-cartes").onclick = () => telecharger("es_cartes");
   $("#x-ca").onclick = () => telecharger("cartes");
   $("#x-xsy").onclick = () => telecharger("es_xsy");
   $("#x-txt").onclick = () => telecharger("es_txt");

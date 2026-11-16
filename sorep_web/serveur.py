@@ -625,6 +625,9 @@ class Application:
         if quoi == "liste_es":
             nom = f"{base}_liste_ES.xlsx"
             self.s.exporter_liste_es(os.path.join(dossier, nom))
+        elif quoi == "es_cartes":
+            nom = f"{base}_ES_par_carte.xlsx"
+            self.s.exporter_es_cartes(os.path.join(dossier, nom))
         elif quoi == "cartes":
             if not self.s.ouvrage.modules:
                 raise RegleMetier("Déclarez d'abord les cartes d'E/S (modules).")

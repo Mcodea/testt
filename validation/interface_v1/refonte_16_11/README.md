@@ -180,3 +180,22 @@ Rapport d'audit : document « Audit technique et métier OGIAS » (partagé sép
 
 Résultats : `pytest tests` 717 réussis (5 ignorés : Qt), `pytest tests_web` 88 réussis, `ruff`, `mypy genvar sorep_web`,
 `node --check`, audit des données (0 détection).
+
+## Liste des E/S par carte d'après la trame de l'utilisateur (16/11, 15 h 50)
+
+Nouvel export « Liste des E/S par carte » (`es_cartes`, `genvar/export_es_cartes.py`), disponible à la Recette
+et dans les livrables de l'étape Matériel. Exemple fictif : `exemple_fictif_ES_par_carte.xlsx`.
+
+- **Architecture** : gamme automate, source d'acquisition et protocoles de la fiche ; nom et adresses réseau de
+  l'automate « à renseigner » (absents de l'ouvrage, jamais inventés) ; chaque rack dessiné emplacement par
+  emplacement (PS, processeur — double largeur 0–1 pour un M580 —, communication, cartes, libres), avec la
+  réserve de chaque carte et un lien vers sa feuille ; réserves globales par nature (cartes, voies, utilisées,
+  libres, réserve), en rouge sous la réserve exigée.
+- **Une feuille par carte** (`ETOR-0-02`, `EANA-0-03`…) : rack, position, référence, nature, nombre d'infos,
+  utilisées, réserve (formules), réserve exigée ; une ligne par voie — adresse, sens du contact ou échelle
+  physique (« 0 – 6 m / 4–20 mA »), organe (UF + équipement), désignation, PCF, validation SAT (liste OK / NOK /
+  Non testé, colorée), mnémonique API, observations SAT ; voies libres marquées « Réserve ». En-têtes figés,
+  filtre, impression A4 paysage ajustée en largeur avec titres répétés et pied de page.
+- **Hors cartes** : E/S sans voie ou raccordées par communication, pour ne rien perdre.
+- Refusé sans carte, ou tant qu'une incohérence de carte ou de voie existe.
+- Tests : `tests/test_export_es_cartes.py` (3) et `test_exports_regroupes_dans_la_recette`.
