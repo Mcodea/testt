@@ -2187,6 +2187,13 @@ function vueMateriel() {
    ${m.remarque_plateforme ? `<div class="avert">${esc(m.remarque_plateforme)}</div>` : ""}
    ${m.blocage ? `<div class="alerte-bloc"><b>Calcul impossible :</b> ${esc(m.blocage)} <button class="lien" data-nav="#/es">Aller à la liste des E/S</button></div>` : ""}
    ${differe ? `<div class="avert">Les cartes retenues diffèrent de la proposition actuelle (densité ou E/S modifiées). « Recalculer le matériel » applique la proposition.</div>` : ""}
+   <div class="bloc"><div class="bloc-tete"><h2>Racks</h2><span class="aide">${rien ? "aucune carte retenue" : `${d.modules.length} carte(s) · cliquez une carte pour la modifier`}</span>
+     <span class="legende"><i class="l-ok"></i>réserve respectée <i class="l-al"></i>sous la réserve <i class="l-err"></i>dépassement</span></div>
+     ${s4w && prop && prop.racks.length ? `<p class="aide-bloc"><b>Proposition indicative S4W</b> — voies intégrées au boîtier puis modules d'extension (la CPU est intégrée au boîtier).</p>`
+         + prop.racks.map(r => vueRack(r, prop.modules.map(x => ({module: `${x.rack}.${x.position}`, nature: x.nature, voies: x.voies, reference: x.reference, occupees: 0, reserve: x.voies, taux: 1, sous_seuil: false})))).join("") : ""}
+     ${rien ? (s4w ? "" : `<div class="vide-bloc">${prop ? "Cliquez sur « Calculer le matériel » : OGIAS propose les racks et les cartes à partir du besoin ci-dessus." : "Le matériel sera proposé une fois la liste des E/S validée."}</div>`)
+       : (s4w ? `<p class="aide-bloc"><b>Matériel actuellement retenu</b></p>` : "") + racksAffiches(m, d.modules).map((r, _i, t) => vueRack(r, d.modules, t.length > 1)).join("")}
+     <p class="note">${esc(m.statut_catalogue)}</p></div>
    <div class="grille-2">
      <div class="bloc"><div class="bloc-tete"><h2>Besoin calculé</h2><span class="aide">${cables.length} E/S câblées · ${b.communication || 0} par communication</span></div>
      ${besoins.length ? `<table><thead><tr><th>Nature</th><th class="num">E/S</th><th>Carte proposée</th><th class="num">Voies utiles</th><th class="num">Cartes</th><th class="num">Réserve</th></tr></thead><tbody>
@@ -2201,13 +2208,6 @@ function vueMateriel() {
    ${blocComposition(m)}
    ${m.plateforme === "STB" && prop ? blocIlotsSTB(prop) : ""}
    ${m.repartition ? blocRepartition(m.repartition) : ""}
-   <div class="bloc"><div class="bloc-tete"><h2>Racks</h2><span class="aide">${rien ? "aucune carte retenue" : `${d.modules.length} carte(s) · cliquez une carte pour la modifier`}</span>
-     <span class="legende"><i class="l-ok"></i>réserve respectée <i class="l-al"></i>sous la réserve <i class="l-err"></i>dépassement</span></div>
-     ${s4w && prop && prop.racks.length ? `<p class="aide-bloc"><b>Proposition indicative S4W</b> — voies intégrées au boîtier puis modules d'extension (la CPU est intégrée au boîtier).</p>`
-         + prop.racks.map(r => vueRack(r, prop.modules.map(x => ({module: `${x.rack}.${x.position}`, nature: x.nature, voies: x.voies, reference: x.reference, occupees: 0, reserve: x.voies, taux: 1, sous_seuil: false})))).join("") : ""}
-     ${rien ? (s4w ? "" : `<div class="vide-bloc">${prop ? "Cliquez sur « Calculer le matériel » : OGIAS propose les racks et les cartes à partir du besoin ci-dessus." : "Le matériel sera proposé une fois la liste des E/S validée."}</div>`)
-       : (s4w ? `<p class="aide-bloc"><b>Matériel actuellement retenu</b></p>` : "") + racksAffiches(m, d.modules).map((r, _i, t) => vueRack(r, d.modules, t.length > 1)).join("")}
-     <p class="note">${esc(m.statut_catalogue)}</p></div>
    ${blocNomenclature(m)}
    <div class="bloc"><div class="bloc-tete"><h2>Liste des E/S par voie</h2><input id="x-q" type="search" placeholder="Rechercher une E/S, une adresse…" value="${esc(E.rechercheES || "")}" style="width:260px" aria-label="Rechercher">
      ${f ? '<button class="lien" id="x-tout">Tout afficher</button>' : ""}<span class="aide">${pts.length} / ${cables.length}</span>
