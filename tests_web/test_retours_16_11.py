@@ -291,6 +291,7 @@ class TestPosteDeTravailEquipementsEtES(ServeurNavigateur):
         lignes.nth(1).click()
         self.page.locator('.es-panneau').wait_for()
         self.assertEqual(self.page.evaluate(defile), 0)
+        self.page.locator('.pied-etape').wait_for()                # reconstruit à l'image suivante (rendu complet)
         self.assertEqual(self.page.locator('.pied-etape').count(), 1, 'Le pied d\'étape reste après la sélection')
         vue = "(() => { const v = document.querySelector('#vue'); return v.scrollHeight - v.clientHeight })()"
         self.assertEqual(self.page.evaluate(vue), 0)
