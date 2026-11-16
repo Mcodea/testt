@@ -9,6 +9,8 @@ import base64
 import copy
 import uuid
 import json
+from collections import Counter
+from typing import Any
 import mimetypes
 import os
 import re
@@ -83,13 +85,17 @@ class Application:
             f.write(base64.b64decode(d["contenu"]))
         return chemin
 
-    def _fiche_eq(self, e):
+    def _fiche_eq(self, e, nb_es_par_eq=None):
         o = self.s.ouvrage
+        # Audit du 16/11 : le décompte se faisait en régénérant toutes les E/S pour chaque équipement (coût
+        # quadratique : 20 s pour 300 équipements). L'appelant qui liste l'ouvrage fournit le décompte unique.
+        if nb_es_par_eq is None:
+            nb_es_par_eq = Counter(p.ident_eq for p in self.s.points())
         infos = self.s.informations(e)
         return {"ident": e.ident, "pcf": o.repere(e), "se": e.sous_ensemble, "type": e.type, "numero": e.numero,
                 "designation": self.s.designation_type(e.type), "domaine": self.s.domaine_type(e.type),
                 "libelle": e.libelle, "uf": e.uf, "modele": e.modele, "local": e.local,
-                "nb_infos": len(infos), "valide": e.valide, "nb_es": sum(1 for p in self.s.points() if p.ident_eq == e.ident),
+                "nb_infos": len(infos), "valide": e.valide, "nb_es": nb_es_par_eq.get(e.ident, 0),
                 "etat": "codé" if (e.type in self.s.modeles["types"] or self.s.catalogue.type(e.type)) else "à coder"}
 
     # ------------------------------------------------------------------ lectures
@@ -119,7 +125,7 @@ class Application:
         """État de paramétrage de chaque équipement : validé, configuré (prêt à valider), incomplet
         (paramètre ou décision manquant) ou en erreur (anomalie de recette). Jamais bloquant."""
         try:
-            erreurs = {}
+            erreurs: dict[str, list[str]] = {}
             for a in (anomalies if anomalies is not None else self.s.anomalies()):
                 if (a.niveau == "Erreur" and a.ident_eq and a.etape == "Équipements"
                         and "non décidée" not in a.message):
@@ -149,7 +155,8 @@ class Application:
             return {"ouvert": False}
         o = self.s.ouvrage
         etats = self._etats_equipements()
-        eqs = [dict(self._fiche_eq(e), **etats.get(e.ident, {})) for e in self.s.equipements_tries()]
+        nb_es = Counter(p.ident_eq for p in self.s.points())
+        eqs = [dict(self._fiche_eq(e, nb_es), **etats.get(e.ident, {})) for e in self.s.equipements_tries()]
         return {"ouvert": True, "chemin": self.s.chemin or "",
                 "creation_en_attente": self.creation_en_attente,
                 "en_conception": self.creation_en_attente or o.statut == "Brouillon",
@@ -641,6 +648,9 @@ class Application:
             cables = [p for p in self.s.points() if p.raccordement != "Communication"]
             if not any(p.adresse for p in cables):
                 raise RegleMetier("Aucune E/S n'a de voie : implantez les E/S à l'étape Matériel.")
+            erreurs = self.s.erreurs_materiel()       # audit du 16/11 : jamais d'adresse impossible exportée
+            if erreurs:
+                raise RegleMetier(f"Export refusé : {len(erreurs)} erreur(s) de cartes ou de voies (ex. {erreurs[0]})")
             ext = quoi[3:]
             nom = f"{base}_ES_format_CE.{ext}"
             (self.s.exporter_xsy_es if ext == "xsy" else self.s.exporter_txt_es)(os.path.join(dossier, nom))
@@ -885,6 +895,10 @@ class Application:
         return {}
 
     def supprimer_ouvrage(self, d):
+        # Seul un ouvrage de « Mes ouvrages » peut aller à la corbeille : jamais un fichier quelconque du disque.
+        connus = {os.path.realpath(f.chemin) for f in projets.lister()}
+        if os.path.realpath(str(d.get("chemin", ""))) not in connus:
+            raise RegleMetier("Ce fichier n'est pas un ouvrage de « Mes ouvrages » : rien n'a été déplacé.")
         if self.s.chemin and os.path.abspath(self.s.chemin) == os.path.abspath(d["chemin"]):
             self.ouvert = False
             self.creation_en_attente = False
@@ -1386,7 +1400,7 @@ class Application:
             self._inbound_pending = (ticket, preview, directory)
             # Toutes les lignes sont contrôlées ; seules 100 sont transmises par page.
             # Les lignes suivantes (y compris les erreurs) restent consultables.
-            result = preview.to_report(include_rows=True, offset=0, limit=100)
+            result: dict[str, Any] = preview.to_report(include_rows=True, offset=0, limit=100)
             result["lignes_affichees"] = result.pop("lignes")
             total = result["pagination"]["total"]
             result["pagination"]["page"] = 1
@@ -1491,10 +1505,34 @@ ROUTES_POST = {"/api/nouveau": "nouveau", "/api/ouvrir": "ouvrir", "/api/fermer"
                "/api/variables/action": "variables_action", "/api/materiel/action": "materiel_action"}
 
 
+TAILLE_MAX_REQUETE = 50 * 1024 * 1024      # imports d'Excel ou de PDF compris (base64)
+
+
 def fabriquer_gestionnaire(app):
     class Gestionnaire(BaseHTTPRequestHandler):
         def log_message(self, *a):
             pass
+
+        # Audit du 16/11 : le serveur écoute sur 127.0.0.1, mais un site ouvert dans le navigateur pouvait lui
+        # envoyer des ordres (POST « text/plain » sans contrôle préalable) ou lire ses réponses par rebinding DNS.
+        def _origines(self):
+            port = self.server.server_port   # type: ignore[attr-defined]
+            return {f"127.0.0.1:{port}", f"localhost:{port}"}
+
+        def _hote_refuse(self):
+            """Rebinding DNS : seul l'hôte local est servi (un navigateur envoie toujours « Host »)."""
+            hote = (self.headers.get("Host") or "").strip().lower()
+            if hote and hote not in self._origines():
+                self.send_error(421, "Hôte non autorisé")
+                return True
+            return False
+
+        def _origine_refusee(self):
+            """Requête venue d'un autre site : refusée avant toute action."""
+            origine = (self.headers.get("Origin") or "").strip().lower()
+            if origine and origine.removeprefix("http://") not in self._origines():
+                return True
+            return (self.headers.get("Sec-Fetch-Site") or "").lower() == "cross-site"
 
         def _json(self, code, donnees):
             corps = json.dumps(donnees, ensure_ascii=False).encode("utf-8")
@@ -1516,6 +1554,10 @@ def fabriquer_gestionnaire(app):
                 self._json(500, {"erreur": "Erreur inattendue : le détail est enregistré dans journal.log."})
 
         def do_GET(self):
+            if self._hote_refuse():
+                return
+            if self._origine_refusee():
+                return self._json(403, {"erreur": "Requête d'une autre origine refusée."})
             u = urlparse(self.path)
             if u.path == "/api/export":
                 try:
@@ -1540,7 +1582,7 @@ def fabriquer_gestionnaire(app):
                 return self._appeler(ROUTES_GET[u.path], {k: v[0] for k, v in parse_qs(u.query).items()})
             chemin = "index.html" if u.path in ("/", "") else u.path.lstrip("/")
             fichier = os.path.normpath(os.path.join(STATIQUE, chemin))
-            if not fichier.startswith(STATIQUE) or not os.path.isfile(fichier):
+            if os.path.commonpath([fichier, STATIQUE]) != os.path.normpath(STATIQUE) or not os.path.isfile(fichier):
                 self.send_error(404)
                 return
             with open(fichier, "rb") as f:
@@ -1554,15 +1596,31 @@ def fabriquer_gestionnaire(app):
             self.wfile.write(corps)
 
         def do_POST(self):
+            if self._hote_refuse():
+                return
             u = urlparse(self.path)
             if u.path not in ROUTES_POST:
                 self.send_error(404)
                 return
-            n = int(self.headers.get("Content-Length") or 0)
+            if self._origine_refusee():
+                return self._json(403, {"erreur": "Requête d'une autre origine refusée."})
+            # JSON obligatoire : un autre site ne peut l'envoyer sans contrôle préalable (CORS), que ce serveur refuse.
+            if (self.headers.get("Content-Type") or "").split(";")[0].strip().lower() != "application/json":
+                return self._json(415, {"erreur": "Requête refusée : contenu JSON attendu."})
+            try:
+                n = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                return self._json(400, {"erreur": "Longueur de requête invalide."})
+            if n < 0:
+                return self._json(400, {"erreur": "Longueur de requête invalide."})
+            if n > TAILLE_MAX_REQUETE:
+                return self._json(413, {"erreur": "Requête trop volumineuse (50 Mo au plus)."})
             try:
                 donnees = json.loads(self.rfile.read(n) or b"{}")
-            except json.JSONDecodeError:
+            except (json.JSONDecodeError, UnicodeDecodeError):
                 return self._json(400, {"erreur": "Requête illisible."})
+            if not isinstance(donnees, dict):
+                return self._json(400, {"erreur": "Requête illisible : objet JSON attendu."})
             self._appeler(ROUTES_POST[u.path], donnees)
     return Gestionnaire
 

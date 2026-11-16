@@ -90,7 +90,12 @@ def plateforme_materiel(automate):
     """Plateforme pour le **calcul du matériel** : comme `plateforme`, mais un automate renseigné d'une gamme non
     décrite dans le catalogue (Premium, Quantum…) est refusé : aucune configuration d'une autre gamme n'est jamais
     proposée à sa place (retour d'essai n° 8 du 12/11/2026)."""
-    if (automate or "").strip() and gamme(automate) is None:
+    if not (automate or "").strip():
+        # Audit du 16/11 : plus de M340 supposé en silence ; la source décide de la gamme du matériel.
+        raise CatalogueMaterielErreur(
+            "Source d'acquisition non renseignée dans la fiche de l'ouvrage : choisissez-la (M340, M580, S4W, "
+            "STB…) avant de calculer le matériel. Aucune gamme n'est supposée.")
+    if gamme(automate) is None:
         raise CatalogueMaterielErreur(
             f"Source « {automate} » : cette gamme n'est pas décrite dans le catalogue matériel d'OGIAS. Aucune "
             "configuration n'est proposée, pour ne pas présenter le matériel d'une autre gamme. Gammes prises en "

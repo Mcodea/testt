@@ -28,11 +28,13 @@ class TestCalcul(unittest.TestCase):
 
     def test_deterministe_et_extension(self):
         pts = [_P("ET")] * 700
-        a, b = materiel.proposer(pts, ""), materiel.proposer(pts, "")
+        a, b = materiel.proposer(pts, "M340"), materiel.proposer(pts, "M340")
         self.assertEqual(a.dict(), b.dict())
         self.assertEqual([r["reference"] for r in a.racks], ["BMX XBP 1200", "BMX XBP 0400"])
-        self.assertTrue(any("non renseigné" in r for r in a.remarques))
         self.assertTrue(any("extension" in r for r in a.remarques))
+        # Audit du 16/11 : sans source d'acquisition, aucune gamme n'est supposée.
+        with self.assertRaisesRegex(materiel.CatalogueMaterielErreur, "non renseignée"):
+            materiel.proposer(pts, "")
 
     def test_rack_le_plus_court_et_aucune_es(self):
         p = materiel.proposer([_P("ET")] * 10, "M340")

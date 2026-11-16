@@ -265,6 +265,11 @@ body[data-ecran="ouvrage"] #contenu .bloc>.titre>.actions{flex-wrap:wrap;justify
 /* Variables : le tableau occupe toute la largeur ; une colonne de détail n'existe que si un détail est ouvert */
 .v31-variable-screen,.v31-variable-screen:not(.has-detail){grid-template-columns:minmax(0,1fr);gap:var(--sp-3);min-height:380px}
 .v31-variable-screen.has-detail{grid-template-columns:minmax(0,1fr) clamp(280px,22vw,360px)}
+/* Pied d'étape et points bloquants sous le tableau des variables, sur toute la largeur */
+.v31-variable-screen:has(>.pied-etape){grid-template-rows:minmax(0,1fr) auto}
+.v31-variable-screen:has(>.parcours-points){grid-template-rows:minmax(0,1fr) auto auto}
+.v31-variable-screen>:is(.pied-etape,.parcours-points){grid-column:1 / -1;margin:0!important}
+.v31-variable-screen>.parcours-points{max-height:96px;overflow:auto}
 .v31-main-table,.v31-variable-detail{min-width:0;max-width:100%}
 .v31-table-toolbar{padding:8px var(--sp-3);gap:var(--sp-2);border-bottom:1px solid var(--v31-separator);flex-wrap:wrap}
 .v31-view-switch{border:1px solid var(--v31-separator);border-radius:var(--radius-m);padding:2px;background:var(--workspace-panel)}
@@ -459,6 +464,15 @@ details.aide-pliable>p{margin:var(--sp-1) 0 0;max-width:90ch}
 #vue .es-page.poste-travail .t-es th{padding-inline:8px!important;min-width:0!important;width:auto!important}
 /* Détail ouvert sur un écran moyen : sens et raccordement se lisent dans le détail, pas dans le tableau */
 @media (max-width:1700px){.es-page.poste-travail>.es-corps:has(>.es-panneau) .t-es :is(th,td):is(:nth-child(6),:nth-child(7)){display:none}}
+/* Réserve par carte : champ numérique avec son unité */
+.champ-unite{display:inline-flex;align-items:center;gap:var(--sp-1)}
+.champ-unite input{width:76px;text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.reglage-reserve label.etiq{display:block}
+.dm-etapes .champ-unite{justify-self:start}
+/* Recette : exports groupés par destination */
+.t-exports .r-groupe th{background:var(--v31-subtle)!important;color:var(--v31-text);font-size:12px;text-transform:uppercase;letter-spacing:.03em;position:static}
+.t-exports td .aide{margin-top:2px;font-size:12px;color:var(--v31-muted);max-width:60ch}
+.t-exports td:first-child{white-space:nowrap}
 /* Matériel pas encore calculé : seul le cadre de démarrage est affiché */
 .poste-travail.etat-vide>.v31-page-actions,.poste-travail.etat-vide #pt-catalogue,.poste-travail.etat-vide #pt-inspecteur{display:none!important}
 .poste-travail.etat-vide .poste-grille{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}

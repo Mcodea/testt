@@ -329,6 +329,12 @@ class TestDemarrageMateriel(ServeurNavigateur):
         for s in ('#pt-catalogue', '#pt-inspecteur', '#onglets-mat', '.rack', '.v31-page-actions'):
             self.assertFalse(self.page.locator(s).first.is_visible(), s)
         self.assertIn('non renseignée', carte.inner_text())
+        # Audit du 16/11 : sans source d'acquisition, aucune gamme n'est supposée et le calcul est impossible.
+        self.assertTrue(self.page.locator('#m-demarrer').is_disabled())
+        self.assertEqual(self.api('/api/definir', {'champ': 'automate', 'valeur': 'Sch - M340'}), {})
+        self.page.reload(wait_until='networkidle')
+        carte.wait_for()
+        self.assertIn('Sch - M340', carte.inner_text())
         self.assertEqual(self.page.locator('[data-cfg="alimentation"]').count(), 1)
         self.assertTrue(carte.locator('[data-cfg="alimentation"]').is_visible())
         carte.locator('[data-cfg="alimentation"]').select_option('BMX CPS 2010')
@@ -338,3 +344,84 @@ class TestDemarrageMateriel(ServeurNavigateur):
         self.assertEqual(self.page.locator('.demarrage-materiel').count(), 0)
         self.assertTrue(self.page.locator('.rack').first.is_visible())
         self.assertTrue(self.api('/api/es')['modules'])
+
+
+class TestRetours1611Apres15h(ServeurNavigateur):
+    """Retours du 16/11 (15 h 08) : réserve réglable (20 % au moins), processeur M580 double largeur affiché
+    comme un seul module, pied d'étape des Variables vers la Recette, exports regroupés dans la Recette."""
+    BASE = 10
+
+    def setUp(self):
+        type(self).numero += 1
+        self.api('/api/nouveau', {'mode': 'Neuf'})
+        if not any(x['code'] == 'XTST' for x in self.api('/api/listes-ouvrage')['lieux']):
+            self.api('/api/listes-ouvrage/action', {'action': 'ajouter', 'groupe': 'lieux', 'code': 'XTST', 'libelle': 'Lieu fictif'})
+        self.api('/api/fiche-ouvrage', {'action': 'creer', 'identification': {
+            'lieu': 'XTST', 'code_ouvrage': 'RP', 'numero_ouvrage': f'{self.BASE + self.numero:02d}',
+            'libelle': 'Essai M580', 'automate': 'Sch - M580', 'revision': 'A'}})
+        ids = []
+        for t, n in (('PM', '01'), ('MV', '02')):
+            i = self.api('/api/equipement/ajouter', {'type': t, 'numero': n, 'se': '00'})['ident']
+            self.api('/api/equipement/proposition', {'ident_eq': i, 'decision': 'retenir'})
+            ids.append(i)
+        self.api('/api/equipement/valider', {'idents': ids, 'valide': True})
+        pts = self.api('/api/es')['points']
+        self.api('/api/es/valider', {'niveau': 'contenu', 'paires': [{'ident_eq': p['ident_eq'], 'cle': p['cle']} for p in pts]})
+        self.api('/api/materiel/action', {'action': 'config', 'processeur': 'BME P58 2020'})
+        self.api('/api/materiel/action', {'action': 'appliquer'})
+        self.context = self.browser.new_context(viewport={'width': 1366, 'height': 768})
+        self.addCleanup(self.context.close)
+        self.page = self.context.new_page()
+        self.erreurs = []
+        self.page.on('pageerror', lambda e: self.erreurs.append(str(e)))
+
+    def tearDown(self):
+        self.assertEqual(self.erreurs, [])
+
+    def test_processeur_m580_un_seul_module_sur_deux_emplacements(self):
+        self.page.goto(self.url + '#/materiel', wait_until='networkidle')
+        cpu = self.page.locator('.rack .emplacement.cpu')
+        cpu.first.wait_for()
+        self.assertEqual(cpu.count(), 1, 'Un processeur M580, pas deux')
+        self.assertEqual(cpu.get_attribute('data-double'), '1')
+        self.assertEqual(cpu.locator('.pos').inner_text(), '0–1')
+        voisin = self.page.locator('.rack .emplacement').nth(2).bounding_box()
+        self.assertGreater(cpu.bounding_box()['width'], 1.8 * voisin['width'])
+
+    def test_reserve_reglable_vingt_pour_cent_au_moins(self):
+        self.page.goto(self.url + '#/materiel', wait_until='networkidle')
+        champ = self.page.locator('#m-reserve')
+        champ.wait_for(state='attached')
+        if not champ.is_visible():
+            self.page.locator('[data-onglet-mat]').first.scroll_into_view_if_needed()
+        self.assertEqual(champ.get_attribute('min'), '20')
+        champ.fill('15'); champ.dispatch_event('change')
+        self.page.locator('.toast.err').first.wait_for()
+        self.assertEqual(self.api('/api/materiel')['reserve_min'], 0.2)
+        self.page.locator('#m-reserve').fill('30'); self.page.locator('#m-reserve').dispatch_event('change')
+        self.page.wait_for_function('() => document.querySelector("#m-reserve")?.value === "30"')
+        self.assertEqual(self.api('/api/materiel')['reserve_min'], 0.3)
+
+    def test_variables_menent_a_la_recette(self):
+        self.page.goto(self.url + '#/variables', wait_until='networkidle')
+        bouton = self.page.locator('.pied-etape button.prim')
+        bouton.wait_for()
+        self.assertIn('Recette', bouton.inner_text())
+        self.page.locator('.v31-variable-row').first.click()           # rendu partiel : le pied reste
+        self.page.wait_for_timeout(200)
+        self.assertEqual(self.page.locator('.pied-etape').count(), 1)
+        bouton.click()
+        self.page.wait_for_function("() => location.hash === '#/recette'")
+
+    def test_exports_regroupes_dans_la_recette(self):
+        self.page.goto(self.url + '#/recette', wait_until='networkidle')
+        bloc = self.page.locator('#r-exports')
+        bloc.wait_for()
+        texte = bloc.inner_text()
+        for attendu in ('Automate — M580', 'Supervision', 'TOPKAPI', 'SOFREL', 'Configuration automate', 'Liste des entrées / sorties'):
+            self.assertIn(attendu, texte)
+        quoi = set(bloc.locator('[data-export]').evaluate_all('b => b.map(x => x.dataset.export)'))
+        self.assertTrue({'es_xsy', 'es_txt', 'xsy', 'topkapi', 'liste_es', 'cartes', 'nomenclature', 'variables'} <= quoi)
+        with self.page.expect_download() as dl:
+            bloc.locator('[data-export="liste_es"]').click()
+        self.assertTrue(dl.value.suggested_filename.endswith('_liste_ES.xlsx'))

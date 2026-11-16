@@ -91,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(check_coverage(output / "coverage.json")))
         elif args.suite == "static":
             for index, command in enumerate(([sys.executable, "-m", "ruff", "check", "--config", "ruff.toml", "."],
-                            [sys.executable, "-m", "mypy", "--config-file", "mypy.ini", "genvar"],
+                            [sys.executable, "-m", "mypy", "--config-file", "mypy.ini", "genvar", "sorep_web"],
                             *(["node", "--check", str(file)] for file in sorted((ROOT / "sorep_web/static").glob("*.js"))))):
                 code = execute(command, output / f"static-{index}.log", env)
                 if code:

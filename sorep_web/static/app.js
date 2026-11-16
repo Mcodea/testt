@@ -185,7 +185,8 @@ document.addEventListener("click", ev => {
 /* ------------------------------------------------------------------ rendu général */
 // Pied d'étape commun : précédent / état / suivant, ajouté à chaque écran du parcours.
 function piedEtape() {
-  const o = E.ouvrage, i = ETAPES.findIndex(x => x[1] === vueEtape(E.vue)), zone = document.querySelector("#vue .contenu");
+  const o = E.ouvrage, i = ETAPES.findIndex(x => x[1] === vueEtape(E.vue));
+  const zone = document.querySelector("#vue .contenu") || document.querySelector("#vue > .v31-variable-screen");
   if (!o || !o.ouvert || i < 0 || !zone || o.en_conception) return;
   zone.querySelector(".pied-etape")?.remove();
   const prec = ETAPES[i - 1], suiv = ETAPES[i + 1], statut = etatEtape(vueEtape(E.vue), o);
@@ -549,7 +550,10 @@ function vueRecette() {
      <td style="text-align:right"><button class="lien r-corr" data-i="${d.controles.indexOf(c)}">${c.ident && ["Équipements", "Ouvrage"].includes(c.etape) ? "Ouvrir la fiche" : "Aller à l'étape"}</button></td></tr>`).join('')}</tbody></table>`
      : '<div class="vide-bloc">Aucune anomalie détectée par les contrôles automatisés.</div>'}
    ${d.tronque ? '<div class="avert">Affichage limité aux 500 premiers contrôles.</div>' : ''}</div>
+   ${blocExportsRecette()}
    <div class="avert">Statut industriel : NON QUALIFIÉ. Une recette locale sans erreur ne vaut pas validation des fichiers dans Control Expert, SOFREL ou TOPKAPI.</div></section>`;
+  document.querySelectorAll("[data-export]").forEach(b => b.onclick = () => telecharger(b.dataset.export));
+  $("#r-dossier-exports").onclick = () => $("#r-dossier")?.click();
   $("#r-actualiser").onclick = async () => { E.detailEtape = await api('/api/recette'); rendre(); };
   $("#r-dossier").onclick = () => confirmer("Constituer le dossier de recette ?", "Archive zip des livrables à partir des exports existants, avec un sommaire imprimable en PDF (empreintes, pièces non produites et leur motif, points restant à traiter). Exports non qualifiés : à vérifier dans les logiciels cibles.", "Télécharger le dossier", () => telecharger("dossier_recette"));
   document.querySelectorAll("[data-et]").forEach(x => x.onclick = () => { E.filtreRecette = x.dataset.et; vueRecette(); });
@@ -558,6 +562,39 @@ function vueRecette() {
     if (c.ident && (c.etape === "Équipements" || c.etape === "Ouvrage")) { E.sel = {nature: "eq", valeur: c.ident}; location.hash = "#/inventaire"; }
     else location.hash = ROUTE_ETAPE[c.etape] || "#/inventaire";
   });
+}
+/* Retour du 16/11 (15 h 08) : les exports se retrouvent à l'étape Recette, groupés par destination. Seuls les
+   formats réellement produits par OGIAS ont un bouton ; les autres sont nommés avec la raison et ce qu'il manque,
+   jamais simulés. Le moteur refuse un export incohérent (erreurs de recette, cartes ou voies). */
+function blocExportsRecette() {
+  const o = E.ouvrage || {}, auto = (o.identification || {}).automate || "";
+  const gamme = /M580|BMEP58|BMEH58/i.test(auto.replace(/\s/g, "")) ? "M580" : /M340|BMXP34/i.test(auto.replace(/\s/g, "")) ? "M340"
+    : /S4W|SOFREL|SOF -/i.test(auto) ? "S4W" : /STB/i.test(auto) ? "STB" : "";
+  const ce = gamme === "M340" || gamme === "M580";
+  const neuf = (o.identification || {}).mode !== "Existant";
+  const ligne = (livrable, format, quoi, etat, motif = "") => `<tr><td><b>${livrable}</b></td><td>${format}</td>
+    <td>${quoi ? (etat === "prêt" ? '<span class="badge b-ok">prêt</span>' : `<span class="badge b-al" title="Format conforme aux exemples fournis, pas encore essayé dans le logiciel cible">non qualifié</span>`) : `<span class="badge b-n">non disponible</span>`}${motif ? `<div class="aide">${motif}</div>` : ""}</td>
+    <td style="text-align:right">${quoi ? `<button data-export="${quoi}">Exporter</button>` : ""}</td></tr>`;
+  const groupe = (titre, lignes) => `<tr class="r-groupe"><th colspan="4">${titre}</th></tr>${lignes}`;
+  return `<div class="bloc" id="r-exports"><div class="bloc-tete"><h2>Exports</h2><span class="aide">${auto ? `source d'acquisition : ${esc(auto)}` : "source d'acquisition non renseignée"}</span>
+      <div class="droite"><button class="prim" id="r-dossier-exports">Tout dans le dossier de recette (zip)</button></div></div>
+    <table class="t-exports"><thead><tr><th>Livrable</th><th>Format</th><th>État</th><th></th></tr></thead><tbody>
+    ${groupe(`Automate${gamme ? " — " + gamme : ""}`,
+      (ce && neuf ? ligne("E/S pour Control Expert", "XSY (variables d'E/S, voies de réserve comprises)", "es_xsy")
+        + ligne("E/S pour Control Expert", "TXT", "es_txt")
+        + ligne("Table d'échange (variables)", "XSY Control Expert", "xsy")
+        : ligne("Programme automate", "—", "", "", ce ? "Projet existant : le programme en place n'est jamais réécrit." : `Aucun format automate n'est décrit pour la source « ${esc(auto || "non renseignée")} ».`))
+      + ligne("Configuration automate (racks, cartes)", "Control Expert (.XEF / .ZEF)", "", "",
+          "Format de configuration matérielle pas encore décrit dans OGIAS : fournissez un export de référence. En attendant : cartes d'E/S et nomenclature ci-dessous."))}
+    ${groupe("Supervision", ligne("TOPKAPI", "Archive des fichiers TOPKAPI", "topkapi"))}
+    ${groupe("Télégestion SOFREL", ligne("SOFREL", "—", "", "", gamme === "S4W"
+        ? "Aucun format d'import SOFREL n'est décrit dans OGIAS : fournissez un fichier de référence (export SOFTOOLS) pour le reproduire."
+        : "Sans objet pour cette source, et aucun format SOFREL n'est encore décrit."))}
+    ${groupe("Documents Excel",
+      ligne("Liste des entrées / sorties", "Excel (.xlsx)", "liste_es", "prêt", "Mise en forme à revoir d'après la trame que vous fournirez.")
+      + ligne("Cartes d'E/S", "Excel (.xlsx)", "cartes", "prêt") + ligne("Nomenclature de commande", "Excel (.xlsx)", "nomenclature", "prêt")
+      + ligne("Variables de contrôle", "Excel (.xlsx)", "variables", "prêt"))}
+    </tbody></table></div>`;
 }
 function enTete() { V31.render(E, ETAPES, etatEtape, vueEtape); }
 /* ------------------------------------------------------------------ accueil */
@@ -2172,6 +2209,7 @@ function racksAffiches(m, modules) {
 }
 function vueRack(rack, modules, plusieurs) {
   const cases = [];
+  let spans = 0;                                    // emplacements supplémentaires occupés par un module double
   const occ = Object.fromEntries((rack.occupation || []).map(o => [o.position, o]));
   const poste = String(rack.reference).startsWith("S4W");
   // Rack retenu (M340 / M580) : chaque emplacement s'équipe d'un clic, selon ce qu'il peut recevoir.
@@ -2185,9 +2223,20 @@ function vueRack(rack, modules, plusieurs) {
   for (let pos = 0; pos < rack.positions; pos++) {
     const carte = modules.find(x => x.module === `${rack.numero}.${pos}`);
     const o = occ[pos];
+    // Retour du 16/11 (15 h 08) : un processeur M580 (BME P58…) est UN module double largeur qui occupe les
+    // emplacements 00 et 01 (règle du catalogue). Il s'affiche comme un seul module sur deux emplacements.
+    const largeur = o && o.role === "processeur" && occ[pos + 1] && occ[pos + 1].role === "processeur"
+      && occ[pos + 1].reference === o.reference ? 2 : 1;
     if (o) { const role = o.role === "processeur" ? "Processeur" : "Communication";
-      cases.push(`<div class="emplacement ${o.role === "processeur" ? "cpu" : "com"} ${/à choisir/.test(o.reference) ? "a-choisir" : ""}"${actif(o.role, pos, `Emplacement ${pos} réservé : ${role.toLowerCase()} — cliquer pour ${o.role === "processeur" ? "choisir le processeur" : "changer ou retirer le module"}`)}><span class="pos">${pos}</span><b>${esc(/à choisir/.test(o.reference) ? role : o.reference)}</b><small>${/à choisir/.test(o.reference) ? "à choisir" : role.toLowerCase()}</small></div>`); continue; }
-    if (rack.cpu.includes(pos)) { cases.push(`<div class="emplacement cpu" title="Position ${pos} : processeur"><span class="pos">${pos}</span><b>CPU</b></div>`); continue; }
+      const libPos = largeur === 2 ? `${pos}–${pos + 1}` : pos;
+      if (largeur === 2) { spans += 1; pos += 1; }
+      cases.push(`<div class="emplacement ${o.role === "processeur" ? "cpu" : "com"} ${/à choisir/.test(o.reference) ? "a-choisir" : ""}"${largeur === 2 ? ' style="grid-column:span 2" data-double="1"' : ""}${actif(o.role, pos - largeur + 1, `Emplacement${largeur === 2 ? "s " + libPos + " : processeur double largeur (un seul module)" : " " + pos + " réservé : " + role.toLowerCase()} — cliquer pour ${o.role === "processeur" ? "choisir le processeur" : "changer ou retirer le module"}`)}><span class="pos">${libPos}</span><b>${esc(/à choisir/.test(o.reference) ? role : o.reference)}</b><small>${/à choisir/.test(o.reference) ? "à choisir" : role.toLowerCase()}</small></div>`); continue; }
+    if (rack.cpu.includes(pos)) {
+      if (rack.cpu.includes(pos + 1) && !occ[pos + 1] && !modules.some(x => x.module === `${rack.numero}.${pos + 1}`)) {
+        cases.push(`<div class="emplacement cpu" style="grid-column:span 2" data-double="1" title="Positions ${pos}–${pos + 1} : processeur double largeur"><span class="pos">${pos}–${pos + 1}</span><b>CPU</b></div>`);
+        spans += 1; pos += 1; continue;
+      }
+      cases.push(`<div class="emplacement cpu" title="Position ${pos} : processeur"><span class="pos">${pos}</span><b>CPU</b></div>`); continue; }
     if (!carte) { cases.push(`<div class="emplacement libre"${actif("libre", pos, `Emplacement ${pos} libre — cliquer pour y installer une carte d'E/S ou un module de communication`)}><span class="pos">${pos}</span><span>libre</span>${equipable ? '<small class="ajout">+ installer</small>' : ""}</div>`); continue; }
     const taux = carte.voies ? carte.occupees / carte.voies : 0;
     const etat = carte.occupees > carte.voies ? "err" : carte.sous_seuil && carte.occupees ? "al" : "ok";
@@ -2197,7 +2246,7 @@ function vueRack(rack, modules, plusieurs) {
   }
   if (!poste && plusieurs) cases.push(`<div class="emplacement ext" title="Emplacement XBE : module d'extension de rack"><span class="pos">XBE</span><b>BMX XBE 1000</b><small>extension</small></div>`);
   return `<div class="rack ${poste ? "v31-platform-sofrel" : ""}"><div class="rack-tete"><b>${poste ? "Poste de télégestion" : "Rack " + rack.numero}</b><span>${esc(rack.reference)} · ${poste ? `voies intégrées + ${Math.max(0, modules.filter(x => x.reference.startsWith("Module")).length)} module(s) d'extension` : `${rack.positions} positions${rack.numero === 0 ? " · rack local" : " · extension"}`}</span></div>
-    <div class="rack-corps" style="grid-template-columns:repeat(${cases.length},minmax(96px,1fr))">${cases.join("")}</div></div>`;
+    <div class="rack-corps" style="grid-template-columns:repeat(${cases.length + spans},minmax(96px,1fr))">${cases.join("")}</div></div>`;
 }
 // Composition de l'automate (M340 / M580) : alimentation, processeur, communication, carte par nature.
 function blocComposition(m) {
@@ -2479,18 +2528,21 @@ function demarrageMateriel({m, d, prop, cables}) {
       Vous pourrez ensuite tout ajuster sur le rack.</p>
     ${m.blocage ? `<div class="dm-bloque"><b>Pas encore possible :</b> ${esc(m.blocage)} <button class="lien" data-nav="#/es">Aller à la liste des E/S</button></div>` : ""}
     <ol class="dm-etapes">
-      <li><span class="dm-num">1</span><div><b>Plateforme</b><span class="dm-valeur mono">${esc(m.plateforme || "—")}</span>
+      <li><span class="dm-num">1</span><div><b>Plateforme</b><span class="dm-valeur mono">${m.automate ? esc(m.plateforme || "—") : "—"}</span>
         ${m.automate ? `<small>d'après la source d'acquisition « ${esc(m.automate)} »</small>`
-          : `<small class="dm-al">Source d'acquisition non renseignée dans la fiche de l'ouvrage : ${esc(m.plateforme || "")} est pris par défaut.</small> <button class="lien" id="dm-source">Renseigner la source</button>`}</div></li>
+          : `<small class="dm-al">Source d'acquisition non renseignée : choisissez-la dans la fiche de l'ouvrage. OGIAS ne suppose aucune gamme.</small> <button class="lien" id="dm-source">Renseigner la source</button>`}</div></li>
       <li class="dm-choix" data-dm="alimentation"><span class="dm-num">2</span><div><b>Alimentation</b><small>facultatif : sinon l'emplacement reste « à choisir »</small></div></li>
       <li class="dm-choix" data-dm="processeur"><span class="dm-num">3</span><div><b>Processeur</b><small>facultatif : sinon d'après la fiche de l'ouvrage</small></div></li>
+      <li class="dm-choix" data-dm="reserve"><span class="dm-num">4</span><div><b>Réserve de voies par carte</b><small>20 % au moins, pour les extensions futures</small></div></li>
     </ol>
     <div class="dm-action"><button class="prim grand" id="m-demarrer" ${possible ? "" : "disabled"}>Calculer le matériel</button>
-      <span class="aide">${Math.round((m.reserve_min || 0) * 100)} % de réserve par carte · rien n'est validé tant que vous ne le décidez pas</span></div>`;
+      <span class="aide">Rien n'est validé tant que vous ne le décidez pas.</span></div>`;
   ed.prepend(carte);
   // Listes d'alimentation et de processeur : déplacées depuis le bloc de composition
   ["alimentation", "processeur"].forEach(k => { const sel = document.querySelector(`[data-cfg="${k}"]`), li = carte.querySelector(`[data-dm="${k}"]`);
     if (sel && li) li.appendChild(sel); else if (li) li.remove(); });
+  const res = document.querySelector("#m-reserve")?.closest(".champ-unite"), liRes = carte.querySelector('[data-dm="reserve"]');
+  if (res && liRes) liRes.appendChild(res); else if (liRes) liRes.remove();
   // Répartition (équipements secourus, emplacements libres) : elle oriente le calcul, donc elle reste ici,
   // repliée sauf si des groupes de secours attendent une confirmation.
   const rp = document.querySelector("#rp-sep")?.closest(".bloc");
@@ -2555,7 +2607,7 @@ function vueMateriel() {
      <div><span class="etiq">Plateforme</span><b>${esc(m.plateforme)}</b><small>${m.automate ? "fiche ouvrage : " + esc(m.automate) : "automate non renseigné"}</small></div>
      ${s4w ? `<div><span class="etiq">Poste de télégestion</span><b>${esc(prop && prop.racks[0] ? prop.racks[0].reference : "—")}</b><small>boîtier proposé</small></div>`
        : `<div><span class="etiq" title="Modèle de carte retenu par le calcul automatique pour chaque nature d'E/S. Une carte se change ensuite en cliquant son emplacement dans le rack.">Cartes du calcul automatique</span><select id="m-profil" aria-label="Cartes utilisées par le calcul automatique">${m.profils.map(x => `<option value="${esc(x.code)}" ${x.code === m.profil ? "selected" : ""}>${esc(x.libelle)}</option>`).join("")}</select></div>`}
-     <div><span class="etiq">Réserve minimale</span><b>${Math.round(m.reserve_min * 100)} %</b><small>par carte</small></div>
+     <div class="reglage-reserve"><label class="etiq" for="m-reserve">Réserve par carte</label><span class="champ-unite"><input type="number" id="m-reserve" min="20" max="90" step="5" value="${Math.round(m.reserve_min * 100)}" aria-describedby="m-reserve-aide"><span>%</span></span><small id="m-reserve-aide">20 % au moins</small></div>
      <div class="droite"><button class="${rien ? "prim" : ""}" id="m-calc" ${prop && prop.applicable ? "" : "disabled"} title="${s4w ? "Proposition indicative pour un poste S4W" : ""}">${rien ? "Calculer le matériel" : "Recalculer le matériel"}</button><button id="m-cartes">Ajuster les cartes…</button></div>
    </div>
    <div id="pa-materiel"></div>
@@ -2612,6 +2664,12 @@ function vueMateriel() {
   brancherListeES(pts, "voie");
   const appliquer = () => agir(api("/api/materiel/action", {action: "appliquer"})).then(() => { toast("Matériel proposé appliqué : à vérifier puis valider."); rechargerMateriel(); });
   $("#m-calc").onclick = () => rien ? appliquer() : confirmer("Recalculer le matériel ?", "Les cartes actuelles sont remplacées par la proposition. C'est refusé si des E/S occupent déjà des voies : libérez-les d'abord.", "Recalculer", appliquer);
+  // Retour du 16/11 (15 h 08) : réserve réglable ici, 20 % au moins (le moteur refuse en dessous).
+  if ($("#m-reserve")) $("#m-reserve").onchange = ev => {
+    const v = Number(ev.target.value);
+    if (!(v >= 20 && v <= 90)) { toast("Réserve par carte : entre 20 et 90 %.", true); ev.target.value = Math.round(m.reserve_min * 100); return; }
+    agir(api("/api/modules", {action: "reserve", taux: v / 100}), `Réserve de ${v} % par carte : ${rien ? "elle sera appliquée au calcul" : "recalculez ou réimplantez pour l'appliquer"}.`).then(rechargerMateriel, rechargerMateriel);
+  };
   if ($("#m-profil")) $("#m-profil").onchange = ev => agir(api("/api/materiel/action", {action: "profil", profil: ev.target.value})).then(rechargerMateriel);
   $("#m-cartes").onclick = () => modaleModules();
   document.querySelectorAll("[data-carte]").forEach(x => x.onclick = () => modaleVoiesCarte(x.dataset.carte));
@@ -2628,7 +2686,7 @@ function vueMateriel() {
   liaisonsRepartition();
   liaisonsComposition();
   posteMateriel();
-  if (rien && ["M340", "M580"].includes(m.plateforme)) demarrageMateriel({m, d, prop, cables});
+  if (rien && (["M340", "M580"].includes(m.plateforme) || !m.automate)) demarrageMateriel({m, d, prop, cables});
   $("#x-xl").onclick = () => telecharger("liste_es");
   $("#x-ca").onclick = () => telecharger("cartes");
   $("#x-xsy").onclick = () => telecharger("es_xsy");

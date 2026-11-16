@@ -155,3 +155,28 @@ déjà là. Nouvelle règle : **chaque écran n'affiche que ce qui sert à son �
   catalogue permanent à droite de la fiche est retiré.
 - Tests : `test_ajout_en_deux_temps_modele_puis_libelle`, `test_fiche_une_seule_ligne_d_action_et_menu_des_commandes`,
   `TestDemarrageMateriel` ; `pytest tests_web` : 84 réussis.
+
+## Corrections de l'audit du 16/11 et retours de 15 h 08
+
+Rapport d'audit : document « Audit technique et métier OGIAS » (partagé séparément). Captures : `retours_15h08/`.
+
+| Point | Correction | Test |
+| --- | --- | --- |
+| Ordres envoyés par un autre site (CSRF) | POST : JSON obligatoire (415), `Origin` / `Sec-Fetch-Site` étrangers refusés (403) | `tests/test_audit_16_11.py` |
+| Lecture par rebinding DNS | `Host` autre que 127.0.0.1 / localhost refusé (421) | idem |
+| Fichier quelconque déplacé par « Supprimer l'ouvrage » | seul un ouvrage de « Mes ouvrages » peut aller à la corbeille | idem |
+| Requêtes mal formées (500, connexion coupée) | 400 / 413, taille bornée à 50 Mo ; `commonpath` pour les fichiers statiques | idem |
+| `/api/ouvrage` : 19,7 s pour 297 équipements | décompte des E/S calculé une fois : 0,6 s | idem |
+| E/S sur voie, carte ou nature impossibles | refus à la saisie ; validation du matériel et exports XSY / TXT refusés tant qu'une incohérence existe | idem, `tests/test_cartes_es.py` |
+| Carte du catalogue déclarée avec d'autres voies ou une autre nature | la référence impose nature et voies | idem |
+| M340 supposé sans source d'acquisition | calcul refusé tant que la source n'est pas choisie ; cadre de démarrage explicite | idem, `TestDemarrageMateriel` |
+| Archive .xlsx piégée | 200 Mo décompressés au plus | — |
+| Coupure pendant l'enregistrement | `fsync` avant le remplacement du fichier | — |
+| Typage du serveur web hors CI | 15 erreurs corrigées, `mypy genvar sorep_web` dans la CI | CI « Statique » |
+| Réserve de voies (retour 15 h 08) | réglable à l'étape Matériel, 20 % au moins (moteur et interface) | `test_reserve_*` |
+| « Deux CPU sur un rack » (retour 15 h 08) | un processeur M580 BME P58 est un module double largeur (emplacements 00-01, règle du catalogue) : affiché comme un seul module | `test_processeur_m580_*` |
+| Pas de bouton vers la Recette depuis Variables | pied d'étape ajouté, reconstruit à chaque rendu | `test_variables_menent_a_la_recette` |
+| Exports dans la Recette | bloc « Exports » par destination : automate (XSY E/S, TXT, XSY table d'échange), supervision TOPKAPI, documents Excel ; « configuration automate » et « SOFREL » affichés « non disponible » avec la raison (format non décrit), jamais simulés | `test_exports_regroupes_dans_la_recette` |
+
+Résultats : `pytest tests` 717 réussis (5 ignorés : Qt), `pytest tests_web` 88 réussis, `ruff`, `mypy genvar sorep_web`,
+`node --check`, audit des données (0 détection).

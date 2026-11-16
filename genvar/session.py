@@ -30,6 +30,9 @@ RE_ADRESSE_ECHANGE = re.compile(r"^%MW\d+(\.\d{1,2})?$")
 RE_ADRESSE_PHYSIQUE = re.compile(r"^%(I|Q|IW|QW)[\d.]+$")
 
 
+RESERVE_MINIMALE = 0.20      # réserve de voies par carte en dessous de laquelle on ne descend pas
+
+
 class RegleMetier(Exception):
     """Opération refusée par une règle de l'outil ; le message s'affiche tel quel."""
 
@@ -2188,12 +2191,31 @@ class Session:
         if any(m.rack == rack and m.position == position for m in self.ouvrage.modules):
             raise RegleMetier(f"Un module est déjà déclaré en {rack}.{position}.")
         self._verifier_emplacement_libre(rack, position)
+        # Audit du 16/11 : une référence du catalogue impose sa nature et son nombre de voies.
+        carte = self._carte_catalogue(reference)
+        if carte is not None:
+            if carte["nature"] != nature or int(carte["voies"]) != voies:
+                raise RegleMetier(f"{carte['reference']} est une carte {carte['nature']} de {carte['voies']} voies "
+                                  f"(catalogue) : nature {nature} et {voies} voies refusées.")
         m = Module(rack, position, nature, voies, reference.strip(), libelle.strip())
         self.ouvrage.modules.append(m)
         self.ouvrage.modules.sort(key=lambda x: (x.rack, x.position))
         self.ouvrage.materiel_valide = False
         self._change(devalider=False)
         return m.cle
+
+    @staticmethod
+    def _carte_catalogue(reference):
+        """Carte du catalogue matériel correspondant à la référence (espaces ignorés), sinon None."""
+        ref = re.sub(r"\s+", "", reference or "").upper()
+        if not ref:
+            return None
+        try:
+            from .materiel import catalogue
+            cartes = catalogue()["_cartes"]
+        except Exception:               # catalogue illisible : la saisie libre reste possible, signalée ailleurs
+            return None
+        return next((c for r, c in cartes.items() if re.sub(r"\s+", "", r).upper() == ref), None)
 
     def _rack_retenu(self, rack):
         return next((r for r in self.ouvrage.racks if int(r.get("numero", -1)) == int(rack)), None)
@@ -2310,9 +2332,13 @@ class Session:
         self._change(devalider=False)
 
     def definir_reserve(self, taux):
-        taux = float(taux)
-        if not 0 <= taux < 1:
-            raise RegleMetier("Réserve minimale : entre 0 et 99 %.")
+        try:
+            taux = float(taux)
+        except (TypeError, ValueError):
+            raise RegleMetier("Réserve minimale : un pourcentage, 20 % au moins.")
+        # Retour du 16/11 (15 h 08) : la réserve se règle à l'étape Matériel, jamais sous 20 %.
+        if not (RESERVE_MINIMALE <= taux <= 0.9) or taux != taux:
+            raise RegleMetier(f"Réserve minimale : entre {RESERVE_MINIMALE:.0%} et 90 % des voies de chaque carte.")
         self.ouvrage.reserve_min = taux
         self.ouvrage.materiel_valide = False
         self._change(devalider=False)
@@ -2537,6 +2563,30 @@ class Session:
         for autre in self.points():
             if (autre.ident_eq, autre.cle) != (p.ident_eq, p.cle) and autre.adresse.upper() == a:
                 raise RegleMetier(f"Adresse {a} déjà utilisée par {autre.nom}.")
+        self._verifier_voie_sur_carte(p.point, a)
+
+    def _verifier_voie_sur_carte(self, point, adresse):
+        """Audit du 16/11 : une voie ne peut viser qu'une carte déclarée, de même nature, dans ses voies.
+        Le contrôle s'applique dès que des cartes sont déclarées (sans cartes, l'adresse reste une saisie libre
+        signalée par la recette)."""
+        if not self.ouvrage.modules:
+            return
+        m = re.fullmatch(r"%(?:IW|QW|I|Q)(\d{1,2})\.(\d{1,2})\.(\d{1,3})", adresse.strip().upper())
+        if not m:
+            return
+        cle, voie = f"{int(m[1])}.{int(m[2])}", int(m[3])
+        mod = next((x for x in self.ouvrage.modules if x.cle == cle), None)
+        if mod is None:
+            raise RegleMetier(f"Aucune carte n'est déclarée en {cle} : placez l'E/S sur une carte du rack.")
+        if mod.nature != point:
+            raise RegleMetier(f"La carte {cle} ({mod.reference or mod.nature}) reçoit des {mod.nature}, pas une {point}.")
+        if voie >= mod.voies:
+            raise RegleMetier(f"La carte {cle} n'a que {mod.voies} voies (0 à {mod.voies - 1}) : voie {voie} impossible.")
+
+    def erreurs_materiel(self):
+        """Erreurs bloquantes de cohérence carte / voie (module absent, nature, voie hors carte, doublon)."""
+        from .cartes_es import controler
+        return [msg for niveau, _rep, msg, _i in controler(self.points(), self.ouvrage.modules) if niveau == "Erreur"]
 
     def ajouter_es(self, ident_eq, point, code, designation, type_logique=None):
         """E/S supplémentaire propre à l'équipement (famille ES). Renvoie sa clé."""
@@ -2669,6 +2719,9 @@ class Session:
         if valide:
             if not self.ouvrage.modules:
                 raise RegleMetier("Aucune carte : calculez ou déclarez d'abord le matériel.")
+            erreurs = self.erreurs_materiel()
+            if erreurs:
+                raise RegleMetier(f"Matériel incohérent ({len(erreurs)} erreur(s)) : {erreurs[0]} Corrigez avant de valider.")
             _, manquantes, _ = self.apercu_implantation()
             if manquantes:
                 detail = ", ".join(f"{n} {k}" for k, n in manquantes.items())

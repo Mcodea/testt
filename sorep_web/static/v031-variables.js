@@ -119,6 +119,9 @@ function vueVariablesV31(){
  document.getElementById('v31-var-more').onclick=()=>v31VariableMenu();
  document.getElementById('v31-prev-page').onclick=()=>{E.v31Page--;vueVariablesV31();};
  document.getElementById('v31-next-page').onclick=()=>{E.v31Page++;vueVariablesV31();};
+ // Retour du 16/11 (15 h 08) : l'écran Variables n'avait pas de pied d'étape, donc pas de bouton vers la Recette.
+ // Il est reconstruit à chaque rendu de l'écran (filtres, pages, détail compris).
+ if(typeof piedEtape==='function')requestAnimationFrame(()=>piedEtape());
 }
 async function v31ReloadVariables(){E.detailEtape=await api('/api/variables');try{E.v31Tele=await api('/api/supervision');}catch(_){E.v31Tele={lignes:[]};}vueVariablesV31();}
 async function v31ValidateProposals(){

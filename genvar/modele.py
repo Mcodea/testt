@@ -277,6 +277,8 @@ class Ouvrage:
         with open(provisoire, "w", encoding="utf-8") as f:
             json.dump({"format": "ouvrage-genvar", "version": 1, "ouvrage": self.vers_dict()},
                       f, ensure_ascii=False, indent=1)
+            f.flush()
+            os.fsync(f.fileno())         # coupure de courant : le fichier remplacé est complet sur le disque
         os.replace(provisoire, chemin)
 
     @classmethod

@@ -23,5 +23,6 @@ class TestGammeNonDecrite(unittest.TestCase):
         self.assertEqual(materiel.plateforme_materiel("M580 BMEP58")[0], "M580")
         self.assertEqual(materiel.plateforme_materiel("SOFREL S4W")[0], "S4W")
         self.assertEqual(materiel.plateforme_materiel("STBNIP2212")[0], "STB")     # gamme décrite le 12/11
-        self.assertEqual(materiel.plateforme_materiel("")[0], "M340")       # non renseigné : comportement documenté
+        with self.assertRaisesRegex(materiel.CatalogueMaterielErreur, "non renseignée"):   # audit du 16/11
+            materiel.plateforme_materiel("")
         self.assertEqual(materiel.proposer(_points(), "BMX P34 2020").plateforme, "M340")

@@ -9,6 +9,7 @@ import os
 import re
 import tempfile
 from copy import deepcopy
+from typing import Any
 
 from genvar import chemins
 from genvar.session import RegleMetier
@@ -102,7 +103,7 @@ def lire():
         if not isinstance(valeurs, dict):
             raise ValueError("Le document doit contenir un objet JSON.")
         # Conserver les valeurs enregistrées, ne jamais les remplacer par des valeurs par défaut.
-        resultat = deepcopy(DEFAUT)
+        resultat: dict[str, Any] = deepcopy(DEFAUT)
         for groupe in GROUPES:
             if groupe in valeurs:
                 if not isinstance(valeurs[groupe], list):
