@@ -92,7 +92,7 @@ def plateforme_materiel(automate):
     proposée à sa place (retour d'essai n° 8 du 12/11/2026)."""
     if (automate or "").strip() and gamme(automate) is None:
         raise CatalogueMaterielErreur(
-            f"Automate « {automate} » : cette gamme n'est pas décrite dans le catalogue matériel d'OGIAS. Aucune "
+            f"Source « {automate} » : cette gamme n'est pas décrite dans le catalogue matériel d'OGIAS. Aucune "
             "configuration n'est proposée, pour ne pas présenter le matériel d'une autre gamme. Gammes prises en "
             "charge : Modicon M340 (BMX P34…), Modicon M580 (BME P58 / H58…), Advantys STB (STB NIP 2212), "
             "SOFREL S4W.")
@@ -295,7 +295,8 @@ def proposer(points, automate="", profil="", reserve=0.2, chemin=None, min_carte
     if plat == "S4W":
         return proposer_s4w(points, reserve)
     if plat == "STB":
-        return proposer_stb(points, reserve, min_cartes=min_cartes, emplacements_libres=emplacements_libres)
+        return proposer_stb(points, reserve, min_cartes=min_cartes, emplacements_libres=emplacements_libres,
+                            automate=automate)
     cat = catalogue(chemin)
     profil = profil if profil in cat["profils"] else cat["profil_defaut"]
     p = Proposition(plat, profil, remarques=[remarque] if remarque else [])
@@ -418,7 +419,7 @@ def nomenclature(racks, modules, chemin=None):
 
 
 # ---------------------------------------------------------------------------- Advantys STB
-def proposer_stb(points, reserve=0.2, chemin=None, min_cartes=None, emplacements_libres=0):
+def proposer_stb(points, reserve=0.2, chemin=None, min_cartes=None, emplacements_libres=0, automate=""):
     """Composition d'îlot(s) Advantys STB : interface réseau (NIM), distribution 24 V CC (PDM), modules d'E/S
     (profil du catalogue), embases, plaque de terminaison. Contrôles des guides Schneider : 32 modules d'E/S au
     plus par îlot, courant du bus logique fourni par le NIM (1 200 mA de 0 à 60 °C).
@@ -428,7 +429,14 @@ def proposer_stb(points, reserve=0.2, chemin=None, min_cartes=None, emplacements
     n'est donc proposée ni inventée."""
     cat = catalogue_stb(chemin)
     profil = cat["profil_defaut"]
-    pr, nim, pdm = cat["profils"][profil], cat["nim"], cat["pdm"]
+    pr, nim, pdm = cat["profils"][profil], dict(cat["nim"]), cat["pdm"]
+    # Interface réseau nommée dans la source de l'ouvrage (ex. STB NIP 2311) : la référence est reprise telle
+    # quelle ; seules les limites du STB NIP 2212 sont documentées dans le catalogue, appliquées à titre indicatif.
+    m = re.search(r"STBN[IO][A-Z]?\d{4}", _sans_espace(automate))
+    nim_choisi = m and m.group(0) != _sans_espace(nim["reference"])
+    if nim_choisi:
+        ref = m.group(0)
+        nim["reference"] = f"{ref[:3]} {ref[3:6]} {ref[6:]}"
     p = Proposition("STB", profil, applicable=False, remarques=[
         "Îlot à saisir dans le logiciel Advantys dans l'ordre de la composition (emplacement / nœud), puis à "
         "télécharger dans le NIM.",
@@ -437,6 +445,10 @@ def proposer_stb(points, reserve=0.2, chemin=None, min_cartes=None, emplacements
         "adresse n'est proposée.",
         "Gamme Advantys STB commercialisée avec annonce de fin de vie (fin de fabrication 01/12/2027) : pour un "
         "ouvrage neuf, vérifier la gamme de remplacement (Edge I/O NTS)."])
+    if nim_choisi:
+        p.remarques.append(f"Interface réseau {nim['reference']} reprise de la source de l'ouvrage : ses limites (courant "
+                           "du bus logique, nombre de modules) ne sont pas dans le catalogue ; celles du STB NIP 2212 "
+                           "sont appliquées à titre indicatif, à vérifier sur sa fiche.")
     modules = []
     for nature, nb in compter(points).items():
         ref = pr[nature]

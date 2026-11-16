@@ -14,7 +14,7 @@ class TestRetoursEssai(ServeurNavigateur):
                                                    'code': 'XTST', 'libelle': 'Lieu fictif'})
         self.api('/api/fiche-ouvrage', {'action': 'creer', 'identification': {
             'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': f'{40 + self.numero:02d}',
-            'libelle': 'Essai du 12/11', 'automate': 'M340', 'revision': 'A'}})
+            'libelle': 'Essai du 12/11', 'automate': 'Sch - M340', 'revision': 'A'}})
         self.context = self.browser.new_context(viewport={'width': 1600, 'height': 1000})
         self.addCleanup(self.context.close)
         self.page = self.context.new_page()
@@ -161,7 +161,7 @@ class TestEtatVide(ServeurNavigateur):
                                                    'code': 'XTST', 'libelle': 'Lieu fictif'})
         self.api('/api/fiche-ouvrage', {'action': 'creer', 'identification': {
             'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': '88', 'libelle': 'Vide',
-            'automate': 'M340', 'revision': 'A'}})
+            'automate': 'Sch - M340', 'revision': 'A'}})
         context = self.browser.new_context(viewport={'width': 1500, 'height': 1000})
         self.addCleanup(context.close)
         page = context.new_page()
@@ -183,7 +183,7 @@ class TestVoiesCarte(ServeurNavigateur):
                                                    'code': 'XTST', 'libelle': 'Lieu fictif'})
         self.api('/api/fiche-ouvrage', {'action': 'creer', 'identification': {
             'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': '77', 'libelle': 'Voies',
-            'automate': 'M340', 'revision': 'A'}})
+            'automate': 'Sch - M340', 'revision': 'A'}})
         i = self.api('/api/equipement/ajouter', {'type': 'MV', 'numero': '01', 'se': '00'})['ident']
         self.api('/api/equipement/proposition', {'ident_eq': i, 'decision': 'retenir'})
         self.api('/api/equipement/valider', {'idents': [i], 'valide': True})
@@ -222,7 +222,7 @@ class TestMaterielComplet(ServeurNavigateur):
                                                    'code': 'XTST', 'libelle': 'Lieu fictif'})
         self.api('/api/fiche-ouvrage', {'action': 'creer', 'identification': {
             'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': '66', 'libelle': 'Matériel',
-            'automate': 'M340', 'revision': 'A'}})
+            'automate': 'Sch - M340', 'revision': 'A'}})
         i = self.api('/api/equipement/ajouter', {'type': 'PM', 'numero': '01', 'se': '00'})['ident']
         self.api('/api/equipement/proposition', {'ident_eq': i, 'decision': 'retenir'})
         self.api('/api/equipement/valider', {'idents': [i], 'valide': True})

@@ -598,10 +598,10 @@ function vueOuvrage() {
     contenu();
     return;
   }
-  $("#vue").innerHTML = `<aside><div class="aside-tete"><h2>Ouvrage → UF → équipements</h2>
-      ${E.ouvrage.en_conception ? `<p class="aide-champs">Validez d’abord la création de l’ouvrage avant d’ajouter des équipements.</p>` : `<input id="recherche" placeholder="Rechercher un repère, un libellé, un type…" value="${esc(E.recherche)}">`}
-      <div class="aside-btns" ${E.ouvrage.en_conception ? "hidden" : ""}><button id="b-uf">+ Unité fonctionnelle</button><button class="prim" id="b-eq">+ Équipement</button>
-      <button id="b-import">Importer une liste…</button></div></div><div class="arbre" id="arbre"></div></aside>
+  $("#vue").innerHTML = `<aside><div class="aside-tete"><div class="aside-titre"><h2>Arborescence de l'ouvrage</h2><span class="aside-compte" title="Équipements de l'ouvrage">${E.ouvrage.equipements.length} éq.</span></div>
+      ${E.ouvrage.en_conception ? `<p class="aide-champs">Validez d’abord la création de l’ouvrage avant d’ajouter des équipements.</p>` : `<label class="aside-recherche" title="Rechercher un repère, un libellé, un type">${V31.icon("search",14)}<input id="recherche" placeholder="Filtrer : repère, libellé, type…" aria-label="Rechercher un repère, un libellé, un type" value="${esc(E.recherche)}"></label>`}
+      <div class="aside-btns" role="toolbar" aria-label="Commandes de l'arborescence" ${E.ouvrage.en_conception ? "hidden" : ""}><button class="prim" id="b-eq" title="Ajouter un équipement">+ Équipement</button><button id="b-uf" title="Ajouter une unité fonctionnelle">+ UF</button>
+      <button id="b-import" title="Importer une liste d'équipements">Importer…</button></div></div><div class="arbre" id="arbre"></div></aside>
     <section class="contenu" id="contenu"></section>`;
   if (!E.ouvrage.en_conception) {
     $("#recherche").oninput = ev => { E.recherche = ev.target.value; arbre(); };
@@ -685,6 +685,12 @@ function selectListe(id, label, valeur, options, vide = "— Non défini —") {
           const lignes = entries.filter(o => (o.regie || "AUTRE").toUpperCase() === code);
           return lignes.length ? `<optgroup label="${esc(nom)}">${lignes.map(opt).join("")}</optgroup>` : "";
         }).join("")
+    : id === "automate"
+    // Sources classées : automate, télégestion, E/S déportées (catégories du référentiel d'identification).
+    ? CATEGORIES_SOURCES.map(cat => {
+          const lignes = entries.filter(o => categorieSource(o.code) === cat);
+          return lignes.length ? `<optgroup label="${esc(cat === "Autres" ? "Autres sources" : cat)}">${lignes.map(opt).join("")}</optgroup>` : "";
+        }).join("")
     : entries.map(opt).join("");
   return `<label for="${id}">${esc(label)}</label><div class="select-avec-aide"><select id="${id}" data-choix="${id}">
     <option value="">${esc(vide)}</option>${choix}${ancien}</select></div>`;
@@ -711,7 +717,7 @@ function detailOuvrage(c) {
      ${o.referentiel.adoption_annulable ? `<button id="ref-annuler-adoption">Annuler l'adoption</button>` : ""}
      ${o.referentiel.sauvegarde_annulation_adoption ? `<a href="/api/export?quoi=sauvegarde_annulation_adoption" download>Télécharger l'état avant annulation</a>` : ""}</div>` : ""}
    ${!o.en_conception && (!okLieu || !okCode) ? `<div class="avert" id="fiche-identification-avert">Pour commencer : sélectionnez un lieu (4 caractères) et un type d'ouvrage (code à 2 lettres). Vous pouvez enrichir ces listes avec « Gérer les listes ».</div>` : ""}
-   ${o.en_conception ? `<div class="bloc">` : `<details class="bloc fiche-ouvrage" id="fiche-ouvrage" ${ficheOuverte ? "open" : ""}>`}${o.en_conception ? `<div class="bloc-tete">` : `<summary class="bloc-tete" title="Afficher ou replier la fiche d'identification">`}<h2>Identification de l'ouvrage</h2><span class="aide">${esc(i.mode === "Existant" ? "Projet existant" : "Projet neuf")}</span>${o.en_conception ? "" : `<span class="fiche-resume"><b class="mono">${esc(o.prefixe || "")}</b> · ${esc(i.libelle || "sans libellé")} · automate ${esc(i.automate || "non renseigné")} · révision ${esc(i.revision || "—")}</span>`}<div class="droite"><button id="gerer-listes" type="button">${V31.icon("settings",14)} Gérer les listes…</button></div>${o.en_conception ? `</div>` : `</summary>`}
+   ${o.en_conception ? `<div class="bloc">` : `<details class="bloc fiche-ouvrage" id="fiche-ouvrage" ${ficheOuverte ? "open" : ""}>`}${o.en_conception ? `<div class="bloc-tete">` : `<summary class="bloc-tete" title="Afficher ou replier la fiche d'identification">`}<h2>Identification de l'ouvrage</h2><span class="aide">${esc(i.mode === "Existant" ? "Projet existant" : "Projet neuf")}</span>${o.en_conception ? "" : `<span class="fiche-resume"><b class="mono">${esc(o.prefixe || "")}</b> · ${esc(i.libelle || "sans libellé")} · source ${esc(i.automate || "non renseignée")} · révision ${esc(i.revision || "—")}</span>`}<div class="droite"><button id="gerer-listes" type="button">${V31.icon("settings",14)} Gérer les listes…</button></div>${o.en_conception ? `</div>` : `</summary>`}
      ${o.en_conception ? `<div class="creation-identite">
        <div class="creation-projet">${esc(i.mode === "Existant" ? "Projet existant — conservation des adresses" : "Projet neuf — génération et adressage")}</div>
        <div class="creation-grille">
@@ -724,7 +730,7 @@ function detailOuvrage(c) {
        </div>
        <details class="creation-avance"><summary>Paramètres du projet <span>facultatifs au démarrage</span></summary>
         <div class="creation-grille">
-          <div class="creation-champ">${selectListe("automate", "Automate / télégestion", i.automate, l.automates)}</div>
+          <div class="creation-champ">${selectListe("automate", "Source d'acquisition", i.automate, l.automates, "— Automate, télégestion ou E/S déportées —")}</div>
           <div class="creation-champ"><label for="communication-choix">Communication</label><button class="selection-multiple" id="communication-choix" data-valeur="${esc(i.communication || "")}" type="button">${esc(i.communication || "— Choisir les protocoles —")} <span aria-hidden="true">▾</span></button></div>
           <div class="creation-champ">${champ("revision", "Révision", i.revision, 'maxlength="4" title="Règle documentaire conservée"')}</div>
         </div>
@@ -737,7 +743,7 @@ function detailOuvrage(c) {
        <label for="code-ouvrage-affiche">Code généré</label><div class="code-ouvrage-affiche" id="code-ouvrage-affiche" aria-live="polite"></div>
        <input id="code_ouvrage" type="hidden" value="${esc(i.code_ouvrage)}">
        ${champ("localisation", "Localisation précise", i.localisation, 'placeholder="Adresse, site ou précision géographique"')}
-       ${selectListe("automate", "Automate", i.automate, l.automates)}
+       ${selectListe("automate", "Source d'acquisition", i.automate, l.automates, "— Automate, télégestion ou E/S déportées —")}
        <label for="communication-choix">Communication</label><button class="selection-multiple" id="communication-choix" data-valeur="${esc(i.communication || "")}" type="button">${esc(i.communication || "— Choisir les protocoles —")} <span aria-hidden="true">▾</span></button>
        ${champ("revision", "Révision", i.revision, 'maxlength="4" title="Règle documentaire à valider : non modifiée automatiquement"')}
 </div>`}
@@ -1261,7 +1267,9 @@ function modaleChoix(titre, label, options, valeur, action) {
   m.querySelector("#m-ok").onclick = async () => { try { await action(m.querySelector("#m-v").value); fermerModale(); } catch (e) { m.querySelector("#m-err").textContent = e.message; } };
 }
 /* ------------------------------------------------------------------ listes d'identification, indépendantes des projets */
-const GROUPES_LISTES = [["lieux", "Lieux"], ["types_ouvrage", "Types d'ouvrages"], ["automates", "Automates"], ["protocoles", "Communications"]];
+const GROUPES_LISTES = [["lieux", "Lieux"], ["types_ouvrage", "Types d'ouvrages"], ["automates", "Sources d'acquisition"], ["protocoles", "Protocoles"]];
+const CATEGORIES_SOURCES = ["Automate", "Télégestion", "E/S déportées", "Autres"];
+const categorieSource = v => (E.listes?.categories_sources || {})[v] || "Autres";
 // Explication du repère d'équipement selon le format de l'ouvrage (charte du 9 novembre : 12 caractères).
 function texteRepere(lieu, code, numero, okLieu, okCode) {
   const charte = (E.ouvrage || {}).format_repere === "12";
@@ -1276,11 +1284,12 @@ function modaleListes(groupe = "lieux", edition = "") {
   const old = enEdition ? (codeLibelle ? enEdition.code : enEdition) : "";
   const m = ouvrirModale(`<div class="boite-tete"><h2>Référentiel — identification de l'ouvrage</h2><p>Les changements de liste ne modifient jamais les ouvrages déjà enregistrés.</p></div>
     <div class="boite-corps"><div class="onglets-listes">${GROUPES_LISTES.map(([id, nom]) => `<button class="${groupe === id ? "active" : ""}" data-liste="${id}">${nom}</button>`).join("")}</div>
-    <div class="liste-config">${tab.length ? `<table><thead><tr><th>${codeLibelle ? "Code" : "Valeur"}</th>${codeLibelle ? `<th>${groupe === "lieux" ? "Commune" : "Libellé"}</th>` : ""}${groupe === "lieux" ? "<th>Régie</th>" : ""}<th>Actions</th></tr></thead><tbody>
-      ${tab.map(x => { const v = codeLibelle ? x.code : x; return `<tr><td class="mono">${esc(v)}</td>${codeLibelle ? `<td>${esc(x.libelle)}</td>` : ""}${groupe === "lieux" ? `<td>${esc(x.regie || "Autre")}</td>` : ""}<td><button data-edit-ref="${esc(v)}">Modifier</button> <button class="danger" data-sup-ref="${esc(v)}">Retirer</button></td></tr>`; }).join("")}</tbody></table>` : `<div class="vide-bloc">Liste vide : ajoutez la première valeur.</div>`}</div>
+    <div class="liste-config">${tab.length ? `<table><thead><tr><th>${codeLibelle ? "Code" : "Valeur"}</th>${codeLibelle ? `<th>${groupe === "lieux" ? "Commune" : "Libellé"}</th>` : ""}${groupe === "lieux" ? "<th>Régie</th>" : ""}${groupe === "automates" ? "<th>Catégorie</th>" : ""}<th>Actions</th></tr></thead><tbody>
+      ${tab.map(x => { const v = codeLibelle ? x.code : x; return `<tr><td class="mono">${esc(v)}</td>${codeLibelle ? `<td>${esc(x.libelle)}</td>` : ""}${groupe === "lieux" ? `<td>${esc(x.regie || "Autre")}</td>` : ""}${groupe === "automates" ? `<td>${esc(categorieSource(v))}</td>` : ""}<td><button data-edit-ref="${esc(v)}">Modifier</button> <button class="danger" data-sup-ref="${esc(v)}">Retirer</button></td></tr>`; }).join("")}</tbody></table>` : `<div class="vide-bloc">Liste vide : ajoutez la première valeur.</div>`}</div>
     <h3>${enEdition ? "Modifier une valeur" : "Ajouter une valeur"}</h3><div class="champs">
       ${groupe === "lieux" ? `<label for="ref-libelle">Commune</label><input id="ref-libelle" value="${esc(enEdition ? enEdition.libelle : "")}" maxlength="100" placeholder="ex. Athis-Mons">` : ""}
       <label for="ref-code">${codeLibelle ? "Code" : "Valeur"}</label><div class="code-lieu"><input id="ref-code" value="${esc(old)}" ${groupe === "lieux" ? 'maxlength="4" style="text-transform:uppercase" placeholder="4 lettres"' : groupe === "types_ouvrage" ? 'maxlength="2" style="text-transform:uppercase"' : 'maxlength="100"'}>${groupe === "lieux" ? '<span class="aide" id="ref-prop">Le code est proposé par la charte à partir du nom de la commune.</span>' : ""}</div>
+      ${groupe === "automates" ? `<label for="ref-regie">Catégorie</label><select id="ref-regie">${CATEGORIES_SOURCES.map(c => `<option ${categorieSource(old) === c ? "selected" : ""}>${c}</option>`).join("")}</select>` : ""}
       ${groupe === "types_ouvrage" ? `<label for="ref-libelle">Libellé</label><input id="ref-libelle" value="${esc(enEdition ? enEdition.libelle : "")}" maxlength="100">` : ""}
       ${groupe === "lieux" ? `<label>Régie</label><select id="ref-regie"><option value="ESB" ${(enEdition?.regie || "AUTRE").toUpperCase() === "ESB" ? "selected" : ""}>ESB</option><option value="RESO" ${(enEdition?.regie || "AUTRE").toUpperCase() === "RESO" ? "selected" : ""}>RESO</option><option value="AUTRE" ${(enEdition?.regie || "AUTRE").toUpperCase() === "AUTRE" ? "selected" : ""}>Autre</option></select>` : ""}
     </div><div class="erreur-form" id="ref-err"></div></div>
@@ -1295,7 +1304,7 @@ function modaleListes(groupe = "lieux", edition = "") {
   if (m.querySelector("#ref-annuler")) m.querySelector("#ref-annuler").onclick = () => modaleListes(groupe);
   if (groupe === "lieux") proposerCodeLieu(m, old);
   m.querySelector("#ref-ok").onclick = async () => {
-    const payload = {action: enEdition ? "modifier" : "ajouter", groupe, ancien: old, code:m.querySelector("#ref-code").value, libelle:codeLibelle ? m.querySelector("#ref-libelle").value : "", regie:groupe === "lieux" ? m.querySelector("#ref-regie").value : ""};
+    const payload = {action: enEdition ? "modifier" : "ajouter", groupe, ancien: old, code:m.querySelector("#ref-code").value, libelle:codeLibelle ? m.querySelector("#ref-libelle").value : "", regie:(groupe === "lieux" || groupe === "automates") ? m.querySelector("#ref-regie").value : ""};
     try { await api("/api/listes-ouvrage/action", payload); await actualiser(); toast("Référentiel mis à jour."); }
     catch (e) { m.querySelector("#ref-err").textContent = e.message; }
   };
@@ -2075,17 +2084,21 @@ function vueRack(rack, modules, plusieurs) {
   const cases = [];
   const occ = Object.fromEntries((rack.occupation || []).map(o => [o.position, o]));
   const poste = String(rack.reference).startsWith("S4W");
+  // Rack retenu (M340 / M580) : chaque emplacement s'équipe d'un clic, selon ce qu'il peut recevoir.
+  const equipable = !poste && Array.isArray(rack.occupation);
+  const cle = pos => `${rack.numero}.${pos}`;
+  const actif = (role, pos, titre) => equipable ? ` role="button" tabindex="0" data-emplacement="${esc(cle(pos))}" data-role="${role}" title="${esc(titre)}"` : ` title="${esc(titre)}"`;
   if (!poste && rack.alimentation !== undefined) {
     const choisie = rack.alimentation && !/à choisir/.test(rack.alimentation);
-    cases.push(`<div class="emplacement alim ${choisie ? "" : "a-choisir"}" title="Emplacement CPS : alimentation"><span class="pos">CPS</span><b>${esc(choisie ? rack.alimentation : "Alimentation")}</b><small>${choisie ? "alimentation" : "à choisir"}</small></div>`);
+    cases.push(`<div class="emplacement alim ${choisie ? "" : "a-choisir"}"${actif("alimentation", "CPS", "Emplacement CPS réservé à l'alimentation — cliquer pour la choisir")}><span class="pos">CPS</span><b>${esc(choisie ? rack.alimentation : "Alimentation")}</b><small>${choisie ? "alimentation" : "à choisir"}</small></div>`);
   }
   for (let pos = 0; pos < rack.positions; pos++) {
     const carte = modules.find(x => x.module === `${rack.numero}.${pos}`);
     const o = occ[pos];
     if (o) { const role = o.role === "processeur" ? "Processeur" : "Communication";
-      cases.push(`<div class="emplacement ${o.role === "processeur" ? "cpu" : "com"} ${/à choisir/.test(o.reference) ? "a-choisir" : ""}" title="Emplacement ${pos} : ${role.toLowerCase()}"><span class="pos">${pos}</span><b>${esc(/à choisir/.test(o.reference) ? role : o.reference)}</b><small>${/à choisir/.test(o.reference) ? "à choisir" : role.toLowerCase()}</small></div>`); continue; }
+      cases.push(`<div class="emplacement ${o.role === "processeur" ? "cpu" : "com"} ${/à choisir/.test(o.reference) ? "a-choisir" : ""}"${actif(o.role, pos, `Emplacement ${pos} réservé : ${role.toLowerCase()} — cliquer pour ${o.role === "processeur" ? "choisir le processeur" : "changer ou retirer le module"}`)}><span class="pos">${pos}</span><b>${esc(/à choisir/.test(o.reference) ? role : o.reference)}</b><small>${/à choisir/.test(o.reference) ? "à choisir" : role.toLowerCase()}</small></div>`); continue; }
     if (rack.cpu.includes(pos)) { cases.push(`<div class="emplacement cpu" title="Position ${pos} : processeur"><span class="pos">${pos}</span><b>CPU</b></div>`); continue; }
-    if (!carte) { cases.push(`<div class="emplacement libre" title="Position ${pos} libre"><span class="pos">${pos}</span><span>libre</span></div>`); continue; }
+    if (!carte) { cases.push(`<div class="emplacement libre"${actif("libre", pos, `Emplacement ${pos} libre — cliquer pour y installer une carte d'E/S ou un module de communication`)}><span class="pos">${pos}</span><span>libre</span>${equipable ? '<small class="ajout">+ installer</small>' : ""}</div>`); continue; }
     const taux = carte.voies ? carte.occupees / carte.voies : 0;
     const etat = carte.occupees > carte.voies ? "err" : carte.sous_seuil && carte.occupees ? "al" : "ok";
     cases.push(`<button type="button" class="emplacement carte n-${carte.nature}" data-carte="${esc(carte.module)}" title="${esc(carte.reference)} — ${carte.occupees}/${carte.voies} voies occupées, réserve ${carte.reserve}">
@@ -2103,7 +2116,7 @@ function blocComposition(m) {
   const opt = (liste, val, vide) => `<option value="">${vide}</option>` + liste.map(x => `<option value="${esc(x.reference)}" ${x.reference === val ? "selected" : ""}>${esc(x.reference)} — ${esc(x.description || ((x.entree || "") + (x.puissance_w ? ", " + x.puissance_w + " W" : "") + (x.redondante ? ", redondante" : "")))}</option>`).join("");
   const parNature = n => m.cartes_catalogue.filter(x => x.nature === n);
   const nat = {ET: "Entrées TOR", ST: "Sorties TOR", EA: "Entrées analogiques", SA: "Sorties analogiques"};
-  return `<div class="bloc"><div class="bloc-tete"><h2>Composition de l'automate</h2><span class="aide">vos choix ; ce qui n'est pas choisi reste « à choisir », jamais deviné</span></div>
+  return `<div class="bloc"><div class="bloc-tete"><h2>Choix par défaut du calcul automatique</h2><span class="aide">utilisés par « Recalculer le matériel » ; pour un emplacement précis, cliquez-le dans le rack. Ce qui n'est pas choisi reste « à choisir », jamais deviné.</span></div>
     <div class="grille-compo">
       <label>Alimentation (emplacement CPS)<select data-cfg="alimentation">${opt(m.alimentations || [], c.alimentation, "— à choisir —")}</select></label>
       <label>Processeur<select data-cfg="processeur">${opt(m.processeurs || [], c.processeur, "— d'après la fiche ouvrage —")}</select></label>
@@ -2122,7 +2135,66 @@ function blocNomenclature(m) {
     <table><thead><tr><th>Référence</th><th>Désignation</th><th class="num">Quantité</th><th>Rôle</th></tr></thead><tbody>
     ${m.nomenclature.map(x => `<tr><td class="mono">${esc(x.reference)}</td><td>${esc(x.designation)}</td><td class="num">${x.quantite}</td><td>${esc(x.role)}</td></tr>`).join("")}</tbody></table></div>`;
 }
+// Fenêtre d'un emplacement du rack : ce que l'emplacement peut recevoir (réservé ou libre), rien d'autre.
+function modaleEmplacement(cle, role) {
+  const m = E.mat, d = E.es, [rack, pos] = cle.split(".");
+  const opt = (liste, val) => liste.map(x => `<option value="${esc(x.reference)}" ${x.reference === val ? "selected" : ""}>${esc(x.reference)} — ${esc(x.description || ((x.entree || "") + (x.puissance_w ? ", " + x.puissance_w + " W" : "") + (x.redondante ? ", redondante" : "")))}</option>`).join("");
+  const r = (m.racks || []).find(x => String(x.numero) === rack) || {};
+  const occ = (r.occupation || []).find(o => String(o.position) === pos);
+  const parNature = n => m.cartes_catalogue.filter(x => x.nature === n);
+  const NAT = {ET: "Entrées TOR", ST: "Sorties TOR", EA: "Entrées analogiques", SA: "Sorties analogiques"};
+  let titre, corps, action;
+  if (role === "alimentation") {
+    titre = `Rack ${rack} — emplacement CPS (alimentation)`;
+    corps = `<p class="aide-bloc">Emplacement réservé à l'alimentation. Le choix s'applique à l'emplacement CPS de chaque rack.</p>
+      <label for="e-ref">Alimentation</label><select id="e-ref"><option value="">— à choisir —</option>${opt(m.alimentations || [], (m.config || {}).alimentation)}</select>`;
+    action = async ref => api("/api/materiel/action", {action: "config", alimentation: ref});
+  } else if (role === "processeur") {
+    titre = `Rack ${rack} — emplacement ${pos} (processeur)`;
+    corps = `<p class="aide-bloc">Emplacement réservé au processeur (00, et 01 pour un M580).</p>
+      <label for="e-ref">Processeur</label><select id="e-ref"><option value="">— d'après la fiche ouvrage —</option>${opt(m.processeurs || [], (m.config || {}).processeur)}</select>`;
+    action = async ref => api("/api/materiel/action", {action: "config", processeur: ref});
+  } else if (role === "communication") {
+    titre = `Rack ${rack} — emplacement ${pos} (communication)`;
+    corps = `<p>Module installé : <b class="mono">${esc(occ ? occ.reference : "")}</b></p>
+      <label for="e-ref">Remplacer par</label><select id="e-ref">${opt(m.communications || [], occ && occ.reference)}</select>
+      <p class="aide-bloc">« Libérer l'emplacement » retire le module ; l'emplacement redevient libre.</p>`;
+    action = async ref => {
+      if (!occ || ref === occ.reference) return;
+      await api("/api/materiel/action", {action: "retirer_communication", rack, position: pos});
+      try { return await api("/api/materiel/action", {action: "installer_communication", rack, position: pos, reference: ref}); }
+      catch (err) { await api("/api/materiel/action", {action: "installer_communication", rack, position: pos, reference: occ.reference}); throw err; }
+    };
+  } else {
+    titre = `Rack ${rack} — emplacement ${pos} libre`;
+    corps = `<div class="choix-emplacement" role="radiogroup" aria-label="Type de module">
+        <label><input type="radio" name="e-type" value="carte" checked> Carte d'E/S</label>
+        ${(m.communications || []).length ? `<label><input type="radio" name="e-type" value="com"> Module de communication</label>` : ""}</div>
+      <div id="e-carte"><label for="e-ref">Carte</label><select id="e-ref">${["ET", "ST", "EA", "SA"].map(n => parNature(n).length ? `<optgroup label="${NAT[n]}">${parNature(n).map(x => `<option value="${esc(x.reference)}" data-nature="${x.nature}" data-voies="${x.voies}">${esc(x.reference)} — ${esc(x.signal || x.description)} · ${x.voies} voies</option>`).join("")}</optgroup>` : "").join("")}</select></div>
+      <div id="e-com" hidden><label for="e-com-ref">Module</label><select id="e-com-ref">${opt(m.communications || [], "")}</select></div>
+      <p class="aide-bloc">Les emplacements CPS (alimentation), du processeur et des modules de communication sont réservés : une carte ne peut pas y être posée.</p>`;
+    action = async () => {
+      const type = document.querySelector('input[name="e-type"]:checked')?.value;
+      if (type === "com") return api("/api/materiel/action", {action: "installer_communication", rack, position: pos, reference: $("#e-com-ref").value});
+      const o = $("#e-ref").selectedOptions[0];
+      return api("/api/modules", {action: "ajouter", rack, position: pos, nature: o.dataset.nature, voies: o.dataset.voies, reference: o.value});
+    };
+  }
+  const mod = ouvrirModale(`<div class="boite-tete"><h2>${esc(titre)}</h2><p>Toute modification remet le matériel « à valider ».</p></div>
+    <div class="boite-corps"><div class="champs-emplacement">${corps}</div><div class="erreur-form" id="m-err" role="alert"></div></div>
+    <div class="boite-pied">${role === "communication" ? '<button class="danger" id="e-liberer">Libérer l\'emplacement</button>' : ""}<span class="gauche"></span><button data-fermer>Annuler</button><button class="prim" id="e-ok">${role === "libre" ? "Installer" : "Appliquer"}</button></div>`, true);
+  mod.querySelectorAll('input[name="e-type"]').forEach(x => x.onchange = () => { const com = x.value === "com" && x.checked; mod.querySelector("#e-carte").hidden = com; mod.querySelector("#e-com").hidden = !com; });
+  const fin = async msg => { fermerModale(); toast(msg); E.es = await api("/api/es"); rechargerMateriel(); };
+  mod.querySelector("#e-ok").onclick = async () => { try { await action(mod.querySelector("#e-ref")?.value || ""); fin("Emplacement " + cle + " mis à jour : matériel à valider."); } catch (err) { mod.querySelector("#m-err").textContent = err.message; } };
+  if (mod.querySelector("#e-liberer")) mod.querySelector("#e-liberer").onclick = async () => {
+    try { await api("/api/materiel/action", {action: "retirer_communication", rack, position: pos}); fin("Emplacement " + cle + " libéré."); }
+    catch (err) { mod.querySelector("#m-err").textContent = err.message; } };
+}
 function liaisonsComposition() {
+  document.querySelectorAll("[data-emplacement]").forEach(x => {
+    const ouvrir = () => modaleEmplacement(x.dataset.emplacement, x.dataset.role);
+    x.onclick = ouvrir; x.onkeydown = ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); ouvrir(); } };
+  });
   const envoyer = corps => agir(api("/api/materiel/action", {action: "config", ...corps}), "Choix enregistré : recalculez le matériel pour l'appliquer.").then(rechargerMateriel);
   document.querySelectorAll("[data-cfg]").forEach(x => x.onchange = () => envoyer({[x.dataset.cfg]: x.value}));
   document.querySelectorAll("[data-cfg-com]").forEach(x => x.onchange = () => envoyer({communication: [...document.querySelectorAll("[data-cfg-com]:checked")].map(y => y.value)}));
@@ -2180,7 +2252,7 @@ function vueMateriel() {
    <div class="bandeau-materiel ${s4w ? "v31-platform-sofrel" : ""}">
      <div><span class="etiq">Plateforme</span><b>${esc(m.plateforme)}</b><small>${m.automate ? "fiche ouvrage : " + esc(m.automate) : "automate non renseigné"}</small></div>
      ${s4w ? `<div><span class="etiq">Poste de télégestion</span><b>${esc(prop && prop.racks[0] ? prop.racks[0].reference : "—")}</b><small>boîtier proposé</small></div>`
-       : `<div><span class="etiq">Densité des cartes</span><select id="m-profil" aria-label="Densité des cartes">${m.profils.map(x => `<option value="${esc(x.code)}" ${x.code === m.profil ? "selected" : ""}>${esc(x.libelle)}</option>`).join("")}</select></div>`}
+       : `<div><span class="etiq" title="Modèle de carte retenu par le calcul automatique pour chaque nature d'E/S. Une carte se change ensuite en cliquant son emplacement dans le rack.">Cartes du calcul automatique</span><select id="m-profil" aria-label="Cartes utilisées par le calcul automatique">${m.profils.map(x => `<option value="${esc(x.code)}" ${x.code === m.profil ? "selected" : ""}>${esc(x.libelle)}</option>`).join("")}</select></div>`}
      <div><span class="etiq">Réserve minimale</span><b>${Math.round(m.reserve_min * 100)} %</b><small>par carte</small></div>
      <div class="droite"><button class="${rien ? "prim" : ""}" id="m-calc" ${prop && prop.applicable ? "" : "disabled"} title="${s4w ? "Proposition indicative pour un poste S4W" : ""}">${rien ? "Calculer le matériel" : "Recalculer le matériel"}</button><button id="m-cartes">Ajuster les cartes…</button></div>
    </div>

@@ -59,7 +59,7 @@ class TestGeometrieResolutions(ServeurNavigateur):
         self.api('/api/fiche-ouvrage', {'action': 'creer', 'identification': {
             'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': f'{50 + self.numero:02d}',
             'libelle': "Réservoir fictif au libellé volontairement long pour l'essai de mise en page",
-            'automate': 'M340', 'revision': 'A'}})
+            'automate': 'Sch - M340', 'revision': 'A'}})
         idents = []
         for k, t in enumerate(['PM', 'MV', 'HV'] * 8):                 # 24 équipements : beaucoup de lignes
             i = self.api('/api/equipement/ajouter', {'type': t, 'numero': f'{k + 1:02d}', 'se': '00'})['ident']

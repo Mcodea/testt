@@ -54,3 +54,22 @@ pour la structure, bleu d'action `#1F5FBF`, échelle de 4 px, rayons de 3 à 6 p
 - Pas d'écran « versionning » dédié : l'historique existant (révisions du référentiel, copies
   horodatées) n'a pas été remplacé par une maquette.
 - Accessibilité WCAG globale non auditée ; contrastes vérifiés sur les éléments ciblés seulement.
+
+## Retours de l'utilisateur du 16/11 (10 h 24), intégrés
+
+- **Arborescence** : en-tête en barre d'outils (titre, nombre d'équipements, filtre avec icône, « + Équipement »,
+  « + UF », « Importer… » sur une ligne). Identifiants et fonctions inchangés.
+- **Rack équipé emplacement par emplacement** (M340 / M580, matériel retenu) : un clic (ou Entrée) sur un
+  emplacement ouvre le choix adapté — CPS : alimentations ; processeur : processeurs ; communication : remplacer
+  ou libérer ; libre : carte d'E/S du catalogue ou module de communication. Le moteur refuse désormais une carte
+  sur un emplacement réservé (processeur, communication) ou hors du rack retenu ; les choix d'alimentation et de
+  processeur sont reportés sur le rack retenu. « Densité des cartes » devient « Cartes du calcul automatique »,
+  et le bloc de choix s'intitule « Choix par défaut du calcul automatique ».
+- **Sources d'acquisition** : le champ « Automate » devient « Source d'acquisition », liste classée
+  (Automate / Télégestion / E/S déportées / Autres) d'après le tableau fourni ; protocoles : Modbus TCP/IP,
+  LACBUS IP, EtherNet/IP, LACBUS IP / LX Connect. Installations existantes : ajout seulement, aucune valeur
+  retirée ni renommée. « DL4W (LS,LT,OS) » est écrit « DL4W (LS / LT / OS) » (virgule interdite dans une valeur).
+- Sources sans catalogue matériel (TSX37, TSX57, M221, M241, M251, S500, LogUp, DL4W, NEO, Ydrix, SCADAPack,
+  Edge I/O NTS, TM3) : message « gamme non décrite », aucune configuration proposée. STB NIP 2311 : référence
+  reprise, limites du NIP 2212 appliquées à titre indicatif et signalées.
+- Tests : `tests/test_emplacements_et_sources.py` (7), `tests_web/test_retours_16_11.py` (4).

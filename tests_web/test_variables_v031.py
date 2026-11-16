@@ -22,7 +22,7 @@ class TestVariablesV031(ServeurNavigateur):
             })
         self.api("/api/fiche-ouvrage", {"action": "creer", "identification": {
             "lieu": "XTST", "code_ouvrage": "RV", "numero_ouvrage": f"{self.numero:02d}",
-            "libelle": "Recette navigateur fictive", "automate": "M340", "revision": "A",
+            "libelle": "Recette navigateur fictive", "automate": "Sch - M340", "revision": "A",
         }})
         equipment = self.api("/api/equipement/ajouter", {
             "type": "HV", "numero": "01", "se": "00", "libelle": "Vanne fictive",

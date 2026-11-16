@@ -2187,12 +2187,75 @@ class Session:
             raise RegleMetier("Rack 0 à 15, position 0 à 31, 1 à 128 voies.")
         if any(m.rack == rack and m.position == position for m in self.ouvrage.modules):
             raise RegleMetier(f"Un module est déjà déclaré en {rack}.{position}.")
+        self._verifier_emplacement_libre(rack, position)
         m = Module(rack, position, nature, voies, reference.strip(), libelle.strip())
         self.ouvrage.modules.append(m)
         self.ouvrage.modules.sort(key=lambda x: (x.rack, x.position))
         self.ouvrage.materiel_valide = False
         self._change(devalider=False)
         return m.cle
+
+    def _rack_retenu(self, rack):
+        return next((r for r in self.ouvrage.racks if int(r.get("numero", -1)) == int(rack)), None)
+
+    def _verifier_emplacement_libre(self, rack, position):
+        """Refuse une carte sur un emplacement réservé (processeur, communication) ou hors du rack retenu."""
+        r = self._rack_retenu(rack)
+        if r is None:
+            return
+        if int(position) >= int(r.get("positions", 0)):
+            raise RegleMetier(f"Le rack {rack} ({r.get('reference', '')}) n'a que {r.get('positions')} emplacements "
+                              f"(0 à {int(r.get('positions', 1)) - 1}).")
+        occupe = next((o for o in r.get("occupation", []) if int(o["position"]) == int(position)), None)
+        if occupe or int(position) in [int(x) for x in r.get("cpu", [])]:
+            role = (occupe or {}).get("role", "processeur")
+            raise RegleMetier(f"L'emplacement {rack}.{position} est réservé ({role}).")
+
+    def installer_communication(self, rack, position, reference):
+        """Installe un module de communication du catalogue sur un emplacement libre du rack retenu (M340 / M580).
+        La référence est ajoutée aux choix de l'ouvrage ; le matériel repasse « à valider »."""
+        from . import materiel
+        try:
+            rack, position = int(rack), int(position)
+        except (TypeError, ValueError):
+            raise RegleMetier("Rack et position : nombres entiers.")
+        r = self._rack_retenu(rack)
+        if r is None:
+            raise RegleMetier("Retenez d'abord le matériel (« Recalculer le matériel ») avant d'équiper un emplacement.")
+        plat = materiel.plateforme_materiel(self.ouvrage.automate)[0]
+        coms = {c["reference"] for c in materiel.catalogue().get("communication", {}).get(plat, [])}
+        if reference not in coms:
+            raise RegleMetier(f"Module de communication inconnu du catalogue {plat} : {reference}.")
+        if any(m.rack == rack and m.position == position for m in self.ouvrage.modules):
+            raise RegleMetier(f"Une carte d'E/S occupe déjà l'emplacement {rack}.{position}.")
+        self._verifier_emplacement_libre(rack, position)
+        r.setdefault("occupation", []).append({"position": position, "reference": reference, "role": "communication"})
+        r["occupation"].sort(key=lambda o: int(o["position"]))
+        r["cpu"] = sorted({*[int(x) for x in r.get("cpu", [])], position})
+        cfg = dict(self.ouvrage.materiel_config or {})
+        cfg["communication"] = [*cfg.get("communication", []), reference]
+        self.ouvrage.materiel_config = cfg
+        self.ouvrage.materiel_valide = False
+        self._change(devalider=False)
+        return f"{rack}.{position}"
+
+    def retirer_communication(self, rack, position):
+        """Libère l'emplacement d'un module de communication du rack retenu."""
+        r = self._rack_retenu(rack)
+        occ = next((o for o in (r or {}).get("occupation", [])
+                    if int(o["position"]) == int(position) and o.get("role") == "communication"), None)
+        if occ is None:
+            raise RegleMetier(f"Aucun module de communication en {rack}.{position}.")
+        r["occupation"].remove(occ)
+        r["cpu"] = [x for x in r.get("cpu", []) if int(x) != int(position)]
+        cfg = dict(self.ouvrage.materiel_config or {})
+        coms = list(cfg.get("communication", []))
+        if occ["reference"] in coms:
+            coms.remove(occ["reference"])
+        cfg["communication"] = coms
+        self.ouvrage.materiel_config = cfg
+        self.ouvrage.materiel_valide = False
+        self._change(devalider=False)
 
     def modifier_module(self, cle, rack, position, nature, voies, reference="", libelle=""):
         """Modifie une carte déclarée. Les E/S placées suivent un changement de rack ou de position (adresses
@@ -2425,6 +2488,14 @@ class Session:
                                         "communication": retenu["communication"], "cartes": retenu["cartes"]}
         self.ouvrage.materiel_valide = False
         self._change(devalider=False)
+        # Le rack déjà retenu suit le choix d'alimentation et de processeur (emplacements réservés)
+        for r in self.ouvrage.racks:
+            if "alimentation" in r and ("alimentation" in demande):
+                r["alimentation"] = retenu["alimentation"] or "Alimentation à choisir"
+            if "processeur" in demande:
+                for o in r.get("occupation", []):
+                    if o.get("role") == "processeur":
+                        o["reference"] = retenu["processeur"] or "Processeur à choisir"
         return self.ouvrage.materiel_config
 
     def nomenclature_materiel(self):

@@ -67,11 +67,11 @@ class TestListesIdentification(unittest.TestCase):
         self.assertEqual(self.app.s.ouvrage.code_ouvrage, "RV")
 
     def test_protocoles_multiple_et_sans_doublons(self):
-        self.app.identifier_selection({"champ": "communication", "valeurs": ["Modbus TCP", "SOFREL S4W", "Modbus TCP"]})
-        self.assertEqual(self.app.s.ouvrage.communication, "Modbus TCP, SOFREL S4W")
+        self.app.identifier_selection({"champ": "communication", "valeurs": ["Modbus TCP/IP", "LACBUS IP", "Modbus TCP/IP"]})
+        self.assertEqual(self.app.s.ouvrage.communication, "Modbus TCP/IP, LACBUS IP")
         with self.assertRaises(RegleMetier):
             self.app.identifier_selection({"champ": "communication", "valeurs": ["Nouveau protocole non déclaré"]})
-        self.assertEqual(self.app.s.ouvrage.communication, "Modbus TCP, SOFREL S4W")
+        self.assertEqual(self.app.s.ouvrage.communication, "Modbus TCP/IP, LACBUS IP")
 
     def test_referentiel_modifiable_sans_modifier_projet(self):
         self.app.identifier_type({"code": "RV"})

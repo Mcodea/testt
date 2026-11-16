@@ -543,6 +543,10 @@ class Application:
             self.s.retirer_groupe_secours(d.get("membres") or [])
         elif a == "refuser_groupe_secours":
             self.s.refuser_groupe_secours(d.get("membres") or [])
+        elif a == "installer_communication":
+            self.s.installer_communication(d.get("rack"), d.get("position"), str(d.get("reference", "")))
+        elif a == "retirer_communication":
+            self.s.retirer_communication(d.get("rack"), d.get("position"))
         elif a == "config":
             self.s.definir_config_materiel(d.get("alimentation"), d.get("processeur"), d.get("communication"),
                                            d.get("cartes"))
