@@ -473,6 +473,65 @@ details.aide-pliable>p{margin:var(--sp-1) 0 0;max-width:90ch}
 .t-exports .r-groupe th{background:var(--v31-subtle)!important;color:var(--v31-text);font-size:12px;text-transform:uppercase;letter-spacing:.03em;position:static}
 .t-exports td .aide{margin-top:2px;font-size:12px;color:var(--v31-muted);max-width:60ch}
 .t-exports td:first-child{white-space:nowrap}
+/* Recette et livrables (16/11, 16 h 32) : en-tête d'état, livrables en cartes par destination, contrôles ensuite */
+.recette-lux{max-width:1480px;margin:0 auto}
+.recette-lux>.titre{display:none}
+.rc-hero{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:var(--sp-5);padding:var(--sp-5) 28px;margin:0 0 var(--sp-5);
+ background:var(--ogias-navy);color:var(--ogias-navy-text);border-radius:var(--radius-l)}
+.rc-surtitre{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ogias-navy-muted)}
+.rc-hero h1{margin:6px 0 4px;font-size:24px;font-weight:650;color:#fff;line-height:1.2}
+.rc-hero p{margin:0;color:var(--ogias-navy-muted);font-size:13px}
+.rc-hero.a-regler h1::before{content:"";display:inline-block;width:10px;height:10px;margin-right:10px;border-radius:50%;background:#F59E0B;vertical-align:middle}
+.rc-hero.pret h1::before{content:"";display:inline-block;width:10px;height:10px;margin-right:10px;border-radius:50%;background:#34D399;vertical-align:middle}
+.rc-jauge{--part:0;position:relative;display:grid;place-content:center;justify-items:center;width:96px;height:96px;border-radius:50%;
+ background:conic-gradient(#34D399 calc(var(--part) * 1%),rgba(255,255,255,.14) 0)}
+.rc-jauge::before{content:"";position:absolute;inset:9px;border-radius:50%;background:var(--ogias-navy)}
+.rc-jauge b,.rc-jauge span{position:relative;line-height:1}
+.rc-jauge b{font-size:28px;color:#fff;font-variant-numeric:tabular-nums}
+.rc-jauge span{font-size:12px;color:var(--ogias-navy-muted);margin-top:2px}
+.rc-hero-actions{display:flex;flex-direction:column;gap:var(--sp-2);min-width:240px}
+.rc-hero-actions button{min-height:38px;justify-content:center}
+.rc-hero-actions button:not(.prim):not(.v31-primary-action){background:transparent!important;color:#fff!important;border-color:rgba(255,255,255,.35)!important}
+.rc-hero-actions button:not(.prim):not(.v31-primary-action):hover{background:rgba(255,255,255,.08)!important}
+.rc-groupe{margin:0 0 28px}
+.rc-groupe-tete{display:flex;align-items:center;gap:var(--sp-3);margin:0 0 var(--sp-3)}
+.rc-icone{display:grid;place-items:center;width:36px;height:36px;border-radius:var(--radius-m);background:var(--ogias-primary-light);color:var(--ogias-primary)}
+.rc-groupe-tete h2{margin:0;font-size:16px;font-weight:650}
+.rc-groupe-tete p{margin:2px 0 0;color:var(--v31-muted);font-size:12px}
+.rc-grille{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--sp-4)}
+.rc-groupes{display:grid;grid-template-columns:minmax(0,1fr);gap:0 28px}
+@media (min-width:1500px){.rc-groupes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.rc-carte.sans-objet{min-height:0}
+.rc-carte{position:relative;display:flex;flex-direction:column;gap:var(--sp-2);padding:18px 20px;background:var(--v31-white);
+ border:1px solid var(--v31-separator);border-radius:var(--radius-l);border-top:3px solid var(--v31-separator);min-height:190px}
+.rc-carte.pret{border-top-color:var(--ogias-success)}
+.rc-carte.bloque{border-top-color:var(--ogias-warning-line)}
+.rc-carte.indispo,.rc-carte.sans-objet{border-top-color:var(--v31-separator);background:var(--v31-subtle)}
+.rc-carte-tete{display:flex;align-items:center;gap:6px}
+.rc-format{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.04em;padding:2px 7px;border-radius:var(--radius-s);background:var(--ogias-navy);color:#fff}
+.rc-format.vide{background:var(--v31-separator);color:var(--v31-muted)}
+.rc-etat{margin-left:auto;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:var(--v31-row);color:var(--v31-muted)}
+.rc-etat.pret{background:var(--ogias-success-bg);color:var(--ogias-success)}
+.rc-etat.bloque{background:var(--ogias-warning-bg);color:var(--ogias-warning)}
+.rc-carte h3{margin:4px 0 0;font-size:15px;font-weight:650}
+.rc-texte{margin:0;color:var(--v31-muted);font-size:13px}
+.rc-motif{margin:0;font-size:12px;color:var(--v31-muted);padding-left:var(--sp-2);border-left:2px solid var(--v31-separator)}
+.rc-carte.bloque .rc-motif{color:var(--ogias-warning);border-left-color:var(--ogias-warning-line)}
+.rc-carte-pied{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2);margin-top:auto;padding-top:var(--sp-2)}
+.rc-carte-pied button:not(.lien){min-height:34px}
+.rc-carte-pied .lien{font-size:12px}
+.rc-controles{margin:0 0 var(--sp-4);padding:var(--sp-3) var(--sp-4);background:var(--v31-white);border:1px solid var(--v31-separator);border-radius:var(--radius-l)}
+.rc-controles>summary{display:flex;align-items:center;flex-wrap:wrap;gap:var(--sp-3);cursor:pointer;list-style:none}
+.rc-controles>summary::-webkit-details-marker{display:none}
+.rc-controles>summary::before{content:"▸";color:var(--v31-muted)}
+.rc-controles[open]>summary::before{content:"▾"}
+.rc-controles>summary h2{margin:0;font-size:15px}
+.rc-controles>summary .aide{margin-left:auto;color:var(--v31-muted);font-size:12px}
+.rc-controles[open]>summary{margin-bottom:var(--sp-3)}
+.rc-note{margin:0 0 var(--sp-4);font-size:12px;color:var(--v31-muted)}
+.rc-controles .chip i.pt-err{display:inline-grid;place-items:center;min-width:18px;height:18px;margin-left:4px;padding:0 4px;border-radius:9px;
+ font-style:normal;font-size:11px;font-weight:700;color:#fff;background:var(--ogias-danger-line)}
+@media (max-width:1120px){.rc-hero{grid-template-columns:minmax(0,1fr) auto}.rc-hero-actions{grid-column:1 / -1;flex-direction:row;min-width:0}}
 /* Matériel pas encore calculé : seul le cadre de démarrage est affiché */
 .poste-travail.etat-vide>.v31-page-actions,.poste-travail.etat-vide #pt-catalogue,.poste-travail.etat-vide #pt-inspecteur{display:none!important}
 .poste-travail.etat-vide .poste-grille{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}

@@ -625,6 +625,14 @@ class Application:
         if quoi == "liste_es":
             nom = f"{base}_liste_ES.xlsx"
             self.s.exporter_liste_es(os.path.join(dossier, nom))
+        elif quoi == "tele_etudes":
+            if self.s.ouvrage.mode != "Neuf":
+                raise RegleMetier("Projet existant : utilisez la table de correspondances (variables de contrôle).")
+            if not self.s.variables():
+                raise RegleMetier("Aucune variable de télétransmission dans cet ouvrage.")
+            nom = f"{base}_teletransmission_etudes.xlsx"
+            from genvar.export_tele_etudes import exporter as exporter_tele
+            exporter_tele(os.path.join(dossier, nom), self.s)
         elif quoi == "es_cartes":
             nom = f"{base}_ES_par_carte.xlsx"
             self.s.exporter_es_cartes(os.path.join(dossier, nom))
@@ -844,8 +852,51 @@ class Application:
         alertes = sum(x["niveau"] == "Alerte" for x in controles)
         return {"erreurs": erreurs, "alertes": alertes, "controles": controles[:500],
                 "tronque": len(controles) > 500, "revision": o.revision,
+                "livrables": self._etat_livrables(erreurs),
                 "export_qualifie": False,
                 "note": "La recette OGIAS est un contrôle interne. Aucun export n'est déclaré industriellement qualifié sans essai réel dans les logiciels cibles."}
+
+    def _etat_livrables(self, erreurs_recette):
+        """Retour du 16/11 (16 h 32) : pour chaque livrable de la Recette, prêt ou non et pourquoi — mêmes
+        conditions que l'export lui-même, sans rien produire. Un livrable dont le format n'est pas décrit dans
+        OGIAS est « non disponible », jamais simulé."""
+        o = self.s.ouvrage
+        etat: dict[str, Any] = {}
+        neuf = o.mode == "Neuf"
+        try:
+            from genvar import materiel as mat
+            gamme = mat.gamme(o.automate) or ""
+        except Exception:                                   # noqa: BLE001 — affichage seulement
+            gamme = ""
+
+        def poser(code, motif=""):
+            etat[code] = {"pret": not motif, "motif": motif}
+        pts = self.s.points() if o.equipements else []
+        cables = [p for p in pts if p.raccordement != "Communication"]
+        err_mat = self.s.erreurs_materiel() if o.modules else []
+        variables = self.s.variables() if o.equipements and neuf else []
+        ce = gamme in ("M340", "M580")
+        es_motif = ("Projet existant : le programme en place n'est jamais réécrit." if not neuf
+                    else f"Format Control Expert : source M340 ou M580 requise (source : {o.automate or 'non renseignée'})." if not ce
+                    else "Aucune E/S n'a de voie : implantez-les à l'étape Matériel." if not any(p.adresse for p in cables)
+                    else f"{len(err_mat)} incohérence(s) de cartes ou de voies (ex. {err_mat[0]})" if err_mat else "")
+        poser("es_xsy", es_motif)
+        poser("es_txt", es_motif)
+        poser("xsy", "Projet existant : le programme en place n'est jamais réécrit." if not neuf
+              else "Format Control Expert : source M340 ou M580 requise." if not ce
+              else f"{erreurs_recette} erreur(s) de recette à corriger." if erreurs_recette else "")
+        poser("topkapi", "Projet existant : table à rapprocher, pas d'import automatique." if not neuf
+              else "Aucune variable." if not variables
+              else "Déclarez la convention protocolaire (registre = %MW + décalage) dans l'écran Adressage."
+              if not o.protocole_declare else "")
+        poser("tele_etudes", "Aucune variable de télétransmission." if not variables else "")
+        poser("es_cartes", "Aucune carte d'E/S : calculez le matériel." if not o.modules
+              else f"{len(err_mat)} incohérence(s) de cartes ou de voies." if err_mat else "")
+        poser("liste_es", "" if cables else "Aucune E/S câblée.")
+        poser("nomenclature", "" if o.racks or o.modules else "Matériel non calculé.")
+        etat["sofrel_configure"] = gamme == "S4W"
+        etat["gamme"] = gamme
+        return etat
 
     def numero_libre(self, q):
         o = self.s.ouvrage

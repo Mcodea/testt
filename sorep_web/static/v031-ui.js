@@ -128,7 +128,7 @@ const V31 = (() => {
   const actionGroups={
     materiel:{primary:['m-calc','m-valider','m-deval'],extra:['m-cartes','m-impl','x-val-tout','x-val','x-xl','x-ca','x-xsy','x-txt']},
     adressage:{primary:['ad-recalc','ad-app','ad-val'],extra:['ad-res','ad-tpk']},
-    recette:{primary:['r-dossier','r-actualiser'],extra:[]},
+    recette:{primary:['r-dossier'],extra:['r-actualiser'],inPlace:true,bar:'.rc-hero-actions'},
     referentiel:{primary:['rf-creer','rf-ouvrir-b','rf-pub'],extra:['rf-hist','rf-exp','rf-voir-pub','rf-exp-b','rf-imp','rf-abandon'],inPlace:true}
   };
   if(actionGroups[E.vue]){
@@ -136,7 +136,7 @@ const V31 = (() => {
     if(cfg.inPlace){
       // Le bandeau du référentiel possède déjà son menu et ses écouteurs.
       // Garder ces mêmes boutons dans leur conteneur au changement de vue.
-      const bar=root.querySelector('.bandeau-ref .actions');
+      const bar=root.querySelector(cfg.bar||'.bandeau-ref .actions');
       if(bar){bar.classList.add('v31-page-actions');
         cfg.primary.forEach(id=>root.querySelector('#'+id)?.classList.add('v31-primary-action'));
         cfg.extra.forEach(id=>root.querySelector('#'+id)?.classList.remove('prim'));

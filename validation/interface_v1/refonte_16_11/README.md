@@ -199,3 +199,28 @@ et dans les livrables de l'étape Matériel. Exemple fictif : `exemple_fictif_ES
 - **Hors cartes** : E/S sans voie ou raccordées par communication, pour ne rien perdre.
 - Refusé sans carte, ou tant qu'une incohérence de carte ou de voie existe.
 - Tests : `tests/test_export_es_cartes.py` (3) et `test_exports_regroupes_dans_la_recette`.
+
+## Recette et livrables revisités (16/11, 16 h 32)
+
+Captures : `retours_16h32/`. Exemple fictif : `exemple_fictif_teletransmission_etudes.xlsx`.
+
+- **En-tête d'état** (bleu nuit) : « Tous les livrables sont prêts » ou « N points à régler avant la livraison »,
+  jauge « livrables prêts / total », révision, source d'acquisition ; « Dossier de recette complet (zip) » et
+  « Actualiser les contrôles » dans l'en-tête (plus de barre en double).
+- **Livrables en cartes, par destination** (deux colonnes au-delà de 1 500 px) :
+  - Automate : liste des E/S (XSY, TXT) ; table de télétransmission (XSY Control Expert) ;
+  - Télégestion SOFREL : liste des E/S SOFREL — « sans objet » si aucun SOFREL n'est configuré, « non
+    disponible » (format non décrit) sinon ;
+  - Supervision / IHM : table TOPKAPI ; table IHM Vijeo — « non disponible » (format non décrit, export de
+    référence demandé) ;
+  - Documents (formats d'études) : liste des E/S par carte (+ tableau de travail), **table de télétransmission
+    d'études** (nouvelle, d'après la trame fournie), nomenclature.
+  Chaque carte montre ses formats, son état (prêt, prêt · non qualifié, à régler, non disponible, sans objet)
+  et la raison ; l'état vient du serveur (`livrables` de `/api/recette`), mêmes conditions que l'export.
+- **Table de télétransmission d'études** (`tele_etudes`, `genvar/export_tele_etudes.py`) : colonnes de la trame
+  (Repère … Libellé Topkapi), une bande par équipement, famille colorée, adresse « Oui / Appliquée / Proposée »,
+  registre Modbus seulement si la convention protocolaire est déclarée (sinon « convention à déclarer »),
+  priorité d'alarme en liste P1 / P2 / P3 à remplir (surlignée pour une alarme sans priorité), filtre, en-têtes
+  figés, impression A4 paysage ; feuille « Synthèse » (familles, adresses, alarmes).
+- Contrôles consolidés repliés quand rien ne bloque.
+- Tests : `tests/test_export_tele_etudes.py` (2), `test_exports_regroupes_dans_la_recette` réécrit.

@@ -414,17 +414,28 @@ class TestRetours1611Apres15h(ServeurNavigateur):
         self.page.wait_for_function("() => location.hash === '#/recette'")
 
     def test_exports_regroupes_dans_la_recette(self):
+        # Retour du 16/11 (16 h 32) : livrables par destination, état et raison, formats non décrits nommés
         self.page.goto(self.url + '#/recette', wait_until='networkidle')
-        bloc = self.page.locator('#r-exports')
-        bloc.wait_for()
-        texte = bloc.inner_text()
-        for attendu in ('Automate — M580', 'Supervision', 'TOPKAPI', 'SOFREL', 'Configuration automate', 'Liste des E/S par carte'):
+        self.page.locator('.rc-hero').wait_for()
+        groupes = self.page.locator('.rc-groupe h2').all_text_contents()
+        self.assertEqual(groupes, ['Automate', 'Télégestion SOFREL', 'Supervision / IHM', 'Documents'])
+        texte = self.page.locator('.recette-lux').inner_text()
+        for attendu in ('Table de télétransmission TOPKAPI', 'IHM Vijeo', 'Liste des entrées / sorties SOFREL',
+                        'Nomenclature', 'Aucun poste SOFREL configuré'):
             self.assertIn(attendu, texte)
-        quoi = set(bloc.locator('[data-export]').evaluate_all('b => b.map(x => x.dataset.export)'))
-        self.assertTrue({'es_xsy', 'es_txt', 'xsy', 'topkapi', 'es_cartes', 'liste_es', 'cartes', 'nomenclature', 'variables'} <= quoi)
-        with self.page.expect_download() as dl:
-            bloc.locator('[data-export="liste_es"]').click()
-        self.assertTrue(dl.value.suggested_filename.endswith('_liste_ES.xlsx'))
-        with self.page.expect_download() as dl:                      # trame du 16/11 : une feuille par carte
-            bloc.locator('[data-export="es_cartes"]').click()
-        self.assertTrue(dl.value.suggested_filename.endswith('_ES_par_carte.xlsx'))
+        vijeo = self.page.locator('.rc-carte', has_text='IHM Vijeo')
+        self.assertIn('Non disponible', vijeo.inner_text())
+        self.assertEqual(vijeo.locator('button').count(), 0, 'Format non décrit : aucun bouton, jamais simulé')
+        quoi = set(self.page.locator('.rc-groupe [data-export]').evaluate_all('b => b.map(x => x.dataset.export)'))
+        self.assertTrue({'es_xsy', 'es_txt', 'xsy', 'topkapi', 'es_cartes', 'liste_es', 'tele_etudes', 'nomenclature'} <= quoi)
+        # TOPKAPI sans convention protocolaire : bouton désactivé avec la raison
+        topkapi = self.page.locator('[data-export="topkapi"]')
+        self.assertTrue(topkapi.is_disabled())
+        self.assertIn('convention', topkapi.get_attribute('title'))
+        for code, suffixe in (('es_cartes', '_ES_par_carte.xlsx'), ('tele_etudes', '_teletransmission_etudes.xlsx')):
+            with self.page.expect_download() as dl:
+                self.page.locator(f'[data-export="{code}"]').click()
+            self.assertTrue(dl.value.suggested_filename.endswith(suffixe), code)
+        # Dossier complet et actualisation dans l'en-tête, sans barre en double
+        self.assertEqual(self.page.locator('.rc-hero-actions #r-dossier').count(), 1)
+        self.assertEqual(self.page.locator('.rc-hero-actions #r-actualiser').count(), 1)

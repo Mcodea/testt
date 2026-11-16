@@ -537,23 +537,75 @@ function vueSupervision() {
 }
 
 const ROUTE_ETAPE = {"Ouvrage": "#/inventaire", "Équipements": "#/inventaire", "Liste des E/S et matériel": "#/materiel", "Variables": "#/variables"};
+/* Recette et livrables (retour du 16/11, 16 h 32 : page « luxueuse et de très grande qualité »).
+   En tête : l'état de la livraison en une phrase et le dossier complet. Puis les livrables, groupés par
+   destination (Automate, Télégestion SOFREL, Supervision / IHM, Documents), chacun avec ses formats, son état
+   (prêt, non qualifié, à régler, non disponible) et la raison quand il n'est pas prêt — mêmes conditions que
+   l'export côté serveur. Un format qu'OGIAS ne sait pas produire est nommé, jamais simulé. Les contrôles
+   viennent ensuite, repliés quand rien ne bloque. */
+const LIVRABLES = [
+  {groupe: "automate", titre: "Automate", icone: "cpu", sous: "Fichiers à importer dans Control Expert", cartes: [
+    {titre: "Liste des entrées / sorties", texte: "Au format automate : variables d'E/S, voies de réserve comprises.", formats: [["XSY", "es_xsy"], ["TXT", "es_txt"]], qualif: true},
+    {titre: "Table de télétransmission", texte: "Table d'échange au format automate (mots %MW), prête à importer.", formats: [["XSY", "xsy"]], qualif: true}]},
+  {groupe: "sofrel", titre: "Télégestion SOFREL", icone: "bolt", sous: "Poste de télégestion", cartes: [
+    {titre: "Liste des entrées / sorties SOFREL", texte: "Au format d'import SOFREL.", formats: [], sofrel: true}]},
+  {groupe: "supervision", titre: "Supervision / IHM", icone: "pie", sous: "Fichiers à importer dans la supervision", cartes: [
+    {titre: "Table de télétransmission TOPKAPI", texte: "Fichiers d'import des variables TOPKAPI, avec le compte rendu des points exclus.", formats: [["ZIP", "topkapi"]], qualif: true},
+    {titre: "Table de télétransmission IHM Vijeo", texte: "Variables pour Vijeo Designer.", formats: [], indispo: "Format d'import Vijeo Designer pas encore décrit dans OGIAS : fournissez un export de référence pour le reproduire à l'identique."}]},
+  {groupe: "documents", titre: "Documents", icone: "clipboard", sous: "Formats d'études, pour les échanges avec les autres entreprises", cartes: [
+    {titre: "Liste des entrées / sorties", texte: "Architecture des racks, une feuille par carte, colonne de validation SAT.", formats: [["XLSX", "es_cartes"]], second: ["Tableau de travail (une ligne par E/S)", "liste_es"]},
+    {titre: "Table de télétransmission", texte: "Repère, famille, adresse, registre Modbus, alarme et priorité, libellés automate et TOPKAPI.", formats: [["XLSX", "tele_etudes"]]},
+    {titre: "Nomenclature", texte: "Configuration matérielle : références, quantités et rôles, à confirmer à la commande.", formats: [["XLSX", "nomenclature"]]}]}];
 function vueRecette() {
-  const d = E.detailEtape, f = E.filtreRecette || "";
+  const d = E.detailEtape, f = E.filtreRecette || "", L = d.livrables || {};
   const etapes = [...new Set(d.controles.map(c => c.etape))];
   const nb = (et, niv) => d.controles.filter(c => c.etape === et && (!niv || c.niveau === niv)).length;
   const vis = d.controles.filter(c => !f || c.etape === f);
-  $("#vue").innerHTML = `<section class="contenu"><div class="titre"><div><h1>Recette et livrables</h1><div class="sous">Révision ${esc(d.revision)} · ${esc(d.note)}</div></div><div class="actions"><button id="r-actualiser">Actualiser les contrôles</button><button class="prim" id="r-dossier" title="Zip : sommaire imprimable en PDF, équipements, E/S, cartes, variables et formats cibles">Dossier de recette</button></div></div>
-   <div class="chiffres">${d.erreurs?ind('ERR', d.erreurs, 'erreurs', 'err'):''}${d.alertes?ind('ALT', d.alertes, 'alertes', 'al'):''}</div>
-   <div class="bloc"><div class="bloc-tete"><h2>Contrôles consolidés</h2><span class="aide">classés par étape du parcours : chaque constat se corrige à l'endroit indiqué</span></div>
-   ${etapes.length ? `<div class="compteurs"><span class="chip ${f ? "" : "on"}" data-et="">Toutes<b>${d.controles.length}</b></span>${etapes.map(et => `<span class="chip ${f === et ? "on" : ""}" data-et="${esc(et)}">${esc(et)}<b>${nb(et)}</b>${nb(et, "Erreur") ? `<i class="pt-etat pt-err" style="margin-left:6px"></i>` : ""}</span>`).join("")}</div>` : ""}
-   ${vis.length ? `<table><thead><tr><th style="width:90px">Niveau</th><th style="width:190px">Étape</th><th>Constat</th><th style="width:110px"></th></tr></thead><tbody>${vis.map((c, i) => `<tr><td><span class="badge ${c.niveau === 'Erreur' ? 'b-err' : 'b-al'}">${esc(c.niveau)}</span></td><td>${esc(c.etape)}</td><td>${esc(c.message)}</td>
+  const auto = ((E.ouvrage || {}).identification || {}).automate || "";
+  // État de chaque carte : prête, à régler (motif du serveur), non disponible (format non décrit)
+  const etatCarte = c => {
+    if (c.indispo) return {cls: "indispo", badge: "Non disponible", motif: c.indispo};
+    if (c.sofrel) return L.sofrel_configure
+      ? {cls: "indispo", badge: "Non disponible", motif: "Format d'import SOFREL pas encore décrit dans OGIAS : fournissez un export de référence (SOFTOOLS) pour le reproduire."}
+      : {cls: "sans-objet", badge: "Sans objet", motif: `Aucun poste SOFREL configuré (source d'acquisition : ${auto || "non renseignée"}).`};
+    const motifs = c.formats.map(([, q]) => (L[q] || {}).motif).filter(Boolean);
+    if (motifs.length === c.formats.length) return {cls: "bloque", badge: "À régler", motif: motifs[0]};
+    return {cls: "pret", badge: c.qualif ? "Prêt · non qualifié" : "Prêt", motif: c.qualif ? "Conforme aux exemples fournis ; import à essayer dans le logiciel cible." : ""};
+  };
+  const toutes = LIVRABLES.flatMap(g => g.cartes.map(c => ({c, e: etatCarte(c)}))).filter(x => x.e.cls !== "sans-objet");
+  const prets = toutes.filter(x => x.e.cls === "pret").length;
+  const titre = d.erreurs ? `${d.erreurs} point${d.erreurs > 1 ? "s" : ""} à régler avant la livraison` : prets === toutes.length ? "Tous les livrables sont prêts" : "Livraison presque prête";
+  const carte = c => { const e = etatCarte(c);
+    return `<article class="rc-carte ${e.cls}">
+      <div class="rc-carte-tete">${c.formats.map(([fmt]) => `<span class="rc-format">${fmt}</span>`).join("") || '<span class="rc-format vide">—</span>'}
+        <span class="rc-etat ${e.cls}">${e.badge}</span></div>
+      <h3>${c.titre}</h3><p class="rc-texte">${c.texte}</p>
+      ${e.motif ? `<p class="rc-motif">${esc(e.motif)}</p>` : ""}
+      <div class="rc-carte-pied">${c.formats.map(([fmt, q]) => `<button class="${(L[q] || {}).pret ? "prim" : ""}" data-export="${q}" ${(L[q] || {}).pret ? "" : `disabled title="${esc((L[q] || {}).motif || "")}"`}>Télécharger ${fmt} <span aria-hidden="true">↓</span></button>`).join("")}
+        ${c.second ? `<button class="lien" data-export="${c.second[1]}" ${(L[c.second[1]] || {}).pret ? "" : "disabled"}>${c.second[0]}</button>` : ""}</div></article>`; };
+  $("#vue").innerHTML = `<section class="contenu recette-lux">
+   <header class="rc-hero ${d.erreurs ? "a-regler" : "pret"}">
+     <div class="rc-hero-texte"><span class="rc-surtitre">Recette et livrables · révision ${esc(d.revision)}</span>
+       <h1>${titre}</h1>
+       <p>${prets} livrable${prets > 1 ? "s" : ""} prêt${prets > 1 ? "s" : ""} sur ${toutes.length}${d.erreurs ? ` · ${d.erreurs} erreur(s)` : ""}${d.alertes ? ` · ${d.alertes} alerte(s)` : ""} · source d'acquisition : ${esc(auto || "non renseignée")}</p></div>
+     <div class="rc-jauge" role="img" aria-label="${prets} livrables prêts sur ${toutes.length}" style="--part:${toutes.length ? Math.round(prets / toutes.length * 100) : 0}">
+       <b>${prets}</b><span>/ ${toutes.length}</span></div>
+     <div class="rc-hero-actions"><button class="prim" id="r-dossier" title="Zip : sommaire imprimable en PDF, équipements, E/S, cartes, variables et formats cibles">Dossier de recette complet (zip)</button>
+       <button id="r-actualiser">Actualiser les contrôles</button></div>
+   </header>
+   <div class="rc-groupes">${LIVRABLES.map(g => `<section class="rc-groupe" data-groupe="${g.groupe}"><div class="rc-groupe-tete"><span class="rc-icone">${V31.icon(g.icone, 18)}</span>
+       <div><h2>${g.titre}</h2><p>${g.sous}</p></div></div>
+     <div class="rc-grille">${g.cartes.map(carte).join("")}</div></section>`).join("")}</div>
+   <details class="rc-controles" ${d.erreurs ? "open" : ""}><summary><h2>Contrôles consolidés</h2>
+     <span class="rc-compte">${d.erreurs ? `<span class="badge b-err">${d.erreurs} erreur(s)</span>` : '<span class="badge b-ok">aucune erreur</span>'} ${d.alertes ? `<span class="badge b-al">${d.alertes} alerte(s)</span>` : ""}</span>
+     <span class="aide">chaque constat se corrige à l'endroit indiqué</span></summary>
+   ${etapes.length ? `<div class="compteurs"><span class="chip ${f ? "" : "on"}" data-et="">Toutes<b>${d.controles.length}</b></span>${etapes.map(et => `<span class="chip ${f === et ? "on" : ""}" data-et="${esc(et)}">${esc(et)}<b>${nb(et)}</b>${nb(et, "Erreur") ? `<i class="pt-err">${nb(et, "Erreur")}</i>` : ""}</span>`).join("")}</div>` : ""}
+   ${vis.length ? `<table><thead><tr><th style="width:90px">Niveau</th><th style="width:190px">Étape</th><th>Constat</th><th style="width:110px"></th></tr></thead><tbody>${vis.map(c => `<tr><td><span class="badge ${c.niveau === 'Erreur' ? 'b-err' : 'b-al'}">${esc(c.niveau)}</span></td><td>${esc(c.etape)}</td><td>${esc(c.message)}</td>
      <td style="text-align:right"><button class="lien r-corr" data-i="${d.controles.indexOf(c)}">${c.ident && ["Équipements", "Ouvrage"].includes(c.etape) ? "Ouvrir la fiche" : "Aller à l'étape"}</button></td></tr>`).join('')}</tbody></table>`
      : '<div class="vide-bloc">Aucune anomalie détectée par les contrôles automatisés.</div>'}
-   ${d.tronque ? '<div class="avert">Affichage limité aux 500 premiers contrôles.</div>' : ''}</div>
-   ${blocExportsRecette()}
-   <div class="avert">Statut industriel : NON QUALIFIÉ. Une recette locale sans erreur ne vaut pas validation des fichiers dans Control Expert, SOFREL ou TOPKAPI.</div></section>`;
+   ${d.tronque ? '<div class="avert">Affichage limité aux 500 premiers contrôles.</div>' : ''}</details>
+   <p class="rc-note">Statut industriel : NON QUALIFIÉ. Une recette sans erreur ne vaut pas validation des fichiers dans Control Expert, SOFREL, TOPKAPI ou Vijeo : chaque import reste à essayer dans le logiciel cible.</p></section>`;
   document.querySelectorAll("[data-export]").forEach(b => b.onclick = () => telecharger(b.dataset.export));
-  $("#r-dossier-exports").onclick = () => $("#r-dossier")?.click();
   $("#r-actualiser").onclick = async () => { E.detailEtape = await api('/api/recette'); rendre(); };
   $("#r-dossier").onclick = () => confirmer("Constituer le dossier de recette ?", "Archive zip des livrables à partir des exports existants, avec un sommaire imprimable en PDF (empreintes, pièces non produites et leur motif, points restant à traiter). Exports non qualifiés : à vérifier dans les logiciels cibles.", "Télécharger le dossier", () => telecharger("dossier_recette"));
   document.querySelectorAll("[data-et]").forEach(x => x.onclick = () => { E.filtreRecette = x.dataset.et; vueRecette(); });
@@ -562,40 +614,6 @@ function vueRecette() {
     if (c.ident && (c.etape === "Équipements" || c.etape === "Ouvrage")) { E.sel = {nature: "eq", valeur: c.ident}; location.hash = "#/inventaire"; }
     else location.hash = ROUTE_ETAPE[c.etape] || "#/inventaire";
   });
-}
-/* Retour du 16/11 (15 h 08) : les exports se retrouvent à l'étape Recette, groupés par destination. Seuls les
-   formats réellement produits par OGIAS ont un bouton ; les autres sont nommés avec la raison et ce qu'il manque,
-   jamais simulés. Le moteur refuse un export incohérent (erreurs de recette, cartes ou voies). */
-function blocExportsRecette() {
-  const o = E.ouvrage || {}, auto = (o.identification || {}).automate || "";
-  const gamme = /M580|BMEP58|BMEH58/i.test(auto.replace(/\s/g, "")) ? "M580" : /M340|BMXP34/i.test(auto.replace(/\s/g, "")) ? "M340"
-    : /S4W|SOFREL|SOF -/i.test(auto) ? "S4W" : /STB/i.test(auto) ? "STB" : "";
-  const ce = gamme === "M340" || gamme === "M580";
-  const neuf = (o.identification || {}).mode !== "Existant";
-  const ligne = (livrable, format, quoi, etat, motif = "") => `<tr><td><b>${livrable}</b></td><td>${format}</td>
-    <td>${quoi ? (etat === "prêt" ? '<span class="badge b-ok">prêt</span>' : `<span class="badge b-al" title="Format conforme aux exemples fournis, pas encore essayé dans le logiciel cible">non qualifié</span>`) : `<span class="badge b-n">non disponible</span>`}${motif ? `<div class="aide">${motif}</div>` : ""}</td>
-    <td style="text-align:right">${quoi ? `<button data-export="${quoi}">Exporter</button>` : ""}</td></tr>`;
-  const groupe = (titre, lignes) => `<tr class="r-groupe"><th colspan="4">${titre}</th></tr>${lignes}`;
-  return `<div class="bloc" id="r-exports"><div class="bloc-tete"><h2>Exports</h2><span class="aide">${auto ? `source d'acquisition : ${esc(auto)}` : "source d'acquisition non renseignée"}</span>
-      <div class="droite"><button class="prim" id="r-dossier-exports">Tout dans le dossier de recette (zip)</button></div></div>
-    <table class="t-exports"><thead><tr><th>Livrable</th><th>Format</th><th>État</th><th></th></tr></thead><tbody>
-    ${groupe(`Automate${gamme ? " — " + gamme : ""}`,
-      (ce && neuf ? ligne("E/S pour Control Expert", "XSY (variables d'E/S, voies de réserve comprises)", "es_xsy")
-        + ligne("E/S pour Control Expert", "TXT", "es_txt")
-        + ligne("Table d'échange (variables)", "XSY Control Expert", "xsy")
-        : ligne("Programme automate", "—", "", "", ce ? "Projet existant : le programme en place n'est jamais réécrit." : `Aucun format automate n'est décrit pour la source « ${esc(auto || "non renseignée")} ».`))
-      + ligne("Configuration automate (racks, cartes)", "Control Expert (.XEF / .ZEF)", "", "",
-          "Format de configuration matérielle pas encore décrit dans OGIAS : fournissez un export de référence. En attendant : cartes d'E/S et nomenclature ci-dessous."))}
-    ${groupe("Supervision", ligne("TOPKAPI", "Archive des fichiers TOPKAPI", "topkapi"))}
-    ${groupe("Télégestion SOFREL", ligne("SOFREL", "—", "", "", gamme === "S4W"
-        ? "Aucun format d'import SOFREL n'est décrit dans OGIAS : fournissez un fichier de référence (export SOFTOOLS) pour le reproduire."
-        : "Sans objet pour cette source, et aucun format SOFREL n'est encore décrit."))}
-    ${groupe("Documents Excel",
-      ligne("Liste des E/S par carte", "Excel (.xlsx) — architecture + une feuille par carte, colonne de validation SAT", "es_cartes", "prêt", "D'après votre trame du 16/11.")
-      + ligne("Liste des E/S (tableau de travail)", "Excel (.xlsx), une ligne par E/S", "liste_es", "prêt")
-      + ligne("Cartes d'E/S", "Excel (.xlsx)", "cartes", "prêt") + ligne("Nomenclature de commande", "Excel (.xlsx)", "nomenclature", "prêt")
-      + ligne("Variables de contrôle", "Excel (.xlsx)", "variables", "prêt"))}
-    </tbody></table></div>`;
 }
 function enTete() { V31.render(E, ETAPES, etatEtape, vueEtape); }
 /* ------------------------------------------------------------------ accueil */
