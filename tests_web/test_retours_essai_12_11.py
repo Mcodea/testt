@@ -44,7 +44,7 @@ class TestRetoursEssai(ServeurNavigateur):
         with self.page.expect_response(lambda r: '/api/equipement?ident=' + ident in r.url, timeout=5000) as reponse:
             lien.click()
         self.assertEqual(reponse.value.json()['ident'], ident)
-        self.page.wait_for_selector('#e-val')
+        self.page.wait_for_selector('#e-val', state='attached')     # dans le menu « ⋯ » de la fiche (16/11)
         self.assertIn('MV02', self.page.locator('#contenu h1').inner_text())
         self.assertEqual(fichier.read_bytes(), avant)
         self.capture('u9-point-equipement.png')

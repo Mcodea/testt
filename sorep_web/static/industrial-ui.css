@@ -232,19 +232,11 @@ body{grid-template-columns:188px minmax(0,1fr);grid-template-rows:auto auto minm
  body[data-ecran="ouvrage"] #vue:has(>aside)>#contenu{min-width:0;min-height:0;overflow-x:hidden!important;overflow-y:auto!important;padding:0 2px 0 0!important}
  body[data-ecran="ouvrage"] #vue.v31-show-tree:has(>aside){grid-template-columns:minmax(0,1fr)}
  body[data-ecran="ouvrage"] #vue.v31-show-tree:has(>aside)>aside{display:none!important}
- /* Poste de travail : catalogue des modèles à droite */
- body[data-ecran="ouvrage"] #vue:has(>aside):has(>#eq-catalogue){grid-template-columns:clamp(250px,19vw,330px) minmax(0,1fr) clamp(220px,16vw,300px)}
- body[data-ecran="ouvrage"] #vue.v31-show-tree:has(>aside):has(>#eq-catalogue){grid-template-columns:minmax(0,1fr) clamp(220px,16vw,300px)}
- body[data-ecran="ouvrage"] #vue>#eq-catalogue{display:flex;grid-column:auto;grid-row:auto}
 }
-#vue>#eq-catalogue{display:none}
 /* Fiche plus étroite avec le catalogue : les commandes passent à la ligne au lieu de déborder */
 body[data-ecran="ouvrage"] #contenu .bloc>.titre{flex-wrap:wrap;row-gap:var(--sp-2)}
 body[data-ecran="ouvrage"] #contenu .bloc>.titre>.actions{flex-wrap:wrap;justify-content:flex-start}
-#arbre .noeud.cible{outline:2px dashed var(--ogias-primary);outline-offset:-2px}
-#arbre .noeud.survol{outline-style:solid;background:var(--ogias-primary-light)}
-.eq-catalogue .cat-item b{display:flex;align-items:center;gap:var(--sp-2);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.eq-catalogue .cat-item .tag{flex:none}
+
 /* En-tête de l'arborescence : titre, filtre, barre d'outils sur une ligne (commandes de même gabarit) */
 #vue>aside .aside-tete{display:flex;flex-direction:column;gap:var(--sp-2);padding:10px var(--sp-3);border-bottom:1px solid var(--v31-separator);background:var(--v31-subtle)}
 #vue>aside .aside-titre{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp-2)}
@@ -343,7 +335,9 @@ html[data-theme="dark"] .emplacement.cpu{background:var(--ogias-primary-light);b
 .catalogue-cartes{margin-top:var(--sp-3)}.catalogue-cartes>summary{cursor:pointer;padding:8px 0;color:var(--ogias-primary)}
 
 /* Recette : points à traiter et à vérifier */
-.pp-bloquants{border-left:3px solid var(--ogias-danger-line)!important;background:var(--ogias-danger-bg)!important}
+/* Ce qui reste avant l'étape suivante : information, pas alarme (retour du 16/11, 13 h 40) */
+.pp-bloquants{border:1px solid var(--v31-separator)!important;border-left:3px solid var(--ogias-warning-line)!important;background:var(--v31-white)!important;border-radius:var(--radius-m)!important}
+.pp-bloquants h3{font-size:13px!important;font-weight:600}
 .pp-verifier{border-left:3px solid var(--ogias-warning-line);background:var(--ogias-warning-bg)}
 .pp-pret{border-left:3px solid var(--ogias-success)!important}
 
@@ -465,6 +459,65 @@ details.aide-pliable>p{margin:var(--sp-1) 0 0;max-width:90ch}
 #vue .es-page.poste-travail .t-es th{padding-inline:8px!important;min-width:0!important;width:auto!important}
 /* Détail ouvert sur un écran moyen : sens et raccordement se lisent dans le détail, pas dans le tableau */
 @media (max-width:1700px){.es-page.poste-travail>.es-corps:has(>.es-panneau) .t-es :is(th,td):is(:nth-child(6),:nth-child(7)){display:none}}
+/* Matériel pas encore calculé : seul le cadre de démarrage est affiché */
+.poste-travail.etat-vide>.v31-page-actions,.poste-travail.etat-vide #pt-catalogue,.poste-travail.etat-vide #pt-inspecteur{display:none!important}
+.poste-travail.etat-vide .poste-grille{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.poste-travail.etat-vide #pt-editeur>:not(.demarrage-materiel){display:none!important}
+.poste-travail>.pied-etape{align-self:stretch;width:auto!important;max-width:none!important}
+.demarrage-materiel{text-align:left;max-width:720px;margin:var(--sp-5) auto!important;padding:var(--sp-5);background:var(--v31-white);border:1px solid var(--v31-separator);border-radius:var(--radius-l)}
+.demarrage-materiel h1{margin:0 0 var(--sp-2);font-size:20px}
+.dm-intro{margin:0 0 var(--sp-4);color:var(--v31-muted);font-size:14px}
+.dm-bloque{margin:0 0 var(--sp-4);padding:var(--sp-2) var(--sp-3);border-left:4px solid var(--ogias-warning-line);background:var(--ogias-warning-bg)}
+.dm-etapes{list-style:none;margin:0 0 var(--sp-4);padding:0;display:grid;gap:var(--sp-3)}
+.dm-etapes li{display:grid;grid-template-columns:28px minmax(0,1fr) minmax(220px,300px);align-items:center;gap:var(--sp-3);padding:var(--sp-3);border:1px solid var(--v31-separator);border-radius:var(--radius-m)}
+.dm-etapes li:first-child{grid-template-columns:28px minmax(0,1fr)}
+.dm-etapes li>div{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;text-align:left}
+.dm-etapes li>div b{font-size:14px}.dm-etapes small{color:var(--v31-muted)}
+.dm-etapes .dm-valeur{font-size:16px;font-weight:700}
+.dm-etapes .dm-al{color:var(--ogias-warning)}
+.dm-etapes .dm-al+button{align-self:flex-start}
+.dm-etapes select{width:100%}
+.dm-num{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--ogias-primary-light);color:var(--ogias-primary);font-weight:700}
+.dm-options{margin:0 0 var(--sp-4);border:1px solid var(--v31-separator);border-radius:var(--radius-m);padding:var(--sp-2) var(--sp-3)}
+.dm-options>summary{cursor:pointer;font-weight:600}
+.dm-options .bloc{border:0!important;margin:var(--sp-2) 0 0!important;padding:0!important}
+.dm-action{display:flex;align-items:center;gap:var(--sp-4);flex-wrap:wrap}
+.dm-action button.grand{min-height:40px;padding:0 var(--sp-5);font-size:14px}
+.dm-action .aide{color:var(--v31-muted);font-size:12px}
+/* Fiche équipement : une ligne de titre, commandes secondaires dans « ⋯ » */
+#contenu .entete-eq{padding:var(--sp-3) var(--sp-4)!important}
+#contenu .entete-eq>.titre{display:flex;align-items:flex-start;gap:var(--sp-3);margin:0;flex-wrap:nowrap!important}
+#contenu .entete-eq-texte{flex:1 1 auto;min-width:0}
+#contenu .entete-eq h1{margin:0;font-size:20px;display:flex;align-items:center;gap:var(--sp-2)}
+#contenu .entete-eq .sous{margin-top:2px;color:var(--v31-muted)}
+#contenu .entete-eq .alerte-modele{color:var(--ogias-warning);font-weight:600}
+.menu-eq{position:relative;flex:none}
+.menu-eq>summary{list-style:none;display:grid;place-items:center;width:34px;height:34px;border:1px solid var(--v31-separator);border-radius:var(--radius-m);cursor:pointer;font-size:18px;line-height:1;background:var(--v31-white)}
+.menu-eq>summary::-webkit-details-marker{display:none}
+.menu-eq[open]>summary{background:var(--v31-row)}
+.menu-eq-liste{position:absolute;right:0;top:calc(100% + 4px);z-index:30;display:flex;flex-direction:column;min-width:240px;padding:var(--sp-1);
+ background:var(--v31-white);border:1px solid var(--v31-separator);border-radius:var(--radius-m);box-shadow:var(--v31-panel-shadow)!important}
+.menu-eq-liste button{border:0;background:transparent;text-align:left;padding:8px var(--sp-3);border-radius:var(--radius-s)}
+.menu-eq-liste button:hover{background:var(--v31-row)}
+.menu-eq-liste button.danger{color:var(--ogias-danger);border-top:1px solid var(--v31-separator);border-radius:0;margin-top:var(--sp-1)}
+#contenu details.controles-eq{margin:0 0 var(--sp-3);padding:var(--sp-2) var(--sp-3);border:1px solid var(--v31-separator);border-radius:var(--radius-m);background:var(--v31-white)}
+#contenu details.controles-eq>summary{cursor:pointer;font-weight:600}
+#configuration-es #e-fin-config{display:none}
+/* Ajouter un équipement : choix du modèle */
+.choix-modeles{display:flex;flex-direction:column;gap:var(--sp-3);min-height:0}
+.choix-modeles #cm-q{height:38px;font-size:14px}
+.cm-liste{max-height:min(56vh,560px);overflow:auto}
+.cm-domaine h3{margin:var(--sp-3) 0 var(--sp-2);font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--v31-muted)}
+.cm-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--sp-2)}
+.choix-modele{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;column-gap:var(--sp-2);align-items:center;text-align:left;
+ padding:var(--sp-2) var(--sp-3);min-height:52px;border:1px solid var(--v31-separator);border-radius:var(--radius-m);background:var(--v31-white)}
+.choix-modele[hidden],.cm-domaine[hidden]{display:none}
+.choix-modele .tag{grid-row:1 / span 2}
+.choix-modele b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.choix-modele small{color:var(--v31-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.choix-modele:hover{border-color:var(--ogias-primary);background:var(--ogias-primary-light)}
+.cm-choisi{display:flex;align-items:center;gap:var(--sp-2)}
+.cm-choisi-etiq{color:var(--v31-muted);text-align:right}
 /* Emplacements : cible d'installation, survol au glisser, sélection */
 .rack .emplacement.cible{outline:2px dashed var(--ogias-primary);outline-offset:-3px;background:var(--ogias-primary-light)}
 .rack .emplacement.survol{outline-style:solid}

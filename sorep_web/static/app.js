@@ -605,53 +605,42 @@ function vueOuvrage() {
       ${E.ouvrage.en_conception ? `<p class="aide-champs">Validez d’abord la création de l’ouvrage avant d’ajouter des équipements.</p>` : `<label class="aside-recherche" title="Rechercher un repère, un libellé, un type">${V31.icon("search",14)}<input id="recherche" placeholder="Filtrer : repère, libellé, type…" aria-label="Rechercher un repère, un libellé, un type" value="${esc(E.recherche)}"></label>`}
       <div class="aside-btns" role="toolbar" aria-label="Commandes de l'arborescence" ${E.ouvrage.en_conception ? "hidden" : ""}><button class="prim" id="b-eq" title="Ajouter un équipement">+ Équipement</button><button id="b-uf" title="Ajouter une unité fonctionnelle">+ UF</button>
       <button id="b-import" title="Importer une liste d'équipements">Importer…</button></div></div><div class="arbre" id="arbre"></div></aside>
-    <section class="contenu" id="contenu"></section>
-    <div class="poste-catalogue eq-catalogue" id="eq-catalogue" role="complementary" aria-label="Catalogue des modèles d'équipement"></div>`;
+    <section class="contenu" id="contenu"></section>`;
   if (!E.ouvrage.en_conception) {
     $("#recherche").oninput = ev => { E.recherche = ev.target.value; arbre(); };
     $("#b-uf").onclick = () => modaleUF();
-    $("#b-eq").onclick = () => modaleEquipement(null, ufSelectionnee());
+    $("#b-eq").onclick = () => choisirModele(ufSelectionnee());
     $("#b-import").onclick = modaleImport;
   }
-  arbre(); contenu(); catalogueEquipements();
+  arbre(); contenu();
 }
-/* Catalogue des modèles d'équipement (poste de travail, 16/11) : on ajoute un équipement en cliquant un modèle
-   (fenêtre d'ajout pré-remplie : type, modèle, UF sélectionnée, numéro libre) ou en le glissant sur une UF
-   de l'arborescence. Données : types et modèles du référentiel publiés dans l'ouvrage. */
-function catalogueEquipements() {
-  const cat = $("#eq-catalogue"), o = E.ouvrage;
-  if (!cat) return;
+/* Ajouter un équipement (retour du 16/11, 13 h 40) : deux temps. 1) choisir ce qu'on ajoute dans une liste de
+   modèles classée par domaine, avec filtre ; 2) fenêtre courte pré-remplie (type, modèle, UF, numéro libre) où il
+   ne reste que le libellé. « Saisie libre » garde l'ancien formulaire complet. */
+function choisirModele(uf) {
+  const o = E.ouvrage;
+  if (!(o.identification.lieu && o.identification.code_ouvrage)) return modaleEquipement(null, uf);
   const parDomaine = {};
   (o.types || []).forEach(t => (parDomaine[t.domaine || "Autres"] ||= []).push(t));
   const domaines = Object.keys(parDomaine).sort((a, b) => a === "Autres" ? 1 : b === "Autres" ? -1 : a.localeCompare(b, "fr"));
-  const item = (t, m) => `<button type="button" class="cat-item" draggable="true" data-eq-type="${esc(t.code)}" data-eq-modele="${esc(m || "")}"
-      title="${esc(t.code.replace(/--$/, "") + " — " + t.designation + (m ? " · " + m : ""))}"><b><span class="tag">${esc(t.code.replace(/--$/, ""))}</span> ${esc(m || t.designation)}</b>
-      <small>${esc(m ? t.designation : "sans modèle")}</small></button>`;
-  cat.innerHTML = `<div class="pt-tete"><h2>Modèles</h2><span class="pt-compte">${(o.types || []).length}</span></div>
-    <label class="pt-recherche"><input type="search" id="eq-cat-q" placeholder="Filtrer : type, modèle…" aria-label="Filtrer les modèles" value="${esc(E.eqCatQ || "")}"></label>
-    <p class="pt-cat-aide">Cliquez un modèle pour l'ajouter${o.unites.length ? ", ou glissez-le sur une unité fonctionnelle" : ""}.</p>
-    <div class="pt-cat-liste">${domaines.map(d => `<details class="cat-groupe" data-groupe="${esc(d)}" ${E.eqCatFerme && E.eqCatFerme[d] ? "" : "open"}><summary>${esc(d)} <span class="pt-compte">${parDomaine[d].length}</span></summary>
-      ${parDomaine[d].map(t => (t.modeles && t.modeles.length ? t.modeles : [""]).map(m => item(t, m)).join("")).join("")}</details>`).join("")
-      || '<div class="vide-bloc">Aucun type d\'équipement dans le référentiel.</div>'}</div>`;
-  const filtrer = () => { const q = (E.eqCatQ || "").toLowerCase();
-    cat.querySelectorAll(".cat-item").forEach(b => b.hidden = !!q && !b.title.toLowerCase().includes(q)); };
-  cat.querySelector("#eq-cat-q").oninput = ev => { E.eqCatQ = ev.target.value; filtrer(); };
-  cat.querySelectorAll(".cat-groupe").forEach(g => g.ontoggle = () => { (E.eqCatFerme ||= {})[g.dataset.groupe] = !g.open; });
-  const choix = b => ({type: b.dataset.eqType, modele: b.dataset.eqModele});
-  cat.querySelectorAll(".cat-item").forEach(b => {
-    b.onclick = () => modaleEquipement(null, ufSelectionnee(), choix(b));
-    b.ondragstart = ev => { E.eqGlisse = choix(b); ev.dataTransfer.setData("text/plain", b.dataset.eqType); ev.dataTransfer.effectAllowed = "copy";
-      document.querySelectorAll("#arbre .noeud:is(.uf,.racine)").forEach(n => n.classList.add("cible")); };
-    b.ondragend = () => document.querySelectorAll("#arbre .noeud.cible, #arbre .noeud.survol").forEach(n => n.classList.remove("cible", "survol"));
-  });
-  filtrer();
-}
-function cibleArbre(n) {
-  n.ondragover = ev => { if (E.eqGlisse) { ev.preventDefault(); n.classList.add("survol"); } };
-  n.ondragleave = () => n.classList.remove("survol");
-  n.ondrop = ev => { ev.preventDefault(); const c = E.eqGlisse; E.eqGlisse = null;
-    document.querySelectorAll("#arbre .noeud.cible, #arbre .noeud.survol").forEach(x => x.classList.remove("cible", "survol"));
-    if (c) modaleEquipement(null, n.dataset.n === "uf" ? n.dataset.v : "", c); };
+  const ufLib = uf ? ` dans ${esc(uf)}` : "";
+  const item = (t, m) => `<button type="button" class="choix-modele" data-eq-type="${esc(t.code)}" data-eq-modele="${esc(m || "")}"
+      data-filtre="${esc((t.code + " " + t.designation + " " + (m || "") + " " + (t.domaine || "")).toLowerCase())}">
+      <span class="tag">${esc(t.code.replace(/--$/, ""))}</span><b>${esc(m || t.designation)}</b><small>${esc(m && m !== t.designation ? t.designation : "")}</small></button>`;
+  const m = ouvrirModale(`<div class="boite-tete"><h2>Ajouter un équipement${ufLib}</h2><p>Choisissez ce que vous ajoutez. Ses E/S et ses informations viennent du modèle.</p></div>
+    <div class="boite-corps choix-modeles"><input type="search" id="cm-q" placeholder="Rechercher : vanne, pompe, débit, PM…" aria-label="Rechercher un modèle" autocomplete="off">
+      <div class="cm-liste">${domaines.map(d => `<section class="cm-domaine"><h3>${esc(d)}</h3><div class="cm-grille">
+        ${parDomaine[d].map(t => (t.modeles && t.modeles.length ? t.modeles : [""]).map(mo => item(t, mo)).join("")).join("")}</div></section>`).join("")}
+        <p class="cm-vide" hidden>Aucun modèle ne correspond. Essayez un autre mot ou utilisez la saisie libre.</p></div></div>
+    <div class="boite-pied"><button class="lien" id="cm-libre">Saisie libre…</button><span class="gauche"></span><button data-fermer>Annuler</button></div>`, true);
+  const q = m.querySelector("#cm-q");
+  q.oninput = () => { const v = q.value.trim().toLowerCase();
+    m.querySelectorAll(".choix-modele").forEach(b => b.hidden = !!v && !b.dataset.filtre.includes(v));
+    m.querySelectorAll(".cm-domaine").forEach(sct => sct.hidden = ![...sct.querySelectorAll(".choix-modele")].some(b => !b.hidden));
+    m.querySelector(".cm-vide").hidden = [...m.querySelectorAll(".choix-modele")].some(b => !b.hidden); };
+  m.querySelectorAll(".choix-modele").forEach(b => b.onclick = () => modaleEquipement(null, uf, {type: b.dataset.eqType, modele: b.dataset.eqModele}));
+  m.querySelector("#cm-libre").onclick = () => modaleEquipement(null, uf);
+  setTimeout(() => q.focus(), 0);
 }
 function ufSelectionnee() {
   const s = E.sel;
@@ -696,9 +685,8 @@ function arbre() {
   document.querySelectorAll("#arbre .noeud").forEach(n => {
     n.onclick = () => { E.sel = {nature: n.dataset.n, valeur: n.dataset.v}; E.filtreRole = "Toutes"; arbre(); contenu(); };
     if (n.dataset.n === "eq") n.ondblclick = () => modaleEquipement(eqParIdent(n.dataset.v));
-    if (n.dataset.n === "uf" || n.dataset.n === "ouvrage") cibleArbre(n);
   });
-  document.querySelectorAll("[data-ajout-uf]").forEach(a => a.onclick = () => modaleEquipement(null, a.dataset.ajoutUf));
+  document.querySelectorAll("[data-ajout-uf]").forEach(a => a.onclick = () => choisirModele(a.dataset.ajoutUf));
   const ajouterUF = document.querySelector("[data-ajout-uf-nouvelle]");
   if (ajouterUF) ajouterUF.onclick = () => modaleUF();
 }
@@ -999,21 +987,17 @@ function detailEquipement(e) {
   const se = o.sous_ensembles.find(x => x.code === e.se) || {};
   const badgeOrigine = x => x === "ajoutée" ? '<span class="badge b-ok">ajoutée</span>' : x === "modifiée" ? '<span class="badge b-al">modifiée</span>' : '<span class="badge b-n">modèle</span>';
   c.innerHTML = `<div class="fil">${esc(o.prefixe)} › ${esc(uf ? uf.code : (o.unites.length ? "hors UF" : "équipements"))} › ${esc(e.pcf)}</div>
-   <div class="bloc"><div class="titre"><div><h1 class="mono">${esc(e.pcf)} ${badgeEtat(e)}</h1><div class="sous">${esc(e.libelle || "libellé à renseigner")}</div></div>
-     <div class="actions"><button id="e-dep">Ranger dans une UF…</button><button id="e-mod">Modifier…</button><button class="danger" id="e-sup">Supprimer</button>
-     ${e.valide ? '<button id="e-val" data-v="0">Repasser à contrôler</button>' : '<button class="prim" id="e-val" data-v="1">Valider le paramétrage</button>'}</div></div>
-     <div class="props">
-       <div><small>Type</small><b>${esc(e.type.replace(/--$/, ""))}</b> — ${esc(e.designation)}</div>
-       <div><small>Modèle</small><b>${esc(e.modele) || "aucun"}</b></div>
-       <div><small>Sous-ensemble</small><b>${esc(e.se)}</b>${se.libelle ? " — " + esc(se.libelle) : ""}</div>
-       <div><small>Domaine</small><b>${esc(e.domaine || "non classé")}</b> · ${e.nb_es} E/S physique(s)</div>
-     </div></div>
-   ${e.alerte_modele ? `<div class="avert"><b>Référentiel à contrôler :</b> ${esc(e.alerte_modele)} <button class="lien" data-nav="#/referentiel">Consulter le référentiel</button></div>` : ""}
+   <div class="bloc entete-eq"><div class="titre"><div class="entete-eq-texte"><h1 class="mono">${esc(e.pcf)} ${badgeEtat(e)}</h1>
+       <div class="sous">${esc(e.libelle || "libellé à renseigner")} · ${esc(e.designation)} · modèle ${esc(e.modele) || "aucun"} · SE ${esc(e.se)}${se.libelle ? " " + esc(se.libelle) : ""} · ${esc(e.domaine || "non classé")} · ${e.nb_es} E/S
+       ${e.alerte_modele ? ` · <button class="lien alerte-modele" data-nav="#/referentiel" title="${esc(e.alerte_modele)}">Référentiel à contrôler</button>` : ""}</div></div>
+     <details class="menu-eq"><summary title="Autres commandes de l'équipement" aria-label="Autres commandes de l'équipement">⋯</summary><div class="menu-eq-liste" role="menu">
+       <button id="e-mod" role="menuitem">Modifier type, modèle, numéro…</button><button id="e-dep" role="menuitem">Ranger dans une UF…</button>
+       ${e.valide ? '<button id="e-val" data-v="0" role="menuitem">Repasser à contrôler</button>' : '<button id="e-val" data-v="1" role="menuitem">Valider le paramétrage</button>'}
+       <button class="danger" id="e-sup" role="menuitem">Supprimer l'équipement</button></div></details></div></div>
    ${!e.modele_a_jour ? `<div class="avert">Le modèle « ${esc(e.modele)} » a changé dans le référentiel depuis l'ajout de cet équipement. <button class="lien" id="e-act">Reprendre la nouvelle version</button></div>` : ""}
-   ${(e.erreurs || []).length || (e.alertes || []).length ? `<div class="bloc controles-eq"><div class="bloc-tete"><h2>Contrôles de cet équipement</h2>
-     <span class="aide">${(e.erreurs || []).length} erreur(s) · ${(e.alertes || []).length} alerte(s)</span></div>
-     <ul class="liste-controles">${(e.erreurs || []).map(m => `<li class="c-err">${esc(m)}</li>`).join("")}${(e.alertes || []).map(m => `<li class="c-al">${esc(m)}</li>`).join("")}</ul></div>` : ""}
-   ${!e.valide && e.etat_param === "incomplet" ? `<div class="avert"><b>Avant validation :</b> ${esc(e.detail_etat)}</div>` : ""}`;
+   ${(e.erreurs || []).length || (e.alertes || []).length ? `<details class="controles-eq" id="controles-eq" ${(e.erreurs || []).length ? "open" : ""}><summary>Contrôles de cet équipement :
+     ${(e.erreurs || []).length ? `<span class="badge b-err">${(e.erreurs || []).length} erreur(s)</span>` : ""} ${(e.alertes || []).length ? `<span class="badge b-al">${(e.alertes || []).length} alerte(s)</span>` : ""}</summary>
+     <ul class="liste-controles">${(e.erreurs || []).map(m => `<li class="c-err">${esc(m)}</li>`).join("")}${(e.alertes || []).map(m => `<li class="c-al">${esc(m)}</li>`).join("")}</ul></details>` : ""}`;
   const blocLignes = `   <div class="bloc" id="lignes-supervision"><div class="bloc-tete"><h2>Lignes du modèle de supervision</h2><span class="aide">libellés et mnémoniques du modèle choisi · ${e.informations.length} ligne(s)${e.adapte ? " · adaptées pour cet équipement" : ""}</span>
      <div class="droite">${e.adapte ? '<button id="l-ret">Revenir au modèle</button>' : ""}<button class="danger" id="l-sup" disabled>Supprimer la sélection</button><button class="prim" id="l-add">+ Ajouter une ligne</button></div></div>
    ${e.informations.length ? `<div class="compteurs"><span class="chip ${E.filtreRole === "Toutes" ? "on" : ""}" data-r="Toutes">Toutes<b>${e.informations.length}</b></span>
@@ -1079,6 +1063,11 @@ function detailEquipement(e) {
   };
   c.querySelectorAll(".chip").forEach(ch => ch.onclick = () => { E.filtreRole = ch.dataset.r; detailEquipement(e); });
   const recharge = async () => { await recharger(); };
+  const menu = c.querySelector(".menu-eq");
+  if (menu) { menu.querySelectorAll("button").forEach(b => b.addEventListener("click", () => menu.open = false));
+  }
+  if (!E.menuEqEcoute) { E.menuEqEcoute = true;          // un seul écouteur : ferme le menu « ⋯ » au clic ailleurs
+    document.addEventListener("click", ev => document.querySelectorAll(".menu-eq[open]").forEach(x => { if (!x.contains(ev.target)) x.open = false; }), {capture: true}); }
   $("#e-val").onclick = async () => { const v = $("#e-val").dataset.v === "1";
     await agir(api("/api/equipement/valider", {idents: [e.ident], valide: v}), v ? "Équipement validé." : "Équipement repassé à valider."); recharge(); };
   $("#e-mod").onclick = () => modaleEquipement(eqParIdent(e.ident));
@@ -1123,7 +1112,8 @@ function parcoursEquipement(e, c, n) {
   else if (n.echelles) action = {cls: "al", texte: `Définissez ${n.echelles} échelle(s) analogique(s) 4–20 mA dans l'onglet « E/S physiques ».`, onglet: "es"};
   else if (aDecider) action = {cls: "al", texte: `Décidez ${aDecider} information(s) fonctionnelle(s) proposée(s) : retenir ou écarter avec un motif.`, onglet: "fonc"};
   else if (nbErr) action = {cls: "err", texte: `Corrigez ${nbErr} erreur(s) signalée(s) ci-dessus avant de valider.`};
-  else action = {cls: "info", texte: n.options ? "Cochez les options réellement présentes sur l'équipement, vérifiez les E/S, puis validez." : "Vérifiez les E/S proposées, puis validez le paramétrage.",
+  else if (e.etat_param === "incomplet" && e.detail_etat) action = {cls: "al", texte: e.detail_etat};
+  else action = {cls: "info", texte: n.options ? "Cochez les options présentes sur l'équipement, vérifiez les E/S, puis validez." : "Vérifiez les E/S proposées, puis validez.",
                  bouton: ["Valider le paramétrage", () => $("#e-val")?.click()]};
   E.ongletEq ||= {};
   let actif = E.ongletEq[e.ident] || action.onglet || "es";
@@ -1541,6 +1531,13 @@ function modaleEquipement(eq, ufDefaut, depuisCatalogue) {
   if (!eq && depuisCatalogue && depuisCatalogue.type) {        // ajout depuis le catalogue des modèles
     q("#q-type").value = depuisCatalogue.type; majModeles(false);
     if (depuisCatalogue.modele) q("#q-modele").value = depuisCatalogue.modele;
+    // Le choix est déjà fait : il est résumé en tête, les listes type / modèle restent dans la page, masquées.
+    const t = o.types.find(x => x.code === depuisCatalogue.type) || {designation: ""};
+    ["#q-type", "#q-modele"].forEach(id => { q(id).hidden = true; q(id).previousElementSibling.hidden = true; });
+    q(".champs").insertAdjacentHTML("afterbegin", `<span class="cm-choisi-etiq">Équipement</span><div class="cm-choisi"><span class="tag">${esc(depuisCatalogue.type.replace(/--$/, ""))}</span>
+      <b>${esc(depuisCatalogue.modele || t.designation)}</b><button type="button" class="lien" id="cm-changer">Changer</button></div>`);
+    q("#cm-changer").onclick = () => choisirModele(q("#q-uf").value);
+    m.querySelector(".boite-tete p").textContent = "Il reste à donner un numéro et un libellé. Le repère se construit tout seul.";
     numeroLibre(); setTimeout(() => q("#q-lib").focus(), 0);
   }
   q("#q-type").onchange = () => { majModeles(false); numeroLibre(); };
@@ -2464,6 +2461,49 @@ function majSelectionMateriel() {
   if ($("#pt-carte")) $("#pt-carte").onclick = () => modaleModules(carte.module);
   if ($("#pt-modifier")) $("#pt-modifier").onclick = () => modaleEmplacement(el.dataset.emplacement, el.dataset.role);
 }
+/* Matériel pas encore calculé (retour du 16/11, 13 h 40 : « trop d'informations, ça fait peur ») : l'écran
+   n'affiche qu'un cadre de démarrage — besoin, plateforme, alimentation, processeur, un bouton. Rack, catalogue,
+   inspecteur et onglets n'apparaissent qu'une fois le matériel calculé. Les listes de choix sont celles du bloc
+   de composition, déplacées (mêmes éléments, mêmes événements). */
+function demarrageMateriel({m, d, prop, cables}) {
+  const section = document.querySelector("#vue > .contenu.poste-travail"), ed = $("#pt-editeur");
+  if (!section || !ed) return;
+  section.classList.add("etat-vide");
+  const nat = {ET: "entrée(s) TOR", ST: "sortie(s) TOR", EA: "entrée(s) analogique(s)", SA: "sortie(s) analogique(s)"};
+  const parNature = ["ET", "ST", "EA", "SA"].map(n => [n, cables.filter(p => p.point === n).length]).filter(x => x[1]);
+  const possible = !!(prop && prop.applicable) && !m.blocage;
+  const carte = document.createElement("div");
+  carte.className = "demarrage-materiel";
+  carte.innerHTML = `<h1>Configurer le matériel</h1>
+    <p class="dm-intro">${cables.length ? `OGIAS propose les racks et les cartes pour vos <b>${cables.length} E/S câblées</b> : ${parNature.map(([n, k]) => `${k} ${nat[n]}`).join(", ")}.` : "Aucune E/S câblée pour l'instant."}
+      Vous pourrez ensuite tout ajuster sur le rack.</p>
+    ${m.blocage ? `<div class="dm-bloque"><b>Pas encore possible :</b> ${esc(m.blocage)} <button class="lien" data-nav="#/es">Aller à la liste des E/S</button></div>` : ""}
+    <ol class="dm-etapes">
+      <li><span class="dm-num">1</span><div><b>Plateforme</b><span class="dm-valeur mono">${esc(m.plateforme || "—")}</span>
+        ${m.automate ? `<small>d'après la source d'acquisition « ${esc(m.automate)} »</small>`
+          : `<small class="dm-al">Source d'acquisition non renseignée dans la fiche de l'ouvrage : ${esc(m.plateforme || "")} est pris par défaut.</small> <button class="lien" id="dm-source">Renseigner la source</button>`}</div></li>
+      <li class="dm-choix" data-dm="alimentation"><span class="dm-num">2</span><div><b>Alimentation</b><small>facultatif : sinon l'emplacement reste « à choisir »</small></div></li>
+      <li class="dm-choix" data-dm="processeur"><span class="dm-num">3</span><div><b>Processeur</b><small>facultatif : sinon d'après la fiche de l'ouvrage</small></div></li>
+    </ol>
+    <div class="dm-action"><button class="prim grand" id="m-demarrer" ${possible ? "" : "disabled"}>Calculer le matériel</button>
+      <span class="aide">${Math.round((m.reserve_min || 0) * 100)} % de réserve par carte · rien n'est validé tant que vous ne le décidez pas</span></div>`;
+  ed.prepend(carte);
+  // Listes d'alimentation et de processeur : déplacées depuis le bloc de composition
+  ["alimentation", "processeur"].forEach(k => { const sel = document.querySelector(`[data-cfg="${k}"]`), li = carte.querySelector(`[data-dm="${k}"]`);
+    if (sel && li) li.appendChild(sel); else if (li) li.remove(); });
+  // Répartition (équipements secourus, emplacements libres) : elle oriente le calcul, donc elle reste ici,
+  // repliée sauf si des groupes de secours attendent une confirmation.
+  const rp = document.querySelector("#rp-sep")?.closest(".bloc");
+  if (rp) { const det = document.createElement("details"); det.className = "dm-options";
+    const aConfirmer = (m.repartition?.groupes_secours_proposes || []).length;
+    det.open = aConfirmer > 0 || E.dmOptionsOuvert === true;
+    det.innerHTML = `<summary>Répartition des E/S${aConfirmer ? ` <span class="badge b-al">${aConfirmer} groupe(s) de secours à confirmer</span>` : " (équipements secourus, emplacements libres)"}</summary>`;
+    det.appendChild(rp); carte.querySelector(".dm-action").before(det);
+    det.ontoggle = () => { E.dmOptionsOuvert = det.open; }; }
+  carte.querySelector("#m-demarrer").onclick = () => $("#m-calc").click();
+  const src = carte.querySelector("#dm-source");
+  if (src) src.onclick = () => { E.ficheOuverte = true; E.sel = {nature: "ouvrage", valeur: ""}; naviguer("#/inventaire"); };
+}
 /* Retour du 16/11 (11 h 03) : écran matériel trop chargé. Le rack reste en tête ; une seule « prochaine
    action » ; la suite est rangée en trois onglets (voies des E/S, réglages du calcul, nomenclature et
    livrables). Tous les blocs, identifiants et commandes restent dans la page (attribut hidden). */
@@ -2588,6 +2628,7 @@ function vueMateriel() {
   liaisonsRepartition();
   liaisonsComposition();
   posteMateriel();
+  if (rien && ["M340", "M580"].includes(m.plateforme)) demarrageMateriel({m, d, prop, cables});
   $("#x-xl").onclick = () => telecharger("liste_es");
   $("#x-ca").onclick = () => telecharger("cartes");
   $("#x-xsy").onclick = () => telecharger("es_xsy");

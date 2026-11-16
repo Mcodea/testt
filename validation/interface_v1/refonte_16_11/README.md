@@ -130,3 +130,28 @@ d'ingénierie (TIA Portal, AVEVA, Control Expert). Captures : `poste_travail/`.
   en entier.
 - **Variables** : déjà en tableau + panneau de propriétés sans défilement de page ; inchangé.
 - Tests : `TestPosteDeTravailEquipementsEtES` (+2). `pytest tests_web` : 82 réussis.
+
+## Retour du 16/11 (13 h 40) : « trop d'informations, ça fait peur » — on enlève au lieu d'ajouter
+
+Constat : les lots précédents ajoutaient de la structure (onglets, bandeaux, panneaux) sans retirer ce qui était
+déjà là. Nouvelle règle : **chaque écran n'affiche que ce qui sert à son état du moment**. Captures :
+`retours_13h40/` (données fictives).
+
+- **Matériel non calculé (M340 / M580)** : un seul cadre « Configurer le matériel » — besoin en E/S,
+  plateforme (avec l'alerte « source d'acquisition non renseignée : M340 pris par défaut » et le lien pour la
+  renseigner), alimentation et processeur (facultatifs), répartition repliée sauf groupes de secours à
+  confirmer, bouton « Calculer le matériel ». Rack, catalogue, inspecteur, onglets et barre de commandes
+  n'apparaissent qu'une fois le matériel calculé. Les listes sont les mêmes éléments que le bloc de
+  composition, déplacés (mêmes événements, aucune donnée dupliquée).
+- **Fiche équipement** : une ligne de titre (repère, état, puis libellé · type · modèle · SE · domaine · E/S,
+  et « Référentiel à contrôler » en lien discret, détail en infobulle) ; Modifier / Ranger / Valider ou Repasser /
+  Supprimer dans un menu « ⋯ » ; **une seule** ligne « Prochaine action » (les bandeaux « Référentiel à
+  contrôler » et « Avant validation » qui la répétaient sont fondus dedans) ; contrôles de l'équipement repliés
+  avec leur nombre ; bouton de validation en double du bas des E/S retiré de l'affichage ; le bloc « Pour passer
+  à l'étape suivante » passe de l'alarme rouge à une information.
+- **Ajouter un équipement en deux temps** : 1) choisir le modèle dans une liste classée par domaine, avec
+  recherche (« vanne », « pompage »…) ; 2) fenêtre courte : l'équipement choisi est résumé (« Changer »), le
+  numéro libre est proposé, le curseur est dans le libellé. « Saisie libre… » garde le formulaire complet. Le
+  catalogue permanent à droite de la fiche est retiré.
+- Tests : `test_ajout_en_deux_temps_modele_puis_libelle`, `test_fiche_une_seule_ligne_d_action_et_menu_des_commandes`,
+  `TestDemarrageMateriel` ; `pytest tests_web` : 84 réussis.

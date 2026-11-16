@@ -238,27 +238,48 @@ class TestPosteDeTravailEquipementsEtES(ServeurNavigateur):
     setUp = TestRetours1611.setUp
     tearDown = TestRetours1611.tearDown
 
-    def test_catalogue_des_modeles_preremplit_l_ajout(self):
+    def test_ajout_en_deux_temps_modele_puis_libelle(self):
         self.page.goto(self.url + '#/inventaire', wait_until='networkidle')
-        cat = self.page.locator('#eq-catalogue')
-        cat.locator('.cat-item').first.wait_for()
-        self.assertTrue(cat.is_visible())
-        contenu = self.page.locator('#contenu').bounding_box()
-        self.assertGreaterEqual(contenu['width'], 600)
-        self.assertLessEqual(contenu['x'] + contenu['width'], cat.bounding_box()['x'] + 1)
-        item = cat.locator('.cat-item[data-eq-type="PM"]').first
+        self.page.locator('#b-eq').click()
+        choix = self.page.locator('.choix-modele')
+        choix.first.wait_for()
+        self.page.locator('#cm-q').fill('pompage')
+        visibles = self.page.locator('.choix-modele:visible')
+        self.assertGreaterEqual(visibles.count(), 1)
+        self.assertTrue(all('pompage' in (b.get_attribute('data-filtre') or '') for b in visibles.all()))
+        item = self.page.locator('.choix-modele:visible[data-eq-type="PM"]').first
         modele = item.get_attribute('data-eq-modele')
         item.click()
-        self.page.locator('#q-type').wait_for()
+        self.page.locator('.cm-choisi').wait_for()
+        self.assertFalse(self.page.locator('#q-type').is_visible(), 'Type déjà choisi : liste masquée')
         self.assertEqual(self.page.locator('#q-type').input_value(), 'PM')
         if modele:
             self.assertEqual(self.page.locator('#q-modele').input_value(), modele)
         self.page.wait_for_function('() => /^\\d{2}$/.test(document.querySelector("#q-num").value)')
+        self.assertTrue(self.page.locator('#q-lib').evaluate('e => e === document.activeElement'))
+        self.page.locator('#q-lib').fill('Pompe essai')
+        self.page.locator('#m-ok').click()
+        self.page.wait_for_function('() => document.querySelector("#contenu .entete-eq .sous")?.textContent.includes("Pompe essai")')
+        # Saisie libre toujours disponible
+        self.page.locator('#b-eq').click()
+        self.page.locator('#cm-libre').click()
+        self.assertTrue(self.page.locator('#q-type').is_visible())
         self.page.locator('#modale [data-fermer]').first.click()
-        # Commandes de la fiche dans la colonne centrale
-        self.page.locator('#arbre .noeud.eq').first.click()
-        bouton = self.page.locator('#e-val').bounding_box()
-        self.assertLessEqual(bouton['x'] + bouton['width'], contenu['x'] + contenu['width'] + 1)
+
+    def test_fiche_une_seule_ligne_d_action_et_menu_des_commandes(self):
+        self.api('/api/equipement/ajouter', {'type': 'HV', 'numero': '07', 'se': '00'})
+        self.page.goto(self.url + '#/inventaire', wait_until='networkidle')
+        self.page.locator('#vue > aside :text("HV07")').first.click()
+        self.page.locator('.parcours-eq').wait_for()
+        self.assertEqual(self.page.locator('#contenu .avert').count(), 0, 'Plus de bandeaux redondants')
+        self.assertEqual(self.page.locator('#contenu .prochaine-action').count(), 1)
+        for s in ('#e-mod', '#e-dep', '#e-sup', '#e-val'):
+            self.assertFalse(self.page.locator(s).is_visible(), s)
+        self.page.locator('.menu-eq > summary').click()
+        for s in ('#e-mod', '#e-dep', '#e-sup', '#e-val'):
+            self.assertTrue(self.page.locator(s).is_visible(), s)
+        self.page.mouse.click(5, 5)
+        self.assertFalse(self.page.locator('#e-sup').is_visible(), 'Le menu se ferme au clic ailleurs')
 
     def test_liste_des_es_une_ligne_par_es_sans_debordement(self):
         self.page.goto(self.url + '#/es', wait_until='networkidle')
@@ -273,3 +294,47 @@ class TestPosteDeTravailEquipementsEtES(ServeurNavigateur):
         self.assertEqual(self.page.locator('.pied-etape').count(), 1, 'Le pied d\'étape reste après la sélection')
         vue = "(() => { const v = document.querySelector('#vue'); return v.scrollHeight - v.clientHeight })()"
         self.assertEqual(self.page.evaluate(vue), 0)
+
+
+class TestDemarrageMateriel(ServeurNavigateur):
+    """Retour du 16/11 (13 h 40) : sans matériel calculé, l'écran n'affiche qu'un cadre de démarrage."""
+    BASE = 90
+
+    def setUp(self):
+        type(self).numero += 1
+        self.api('/api/nouveau', {'mode': 'Neuf'})
+        if not any(x['code'] == 'XTST' for x in self.api('/api/listes-ouvrage')['lieux']):
+            self.api('/api/listes-ouvrage/action', {'action': 'ajouter', 'groupe': 'lieux', 'code': 'XTST', 'libelle': 'Lieu fictif'})
+        self.api('/api/fiche-ouvrage', {'action': 'creer', 'identification': {
+            'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': f'{self.BASE + self.numero:02d}',
+            'libelle': 'Démarrage', 'automate': '', 'revision': 'A'}})
+        i = self.api('/api/equipement/ajouter', {'type': 'PM', 'numero': '01', 'se': '00'})['ident']
+        self.api('/api/equipement/proposition', {'ident_eq': i, 'decision': 'retenir'})
+        self.api('/api/equipement/valider', {'idents': [i], 'valide': True})
+        pts = self.api('/api/es')['points']
+        self.api('/api/es/valider', {'niveau': 'contenu', 'paires': [{'ident_eq': p['ident_eq'], 'cle': p['cle']} for p in pts]})
+        self.context = self.browser.new_context(viewport={'width': 1366, 'height': 768})
+        self.addCleanup(self.context.close)
+        self.page = self.context.new_page()
+        self.erreurs = []
+        self.page.on('pageerror', lambda e: self.erreurs.append(str(e)))
+
+    def tearDown(self):
+        self.assertEqual(self.erreurs, [])
+
+    def test_cadre_de_demarrage_seul_puis_poste_de_travail(self):
+        self.page.goto(self.url + '#/materiel', wait_until='networkidle')
+        carte = self.page.locator('.demarrage-materiel')
+        carte.wait_for()
+        for s in ('#pt-catalogue', '#pt-inspecteur', '#onglets-mat', '.rack', '.v31-page-actions'):
+            self.assertFalse(self.page.locator(s).first.is_visible(), s)
+        self.assertIn('non renseignée', carte.inner_text())
+        self.assertEqual(self.page.locator('[data-cfg="alimentation"]').count(), 1)
+        self.assertTrue(carte.locator('[data-cfg="alimentation"]').is_visible())
+        carte.locator('[data-cfg="alimentation"]').select_option('BMX CPS 2010')
+        self.page.wait_for_function('() => document.querySelector(\'[data-cfg="alimentation"]\')?.value === "BMX CPS 2010"')
+        self.page.locator('#m-demarrer').click()
+        self.page.locator('#pt-catalogue .cat-item').first.wait_for()
+        self.assertEqual(self.page.locator('.demarrage-materiel').count(), 0)
+        self.assertTrue(self.page.locator('.rack').first.is_visible())
+        self.assertTrue(self.api('/api/es')['modules'])
