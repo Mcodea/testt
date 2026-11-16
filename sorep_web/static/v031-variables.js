@@ -37,7 +37,7 @@ function vueDashboardV31(){
 }
 function v31Status(t){const kind=t==='validée'?'success':t==='en conflit'||t==='non résolue'?'error':t==='à valider'?'warning':'info';return `<span class="v31-pill ${kind}">${V31.esc(t||'non résolue')}</span>`;}
 function v31VarFilter(rows){const st=E.v31Status||'',q=(E.v31Query||'').toLocaleLowerCase('fr'),view=E.v31VarView||'all';
- return rows.filter(v=>{if(st&&v.etat_adressage!==st)return false;if(q&&!`${v.nom} ${v.source_es} ${v.famille} ${v.regle}`.toLocaleLowerCase('fr').includes(q))return false;
+ return rows.filter(v=>{if(st&&v.etat_adressage!==st)return false;if(q&&!`${v.nom} ${v.libelle||''} ${v.commentaire||''} ${v.source_es} ${v.famille} ${v.regle}`.toLocaleLowerCase('fr').includes(q))return false;
   return true; /* Les vues changent les colonnes, pas les familles. */});}
 function v31EmptyColumns(){
  const cell=document.querySelector('.v31-table tbody td[colspan]');
@@ -67,7 +67,7 @@ function vueVariablesV31(){
    return `<tr class="v31-variable-row ${withDetail&&v.nom===selected?'selected':''}" tabindex="0" data-variable="${V31.esc(v.nom)}" title="Ouvrir le détail de ${V31.esc(v.nom)}">
      <td><input type="checkbox" class="v31-choose" data-ident="${V31.esc(v.ident_eq||'')}" data-cle="${V31.esc(v.cle||'')}" aria-label="Sélectionner ${V31.esc(v.nom)}" ${!neuf?'disabled':''}></td>
      <td class="mono" title="${V31.esc(v.nom)}">${V31.esc(v.nom)}</td><td><span class="v31-family">${V31.esc(v.famille)}</span></td>
-     <td class="mono v31-source" title="${V31.esc(v.source_es||v.origine||'Règle fonctionnelle')}">${V31.esc(v.source_es||v.origine||'Calcul')}</td>
+     <td class="v31-libelle" title="${V31.esc(v.libelle||v.commentaire||'')}">${V31.esc(v.libelle||v.commentaire||'—')}</td>
      <td class="mono" title="${V31.esc(current||proposed||'Non attribuée')}">${V31.esc(current||proposed||'—')}${v.validee?` <span title="Adresse validée et protégée">${V31.icon('shield',13)}</span>`:''}</td>
      <td class="mono v31-col-tele ${view==='exchange'?'v31-hide-in-exchange':''}">${V31.esc(protocol||'—')}</td><td>${v31Status(v.etat_adressage)}</td>
      <td class="v31-rule ${view==='tele'?'v31-hide-in-tele':''}" title="${V31.esc(v.motif||v.regle||'')}">${V31.esc(v.motif||v.regle||'—')}</td></tr>`;}).join('');
@@ -78,7 +78,7 @@ function vueVariablesV31(){
  const statuses=counts.map(([name,n])=>`<button type="button" class="v31-filter ${E.v31Status===name?'active':''}" data-var-status="${V31.esc(name)}">${V31.esc(name)} ${n}</button>`).join('');
  const detail=withDetail?`<aside class="v31-variable-detail" aria-label="Variable sélectionnée"><div class="v31-detail-heading"><span>Variable sélectionnée</span><button type="button" id="v31-close-detail" aria-label="Fermer le détail">${V31.icon('close',18)}</button></div>
  <h2 class="mono">${V31.esc(selectedVar.nom)}</h2><p>${V31.esc(selectedVar.commentaire||selectedVar.libelle||selectedVar.repere||'')}</p><div class="v31-detail-badges">${v31Status(selectedVar.etat_adressage)} <span class="v31-pill neutral">${V31.esc(selectedVar.famille)} · ${V31.esc(selectedVar.type)}</span></div>
- <dl><dt>Source</dt><dd class="mono">${V31.esc(selectedVar.source_es||'Fonction calculée')}</dd>
+ <dl><dt>E/S source</dt><dd class="mono">${V31.esc(selectedVar.source_es||'Fonction calculée')}</dd>
  <dt>Voie physique</dt><dd class="mono">${V31.esc(selectedVar.source_es?(selectedVar.voie_es||'Non placée — Matériel'):'Sans objet')}</dd>
  <dt>Adresse automate</dt><dd class="mono">${V31.esc(selectedVar.adresse||selectedVar.adresse_proposee||'—')}</dd>
  <dt>Télétransmission</dt><dd class="mono">${V31.esc((teleMap.get(selectedVar.nom)||{}).adresse_protocole_actuelle||(teleMap.get(selectedVar.nom)||{}).adresse_protocole_proposee||'—')}</dd>
@@ -98,7 +98,7 @@ function vueVariablesV31(){
  <button type="button" class="v31-menu-button" id="v31-var-more" aria-label="Autres actions" title="Autres actions">···</button></div></div>
  ${!neuf?'<div class="v31-inform">Projet existant : les adresses historiques sont conservées, sans réaffectation automatique.</div>':''}
  ${errCount?`<div class="v31-inform warning">${errCount} point(s) bloquant(s) ou non résolu(s). Les conflits doivent être corrigés avant la validation.</div>`:''}
- <div class="v31-table-area"><table class="v31-table"><thead><tr><th><input type="checkbox" id="v31-select-all" aria-label="Tout sélectionner" ${!neuf?'disabled':''}></th><th>Variable</th><th>Famille</th><th class="v31-source">Source</th><th>Adresse automate</th><th class="v31-col-tele ${view==='exchange'?'v31-hide-in-exchange':''}">Télétransmission</th><th>Statut</th><th class="v31-rule ${view==='tele'?'v31-hide-in-tele':''}">Règle</th></tr></thead><tbody>
+ <div class="v31-table-area"><table class="v31-table"><thead><tr><th><input type="checkbox" id="v31-select-all" aria-label="Tout sélectionner" ${!neuf?'disabled':''}></th><th>Variable</th><th>Famille</th><th class="v31-libelle">Libellé</th><th>Adresse automate</th><th class="v31-col-tele ${view==='exchange'?'v31-hide-in-exchange':''}">Télétransmission</th><th>Statut</th><th class="v31-rule ${view==='tele'?'v31-hide-in-tele':''}">Règle</th></tr></thead><tbody>
  ${body||`<tr><td colspan="${view==='all'?8:7}"><div class="v31-blank">Aucune variable à afficher avec ces filtres.</div></td></tr>`}</tbody></table></div>
  <footer class="v31-table-footer"><span>${rows.length?`${rows.length} variable(s) · ${shown.length?`${shown.length} filtrée(s)`:'Aucun résultat'}`:'Aucune variable'} · page ${page+1}/${Math.max(1,Math.ceil(shown.length/150))}</span><div class="v31-page-controls"><button type="button" id="v31-prev-page" ${page===0?'disabled':''}>Précédent</button><button type="button" id="v31-next-page" ${(page+1)*150>=shown.length?'disabled':''}>Suivant</button></div>
  <button type="button" id="v31-adr-settings" class="v31-text-button">Paramètres d’adressage</button></footer></div>${detail}</section>`;

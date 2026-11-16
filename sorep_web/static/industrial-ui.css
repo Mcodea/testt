@@ -335,6 +335,45 @@ html[data-theme="dark"] .emplacement.cpu{background:var(--ogias-primary-light);b
 .pp-verifier{border-left:3px solid var(--ogias-warning-line);background:var(--ogias-warning-bg)}
 .pp-pret{border-left:3px solid var(--ogias-success)!important}
 
+/* Parcours guidés (retour du 16/11, 11 h 03) : une « prochaine action », des onglets numérotés avec leur état. */
+.prochaine-action{display:flex;align-items:center;gap:var(--sp-3);margin:0 0 var(--sp-3);padding:var(--sp-2) var(--sp-3);min-height:44px;
+ border:1px solid var(--v31-separator);border-left:4px solid var(--ogias-info);border-radius:var(--radius-l);background:var(--ogias-info-bg);color:var(--v31-text)}
+.prochaine-action.pa-al{border-left-color:var(--ogias-warning-line);background:var(--ogias-warning-bg)}
+.prochaine-action.pa-ok{border-left-color:var(--ogias-success);background:var(--ogias-success-bg)}
+.prochaine-action.pa-err{border-left-color:var(--ogias-danger-line);background:var(--ogias-danger-bg)}
+.prochaine-action .pa-etiq{flex:none;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--v31-muted)}
+.prochaine-action .pa-texte{flex:1 1 auto;min-width:0;font-weight:600}
+.prochaine-action button{flex:none;margin-left:auto}
+:is(.onglets-eq,.onglets-ecran){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:0 0 var(--sp-3);
+ border:1px solid var(--v31-separator);border-radius:var(--radius-l);background:var(--v31-white);overflow:hidden}
+:is(.onglets-eq,.onglets-ecran) [role=tab]{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;column-gap:var(--sp-2);
+ align-items:center;text-align:left;min-height:52px;padding:var(--sp-2) var(--sp-3);border:0;border-radius:0;border-right:1px solid var(--v31-separator);
+ border-bottom:3px solid transparent;background:transparent;color:var(--v31-text)}
+:is(.onglets-eq,.onglets-ecran) [role=tab]:last-child{border-right:0}
+:is(.onglets-eq,.onglets-ecran) [role=tab].on{border-bottom-color:var(--ogias-primary);background:var(--ogias-primary-light)}
+:is(.onglets-eq,.onglets-ecran) .oe-num{grid-row:1 / span 2;display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;
+ border:1px solid var(--v31-separator);font-weight:700;font-size:12px;color:var(--v31-muted);background:var(--v31-white)}
+:is(.onglets-eq,.onglets-ecran) [role=tab].on .oe-num{background:var(--ogias-primary);border-color:var(--ogias-primary);color:var(--ogias-on-primary)}
+:is(.onglets-eq,.onglets-ecran) .oe-titre{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+:is(.onglets-eq,.onglets-ecran) .oe-etat{font-size:12px;color:var(--v31-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+:is(.onglets-eq,.onglets-ecran) .oe-etat.al{color:var(--ogias-warning);font-weight:600}
+[data-panneau-mat][hidden],#configuration-es[hidden],#infos-fonctionnelles[hidden],#lignes-supervision[hidden]{display:none!important}
+/* Aides longues repliées : le texte reste accessible en un clic */
+details.aide-pliable{margin:0 var(--sp-4) var(--sp-2);color:var(--v31-muted)}
+details.aide-pliable>summary{cursor:pointer;width:max-content;max-width:100%;font-size:12px;color:var(--ogias-primary);padding:var(--sp-1) 0}
+details.aide-pliable>p{margin:var(--sp-1) 0 0;max-width:90ch}
+/* Options d'équipement : cases compactes sur une ligne */
+.options-eq{display:flex;flex-wrap:wrap;align-items:center;gap:var(--sp-2) var(--sp-3);padding:var(--sp-2) var(--sp-4) var(--sp-3)}
+.options-eq .options-titre{font-weight:600}
+.options-eq .options-liste{display:flex;flex-wrap:wrap;gap:var(--sp-2)}
+.option-eq{display:inline-flex;align-items:center;gap:var(--sp-2);min-height:var(--control-h);padding:0 var(--sp-3);cursor:pointer;
+ border:1px solid var(--v31-separator);border-radius:var(--radius-m);background:var(--v31-white)}
+.option-eq:hover{border-color:var(--v31-muted)}
+.option-eq.on{border-color:var(--ogias-primary);background:var(--ogias-primary-light);color:var(--v31-text)}
+.option-eq input{margin:0;width:16px;height:16px}
+/* Variables : libellé lisible à la place de l'ancienne colonne « Source » */
+.v31-variable-screen .v31-libelle{max-width:clamp(180px,24vw,420px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 /* ===================================================================== 6. LARGEURS D'ÉCRAN
    Postes de référence : 1366 × 768, 1440 × 900, 1920 × 1080, 2560 × 1440. */
 /* 1121 à 1400 px (dont 1366) : navigation de 176 px, libellés sur une ou deux lignes coupées entre les mots */

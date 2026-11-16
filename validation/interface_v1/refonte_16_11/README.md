@@ -73,3 +73,27 @@ pour la structure, bleu d'action `#1F5FBF`, échelle de 4 px, rayons de 3 à 6 p
   Edge I/O NTS, TM3) : message « gamme non décrite », aucune configuration proposée. STB NIP 2311 : référence
   reprise, limites du NIP 2212 appliquées à titre indicatif et signalées.
 - Tests : `tests/test_emplacements_et_sources.py` (7), `tests_web/test_retours_16_11.py` (4).
+
+## Retours de l'utilisateur du 16/11 (11 h 03), intégrés
+
+Captures : `retours_11h03/` (1366 × 768 ; `avant_equipement_1366.png` = fiche avant ce lot).
+
+- **Fiche d'un équipement** (après « + Équipement ») : la page de ≈ 4 950 px sans fil conducteur devient
+  un parcours. Une ligne **« Prochaine action »** unique (échelles 4–20 mA à définir → informations
+  proposées à décider → erreurs → « Valider le paramétrage », ou « Liste des E/S » une fois validé), puis
+  **trois onglets numérotés avec leur état** : E/S physiques · Informations fonctionnelles · Lignes de
+  supervision (flèches gauche / droite au clavier ; l'onglet choisi est retenu par équipement). Options de
+  l'équipement en cases compactes sur une ligne ; textes d'aide longs repliés (« Comment paramétrer les
+  E/S ? »). Aucun bloc, identifiant ni commande retiré : les blocs non affichés portent `hidden`.
+- **Écran Matériel** : sous-titre court, ligne « Prochaine action » (calculer → implanter les E/S sans
+  voie → valider les voies → valider le matériel), rack en tête, puis trois onglets : **Voies des E/S**
+  (implantation + liste par voie), **Réglages du calcul** (choix par défaut, besoin, répartition),
+  **Nomenclature et livrables**. Onglet ouvert par défaut : réglages tant qu'aucune carte n'est posée,
+  voies ensuite. Îlots STB affichés sous le rack.
+- **Variables** : colonne « Source » retirée ; remplacée par le **Libellé** de l'information (libellé
+  supervision, sinon commentaire), aussi pris en compte par le filtre. Dans le détail, « Source » devient
+  « E/S source ».
+- Tests : `tests_web/test_retours_16_11.py` (+3 : onglets de la fiche, onglets matériel, libellé des
+  variables) ; tests existants adaptés pour ouvrir l'onglet voulu avant de lire la composition ou la
+  nomenclature. Résultats : `pytest tests` 707 réussis (5 ignorés : Qt), `pytest tests_web` 77 réussis,
+  `ruff`, `mypy`, `node --check`, audit des données (0 détection).

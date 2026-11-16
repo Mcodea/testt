@@ -244,6 +244,7 @@ class TestMaterielComplet(ServeurNavigateur):
         page.locator('.emplacement.alim').first.wait_for()
         self.assertIn('BMX CPS 3500', page.locator('.emplacement.alim').first.inner_text())
         self.assertIn('BMX P34 2020', page.locator('.emplacement.cpu').first.inner_text())
+        page.locator('[data-onglet-mat="livrables"]').click()      # onglet « Nomenclature et livrables »
         self.assertIn('Nomenclature de commande', page.locator('#vue').inner_text())
         with page.expect_download() as dl:
             page.locator('#m-nomenclature').click()

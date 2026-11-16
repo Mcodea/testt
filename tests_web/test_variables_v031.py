@@ -196,7 +196,8 @@ class TestVariablesV031(ServeurNavigateur):
                         "els => els.filter(e => getComputedStyle(e).display !== 'none').map(e => ({texte:e.textContent.trim(),x:e.getBoundingClientRect().x}))")
                     self.assertEqual(len(entetes), len(cellules))
                     noms = [e["texte"] for e in entetes]
-                    self.assertIn("Source", noms)
+                    self.assertIn("Libellé", noms)
+                    self.assertNotIn("Source", noms)          # retour du 16/11 : colonne sans intérêt retirée
                     self.assertNotIn("Règle", noms)
                     self.assertEqual("Télétransmission" in noms, largeur > 1400 and vue != "exchange")
                     for h, c in zip(entetes, cellules):

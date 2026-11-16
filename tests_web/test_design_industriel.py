@@ -168,6 +168,8 @@ class TestDesignIndustriel(ServeurNavigateur):
         material = self.api('/api/materiel')
         self.page.locator('#v31-settings').click()
         self.page.goto(self.url + '#/materiel', wait_until='networkidle')
+        # Retour du 16/11 (11 h 03) : réglages et nomenclature rangés dans des onglets sous le rack
+        self.page.locator('[data-onglet-mat="reglages"]').click()
         self.page.locator('.grille-compo').wait_for()
         self.assertEqual(self.style('.grille-compo', 'display'), 'grid')
         self.assertEqual(self.style('.grille-compo fieldset', 'borderTopColor'), 'rgb(30, 41, 59)')
@@ -186,6 +188,7 @@ class TestDesignIndustriel(ServeurNavigateur):
         self.assertEqual(self.style('.emplacement.alim', 'backgroundColor'), 'rgb(51, 37, 15)')
         references = self.page.locator('.emplacement.carte b').all_text_contents()
         self.assertEqual(references, [m['reference'] for m in self.api('/api/es')['modules']])
+        self.page.locator('[data-onglet-mat="livrables"]').click()
         self.assertTrue(self.page.locator('#m-nomenclature').is_visible())
         self.capture('industriel-rack-1366.png')
         self.assertEqual(self.api('/api/materiel'), material)

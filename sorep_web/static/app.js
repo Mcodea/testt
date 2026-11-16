@@ -971,7 +971,7 @@ function detailEquipement(e) {
      <span class="aide">${(e.erreurs || []).length} erreur(s) · ${(e.alertes || []).length} alerte(s)</span></div>
      <ul class="liste-controles">${(e.erreurs || []).map(m => `<li class="c-err">${esc(m)}</li>`).join("")}${(e.alertes || []).map(m => `<li class="c-al">${esc(m)}</li>`).join("")}</ul></div>` : ""}
    ${!e.valide && e.etat_param === "incomplet" ? `<div class="avert"><b>Avant validation :</b> ${esc(e.detail_etat)}</div>` : ""}`;
-  const blocLignes = `   <div class="bloc"><div class="bloc-tete"><h2>Lignes du modèle de supervision</h2><span class="aide">libellés et mnémoniques du modèle choisi · ${e.informations.length} ligne(s)${e.adapte ? " · adaptées pour cet équipement" : ""}</span>
+  const blocLignes = `   <div class="bloc" id="lignes-supervision"><div class="bloc-tete"><h2>Lignes du modèle de supervision</h2><span class="aide">libellés et mnémoniques du modèle choisi · ${e.informations.length} ligne(s)${e.adapte ? " · adaptées pour cet équipement" : ""}</span>
      <div class="droite">${e.adapte ? '<button id="l-ret">Revenir au modèle</button>' : ""}<button class="danger" id="l-sup" disabled>Supprimer la sélection</button><button class="prim" id="l-add">+ Ajouter une ligne</button></div></div>
    ${e.informations.length ? `<div class="compteurs"><span class="chip ${E.filtreRole === "Toutes" ? "on" : ""}" data-r="Toutes">Toutes<b>${e.informations.length}</b></span>
      ${liste.map(r => `<span class="chip ${E.filtreRole === r ? "on" : ""}" data-r="${r}">${r}<b>${roles[r]}</b></span>`).join("")}</div>
@@ -988,9 +988,9 @@ function detailEquipement(e) {
   c.insertAdjacentHTML('beforeend', `<div class="bloc" id="configuration-es">
     <div class="bloc-tete"><h2>Paramétrage des entrées / sorties de l'équipement</h2>
       <div class="droite"><button id="e-add-es">+ E/S personnalisée</button></div></div>
-    <p class="aide" style="padding:0 14px">Le modèle propose les E/S physiques possibles. Les contacts de défaut, de sens et les impulsions ne sont retenus que si le débitmètre ou l'équipement les possède réellement.
-      Choisissez les options, puis renseignez les échelles analogiques. La validation ci-dessus confirme ce paramétrage, pas les adresses physiques.</p>
-    ${optionsES.length ? `<div style="padding:12px 14px"><b>Options de l'équipement</b><div class="choix-protocoles" style="margin-top:8px">${optionsES.map(o => `<label><input type="checkbox" class="e-option" data-option="${esc(o.nom)}" ${o.active ? 'checked' : ''}> ${esc(o.nom)}</label>`).join('')}</div></div>` : ''}
+    <details class="aide-pliable"><summary>Comment paramétrer les E/S ?</summary><p>Le modèle propose les E/S physiques possibles. Les contacts de défaut, de sens et les impulsions ne sont retenus que si le débitmètre ou l'équipement les possède réellement.
+      Choisissez les options, puis renseignez les échelles analogiques. La validation confirme ce paramétrage, pas les adresses physiques (elles se placent à l'étape « Matériel »).</p></details>
+    ${optionsES.length ? `<div class="options-eq"><span class="options-titre">Options présentes sur cet équipement</span><div class="options-liste" role="group" aria-label="Options de l'équipement">${optionsES.map(o => `<label class="option-eq ${o.active ? 'on' : ''}"><input type="checkbox" class="e-option" data-option="${esc(o.nom)}" ${o.active ? 'checked' : ''}> ${esc(o.nom)}</label>`).join('')}</div></div>` : ''}
     ${choixES.length || portees.length ? `<table><thead><tr><th>Retenue</th><th>Point</th><th>Information physique proposée</th><th>Présence</th><th>Configuration</th></tr></thead><tbody>
      ${choixES.map(x => `<tr><td><input type="checkbox" class="e-es-choix" data-cle="${esc(x.cle)}" ${x.retenu ? 'checked' : ''} ${x.presence === 'Obligatoire' || !x.disponible ? 'disabled' : ''}></td>
      <td><span class="tag">${esc(x.point)}</span></td><td>${esc(x.information)}</td><td>${esc(x.presence === 'Option' ? x.option : x.presence)}</td>
@@ -1005,6 +1005,9 @@ function detailEquipement(e) {
       <div class="droite"><button class="prim" id="e-fin-config" ${e.valide ? 'disabled' : ''}>${e.valide ? 'Paramétrage validé' : 'Valider le paramétrage'}</button></div></div>
   </div>`);
   c.insertAdjacentHTML('beforeend', blocFonctionnelles(e) + blocLignes);
+  parcoursEquipement(e, c, {
+    retenues: choixES.filter(x => x.retenu).length + extrasES.length + portees.length,
+    echelles: pointsAnal.filter(x => !x.analogique).length, options: optionsES.length});
   brancherFonctionnelles(e, c);
   c.querySelectorAll('.e-option').forEach(x => x.onchange = async () => {
     try { await api('/api/equipement/configurer', {action:'option',ident_eq:e.ident,option:x.dataset.option,active:x.checked}); await recharger(); }
@@ -1060,6 +1063,48 @@ function detailEquipement(e) {
     "Tous les équipements qui partagent ce modèle dans cet ouvrage seront remis à valider. Les repères et adresses restent conservés ; aucune migration automatique des anciens projets.",
     "Actualiser", async () => { await agir(api("/api/equipement/ligne", {action: "actualiser", ident_eq: e.ident}), "Modèle actualisé : équipements à revalider."); recharge(); });
 }
+/* Retour du 16/11 (11 h 03) : la fiche d'un équipement était une longue page sans fil conducteur. Elle
+   devient un parcours en trois onglets (E/S physiques → informations fonctionnelles → lignes de
+   supervision), chacun avec son état, et une ligne « prochaine action » unique. Rien n'est retiré : les
+   trois blocs restent dans la page (attribut hidden), avec leurs identifiants et leurs commandes. */
+function parcoursEquipement(e, c, n) {
+  const f = e.fonctionnelles || [], aDecider = f.filter(x => x.etat === "proposée").length;
+  const retenuesF = f.filter(x => x.etat === "retenue").length, nbErr = (e.erreurs || []).length;
+  const onglets = [
+    {id: "es", bloc: "#configuration-es", titre: "E/S physiques", etat: n.echelles ? `${n.echelles} échelle(s) à définir` : `${n.retenues} E/S retenue(s)`, al: n.echelles > 0},
+    {id: "fonc", bloc: "#infos-fonctionnelles", titre: "Informations fonctionnelles", etat: aDecider ? `${aDecider} à décider` : `${retenuesF} retenue(s)`, al: aDecider > 0},
+    {id: "lignes", bloc: "#lignes-supervision", titre: "Lignes de supervision", etat: `${e.informations.length} ligne(s)`, al: false}];
+  // Prochaine action : une seule, dans l'ordre du travail
+  let action;
+  if (e.valide) action = {cls: "ok", texte: "Paramétrage validé. Les voies physiques se placent à l'étape « Matériel ».", bouton: ["Liste des E/S →", () => location.hash = "#/es"]};
+  else if (n.echelles) action = {cls: "al", texte: `Définissez ${n.echelles} échelle(s) analogique(s) 4–20 mA dans l'onglet « E/S physiques ».`, onglet: "es"};
+  else if (aDecider) action = {cls: "al", texte: `Décidez ${aDecider} information(s) fonctionnelle(s) proposée(s) : retenir ou écarter avec un motif.`, onglet: "fonc"};
+  else if (nbErr) action = {cls: "err", texte: `Corrigez ${nbErr} erreur(s) signalée(s) ci-dessus avant de valider.`};
+  else action = {cls: "info", texte: n.options ? "Cochez les options réellement présentes sur l'équipement, vérifiez les E/S, puis validez." : "Vérifiez les E/S proposées, puis validez le paramétrage.",
+                 bouton: ["Valider le paramétrage", () => $("#e-val")?.click()]};
+  E.ongletEq ||= {};
+  let actif = E.ongletEq[e.ident] || action.onglet || "es";
+  if (!onglets.some(o => o.id === actif)) actif = "es";
+  const barre = document.createElement("div");
+  barre.className = "parcours-eq";
+  barre.innerHTML = `<div class="prochaine-action pa-${action.cls}" role="status"><span class="pa-etiq">${e.valide ? "Terminé" : "Prochaine action"}</span><span class="pa-texte">${esc(action.texte)}</span>
+      ${action.onglet ? `<button class="prim" data-pa-onglet="${action.onglet}">Ouvrir</button>` : action.bouton ? `<button class="${e.valide ? "" : "prim"}" id="pa-bouton">${esc(action.bouton[0])}</button>` : ""}</div>
+    <div class="onglets-eq" role="tablist" aria-label="Paramétrage de l'équipement">${onglets.map((o, i) => `<button role="tab" id="onglet-eq-${o.id}" data-onglet-eq="${o.id}" aria-selected="${o.id === actif}" aria-controls="${o.bloc.slice(1)}" class="${o.id === actif ? "on" : ""}">
+      <span class="oe-num">${i + 1}</span><span class="oe-titre">${o.titre}</span><span class="oe-etat ${o.al ? "al" : ""}">${esc(o.etat)}</span></button>`).join("")}</div>`;
+  c.querySelector("#configuration-es").before(barre);
+  const montrer = (id, choisi = true) => { if (choisi) E.ongletEq[e.ident] = id;
+    onglets.forEach(o => { const b = c.querySelector(o.bloc), t = barre.querySelector(`[data-onglet-eq="${o.id}"]`);
+      if (b) { b.hidden = o.id !== id; b.setAttribute("role", "tabpanel"); b.setAttribute("aria-labelledby", "onglet-eq-" + o.id); }
+      t.classList.toggle("on", o.id === id); t.setAttribute("aria-selected", String(o.id === id)); }); };
+  barre.querySelectorAll("[data-onglet-eq]").forEach(t => t.onclick = () => montrer(t.dataset.ongletEq));
+  barre.querySelector("[role=tablist]").onkeydown = ev => {
+    if (!["ArrowLeft", "ArrowRight"].includes(ev.key)) return;
+    const i = onglets.findIndex(o => o.id === barre.querySelector('[data-onglet-eq].on').dataset.ongletEq), j = (i + (ev.key === "ArrowRight" ? 1 : onglets.length - 1)) % onglets.length;
+    montrer(onglets[j].id); barre.querySelector(`[data-onglet-eq="${onglets[j].id}"]`).focus(); };
+  barre.querySelectorAll("[data-pa-onglet]").forEach(b => b.onclick = () => montrer(b.dataset.paOnglet));
+  if (barre.querySelector("#pa-bouton")) barre.querySelector("#pa-bouton").onclick = action.bouton[1];
+  montrer(actif, false);
+}
 /* Informations fonctionnelles (TS, TM, CP, TC, TR, RTR) : ce que l'automate calcule ou reçoit, distinct
    des E/S câblées. Une information proposée par une règle se retient ou s'écarte avec un motif : rien
    n'est oublié en silence (ex. discordance d'une vanne à deux fins de course). */
@@ -1082,8 +1127,8 @@ function blocFonctionnelles(e) {
   return `<div class="bloc" id="infos-fonctionnelles"><div class="bloc-tete"><h2>Informations fonctionnelles</h2>
     <span class="aide">${nb("retenue")} retenue(s) · ${nb("proposée")} à décider · ${nb("écartée")} écartée(s)</span>
     <div class="droite">${nb("proposée") ? `<button id="f-tout">Retenir les ${nb("proposée")} proposée(s)</button>` : ""}</div></div>
-    <p class="aide" style="padding:0 14px">Informations calculées par l'automate ou échangées avec la supervision (TS, TM, CP, TC, TR, RTR), déduites des E/S retenues par les règles du référentiel.
-      Une information <b>proposée</b> demande une logique automate : retenez-la, ou écartez-la en écrivant pourquoi. La validation de l'équipement attend ces décisions.</p>
+    <details class="aide-pliable"><summary>À quoi servent ces informations ?</summary><p>Informations calculées par l'automate ou échangées avec la supervision (TS, TM, CP, TC, TR, RTR), déduites des E/S retenues par les règles du référentiel.
+      Une information <b>proposée</b> demande une logique automate : retenez-la, ou écartez-la en écrivant pourquoi. La validation de l'équipement attend ces décisions.</p></details>
     ${visibles.length ? `<table class="t-fonctionnelles"><thead><tr><th style="width:96px">État</th><th style="width:120px">Information</th><th>Libellé</th><th>Provenance</th><th>Justification</th><th></th></tr></thead>
       <tbody>${visibles.map(ligne).join("")}</tbody></table>` : '<div class="vide-bloc">Aucune information fonctionnelle retenue pour ce paramétrage.</div>'}
     ${autres.length ? `<details class="non-retenues"><summary>${autres.length} information(s) prévue(s) par le modèle mais non retenue(s) (option non choisie ou conditions non réunies)</summary>
@@ -2234,6 +2279,38 @@ function liaisonsRepartition() {
   document.querySelectorAll("[data-rp-refuser]").forEach(b => b.onclick = () => act({action: "refuser_groupe_secours", membres: JSON.parse(b.dataset.rpRefuser)}, "Proposition écartée."));
   document.querySelectorAll("[data-rp-retirer]").forEach(b => b.onclick = () => act({action: "retirer_groupe_secours", membres: JSON.parse(b.dataset.rpRetirer)}, "Groupe retiré."));
 }
+/* Retour du 16/11 (11 h 03) : écran matériel trop chargé. Le rack reste en tête ; une seule « prochaine
+   action » ; la suite est rangée en trois onglets (voies des E/S, réglages du calcul, nomenclature et
+   livrables). Tous les blocs, identifiants et commandes restent dans la page (attribut hidden). */
+const ONGLETS_MAT = [{id: "voies", titre: "Voies des E/S"}, {id: "reglages", titre: "Réglages du calcul"}, {id: "livrables", titre: "Nomenclature et livrables"}];
+function parcoursMateriel({m, rien, sansVoie, aValider, prop}) {
+  const ong = id => () => montrer(id, true);
+  let a;
+  if (m.blocage) a = null;
+  else if (rien) a = {cls: "info", texte: prop && prop.applicable ? "Choisissez si besoin l'alimentation et le processeur (onglet « Réglages du calcul »), puis calculez le matériel." : "Le matériel sera proposé une fois la liste des E/S validée.",
+                      bouton: prop && prop.applicable ? ["Calculer le matériel", () => $("#m-calc").click()] : null};
+  else if (sansVoie) a = {cls: "al", texte: `${sansVoie} E/S câblée(s) sans voie : implantez-les sur les cartes du rack.`, bouton: ["Implanter les E/S", () => $("#m-impl").click()], disabled: () => $("#m-impl").disabled};
+  else if (aValider) a = {cls: "al", texte: `${aValider} voie(s) proposée(s) : vérifiez-les puis validez-les.`, bouton: ["Voir les voies", ong("voies")]};
+  else if (!m.materiel_valide) a = {cls: "info", texte: "Toutes les E/S ont une voie validée : validez le matériel.", bouton: ["Valider le matériel", () => $("#m-valider").click()]};
+  else a = {cls: "ok", texte: "Matériel validé : nomenclature et livrables disponibles.", bouton: ["Nomenclature et livrables", ong("livrables")]};
+  const zone = $("#pa-materiel");
+  if (a) { zone.className = `prochaine-action pa-${a.cls}`; zone.setAttribute("role", "status");
+    zone.innerHTML = `<span class="pa-etiq">${a.cls === "ok" ? "Terminé" : "Prochaine action"}</span><span class="pa-texte">${esc(a.texte)}</span>${a.bouton ? `<button class="${a.cls === "ok" ? "" : "prim"}" id="pa-bouton">${esc(a.bouton[0])}</button>` : ""}`;
+    if (a.bouton) { $("#pa-bouton").onclick = a.bouton[1]; if (a.disabled && a.disabled()) $("#pa-bouton").disabled = true; } }
+  else zone.remove();
+  function montrer(id, choisi) {
+    if (choisi) E.ongletMat = id;
+    document.querySelectorAll("[data-panneau-mat]").forEach(p => p.hidden = p.dataset.panneauMat !== id);
+    document.querySelectorAll("[data-onglet-mat]").forEach(t => { t.classList.toggle("on", t.dataset.ongletMat === id); t.setAttribute("aria-selected", String(t.dataset.ongletMat === id)); });
+  }
+  document.querySelectorAll("[data-onglet-mat]").forEach(t => t.onclick = ong(t.dataset.ongletMat));
+  $("#onglets-mat").onkeydown = ev => {
+    if (!["ArrowLeft", "ArrowRight"].includes(ev.key)) return;
+    const i = ONGLETS_MAT.findIndex(o => o.id === document.querySelector("[data-onglet-mat].on").dataset.ongletMat);
+    const j = ONGLETS_MAT[(i + (ev.key === "ArrowRight" ? 1 : ONGLETS_MAT.length - 1)) % ONGLETS_MAT.length].id;
+    montrer(j, true); document.querySelector(`[data-onglet-mat="${j}"]`).focus(); };
+  montrer(ONGLETS_MAT.some(o => o.id === E.ongletMat) ? E.ongletMat : (rien ? "reglages" : "voies"), false);
+}
 function vueMateriel() {
   const d = E.es, m = E.mat, b = d.bilan, prop = m.proposition, f = E.filtreES, q = (E.rechercheES || "").toLowerCase();
   const cables = d.points.filter(p => p.raccordement !== "Communication");
@@ -2246,7 +2323,7 @@ function vueMateriel() {
   const s4w = m.plateforme === "S4W";
   const differe = prop && prop.applicable && d.modules.length && JSON.stringify(prop.modules.map(x => `${x.rack}.${x.position}:${x.reference}`)) !== JSON.stringify(d.modules.map(x => `${x.module}:${x.reference}`));
   $("#vue").innerHTML = `<section class="contenu">
-   <div class="titre"><div><h1>Matériel automate</h1><div class="sous">Racks et cartes calculés à partir des E/S validées, avec ${Math.round(m.reserve_min * 100)} % de réserve par carte. OGIAS propose, vous ajustez et validez.</div></div>
+   <div class="titre"><div><h1>Matériel automate</h1><div class="sous">Proposé à partir des E/S validées, ${Math.round(m.reserve_min * 100)} % de réserve par carte · cliquez un emplacement du rack pour l'équiper</div></div>
      <div class="actions">${m.materiel_valide ? '<span class="badge b-ok grand">Matériel validé</span><button id="m-deval">Repasser à valider</button>'
        : `<button class="${rien ? "" : "prim"}" id="m-valider" ${rien ? "disabled" : ""}>Valider le matériel</button>`}</div></div>
    <div class="bandeau-materiel ${s4w ? "v31-platform-sofrel" : ""}">
@@ -2256,6 +2333,7 @@ function vueMateriel() {
      <div><span class="etiq">Réserve minimale</span><b>${Math.round(m.reserve_min * 100)} %</b><small>par carte</small></div>
      <div class="droite"><button class="${rien ? "prim" : ""}" id="m-calc" ${prop && prop.applicable ? "" : "disabled"} title="${s4w ? "Proposition indicative pour un poste S4W" : ""}">${rien ? "Calculer le matériel" : "Recalculer le matériel"}</button><button id="m-cartes">Ajuster les cartes…</button></div>
    </div>
+   <div id="pa-materiel"></div>
    ${m.remarque_plateforme ? `<div class="avert">${esc(m.remarque_plateforme)}</div>` : ""}
    ${m.blocage ? `<div class="alerte-bloc"><b>Calcul impossible :</b> ${esc(m.blocage)} <button class="lien" data-nav="#/es">Aller à la liste des E/S</button></div>` : ""}
    ${differe ? `<div class="avert">Les cartes retenues diffèrent de la proposition actuelle (densité ou E/S modifiées). « Recalculer le matériel » applique la proposition.</div>` : ""}
@@ -2263,24 +2341,29 @@ function vueMateriel() {
      <span class="legende"><i class="l-ok"></i>réserve respectée <i class="l-al"></i>sous la réserve <i class="l-err"></i>dépassement</span></div>
      ${s4w && prop && prop.racks.length ? `<p class="aide-bloc"><b>Proposition indicative S4W</b> — voies intégrées au boîtier puis modules d'extension (la CPU est intégrée au boîtier).</p>`
          + prop.racks.map(r => vueRack(r, prop.modules.map(x => ({module: `${x.rack}.${x.position}`, nature: x.nature, voies: x.voies, reference: x.reference, occupees: 0, reserve: x.voies, taux: 1, sous_seuil: false})))).join("") : ""}
-     ${rien ? (s4w ? "" : `<div class="vide-bloc">${prop ? "Cliquez sur « Calculer le matériel » : OGIAS propose les racks et les cartes à partir du besoin ci-dessus." : "Le matériel sera proposé une fois la liste des E/S validée."}</div>`)
+     ${rien ? (s4w ? "" : `<div class="vide-bloc">${prop ? "Cliquez sur « Calculer le matériel » : OGIAS propose les racks et les cartes à partir des E/S validées." : "Le matériel sera proposé une fois la liste des E/S validée."}</div>`)
        : (s4w ? `<p class="aide-bloc"><b>Matériel actuellement retenu</b></p>` : "") + racksAffiches(m, d.modules).map((r, _i, t) => vueRack(r, d.modules, t.length > 1)).join("")}
      <p class="note">${esc(m.statut_catalogue)}</p></div>
+   ${m.plateforme === "STB" && prop ? blocIlotsSTB(prop) : ""}
+   <div class="onglets-ecran" role="tablist" aria-label="Suite du matériel" id="onglets-mat">
+     ${ONGLETS_MAT.map((o, i) => `<button role="tab" id="onglet-mat-${o.id}" data-onglet-mat="${o.id}" aria-controls="panneau-mat-${o.id}"><span class="oe-num">${i + 1}</span><span class="oe-titre">${o.titre}</span><span class="oe-etat ${o.id === "voies" && (cables.length > places.length || aValider.length) ? "al" : ""}">${
+       o.id === "voies" ? (cables.length > places.length ? `${cables.length - places.length} E/S sans voie` : aValider.length ? `${aValider.length} voie(s) à valider` : `${places.length} E/S placée(s)`)
+       : o.id === "reglages" ? "alimentation, processeur, réserve" : `${(m.nomenclature || []).length} référence(s)`}</span></button>`).join("")}</div>
+   <div class="panneau-mat" id="panneau-mat-reglages" data-panneau-mat="reglages" role="tabpanel" aria-labelledby="onglet-mat-reglages">
+   ${blocComposition(m)}
    <div class="grille-2">
      <div class="bloc"><div class="bloc-tete"><h2>Besoin calculé</h2><span class="aide">${cables.length} E/S câblées · ${b.communication || 0} par communication</span></div>
      ${besoins.length ? `<table><thead><tr><th>Nature</th><th class="num">E/S</th><th>Carte proposée</th><th class="num">Voies utiles</th><th class="num">Cartes</th><th class="num">Réserve</th></tr></thead><tbody>
        ${besoins.map(x => `<tr><td><span class="tag p-${x.nature}">${x.nature}</span> ${nature(x.nature)}</td><td class="num">${x.es}</td><td>${esc(x.reference)}</td><td class="num">${x.utilisables} / ${x.voies}</td><td class="num"><b>${x.cartes}</b></td><td class="num">${Math.round(x.reserve * 100)} %</td></tr>`).join("")}</tbody></table>`
        : `<div class="vide-bloc">${m.blocage ? "Validez la liste des E/S pour obtenir le besoin." : "Aucune E/S câblée."}</div>`}
      ${prop && prop.remarques.length ? `<ul class="remarques">${prop.remarques.map(r => `<li>${esc(r)}</li>`).join("")}</ul>` : ""}</div>
+     ${m.repartition ? blocRepartition(m.repartition) : ""}
+   </div></div>
+   <div class="panneau-mat" id="panneau-mat-voies" data-panneau-mat="voies" role="tabpanel" aria-labelledby="onglet-mat-voies">
      <div class="bloc"><div class="bloc-tete"><h2>Implantation</h2><span class="aide">voies et adresses des E/S câblées</span></div>
        <div class="chiffres c3">${cables.length > places.length ? pastille("PLACER", cables.length - places.length, "E/S sans voie", "al", f) : ""}${aValider.length ? pastille("VOIE", aValider.length, "voies à valider", "al", f) : ""}${places.length > aValider.length ? pastille("", places.length - aValider.length, "voies validées", "ok", "x") : ""}</div>
        <div class="boutons-ligne"><button class="prim" id="m-impl" ${rien || !(cables.length - places.length) ? "disabled" : ""}>Implanter les E/S sans voie</button><button id="m-lib" ${aValider.length ? "" : "disabled"}>Libérer les voies non validées</button></div>
        <p class="aide-bloc">Les E/S d'un même équipement restent groupées sur une carte. Une E/S validée sur sa voie ne bouge plus.</p></div>
-   </div>
-   ${blocComposition(m)}
-   ${m.plateforme === "STB" && prop ? blocIlotsSTB(prop) : ""}
-   ${m.repartition ? blocRepartition(m.repartition) : ""}
-   ${blocNomenclature(m)}
    <div class="bloc"><div class="bloc-tete"><h2>Liste des E/S par voie</h2><input id="x-q" type="search" placeholder="Rechercher une E/S, une adresse…" value="${esc(E.rechercheES || "")}" style="width:260px" aria-label="Rechercher">
      ${f ? '<button class="lien" id="x-tout">Tout afficher</button>' : ""}<span class="aide">${pts.length} / ${cables.length}</span>
      <div class="droite"><button id="x-val-tout" ${pts.some(p => p.adresse && !p.validee) ? "" : "disabled"}>Valider les voies affichées</button><button class="prim" id="x-val" disabled>Valider la sélection</button></div></div>
@@ -2289,12 +2372,15 @@ function vueMateriel() {
      <td><span class="tag p-${p.point}">${p.point}</span></td><td class="mono">${esc(p.nom)}</td><td class="mono">${p.module ? esc(p.module + "." + String(p.voie).padStart(2, "0")) : '<span class="vide">—</span>'}</td>
      <td class="mono">${p.adresse ? esc(p.adresse) : '<span class="vide">à placer</span>'}</td>
      <td>${!p.adresse ? '<span class="badge b-n">sans voie</span>' : p.validee ? '<span class="badge b-ok">validée</span>' : '<span class="badge b-al">proposée</span>'}</td></tr>`; }).join("")}</tbody></table></div>` : '<div class="vide-bloc">Aucune E/S câblée.</div>'}
-   </div>
+   </div></div>
+   <div class="panneau-mat" id="panneau-mat-livrables" data-panneau-mat="livrables" role="tabpanel" aria-labelledby="onglet-mat-livrables">
+   ${blocNomenclature(m) || '<div class="bloc"><div class="vide-bloc">La nomenclature de commande apparaît une fois le matériel calculé.</div></div>'}
    <div class="bloc livrables"><div class="bloc-tete"><h2>Livrables matériel</h2><span class="aide">XSY et TXT au format des exports Control Expert V14.1 fournis : import dans Control Expert à essayer</span></div>
      <div class="boutons-ligne"><button id="x-xl" ${cables.length ? "" : "disabled"}>Liste d'E/S (Excel)</button><button id="x-ca" ${rien ? "disabled" : ""}>Cartes d'E/S (Excel)</button>
      <button id="x-xsy" ${places.length ? "" : "disabled"} title="Format de l'export des variables de Control Expert V14.1, voies de réserve comprises">E/S pour Control Expert (XSY)</button><button id="x-txt" ${places.length ? "" : "disabled"}>E/S pour Control Expert (TXT)</button>
-     <span class="aide">${places.length < cables.length ? `${cables.length - places.length} E/S n'ont pas encore de voie : elles figureront sans adresse.` : "Toutes les E/S câblées ont une voie."}</span></div></div>
+     <span class="aide">${places.length < cables.length ? `${cables.length - places.length} E/S n'ont pas encore de voie : elles figureront sans adresse.` : "Toutes les E/S câblées ont une voie."}</span></div></div></div>
   </section>`;
+  parcoursMateriel({m, rien, sansVoie: cables.length - places.length, aValider: aValider.length, prop});
   brancherListeES(pts, "voie");
   const appliquer = () => agir(api("/api/materiel/action", {action: "appliquer"})).then(() => { toast("Matériel proposé appliqué : à vérifier puis valider."); rechargerMateriel(); });
   $("#m-calc").onclick = () => rien ? appliquer() : confirmer("Recalculer le matériel ?", "Les cartes actuelles sont remplacées par la proposition. C'est refusé si des E/S occupent déjà des voies : libérez-les d'abord.", "Recalculer", appliquer);
