@@ -433,8 +433,8 @@ def proposer_stb(points, reserve=0.2, chemin=None, min_cartes=None, emplacements
     # Interface réseau nommée dans la source de l'ouvrage (ex. STB NIP 2311) : la référence est reprise telle
     # quelle ; seules les limites du STB NIP 2212 sont documentées dans le catalogue, appliquées à titre indicatif.
     m = re.search(r"STBN[IO][A-Z]?\d{4}", _sans_espace(automate))
-    nim_choisi = m and m.group(0) != _sans_espace(nim["reference"])
-    if nim_choisi:
+    nim_choisi = bool(m) and m is not None and m.group(0) != _sans_espace(nim["reference"])
+    if nim_choisi and m is not None:
         ref = m.group(0)
         nim["reference"] = f"{ref[:3]} {ref[3:6]} {ref[6:]}"
     p = Proposition("STB", profil, applicable=False, remarques=[
