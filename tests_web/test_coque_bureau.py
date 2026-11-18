@@ -263,3 +263,34 @@ class TestCoqueBureau(ServeurNavigateur):
         self.assertEqual(grille.locator('details[open]').count(), 2)
         self.assertEqual(self.page.locator('[data-pt-onglet="controles"]').count(), 0)
         self.assertEqual(self.projet.read_bytes(), avant)
+
+    def test_variables_ruban_tableau_dense_et_detail(self):
+        """Lot 5d : commandes des Variables au ruban (plus de menu « ··· »), table dense triable, détail en grille,
+        livrables renvoyés vers Recette."""
+        points = self.api('/api/es')['points']
+        self.api('/api/es/valider', {'niveau': 'contenu', 'paires': [{'ident_eq': p['ident_eq'], 'cle': p['cle']} for p in points]})
+        self.api('/api/materiel/action', {'action': 'appliquer'})
+        self.api('/api/materiel/action', {'action': 'valider'})
+        avant = self.projet.read_bytes()
+        self.ouvrir('#/variables')
+        self.page.locator('.v31-variable-row').first.wait_for()
+        groupes = self.page.locator('#o-ruban [role="group"]').evaluate_all('g => g.map(x => x.getAttribute("aria-label"))')
+        self.assertEqual(groupes, ['Adressage', 'Livrables'])
+        ids = ['v31-calculate', 'v31-validate-proposed', 'v31-validate-selection', 'v31-adr-settings', 'v31-livrables']
+        self.assertEqual(self.page.evaluate("ids => ids.map(i => document.querySelectorAll('#o-ruban #' + i).length)", ids), [1] * len(ids))
+        self.assertEqual(self.page.locator('#v31-var-more').count(), 0)
+        # Tri par la colonne Variable, conservé quand le détail s'ouvre (l'écran est redessiné)
+        self.page.locator('table.v31-table thead th').nth(1).click()
+        self.page.locator('.v31-variable-row').first.click()
+        self.page.locator('.v31-variable-detail .o-grille').wait_for()
+        self.assertEqual(self.page.locator('table.v31-table thead th').nth(1).get_attribute('aria-sort'), 'ascending')
+        self.assertTrue(self.page.evaluate('''() => { const n = [...document.querySelectorAll('.v31-variable-row')].map(x => x.dataset.variable);
+          return n.length > 1 && n.every((v, i) => !i || n[i - 1].localeCompare(v, 'fr', {numeric: true}) <= 0); }'''))
+        self.assertIn('Adresse automate', self.page.locator('.v31-variable-detail .o-grille').inner_text())
+        # Valider la sélection sans case cochée : refus explicite, rien n'est écrit
+        self.page.locator('#v31-validate-selection').click()
+        self.assertEqual(self.page.locator('#modale:not([hidden])').count(), 0)
+        self.page.locator('#v31-livrables').click()
+        self.page.wait_for_function('() => location.hash === "#/recette"')
+        self.page.locator('[data-export="variables"]').wait_for()
+        self.assertEqual(self.projet.read_bytes(), avant)

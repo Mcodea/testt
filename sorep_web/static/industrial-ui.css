@@ -279,8 +279,8 @@ body[data-ecran="ouvrage"] #contenu .bloc>.titre>.actions{flex-wrap:wrap;justify
 .v31-primary,.v31-secondary,.v31-menu-button{height:var(--control-h);border-radius:var(--radius-m)}
 .v31-secondary{border:1px solid var(--v31-separator)}
 .v31-table-area{max-height:none}
-.v31-table th{padding:7px 10px!important;background:var(--v31-subtle)!important}
-.v31-table td{padding:8px 10px!important;height:44px}
+.v31-table th{padding:7px 10px;background:var(--v31-subtle)}
+.v31-table td{padding:8px 10px;height:44px}
 .v31-table-footer{padding:6px var(--sp-3);gap:var(--sp-2);flex-wrap:wrap;border-top:1px solid var(--v31-separator)}
 .v31-variable-detail{padding:var(--sp-4);background:var(--workspace-panel);overflow-x:hidden}
 .v31-variable-detail dl{grid-template-columns:minmax(80px,34%) minmax(0,1fr);gap:var(--sp-2) var(--sp-2);margin:var(--sp-4) 0}

@@ -569,9 +569,19 @@ html[data-theme] .es-page > .titre h1 { font-size: var(--o-t-l); margin: 0; }
 html[data-theme] .es-page > .titre .sous { font-size: var(--o-t-s); }
 /* Lignes denses du tableau des E/S, en-têtes fixes */
 html[data-theme] #vue table.t-es.o-tableau td { padding-block: 2px; height: var(--o-h-ligne); }
+/* Lot 5d : table des variables au même gabarit dense que la Liste des E/S (44 px avant) ; les cases à cocher gardent
+   24 px (taille de cible minimale WCAG 2.5.8) */
+html[data-theme] #vue table.v31-table.o-tableau th { padding: 3px var(--o-e-2); background: var(--o-surface-2); }
+html[data-theme] #vue table.v31-table.o-tableau td { padding: 2px var(--o-e-2); height: var(--o-h-ligne); }
+html[data-theme] #vue table.v31-table.o-tableau tr.selected td { background: var(--o-action-fond); }
 html[data-theme] #vue table.t-es.o-tableau tbody tr.es-active td { background: var(--o-action-fond); }
 /* Matériel (5c) : titre de page allégé (titre déjà dans l'onglet), grille de propriétés dans l'inspecteur */
 html[data-theme] .poste-travail[data-poste="materiel"] #pt-editeur > .titre h1 { font-size: var(--o-t-l); margin: 0; }
 html[data-theme] #pt-inspecteur .pt-props { display: block; margin: 0; padding: 0; }
 html[data-theme] #pt-inspecteur .pt-props .o-grille { border-top: 0; }
 html[data-theme] #pt-inspecteur .pt-props :is(dt, dd) { margin: 0; }
+/* Lot 5d : détail d'une variable, même grille de propriétés (l'ancienne règle « dl » en deux colonnes est neutralisée) */
+html[data-theme] .v31-variable-detail .o-grille { margin: var(--o-e-3) 0; }
+html[data-theme] .v31-variable-detail .o-grille dl { display: block; margin: 0; }
+html[data-theme] .v31-variable-detail .o-grille :is(dt, dd) { margin: 0; }
+html[data-theme] .v31-variable-detail .o-grille dd { overflow-wrap: anywhere; }

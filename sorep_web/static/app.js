@@ -564,6 +564,7 @@ const LIVRABLES = [
   {groupe: "documents", titre: "Documents", icone: "clipboard", sous: "Formats d'études, pour les échanges avec les autres entreprises", cartes: [
     {titre: "Liste des entrées / sorties", texte: "Architecture des racks, une feuille par carte, colonne de validation SAT.", formats: [["XLSX", "es_cartes"]], second: ["Tableau de travail (une ligne par E/S)", "liste_es"]},
     {titre: "Table de télétransmission", texte: "Repère, famille, adresse, registre Modbus, alarme et priorité, libellés automate et TOPKAPI.", formats: [["XLSX", "tele_etudes"]]},
+    {titre: "Table des variables", texte: "Toutes les variables, leurs adresses et leurs anomalies ; projet existant : table de correspondance avec l'existant.", formats: [["XLSX", "variables"]]},
     {titre: "Cartes d'E/S", texte: "Un onglet par carte, une ligne par voie, voies libres en réserve ; colonne de validation à remplir à la recette.", formats: [["XLSX", "cartes"]]},
     {titre: "Nomenclature", texte: "Configuration matérielle : références, quantités et rôles, à confirmer à la commande.", formats: [["XLSX", "nomenclature"]]}]}];
 function vueRecette() {

@@ -57,9 +57,13 @@ document.addEventListener('keydown',ev=>{
  const close=document.querySelector('#v31-close-detail');
  if(close){ev.preventDefault();close.click();}
 },true); // Lire l'état des fenêtres avant leur fermeture par les gestionnaires en phase de bulle.
+/* Lot 5d : 1000 lignes par page (150 avant) : le tri et les filtres de colonne du tableau dense portent sur la liste
+   entière d'un ouvrage courant ; au-delà, ils portent sur la page affichée. */
+const V31_PAGE=1000;
 function vueVariablesV31(){
+ if(typeof Coque!=='undefined')Coque.ruban(null);   // lot 5d : boutons du rendu précédent retirés du ruban
  const d=E.detailEtape||{}, rows=d.lignes||[], neuf=d.mode==='Neuf',selected=E.v31Selected||'', opened=!!E.v31VarDetail;
- const shown=v31VarFilter(rows);const page=Math.max(0,Math.min(E.v31Page||0,Math.floor(Math.max(shown.length-1,0)/150)));E.v31Page=page;const pageRows=shown.slice(page*150,(page+1)*150);const selectedVar=rows.find(x=>x.nom===selected)||null;
+ const shown=v31VarFilter(rows);const page=Math.max(0,Math.min(E.v31Page||0,Math.floor(Math.max(shown.length-1,0)/V31_PAGE)));E.v31Page=page;const pageRows=shown.slice(page*V31_PAGE,(page+1)*V31_PAGE);const selectedVar=rows.find(x=>x.nom===selected)||null;
  const counts=['proposée','à valider','en conflit','validée','non résolue'].map(status=>[status,rows.filter(x=>x.etat_adressage===status).length]).filter(x=>x[1]);
  const view=E.v31VarView||'all';const withDetail=opened&&!!selectedVar;
  const teleMap=new Map((E.v31Tele?.lignes||[]).map(x=>[x.nom,x]));
@@ -78,13 +82,13 @@ function vueVariablesV31(){
  const statuses=counts.map(([name,n])=>`<button type="button" class="v31-filter ${E.v31Status===name?'active':''}" data-var-status="${V31.esc(name)}">${V31.esc(name)} ${n}</button>`).join('');
  const detail=withDetail?`<aside class="v31-variable-detail" aria-label="Variable sélectionnée"><div class="v31-detail-heading"><span>Variable sélectionnée</span><button type="button" id="v31-close-detail" aria-label="Fermer le détail">${V31.icon('close',18)}</button></div>
  <h2 class="mono">${V31.esc(selectedVar.nom)}</h2><p>${V31.esc(selectedVar.commentaire||selectedVar.libelle||selectedVar.repere||'')}</p><div class="v31-detail-badges">${v31Status(selectedVar.etat_adressage)} <span class="v31-pill neutral">${V31.esc(selectedVar.famille)} · ${V31.esc(selectedVar.type)}</span></div>
- <dl><dt>E/S source</dt><dd class="mono">${V31.esc(selectedVar.source_es||'Fonction calculée')}</dd>
- <dt>Voie physique</dt><dd class="mono">${V31.esc(selectedVar.source_es?(selectedVar.voie_es||'Non placée — Matériel'):'Sans objet')}</dd>
- <dt>Adresse automate</dt><dd class="mono">${V31.esc(selectedVar.adresse||selectedVar.adresse_proposee||'—')}</dd>
- <dt>Télétransmission</dt><dd class="mono">${V31.esc((teleMap.get(selectedVar.nom)||{}).adresse_protocole_actuelle||(teleMap.get(selectedVar.nom)||{}).adresse_protocole_proposee||'—')}</dd>
- <dt>Origine</dt><dd>${V31.esc(selectedVar.origine_adressage||'—')}</dd>
- <dt>Règle appliquée</dt><dd>${V31.esc(selectedVar.regle||selectedVar.motif||'Non définie')}</dd>
- <dt>Validation</dt><dd>${V31.esc(selectedVar.validee_le||'Non validée')}${selectedVar.validee_par?' · '+V31.esc(selectedVar.validee_par):''}</dd></dl>
+ ${Composants.grille([   // lot 5d : grille de propriétés commune (mêmes valeurs qu'avant)
+  {titre:'Chaîne',proprietes:[{libelle:'E/S source',mono:true,valeur:selectedVar.source_es||'Fonction calculée'},
+   {libelle:'Voie physique',mono:true,valeur:selectedVar.source_es?(selectedVar.voie_es||'Non placée — Matériel'):'Sans objet'}]},
+  {titre:'Adressage',proprietes:[{libelle:'Adresse automate',mono:true,valeur:selectedVar.adresse||selectedVar.adresse_proposee||'—'},
+   {libelle:'Télétransmission',mono:true,valeur:(teleMap.get(selectedVar.nom)||{}).adresse_protocole_actuelle||(teleMap.get(selectedVar.nom)||{}).adresse_protocole_proposee||'—'},
+   {libelle:'Origine',valeur:selectedVar.origine_adressage||'—'},{libelle:'Règle appliquée',valeur:selectedVar.regle||selectedVar.motif||'Non définie'}]},
+  {titre:'Validation',proprietes:[{libelle:'Validation',valeur:(selectedVar.validee_le||'Non validée')+(selectedVar.validee_par?' · '+selectedVar.validee_par:'')}]}])}
  <div class="v31-detail-actions"><button type="button" id="v31-validate-single" class="v31-primary" ${!neuf||!selectedVar.adresse||selectedVar.validee?'disabled':''} title="Une proposition doit d’abord être appliquée avec l’empreinte du plan">${V31.icon('check',16)} Valider l'adresse</button>
  <button type="button" id="v31-edit-single" ${!neuf?'disabled':''}>Saisir / éditer</button></div>
  ${selectedVar.ident_eq?'<button type="button" class="v31-text-button" id="v31-source-equip">Ouvrir la fiche équipement</button>':''}</aside>`:'';
@@ -95,12 +99,13 @@ function vueVariablesV31(){
  <div class="v31-status-filters">${statuses}</div>
  <div class="v31-actions"><button type="button" class="v31-secondary" id="v31-calculate" ${!neuf?'disabled':''} title="Calculer un aperçu sans appliquer les adresses">${V31.icon('spark',15)} Calculer</button>
  <button type="button" class="v31-primary" id="v31-validate-proposed" ${blocked?'disabled':''} title="${blocked?(!neuf?'Adresses historiques conservées':errCount?'Résoudre les conflits avant validation':'Aucune proposition à valider'):'Aperçu, application contrôlée puis validation explicite'}">${V31.icon('check',16)} ${available?`Valider les propositions · ${available}`:`Valider les adresses · ${validable}`}</button>
- <button type="button" class="v31-menu-button" id="v31-var-more" aria-label="Autres actions" title="Autres actions">···</button></div></div>
+ <button type="button" id="v31-validate-selection" ${!neuf?'disabled':''} title="Valider les adresses des variables cochées">Valider la sélection</button>
+ <button type="button" id="v31-livrables" title="La table des variables se télécharge dans Recette et livrables">Livrables</button></div></div>
  ${!neuf?'<div class="v31-inform">Projet existant : les adresses historiques sont conservées, sans réaffectation automatique.</div>':''}
  ${errCount?`<div class="v31-inform warning">${errCount} point(s) bloquant(s) ou non résolu(s). Les conflits doivent être corrigés avant la validation.</div>`:''}
- <div class="v31-table-area"><table class="v31-table"><thead><tr><th><input type="checkbox" id="v31-select-all" aria-label="Tout sélectionner" ${!neuf?'disabled':''}></th><th>Variable</th><th>Famille</th><th class="v31-libelle">Libellé</th><th>Adresse automate</th><th class="v31-col-tele ${view==='exchange'?'v31-hide-in-exchange':''}">Télétransmission</th><th>Statut</th><th class="v31-rule ${view==='tele'?'v31-hide-in-tele':''}">Règle</th></tr></thead><tbody>
+ <div class="v31-table-area"><table class="v31-table" data-o-tableau="sans-selection" data-o-cle="variables"><thead><tr><th data-o-non-triable><input type="checkbox" id="v31-select-all" aria-label="Tout sélectionner" ${!neuf?'disabled':''}></th><th>Variable</th><th>Famille</th><th class="v31-libelle">Libellé</th><th>Adresse automate</th><th class="v31-col-tele ${view==='exchange'?'v31-hide-in-exchange':''}">Télétransmission</th><th>Statut</th><th class="v31-rule ${view==='tele'?'v31-hide-in-tele':''}">Règle</th></tr></thead><tbody>
  ${body||`<tr><td colspan="${view==='all'?8:7}"><div class="v31-blank">Aucune variable à afficher avec ces filtres.</div></td></tr>`}</tbody></table></div>
- <footer class="v31-table-footer"><span>${rows.length?`${rows.length} variable(s) · ${shown.length?`${shown.length} filtrée(s)`:'Aucun résultat'}`:'Aucune variable'} · page ${page+1}/${Math.max(1,Math.ceil(shown.length/150))}</span><div class="v31-page-controls"><button type="button" id="v31-prev-page" ${page===0?'disabled':''}>Précédent</button><button type="button" id="v31-next-page" ${(page+1)*150>=shown.length?'disabled':''}>Suivant</button></div>
+ <footer class="v31-table-footer"><span>${rows.length?`${rows.length} variable(s) · ${shown.length?`${shown.length} filtrée(s)`:'Aucun résultat'}`:'Aucune variable'} · page ${page+1}/${Math.max(1,Math.ceil(shown.length/V31_PAGE))}</span><div class="v31-page-controls"><button type="button" id="v31-prev-page" ${page===0?'disabled':''}>Précédent</button><button type="button" id="v31-next-page" ${(page+1)*V31_PAGE>=shown.length?'disabled':''}>Suivant</button></div>
  <button type="button" id="v31-adr-settings" class="v31-text-button">Paramètres d’adressage</button></footer></div>${detail}</section>`;
  v31EmptyColumns();
  document.querySelectorAll('[data-var-view]').forEach(el=>el.onclick=()=>{E.v31VarView=el.dataset.varView;E.v31Page=0;vueVariablesV31();});
@@ -116,13 +121,15 @@ function vueVariablesV31(){
  document.getElementById('v31-calculate').onclick=async()=>{try{const plan=await api('/api/adressage');E.v31Plan=plan;toast(`Aperçu recalculé : ${(plan.affectations||[]).filter(a=>a.niveau==='automate'&&a.etat==='proposée').length} proposition(s), ${(plan.conflits||[]).length} conflit(s).`);await v31ReloadVariables();}catch(e){toast(e.message,true);}};
  document.getElementById('v31-validate-proposed').onclick=()=>v31ValidateProposals();
  document.getElementById('v31-adr-settings').onclick=()=>naviguer('#/adressage');
- document.getElementById('v31-var-more').onclick=()=>v31VariableMenu();
+ document.getElementById('v31-validate-selection').onclick=()=>v31ValidateSelection();
+ document.getElementById('v31-livrables').onclick=()=>naviguer('#/recette');
  document.getElementById('v31-prev-page').onclick=()=>{E.v31Page--;vueVariablesV31();};
  document.getElementById('v31-next-page').onclick=()=>{E.v31Page++;vueVariablesV31();};
  // Retour du 16/11 (15 h 08) : l'écran Variables n'avait pas de pied d'étape, donc pas de bouton vers la Recette.
  // Il est reconstruit à chaque rendu de l'écran (filtres, pages, détail compris).
  if(typeof piedEtape==='function')requestAnimationFrame(()=>piedEtape());
  if(typeof Coque!=='undefined')Coque.majFil();   // lot 4 : fil de la variable ouverte
+ rubanVariablesV31();
 }
 async function v31ReloadVariables(){E.detailEtape=await api('/api/variables');try{E.v31Tele=await api('/api/supervision');}catch(_){E.v31Tele={lignes:[]};}vueVariablesV31();}
 async function v31ValidateProposals(){
@@ -144,13 +151,22 @@ async function v31ValidateProposals(){
   });
  }catch(e){toast(e.message,true);}
 }
-function v31VariableMenu(){
- const m=ouvrirModale(`<div class="boite-tete"><h2>Actions sur les variables</h2></div><div class="boite-corps"><p>Les commandes utilisent le moteur OGIAS et conservent les adresses validées.</p>
- <div class="v31-action-list"><button id="v31-menu-selected">Valider les adresses de la sélection</button><button id="v31-menu-reserve">Réserver une plage / convention</button><button id="v31-menu-export">Exporter la table de télétransmission</button></div></div><div class="boite-pied"><button data-fermer>Fermer</button></div>`);
- m.querySelector('#v31-menu-selected').onclick=async()=>{const pairs=[...document.querySelectorAll('.v31-choose:checked')].map(x=>({ident_eq:x.dataset.ident,cle:x.dataset.cle}));fermerModale();if(!pairs.length)return toast('Sélectionnez d’abord une ou plusieurs variables.',true);
-  confirmer(`Valider ${pairs.length} adresse(s) ?`,'Seules les adresses déjà attribuées, contrôlées et non conflictuelles seront validées.','Valider',async()=>{try{const r=await api('/api/variables/action',{action:'valider',paires:pairs});if(r.refus?.length)toast(r.refus.join(' | '),true);else toast(`${r.validees} adresse(s) validée(s).`);await v31ReloadVariables();}catch(e){toast(e.message,true);}});};
- m.querySelector('#v31-menu-reserve').onclick=()=>{fermerModale();naviguer('#/adressage');};
- m.querySelector('#v31-menu-export').onclick=()=>{fermerModale();telecharger('variables');};
+/* Lot 5d : l'ancien menu « Autres actions » (···) cachait trois commandes. Valider la sélection est au ruban ;
+   « Réserver une plage » ouvrait les paramètres d'adressage, déjà au ruban ; l'export de la table des variables est
+   dans Recette et livrables (retour du 18/11 : un seul endroit pour livrer). */
+function v31ValidateSelection(){
+ const pairs=[...document.querySelectorAll('.v31-choose:checked')].map(x=>({ident_eq:x.dataset.ident,cle:x.dataset.cle}));
+ if(!pairs.length)return toast('Sélectionnez d’abord une ou plusieurs variables.',true);
+ confirmer(`Valider ${pairs.length} adresse(s) ?`,'Seules les adresses déjà attribuées, contrôlées et non conflictuelles seront validées.','Valider',async()=>{try{const r=await api('/api/variables/action',{action:'valider',paires:pairs});if(r.refus?.length)toast(r.refus.join(' | '),true);else toast(`${r.validees} adresse(s) validée(s).`);await v31ReloadVariables();}catch(e){toast(e.message,true);}});
+}
+function rubanVariablesV31(){
+ const id=x=>document.getElementById(x);
+ Coque.ruban([
+  {nom:'Adressage',commandes:[{el:id('v31-calculate'),icone:'variable',grand:true,libelle:'Calculer'},
+   {el:id('v31-validate-proposed'),icone:'valider',grand:true},
+   {el:id('v31-validate-selection'),icone:'valider'},{el:id('v31-adr-settings'),icone:'modifier',libelle:'Paramètres d’adressage'}]},
+  {nom:'Livrables',commandes:[{el:id('v31-livrables'),icone:'recette',grand:true}]}]);
+ document.querySelectorAll('#vue .v31-actions').forEach(x=>{if(!x.querySelector('button'))x.style.display='none';});
 }
 function vueAccueilV31(){
  const a=E.accueil||{},ouvrages=a.ouvrages||[];

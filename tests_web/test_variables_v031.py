@@ -89,7 +89,8 @@ class TestVariablesV031(ServeurNavigateur):
             with self.subTest(largeur=largeur):
                 self.page.set_viewport_size({'width': largeur, 'height': hauteur})
                 ligne = self.page.locator('.v31-variable-row').first
-                self.assertAlmostEqual(ligne.bounding_box()['height'], 44, delta=1)
+                # Lot 5d : gabarit dense commun (jeton --o-h-ligne, 28 px ; 44 px avant)
+                self.assertAlmostEqual(ligne.bounding_box()['height'], 28, delta=1)
                 case = ligne.locator('.v31-choose')
                 self.assertGreaterEqual(case.bounding_box()['width'], 24)
                 self.assertGreaterEqual(case.bounding_box()['height'], 24)

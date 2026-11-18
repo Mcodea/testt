@@ -104,7 +104,7 @@ class TestDesignIndustriel(ServeurNavigateur):
                 self.page.locator('.v31-variable-row').first.click()
                 self.assertTrue(self.page.locator('#v31-validate-proposed').is_visible())
                 self.assertTrue(self.page.locator('#v31-close-detail').is_visible())
-                self.assertAlmostEqual(self.page.locator('.v31-variable-row').first.bounding_box()['height'], 44, delta=1)
+                self.assertAlmostEqual(self.page.locator('.v31-variable-row').first.bounding_box()['height'], 28, delta=1)   # lot 5d : gabarit dense
                 folder = self.capture(f'industriel-detail-{width}.png')
                 detail_box = self.page.locator('.v31-variable-detail').bounding_box()
                 self.assertGreaterEqual(detail_box['x'], 0)

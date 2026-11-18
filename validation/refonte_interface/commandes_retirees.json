@@ -7,5 +7,8 @@
   "#x-ca": "Retour du 18/11 : téléchargement déplacé dans Recette et livrables (seul endroit où l'on livre, après les contrôles) ; Matériel garde le bouton « Livrables » qui y mène.",
   "#x-xsy": "Retour du 18/11 : téléchargement déplacé dans Recette et livrables (seul endroit où l'on livre, après les contrôles) ; Matériel garde le bouton « Livrables » qui y mène.",
   "#x-txt": "Retour du 18/11 : téléchargement déplacé dans Recette et livrables (seul endroit où l'on livre, après les contrôles) ; Matériel garde le bouton « Livrables » qui y mène."
+ },
+ "variables": {
+  "#v31-var-more": "Lot 5d : le menu « Autres actions » (···) cachait trois commandes, désormais visibles : « Valider la sélection » au ruban, « Réserver une plage » = « Paramètres d'adressage » au ruban, export de la table des variables dans Recette et livrables."
  }
 }
