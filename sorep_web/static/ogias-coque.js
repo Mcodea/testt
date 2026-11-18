@@ -4,6 +4,8 @@
    Barre de titre avec menus, explorateur (navigation et parcours de l'ouvrage), onglets de documents.
    Couche de présentation seulement : chaque commande appelle une fonction ou une route qui existait déjà
    (naviguer, api('/api/nouveau'), recherche globale…). Aucune règle métier ici. */
+// Thème mémorisé, appliqué avant le premier rendu (repris de l'ancienne coque V30, retirée au lot 7c)
+try { if (localStorage.getItem("ogias-ui-theme") === "dark") document.documentElement.dataset.theme = "dark"; } catch (e) { /* stockage indisponible */ }
 const Coque = (() => {
  const esc = x => String(x ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
  // Tracés simples dessinés pour OGIAS (24 × 24, trait) : aucune ressource distante.

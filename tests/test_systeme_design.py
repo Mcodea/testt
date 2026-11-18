@@ -18,7 +18,7 @@ BLOC_SOMBRE = 'html[data-theme="dark"] {'
 RE_COULEUR = re.compile(r"#[0-9a-fA-F]{3,8}\b|rgba?\(")
 # Plafonds qui ne remontent jamais : mesures du lot 0, abaissées à chaque lot qui retire d'anciennes règles
 # (lot 2b : contrôles d'étape déplacés au panneau de sortie, leurs anciens styles retirés).
-PLAFONDS = {"app.css": (291, 28), "v031.css": (49, 94), "industrial-ui.css": (67, 92)}   # lot 7a : règles mortes retirées
+PLAFONDS = {"app.css": (229, 17), "v031.css": (49, 92), "industrial-ui.css": (67, 92)}   # lot 7c : coque V30 retirée
 
 
 def _sans_commentaires(texte: str) -> str:

@@ -18,9 +18,10 @@ def test_sidebar_is_the_only_global_navigation() -> None:
     for ident in ('o-titre', 'o-explorateur', 'o-documents', 'o-parcours'):
         assert f'"{ident}"' in coque or f'id="{ident}"' in coque
     assert "v31-sidebar" not in ui and "v31-progress" not in ui
-    for old in ('#v30-title', '#v30-documents', '.v30-ribbon', '#etapes'):
-        assert old in css
-    assert 'display:none!important' in css
+    # Lot 7c : l'ancienne coque V30 n'est plus dans la page ; ses règles de masquage n'ont plus d'objet
+    html = (STATIC / 'index.html').read_text(encoding='utf-8')
+    for old in ('v30-title', 'v30-documents', 'v30-ribbon', 'id="etapes"', 'v030-shell.js'):
+        assert old not in html and old not in css
 
 
 def test_variable_validation_still_uses_address_fingerprint() -> None:
@@ -35,7 +36,6 @@ def test_variable_validation_still_uses_address_fingerprint() -> None:
 
 def test_old_business_buttons_are_moved_not_cloned() -> None:
     ui = (STATIC / 'v031-ui.js').read_text(encoding='utf-8')
-    css = (STATIC / 'v031.css').read_text(encoding='utf-8')
     for button_id in ('ad-recalc', 'ad-app', 'ad-val', 'rf-creer', 'rf-exp', 'r-actualiser'):
         assert button_id in ui
     assert 'appendChild(b)' in ui
@@ -45,8 +45,6 @@ def test_old_business_buttons_are_moved_not_cloned() -> None:
     for button_id in ('x-val-tout', 'x-val', 'es-export', 'b-eq', 'e-val', 'm-calc', 'm-valider', 'm-livrables'):
         assert f'id("{button_id}")' in app or f'fiche("{button_id}")' in app
     assert 'cmds.append(el)' in coque and 'cloneNode' not in coque
-    assert '.v31-page-actions .v30-source-command' in css
-    assert '.v31-actions-menu .v30-source-command' in css
 
 
 def test_local_design_dependencies_only() -> None:
