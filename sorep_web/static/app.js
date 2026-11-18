@@ -817,6 +817,27 @@ async function contenu() {
   if (E.vue === "ouvrage" && !E.ouvrage?.en_conception && document.getElementById("b-eq")) rubanEquipements();
   Coque.majFil();
 }
+/* Outils d'ingénierie de l'ouvrage (18/11 : un logiciel universel) : l'utilisateur choisit les outils réellement
+   utilisés ; OGIAS affiche les règles qui en découlent. La source d'acquisition et la communication restent saisies
+   dans la fiche d'identification ; la supervision et l'IHM se choisissent ici, dans les listes du référentiel. */
+async function blocOutils(c) {
+  const zone = c.querySelector("#bloc-outils"); if (!zone) return;
+  let t; try { t = await api("/api/outils"); } catch (e) { zone.querySelector(".vide-bloc").textContent = e.message; return; }
+  if (!document.body.contains(zone)) return;
+  const choix = (id, libelle, valeur, liste, vide) => `<label for="${id}">${libelle}</label><select id="${id}"><option value="">${vide}</option>
+    ${[...new Set([...liste, ...(valeur ? [valeur] : [])])].map(x => `<option ${x === valeur ? "selected" : ""}>${esc(x)}</option>`).join("")}</select>`;
+  zone.innerHTML = `<div class="bloc-tete"><h2>Outils d'ingénierie</h2><span class="aide">les outils réellement utilisés sur l'ouvrage ; OGIAS applique les règles qui leur sont propres</span></div>
+   <div class="outils-grille">
+    <div class="outil"><span class="outil-cat">Automate / source d'acquisition</span><b>${esc(t.automate || "non renseigné")}</b><small>${t.gamme ? `gamme ${esc(t.gamme)}` : "gamme non décrite dans OGIAS : aucune règle propre"} · fiche d'identification</small></div>
+    <div class="outil"><span class="outil-cat">Communication</span><b>${esc(t.telegestion || "non renseignée")}</b><small>fiche d'identification</small></div>
+    <div class="outil">${choix("outil-supervision", "Supervision", t.supervision, t.supervisions, "— Aucune —")}</div>
+    <div class="outil">${choix("outil-ihm", "IHM", t.ihm, t.ihms, "— Aucune —")}</div>
+   </div>
+   <div class="outils-regles"><b>Règles propres aux outils choisis</b>${t.contraintes.length ? `<ul>${t.contraintes.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "<p>Aucune : les outils choisis ne sont pas décrits dans OGIAS, aucune contrainte n'est supposée.</p>"}</div>`;
+  const enregistrer = async corps => { try { await api("/api/outils/action", corps); toast("Outils de l'ouvrage enregistrés."); blocOutils(c); } catch (e) { toast(e.message, true); blocOutils(c); } };
+  zone.querySelector("#outil-supervision").onchange = ev => enregistrer({supervision: ev.target.value});
+  zone.querySelector("#outil-ihm").onchange = ev => enregistrer({ihm: ev.target.value});
+}
 async function contenuDetail() {
   const c = $("#contenu"), s = E.sel;
   if (s.nature === "eq" && eqParIdent(s.valeur)) {
@@ -912,6 +933,8 @@ function detailOuvrage(c) {
      </div>
      ${o.en_conception ? "" : `<div class="repere-live">${texteRepere(i.lieu || "????", i.code_ouvrage || "??", actuelNumero || "--", okLieu, okCode)}</div>`}
    ${o.en_conception ? `</div>` : `</details>`}
+   ${o.en_conception ? "" : `<section class="bloc outils-ouvrage" id="bloc-outils" aria-label="Outils d'ingénierie de l'ouvrage"><div class="bloc-tete"><h2>Outils d'ingénierie</h2>
+     <span class="aide">les outils réellement utilisés sur l'ouvrage ; OGIAS applique les règles qui leur sont propres</span></div><div class="vide-bloc">Chargement…</div></section>`}
    ${o.en_conception ? "" : `   <div class="chiffres">
      <div class="chiffre"><b>${o.equipements.length}</b><span>équipements</span></div>
      <div class="chiffre"><b>${o.unites.length}</b><span>unités fonctionnelles</span></div>
@@ -983,6 +1006,7 @@ function detailOuvrage(c) {
   if (o.en_conception && !actuelNumero && !E.ficheDraft?.numero_ouvrage) suggererNumero();
   miseAJour();
   c.querySelector("#gerer-listes").onclick = ev => { ev.preventDefault(); E.ficheDraft = recueillir(); modaleListes("lieux"); };
+  if (!o.en_conception) blocOutils(c);
   c.querySelector("#fiche-ouvrage")?.addEventListener("toggle", ev => { E.ficheOuverte = ev.target.open; });
   c.querySelector("#communication-choix").onchange = miseAJour;
   c.querySelector("#communication-choix").onclick = ev => deroulantCommunications(ev.currentTarget, () => { E.ficheDraft = recueillir(); });
@@ -1499,7 +1523,7 @@ function modaleChoix(titre, label, options, valeur, action) {
   m.querySelector("#m-ok").onclick = async () => { try { await action(m.querySelector("#m-v").value); fermerModale(); } catch (e) { m.querySelector("#m-err").textContent = e.message; } };
 }
 /* ------------------------------------------------------------------ listes d'identification, indépendantes des projets */
-const GROUPES_LISTES = [["lieux", "Lieux"], ["types_ouvrage", "Types d'ouvrages"], ["automates", "Sources d'acquisition"], ["protocoles", "Protocoles"]];
+const GROUPES_LISTES = [["lieux", "Lieux"], ["types_ouvrage", "Types d'ouvrages"], ["automates", "Sources d'acquisition"], ["protocoles", "Protocoles"], ["supervisions", "Supervisions"], ["ihm", "IHM"]];
 const CATEGORIES_SOURCES = ["Automate", "Télégestion", "E/S déportées", "Autres"];
 const categorieSource = v => (E.listes?.categories_sources || {})[v] || "Autres";
 // Explication du repère d'équipement selon le format de l'ouvrage (charte du 9 novembre : 12 caractères).
@@ -1510,7 +1534,7 @@ function texteRepere(lieu, code, numero, okLieu, okCode) {
   return `Repère d'un équipement = <b class="${okLieu ? "ok" : "ko"}">${esc(lieu)}</b> lieu + <b class="${okCode ? "ok" : "ko"}">${esc(code)}</b> type d'ouvrage + <b>${esc(numero)}</b> numéro d’ouvrage${se} + <b>type et numéro</b> d'équipement (4) — exemple : <span class="mono">${esc(exemple)}</span>`;
 }
 function modaleListes(groupe = "lieux", edition = "") {
-  const l = E.listes || {lieux:[], types_ouvrage:[], automates:[], protocoles:[]};
+  const l = E.listes || {lieux:[], types_ouvrage:[], automates:[], protocoles:[], supervisions:[], ihm:[]};
   const tab = l[groupe] || [], codeLibelle = groupe === "lieux" || groupe === "types_ouvrage";
   const enEdition = tab.find(x => (codeLibelle ? x.code : x) === edition);
   const old = enEdition ? (codeLibelle ? enEdition.code : enEdition) : "";

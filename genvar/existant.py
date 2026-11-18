@@ -422,6 +422,7 @@ def _occupation(adresse, type_logique):
 
 
 def controler_existant(ouvrage, catalogue):
+    from .outils import adresse_paire_32_bits
     """Anomalies du projet existant. Les adresses lues sont contrôlées, jamais corrigées."""
     anomalies = []
     err = lambda rep, msg, code="": anomalies.append(Anomalie("Erreur", rep, msg, code=code))
@@ -438,7 +439,7 @@ def controler_existant(ouvrage, catalogue):
         if typ in ("BOOL", "EBOOL") and occ["mots"]:
             alerte(v.nom, f"{typ} placé sur le mot entier {v.adresse} : vérifier l'adresse dans le programme (bit manquant ?).", "R-EXI-02")
         if (TAILLE_MOTS.get(typ) in (2, 4) and occ["mots"]
-                and (ouvrage.automate or "").upper() in ("M340", "M580")
+                and adresse_paire_32_bits(ouvrage)              # « Sch - M340 » compris (corrigé le 18/11)
                 and min(occ["mots"]) % 2):
             err(v.nom, f"{typ} sur l'adresse impaire {v.adresse} : refusé sur {ouvrage.automate} (adresse paire obligatoire).", "R-EXI-03")
         for m in occ["mots"]:

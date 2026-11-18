@@ -68,6 +68,11 @@ SOURCES_DEFAUT = {
     "E/S déportées": ["Sch - STBNIP2212", "Sch - STBNIP2311", "Sch - Edge I/O NTS", "Sch - Modicon TM3"],
 }
 PROTOCOLES_DEFAUT = ["Modbus TCP/IP", "LACBUS IP", "EtherNet/IP", "LACBUS IP / LX Connect"]
+# Outils d'ingénierie de l'ouvrage (18/11) : supervision et IHM. Seuls les outils déjà connus d'OGIAS sont proposés
+# (TOPKAPI : format d'import relevé ; Vijeo Designer : cité dans la Recette, format non décrit). L'utilisateur
+# ajoute les siens par « Gérer les listes » ; un outil ajouté n'entraîne aucune règle tant qu'OGIAS ne le décrit pas.
+SUPERVISIONS_DEFAUT = ["TOPKAPI"]
+IHM_DEFAUT = ["Vijeo Designer"]
 # Valeurs des versions précédentes : conservées (projets existants) et classées sans deviner.
 CATEGORIES_HISTORIQUES = {"M580": "Automate", "M340": "Automate", "TSX": "Automate", "SOFREL S4W": "Télégestion"}
 VERSION_SOURCES = 1
@@ -78,10 +83,12 @@ DEFAUT = {
     "types_ouvrage": TYPES_DEFAUT,
     "automates": [v for liste in SOURCES_DEFAUT.values() for v in liste],
     "protocoles": list(PROTOCOLES_DEFAUT),
+    "supervisions": list(SUPERVISIONS_DEFAUT),
+    "ihm": list(IHM_DEFAUT),
     "categories_sources": {v: c for c, liste in SOURCES_DEFAUT.items() for v in liste},
     "version_sources": VERSION_SOURCES,
 }
-GROUPES = ("lieux", "types_ouvrage", "automates", "protocoles")
+GROUPES = ("lieux", "types_ouvrage", "automates", "protocoles", "supervisions", "ihm")
 
 
 def categorie_source(valeurs, source):

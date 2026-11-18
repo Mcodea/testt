@@ -311,3 +311,27 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.wait_for_function('() => location.hash === "#/recette"')
         self.page.locator('[data-export="variables"]').wait_for()
         self.assertEqual(self.projet.read_bytes(), avant)
+
+    def test_outils_ingenierie_supervision_et_regles_propres(self):
+        """18/11 : outils d'ingénierie de l'ouvrage, choisis dans les listes ; règles propres affichées et appliquées."""
+        self.ouvrir('#/inventaire')
+        bloc = self.page.locator('#bloc-outils')
+        bloc.locator('#outil-supervision').wait_for()
+        texte = bloc.inner_text()
+        self.assertIn('Sch - M340', texte)
+        self.assertIn('M340 : valeur 32 bits sur une adresse %MW paire.', texte)
+        self.assertIn('TOPKAPI : libellé de 40 caractères au plus.', texte)
+        self.assertEqual(bloc.locator('#outil-supervision').input_value(), 'TOPKAPI')
+        # Supervision « Aucune » : la règle TOPKAPI n'est plus listée ni appliquée
+        bloc.locator('#outil-supervision').select_option('')
+        self.page.wait_for_function("() => !document.querySelector('#bloc-outils').innerText.includes('TOPKAPI : libellé')")
+        self.assertEqual(self.api('/api/outils')['supervision'], '')
+        self.assertEqual(self.api('/api/outils')['contraintes'], ['M340 : valeur 32 bits sur une adresse %MW paire.'])
+        # IHM : choix dans la liste ; une valeur absente du référentiel est refusée côté serveur
+        bloc = self.page.locator('#bloc-outils')
+        bloc.locator('#outil-ihm').select_option('Vijeo Designer')
+        self.page.wait_for_function("() => document.querySelector('#outil-ihm')?.value === 'Vijeo Designer'")
+        self.assertEqual(self.api('/api/outils')['ihm'], 'Vijeo Designer')
+        with self.assertRaises(Exception):
+            self.api('/api/outils/action', {'supervision': 'Outil inventé'})
+        self.assertEqual(self.api('/api/outils')['supervision'], '')

@@ -176,6 +176,10 @@ class Ouvrage:
     type_ouvrage: str = ""                              # réservoir, station de pompage…
     environnement: str = "Control Expert"               # Control Expert, Unity Pro, PL7
     communication: str = ""                             # protocole / équipement de télégestion (ex. Modbus TCP, S4W)
+    # Outils d'ingénierie de l'ouvrage (18/11) : supervision et IHM réellement utilisées. TOPKAPI par défaut : c'est
+    # ce qu'OGIAS supposait jusque-là ; les règles propres à un outil ne s'appliquent que s'il est choisi.
+    supervision: str = "TOPKAPI"
+    ihm: str = ""
     table_tt: list = field(default_factory=list)        # LigneTT : table de télétransmission (projet existant)
     existantes: list = field(default_factory=list)     # VariableExistante (mode existant)
     entrees_physiques_importees: list = field(default_factory=list)  # Sources E/S documentaires, sans modification automate
@@ -908,6 +912,7 @@ class Anomalie:
 
 
 def controler(ouvrage, catalogue, variables=None):
+    from .outils import adresse_paire_32_bits, libelle_max       # règles propres aux outils choisis (18/11)
     if variables is None:
         variables = generer(ouvrage, catalogue)
     anomalies = []
@@ -1065,7 +1070,7 @@ def controler(ouvrage, catalogue, variables=None):
             taille = max(1, TAILLE_MOTS.get(v.type_logique, 1))
             if p[0] < debut or p[0] + (taille - 1 if p[1] is None else 0) > fin:
                 err(v.repere, f"{v.nom} : {v.adresse} hors de la plage {v.famille} (%MW{debut} à %MW{fin}).", v.ident_eq, code="R-VAR-06")
-            if TAILLE_MOTS.get(v.type_logique) == 2 and p[0] % 2:
+            if TAILLE_MOTS.get(v.type_logique) == 2 and p[0] % 2 and adresse_paire_32_bits(ouvrage):
                 err(v.repere, f"{v.nom} : variable 32 bits sur une adresse impaire (refusé sur M340 / M580).", v.ident_eq, code="R-VAR-07")
         if v.famille == "RTR" and v.adresse:
             tr = next((x for x in variables if x.ident_eq == v.ident_eq and x.famille == "TR" and x.code == v.code), None)
@@ -1075,7 +1080,7 @@ def controler(ouvrage, catalogue, variables=None):
                     err(v.repere, f"{v.nom} : {v.adresse} n'est pas en miroir de {tr.nom} ({tr.adresse} → %MW{attendu} attendu).", v.ident_eq, code="R-VAR-08")
                 if v.type_logique != tr.type_logique:
                     err(v.repere, f"{v.nom} / {tr.nom} : types TR/RTR différents sans conversion déclarée.", v.ident_eq, code="R-VAR-09")
-        if len(v.libelle_topkapi) > LONGUEUR_MAX_LIBELLE:
+        if (libelle_max(ouvrage) or 0) and len(v.libelle_topkapi) > (libelle_max(ouvrage) or LONGUEUR_MAX_LIBELLE):
             alerte(v.repere, f"Libellé Topkapi de {len(v.libelle_topkapi)} caractères (40 au plus) : {v.libelle_topkapi}", v.ident_eq, code="R-VAR-10")
     non_validees = [v for v in variables if v.adresse and not v.adresse_validee]
     if non_validees:

@@ -712,3 +712,14 @@ html[data-theme] .rc-vues > button.on { background: var(--o-action-fond); border
 html[data-theme] .rc-filtre-regle { margin-left: var(--o-e-3); font-size: var(--o-t-s); color: var(--o-texte-2); }
 html[data-theme] table.rc-par-regle td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 html[data-theme] table.rc-par-regle .rc-exemple { max-width: 34ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--o-texte-2); }
+
+/* Outils d'ingénierie de l'ouvrage (18/11) */
+html[data-theme] .outils-grille { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border: 1px solid var(--o-ligne); border-radius: var(--o-r-m); }
+html[data-theme] .outils-grille .outil { display: flex; flex-direction: column; gap: 2px; padding: var(--o-e-2) var(--o-e-3); border-left: 1px solid var(--o-ligne); min-width: 0; }
+html[data-theme] .outils-grille .outil:first-child { border-left: 0; }
+html[data-theme] .outils-grille .outil-cat, html[data-theme] .outils-grille label { font-size: var(--o-t-s); color: var(--o-texte-2); }
+html[data-theme] .outils-grille small { color: var(--o-texte-2); font-size: var(--o-t-xs); }
+html[data-theme] .outils-regles { margin-top: var(--o-e-2); font-size: var(--o-t-s); }
+html[data-theme] .outils-regles ul { margin: var(--o-e-1) 0 0; padding-left: var(--o-e-5); }
+html[data-theme] .outils-regles p { margin: var(--o-e-1) 0 0; color: var(--o-texte-2); }
+@media (max-width: 1200px) { html[data-theme] .outils-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

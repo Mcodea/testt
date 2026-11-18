@@ -204,9 +204,10 @@ def evaluer(ouvrage, catalogue, l, usages=None):
     adresse = (v.adresse or "").strip()
     if SENS.get(famille) == "Descente" and RE_ENTREE.match(adresse):
         incoherences.append(f"Une {famille} (descente) ne peut pas viser une entrée physique {adresse}.")
+    from .outils import adresse_paire_32_bits
     m = RE_MOT.match(adresse)
     if (m and TAILLE_MOTS.get((v.type_logique or "").upper()) in (2, 4) and int(m.group(1)) % 2
-            and (ouvrage.automate or "").upper() in ("M340", "M580")):
+            and adresse_paire_32_bits(ouvrage)):                 # « Sch - M340 » compris (corrigé le 18/11)
         incoherences.append(f"Valeur 32 bits sur l'adresse impaire {adresse}.")
     if l.hors_perimetre:
         incoherences.append("Information plus attendue pour cet équipement (option ou signal retiré).")

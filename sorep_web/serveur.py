@@ -911,6 +911,32 @@ class Application:
             "note": "Point fonctionnel, variable source et adresse protocolaire distincts. "
                     "Aucun import S4W-Tools ou TOPKAPI n'est qualifié."}
 
+    def outils_web(self, _):
+        """Outils d'ingénierie de l'ouvrage et contraintes qui en découlent (18/11)."""
+        if not self.ouvert:
+            raise RegleMetier("Ouvrez d'abord un ouvrage.")
+        from genvar.outils import resume
+        listes = ref_ident.lire()
+        return {**resume(self.s.ouvrage), "supervisions": listes["supervisions"], "ihms": listes["ihm"]}
+
+    def outils_action(self, d):
+        """Choisir la supervision et l'IHM de l'ouvrage, parmi les listes du référentiel (« » : aucune)."""
+        if not self.ouvert:
+            raise RegleMetier("Ouvrez d'abord un ouvrage.")
+        listes = ref_ident.lire()
+        o = self.s.ouvrage
+        for champ, liste in (("supervision", "supervisions"), ("ihm", "ihm")):
+            if champ not in d:
+                continue
+            valeur = str(d.get(champ) or "").strip()
+            if valeur and valeur not in listes[liste] and valeur != getattr(o, champ):
+                raise RegleMetier(f"{'Supervision' if champ == 'supervision' else 'IHM'} absente du référentiel : "
+                                  "ajoutez-la d'abord par « Gérer les listes ».")
+            setattr(o, champ, valeur)
+        self.s.modifie = True
+        self._sauver()
+        return self.outils_web({})
+
     def regles_web(self, _):
         """Catalogue des règles de cohérence nommées (lecture seule, sans ouvrage ouvert)."""
         from genvar.coherence import REGLES, decrire
@@ -1642,14 +1668,14 @@ ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle":
               "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre",
               "/api/es": "es", "/api/numero-ouvrage": "numero_ouvrage_suggere",
               "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page",
-              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web",
+              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web",
               "/api/referentiel/synchronisation": "synchronisation_referentiel", "/api/ouvrage/copies": "copies_ouvrage",
               "/api/referentiel/impact": "rapport_impact", "/api/referentiel/propagation": "apercu_propagation",
               "/api/referentiel/apercu-modele": "apercu_modele"}
 ROUTES_POST = {"/api/nouveau": "nouveau", "/api/ouvrir": "ouvrir", "/api/fermer": "fermer",
                "/api/supprimer_ouvrage": "supprimer_ouvrage", "/api/definir": "definir",
                "/api/fiche-ouvrage": "fiche_ouvrage",
-               "/api/listes-ouvrage/action": "listes_ouvrage_action",
+               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action",
                "/api/identification/type": "identifier_type",
                "/api/identification/selection": "identifier_selection", "/api/uf": "uf",
                "/api/equipement/ajouter": "ajouter_equipement", "/api/equipement/modifier": "modifier_equipement",
