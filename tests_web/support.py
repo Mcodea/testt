@@ -68,6 +68,13 @@ class ServeurNavigateur(unittest.TestCase):
         resources.callback(cls.browser.close)
         cls.numero = 0
 
+    def jeton(self, nom):
+        """Couleur calculée d'un jeton du système de design (ogias.css) dans le thème affiché, ex. « rgb(…) ».
+        Les essais comparent l'interface aux jetons, pas à des valeurs recopiées : la palette peut évoluer."""
+        return self.page.evaluate("""nom => { const d = document.createElement('div');
+            d.style.color = `var(${nom})`; document.body.append(d);
+            const c = getComputedStyle(d).color; d.remove(); return c; }""", nom)
+
     def api(self, route, data=None):
         request = urllib.request.Request(
             self.url + route.lstrip("/"),

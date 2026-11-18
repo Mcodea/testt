@@ -70,9 +70,10 @@ class TestCreationIndustrielle(_RecetteVisuelle):
         avant = self.api('/api/ouvrage')
         requetes = []
         self.page.on('request', lambda r: requetes.append(r.url) if r.method not in ('GET', 'HEAD') else None)
-        for theme, fond in (('light', 'rgb(255, 255, 255)'), ('dark', 'rgb(17, 24, 39)')):
+        for theme in ('light', 'dark'):
             if self.page.locator('html').get_attribute('data-theme') != theme:
                 self.page.locator('#v31-settings').click()
+            fond = self.jeton('--o-surface')
             self.page.wait_for_function("bg => ['gerer-listes','proposer-numero'].every(id => getComputedStyle(document.getElementById(id)).backgroundColor === bg)", arg=fond)
             with self.subTest(theme=theme):
                 for selecteur in ('#gerer-listes', '#proposer-numero'):
@@ -111,7 +112,7 @@ class TestCreationIndustrielle(_RecetteVisuelle):
         avant, listes = self.api('/api/ouvrage'), self.api('/api/listes-ouvrage')
         self.page.locator('#communication-choix').click()
         self.page.locator('.deroulant-protocoles').wait_for()
-        self.assertEqual(self.page.locator('.deroulant-protocoles').evaluate('e=>getComputedStyle(e).backgroundColor'), 'rgb(17, 24, 39)')
+        self.assertEqual(self.page.locator('.deroulant-protocoles').evaluate('e=>getComputedStyle(e).backgroundColor'), self.jeton('--o-surface'))
         self.page.mouse.click(5, 5)
         self.page.locator('#gerer-listes').click()
         self.page.locator('.onglets-listes').wait_for()
@@ -119,8 +120,8 @@ class TestCreationIndustrielle(_RecetteVisuelle):
             with self.subTest(groupe=groupe):
                 self.page.locator(f'[data-liste="{groupe}"]').click()
                 self.contraste('.onglets-listes button, .boite-tete h2, .boite-corps label')
-                # Bleu d'action unique du système graphique (jeton --ogias-primary, thème sombre).
-                self.assertEqual(self.page.locator('.onglets-listes button.active').evaluate('e=>getComputedStyle(e).backgroundColor'), 'rgb(47, 111, 214)')
+                # Bleu d'action unique du système de design (jeton --o-action-plein).
+                self.assertEqual(self.page.locator('.onglets-listes button.active').evaluate('e=>getComputedStyle(e).backgroundColor'), self.jeton('--o-action-plein'))
         self.capture('formulaire-listes-sombre-1366.png')
         self.page.locator('#modale [data-fermer]').click()
         self.assertEqual(self.api('/api/ouvrage'), avant)
@@ -150,7 +151,7 @@ class TestNiveauxAdressageIndustriels(_RecetteVisuelle):
                 self.assertEqual(active.evaluate('el=>getComputedStyle(el).outlineStyle'), 'solid')
                 self.assertEqual(active.evaluate('el=>getComputedStyle(el).outlineWidth'), '2px')
                 for e in self.page.locator('.carte-niv').all():
-                    self.assertEqual(e.evaluate('el=>getComputedStyle(el).backgroundColor'), 'rgb(17, 24, 39)')
+                    self.assertEqual(e.evaluate('el=>getComputedStyle(el).backgroundColor'), self.jeton('--o-surface'))
                 self.contraste('.carte-niv b, .carte-niv small')
         self.capture('formulaire-niveaux-sombre-1366.png')
         self.assertEqual(self.api('/api/adressage'), adresses)

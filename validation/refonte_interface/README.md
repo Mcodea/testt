@@ -6,7 +6,7 @@ au moteur ni aux règles métier. Huit lots, appliqués dans l'ordre, chacun vé
 | Lot | Contenu | État |
 | --- | --- | --- |
 | 0. Socle | Branche à jour, inventaire des styles, captures et registre des commandes « avant » | Fait |
-| 1. Système de design | Jetons, thèmes clair et sombre, une feuille `ogias.css` | À faire |
+| 1. Système de design | Jetons, thèmes clair et sombre, une feuille `ogias.css` | Fait |
 | 2. Coque de bureau | Menus, ruban, explorateur, onglets, inspecteur, barre d'état | À faire |
 | 3. Composants de bureau | Tableau dense, grille de propriétés, menu contextuel, raccourcis | À faire |
 | 4. Identité | Fil de l'information, symboles propres | À faire |
@@ -28,5 +28,5 @@ au moteur ni aux règles métier. Huit lots, appliqués dans l'ordre, chacun vé
 | Outil | Rôle |
 | --- | --- |
 | `outils/interface_demo.py <dossier>` | Serveur jetable avec un ouvrage fictif ; adresse dans `<dossier>/url.txt` |
-| `outils/interface_releve.py <url> <dossier>` | Captures de chaque écran (clair, sombre) et registre des commandes |
+| `outils/interface_releve.py <url> <dossier> [référence]` | Captures de chaque écran (clair, sombre), registre des commandes, commandes disparues |
 | `outils/interface_inventaire.py` | Mesures des feuilles de style et des scripts |

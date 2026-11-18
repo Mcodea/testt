@@ -1,10 +1,12 @@
 """Relevé de l'interface pour la refonte : captures de chaque écran (clair et sombre) et registre des commandes.
 
-Usage : python outils/interface_releve.py <url du serveur de démonstration> <dossier de sortie>
+Usage : python outils/interface_releve.py <url du serveur de démonstration> <dossier de sortie> [actions.json de référence]
 Le serveur vient de outils/interface_demo.py (ouvrage fictif). Produit :
 - <sortie>/captures/<écran>_<thème>.png ;
 - <sortie>/actions.json : pour chaque écran, les commandes visibles (boutons, liens d'action, champs).
-Le registre sert à vérifier, lot après lot, qu'aucune commande ne disparaît d'un écran refait.
+Le registre sert à vérifier, lot après lot, qu'aucune commande ne disparaît d'un écran refait : avec un registre de
+référence (par exemple validation/refonte_interface/lot0_avant/actions.json), les commandes disparues sont listées
+et le programme s'arrête en erreur s'il en manque.
 """
 from __future__ import annotations
 
@@ -78,7 +80,24 @@ def releve(url: str, sortie: Path) -> dict:
     return {"commandes": {k: len(v) for k, v in registre.items()}, "erreurs_js": erreurs}
 
 
+def disparues(reference: Path, actuel: Path) -> dict[str, list[str]]:
+    """Commandes du registre de référence absentes du registre actuel, par écran."""
+    ref, act = (json.loads(p.read_text(encoding="utf-8")) for p in (reference, actuel))
+    sortie = {}
+    for ecran, commandes in ref.items():
+        avant = {x["cle"] or x["texte"] for x in commandes}
+        apres = {x["cle"] or x["texte"] for x in act.get(ecran, [])}
+        if avant - apres:
+            sortie[ecran] = sorted(avant - apres)
+    return sortie
+
+
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
+    if len(sys.argv) not in (3, 4):
         raise SystemExit(__doc__)
-    print(json.dumps(releve(sys.argv[1].rstrip("/") + "/", Path(sys.argv[2])), ensure_ascii=False, indent=1))
+    resultat = releve(sys.argv[1].rstrip("/") + "/", Path(sys.argv[2]))
+    if len(sys.argv) == 4:
+        resultat["commandes_disparues"] = disparues(Path(sys.argv[3]), Path(sys.argv[2]) / "actions.json")
+    print(json.dumps(resultat, ensure_ascii=False, indent=1))
+    if resultat.get("commandes_disparues") or resultat["erreurs_js"]:
+        raise SystemExit(1)

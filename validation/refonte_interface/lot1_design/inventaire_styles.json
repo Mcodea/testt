@@ -1,0 +1,68 @@
+{
+ "css": {
+  "app.css": {
+   "lignes": 868,
+   "regles": 902,
+   "couleurs_en_dur": 348,
+   "important": 28,
+   "variables_definies": 33
+  },
+  "industrial-ui.css": {
+   "lignes": 633,
+   "regles": 480,
+   "couleurs_en_dur": 83,
+   "important": 109,
+   "variables_definies": 85
+  },
+  "ogias.css": {
+   "lignes": 235,
+   "regles": 11,
+   "couleurs_en_dur": 62,
+   "important": 0,
+   "variables_definies": 139
+  },
+  "v031.css": {
+   "lignes": 350,
+   "regles": 321,
+   "couleurs_en_dur": 56,
+   "important": 103,
+   "variables_definies": 40
+  }
+ },
+ "js": {
+  "app.js": {
+   "lignes": 2888,
+   "styles_en_ligne": 50,
+   "couleurs_en_dur": 1,
+   "toasts": 61
+  },
+  "referentiel-codes.js": {
+   "lignes": 98,
+   "styles_en_ligne": 0,
+   "couleurs_en_dur": 0,
+   "toasts": 3
+  },
+  "v030-shell.js": {
+   "lignes": 214,
+   "styles_en_ligne": 0,
+   "couleurs_en_dur": 0,
+   "toasts": 1
+  },
+  "v031-ui.js": {
+   "lignes": 165,
+   "styles_en_ligne": 0,
+   "couleurs_en_dur": 0,
+   "toasts": 0
+  },
+  "v031-variables.js": {
+   "lignes": 176,
+   "styles_en_ligne": 2,
+   "couleurs_en_dur": 0,
+   "toasts": 11
+  }
+ },
+ "selecteurs_redefinis_dans_plusieurs_feuilles": 186,
+ "tailles_de_police_distinctes": 24,
+ "rayons_distincts": 37,
+ "couleurs_distinctes": 356
+}

@@ -1,0 +1,235 @@
+/* =====================================================================================================
+   OGIAS — système de design (refonte de l'interface, lot 1, 18/11/2026)
+
+   Source unique des couleurs, polices, tailles, espacements et rayons de l'interface. Chargée en DERNIER.
+   Règles :
+   - les couleurs ne s'écrivent QUE dans les deux blocs de jetons ci-dessous (clair, sombre) ;
+   - tout le reste de l'interface utilise les jetons --o-* (ou les anciens noms, rebranchés plus bas) ;
+   - clair = bureau d'études ; sombre = salle de contrôle. Contrastes vérifiés par tests/test_systeme_design.py.
+   ===================================================================================================== */
+
+/* ---------------------------------------------------------------- jetons : thème clair (par défaut) */
+:root, html[data-theme="light"] {
+  /* Surfaces */
+  --o-fond: #EDF0F4;            /* fond de l'application, autour des panneaux */
+  --o-surface: #FFFFFF;         /* panneaux, tableaux, champs */
+  --o-surface-2: #F5F7FA;       /* en-têtes de tableau, têtes de panneau */
+  --o-surface-3: #E6EBF1;       /* survol neutre, zone inactive */
+  --o-ligne: #D3DAE3;           /* filets, bordures */
+  --o-ligne-forte: #A9B5C3;     /* séparation marquée */
+  --o-champ-bord: #768599;      /* bordure de champ : contraste 3:1 (WCAG 1.4.11) */
+  /* Textes */
+  --o-texte: #16212F;
+  --o-texte-2: #475569;         /* texte secondaire */
+  --o-texte-3: #56657A;         /* aide, désactivé */
+  /* Structure (barre latérale, barre de titre) */
+  --o-nuit: #14243B;
+  --o-nuit-2: #1C3354;
+  --o-nuit-ligne: #2A4266;
+  --o-nuit-texte: #E8EEF7;
+  --o-nuit-texte-2: #B4C2D4;
+  /* Action et sélection */
+  --o-action: #1F5FBF;          /* liens, icônes actives, texte d'action */
+  --o-action-plein: #1F5FBF;    /* fond des boutons principaux */
+  --o-action-survol: #184C99;
+  --o-action-fond: #E3ECFA;     /* sélection, élément actif */
+  --o-sur-action: #FFFFFF;
+  /* États : couleur du texte / fond pastel / filet */
+  --o-ok: #0B6B42;
+  --o-ok-fond: #E3F4EC;
+  --o-ok-filet: #2E9D6A;
+  --o-alerte: #8F3F00;
+  --o-alerte-fond: #FFF1E0;
+  --o-alerte-filet: #E07B00;
+  --o-erreur: #B42318;
+  --o-erreur-fond: #FDECEA;
+  --o-erreur-filet: #D92D20;
+  /* Effets */
+  --o-ombre-flottant: 0 6px 20px rgba(10, 20, 35, .18);   /* menus, fenêtres : seuls éléments ombrés */
+  --o-voile: rgba(10, 20, 35, .42);                        /* fond derrière une fenêtre modale */
+  color-scheme: light;
+}
+
+/* ---------------------------------------------------------------- jetons : thème sombre */
+html[data-theme="dark"] {
+  --o-fond: #0E141D;
+  --o-surface: #151D29;
+  --o-surface-2: #1A2433;
+  --o-surface-3: #223042;
+  --o-ligne: #2A384B;
+  --o-ligne-forte: #3E5068;
+  --o-champ-bord: #62779A;
+  --o-texte: #E4EAF2;
+  --o-texte-2: #A9B6C7;
+  --o-texte-3: #8C9AAD;
+  --o-nuit: #0A0F17;
+  --o-nuit-2: #111A27;
+  --o-nuit-ligne: #22324A;
+  --o-nuit-texte: #E4EAF2;
+  --o-nuit-texte-2: #A3B2C6;
+  --o-action: #7FB0FF;
+  --o-action-plein: #2C66CC;
+  --o-action-survol: #245BBE;
+  --o-action-fond: #183152;
+  --o-sur-action: #FFFFFF;
+  --o-ok: #5FD39B;
+  --o-ok-fond: #11302A;
+  --o-ok-filet: #2E9D6A;
+  --o-alerte: #F3B562;
+  --o-alerte-fond: #33260F;
+  --o-alerte-filet: #E08A1A;
+  --o-erreur: #FF938A;
+  --o-erreur-fond: #3A1E24;
+  --o-erreur-filet: #E5484D;
+  --o-ombre-flottant: 0 8px 24px rgba(0, 0, 0, .5);
+  --o-voile: rgba(0, 0, 0, .55);
+  color-scheme: dark;
+}
+
+/* ---------------------------------------------------------------- jetons indépendants du thème */
+:root {
+  /* Polices : celle de Windows pour le texte ; chasse fixe EMBARQUÉE (OGIAS-Mono) pour les repères, adresses et
+     noms de variables, identique sur tous les postes */
+  --o-police: "Segoe UI Variable Text", "Segoe UI", OGIAS-Inter, Inter, system-ui, sans-serif;
+  --o-mono: OGIAS-Mono, "Cascadia Mono", Consolas, ui-monospace, monospace;
+  /* Échelle typographique : six tailles */
+  --o-t-xs: 11px;               /* mentions, compteurs */
+  --o-t-s: 12px;                /* tableaux denses, aides */
+  --o-t-m: 13px;                /* texte courant */
+  --o-t-l: 15px;                /* titres de panneau */
+  --o-t-xl: 18px;               /* titre d'écran */
+  --o-t-xxl: 22px;              /* titre d'accueil */
+  /* Espacements : multiples de 4 px */
+  --o-e-1: 4px;
+  --o-e-2: 8px;
+  --o-e-3: 12px;
+  --o-e-4: 16px;
+  --o-e-5: 24px;
+  --o-e-6: 32px;
+  /* Rayons : trois valeurs, jamais de forme pilule */
+  --o-r-s: 2px;
+  --o-r-m: 4px;
+  --o-r-l: 6px;
+  /* Hauteurs */
+  --o-h-champ: 28px;            /* champs et boutons */
+  --o-h-ligne: 28px;            /* ligne de tableau */
+  --o-h-etat: 26px;             /* barre d'état */
+}
+
+/* ---------------------------------------------------------------- anciens noms rebranchés sur les jetons
+   Trois générations de variables coexistaient (app.css, v031.css, industrial-ui.css) avec des palettes
+   différentes. Elles pointent désormais toutes vers les mêmes jetons : une seule palette, dans les deux thèmes.
+   Ces alias disparaîtront avec les anciennes feuilles (lot 7). */
+html[data-theme] {
+  /* app.css */
+  --fond: var(--o-fond);
+  --surface: var(--o-surface);
+  --surface-soft: var(--o-surface-2);
+  --card: var(--o-surface);
+  --bord: var(--o-ligne);
+  --bord2: var(--o-ligne-forte);
+  --texte: var(--o-texte);
+  --sec: var(--o-texte-2);
+  --disc: var(--o-texte-3);
+  --neutre: var(--o-surface-3);
+  --nuit: var(--o-nuit);
+  --night: var(--o-nuit);
+  --night2: var(--o-nuit);
+  --slate: var(--o-nuit-2);
+  --accent: var(--o-action);
+  --accent-f: var(--o-action-survol);
+  --accent-l: var(--o-action-fond);
+  --ok: var(--o-ok);
+  --ok-l: var(--o-ok-fond);
+  --al: var(--o-alerte);
+  --al-l: var(--o-alerte-fond);
+  --err: var(--o-erreur);
+  --err-l: var(--o-erreur-fond);
+  --danger: var(--o-erreur);
+  --warning: var(--o-alerte);
+  --info: var(--o-action);
+  --info-l: var(--o-action-fond);
+  --shadow: none;
+  --font: var(--o-police);
+  --mono: var(--o-mono);
+  --card-radius: var(--o-r-l);
+  --control-radius: var(--o-r-m);
+  /* v031.css */
+  --v31-bg: var(--o-fond);
+  --v31-white: var(--o-surface);
+  --v31-subtle: var(--o-surface-2);
+  --v31-row: var(--o-surface-2);
+  --v31-selected: var(--o-action-fond);
+  --v31-text: var(--o-texte);
+  --v31-muted: var(--o-texte-2);
+  --v31-separator: var(--o-ligne);
+  --v31-indigo: var(--o-action);
+  --v31-indigo2: var(--o-action-plein);
+  --v31-indigo-dark: var(--o-action-survol);
+  --v31-indigo-light: var(--o-action-fond);
+  --v31-coral: var(--o-alerte);
+  --v31-success: var(--o-ok);
+  --v31-success-bg: var(--o-ok-fond);
+  --v31-warning: var(--o-alerte);
+  --v31-warning-bg: var(--o-alerte-fond);
+  --v31-danger: var(--o-erreur);
+  --v31-danger-bg: var(--o-erreur-fond);
+  --v31-shadow: none;
+  --v31-panel-shadow: var(--o-ombre-flottant);
+  --v31-radius: var(--o-r-l);
+  --v31-control-radius: var(--o-r-m);
+  /* industrial-ui.css */
+  --ogias-navy: var(--o-nuit);
+  --ogias-navy-2: var(--o-nuit-2);
+  --ogias-navy-line: var(--o-nuit-ligne);
+  --ogias-navy-text: var(--o-nuit-texte);
+  --ogias-navy-muted: var(--o-nuit-texte-2);
+  --ogias-primary: var(--o-action-plein);
+  --ogias-primary-hover: var(--o-action-survol);
+  --ogias-primary-light: var(--o-action-fond);
+  --ogias-on-primary: var(--o-sur-action);
+  --ogias-success: var(--o-ok);
+  --ogias-success-bg: var(--o-ok-fond);
+  --ogias-warning: var(--o-alerte);
+  --ogias-warning-bg: var(--o-alerte-fond);
+  --ogias-warning-line: var(--o-alerte-filet);
+  --ogias-danger: var(--o-erreur);
+  --ogias-danger-bg: var(--o-erreur-fond);
+  --ogias-danger-line: var(--o-erreur-filet);
+  --ogias-info: var(--o-action);
+  --ogias-info-bg: var(--o-action-fond);
+  --ogias-font: var(--o-police);
+  --workspace-panel: var(--o-surface-2);
+  --status-review: var(--o-alerte-filet);
+  --status-error: var(--o-erreur-filet);
+  --sp-1: var(--o-e-1);
+  --sp-2: var(--o-e-2);
+  --sp-3: var(--o-e-3);
+  --sp-4: var(--o-e-4);
+  --sp-5: var(--o-e-5);
+  --radius-s: var(--o-r-s);
+  --radius-m: var(--o-r-m);
+  --radius-l: var(--o-r-l);
+  --control-h: var(--o-h-champ);
+  --statusbar-h: var(--o-h-etat);
+}
+
+/* ---------------------------------------------------------------- bases communes */
+html[data-theme] body {
+  font-family: var(--o-police);
+  font-size: var(--o-t-m);
+  color: var(--o-texte);
+  background: var(--o-fond);
+}
+html[data-theme] :is(code, kbd, .mono) { font-family: var(--o-mono); }
+/* Chiffres alignés dans les tableaux : adresses, voies, quantités se lisent en colonne */
+html[data-theme] :is(table, .mono) { font-variant-numeric: tabular-nums; }
+::selection { background: var(--o-action-fond); color: var(--o-texte); }
+/* Focus clavier visible et identique partout (navigation au clavier : lot 2) */
+html[data-theme] :focus-visible { outline: 2px solid var(--o-action-plein); outline-offset: 1px; }
+/* Bordure des champs : contraste 3:1 avec le fond, pour repérer chaque zone de saisie */
+html[data-theme] :is(input:not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea) {
+  border-color: var(--o-champ-bord);
+}
+/* Barres de défilement fines, comme un logiciel de bureau */
+html[data-theme] * { scrollbar-width: thin; scrollbar-color: var(--o-ligne-forte) transparent; }
