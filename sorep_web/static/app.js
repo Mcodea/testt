@@ -609,7 +609,7 @@ function vueRecette() {
      <span class="rc-compte">${d.erreurs ? `<span class="badge b-err">${d.erreurs} erreur(s)</span>` : '<span class="badge b-ok">aucune erreur</span>'} ${d.alertes ? `<span class="badge b-al">${d.alertes} alerte(s)</span>` : ""}</span>
      <span class="aide">chaque constat se corrige à l'endroit indiqué</span></summary>
    ${etapes.length ? `<div class="compteurs"><span class="chip ${f ? "" : "on"}" data-et="">Toutes<b>${d.controles.length}</b></span>${etapes.map(et => `<span class="chip ${f === et ? "on" : ""}" data-et="${esc(et)}">${esc(et)}<b>${nb(et)}</b>${nb(et, "Erreur") ? `<i class="pt-err">${nb(et, "Erreur")}</i>` : ""}</span>`).join("")}</div>` : ""}
-   ${vis.length ? `<table><thead><tr><th style="width:90px">Niveau</th><th style="width:190px">Étape</th><th>Constat</th><th style="width:110px"></th></tr></thead><tbody>${vis.map(c => `<tr><td><span class="badge ${c.niveau === 'Erreur' ? 'b-err' : 'b-al'}">${esc(c.niveau)}</span></td><td>${esc(c.etape)}</td><td>${esc(c.message)}</td>
+   ${vis.length ? `<table data-o-tableau><thead><tr><th style="width:90px">Niveau</th><th style="width:190px">Étape</th><th>Constat</th><th style="width:110px"></th></tr></thead><tbody>${vis.map(c => `<tr><td><span class="badge ${c.niveau === 'Erreur' ? 'b-err' : 'b-al'}">${esc(c.niveau)}</span></td><td>${esc(c.etape)}</td><td>${esc(c.message)}</td>
      <td style="text-align:right"><button class="lien r-corr" data-i="${d.controles.indexOf(c)}">${c.ident && ["Équipements", "Ouvrage"].includes(c.etape) ? "Ouvrir la fiche" : "Aller à l'étape"}</button></td></tr>`).join('')}</tbody></table>`
      : '<div class="vide-bloc">Aucune anomalie détectée par les contrôles automatisés.</div>'}
    ${d.tronque ? '<div class="avert">Affichage limité aux 500 premiers contrôles.</div>' : ''}</details>
@@ -861,11 +861,11 @@ function detailOuvrage(c) {
    </div>
    ${o.equipements.some(e => !e.valide) ? `<div class="bloc"><div class="bloc-tete"><h2>Reste à faire sur les équipements</h2>
      <span class="aide">${["erreur", "incomplet", "configuré"].map(k => `${o.equipements.filter(e => e.etat_param === k).length} ${ETATS_EQ[k][1]}`).join(" · ")}</span></div>
-     <table><thead><tr><th>Repère</th><th>Libellé</th><th>État</th><th>Ce qui manque</th></tr></thead><tbody>
+     <table data-o-tableau><thead><tr><th>Repère</th><th>Libellé</th><th>État</th><th>Ce qui manque</th></tr></thead><tbody>
      ${o.equipements.filter(e => !e.valide).sort((x, y) => ["erreur", "incomplet", "configuré"].indexOf(x.etat_param) - ["erreur", "incomplet", "configuré"].indexOf(y.etat_param))
        .map(e => `<tr class="cliquable" data-eq="${e.ident}"><td class="mono">${esc(e.pcf)}</td><td>${esc(e.libelle || e.designation)}</td><td>${badgeEtat(e)}</td><td>${esc(e.detail_etat || "")}</td></tr>`).join("")}</tbody></table></div>` : ""}
    <div class="bloc"><div class="bloc-tete"><h2>Répartition par domaine</h2></div>
-     ${o.equipements.length ? `<table><thead><tr><th>Domaine</th><th>Équipements</th></tr></thead><tbody>${Object.entries(parDomaine).sort().map(([d, n]) => `<tr><td>${esc(d)}</td><td>${n}</td></tr>`).join("")}</tbody></table>`
+     ${o.equipements.length ? `<table data-o-tableau><thead><tr><th>Domaine</th><th>Équipements</th></tr></thead><tbody>${Object.entries(parDomaine).sort().map(([d, n]) => `<tr><td>${esc(d)}</td><td>${n}</td></tr>`).join("")}</tbody></table>`
        : `<div class="etat-vide"><h3>Aucun équipement pour l'instant</h3><p>Commencez l'inventaire : ajoutez le premier équipement, ou importez la liste de l'ouvrage.</p>
           <div class="boutons-ligne"><button class="prim" type="button" id="vide-ajout-eq">+ Ajouter le premier équipement</button><button type="button" id="vide-structure">Structure / ajouter…</button></div></div>`}
    </div>` }`;
@@ -1774,11 +1774,11 @@ function detailTypeReferentiel(t, onglet, ed) {
   const marque = s => s.modifie ? ' class="modifie"' : "";
   const actionSig = s => ed ? `<td class="act"><button class="lien rf-sig" data-id="${esc(s.id)}">Modifier</button><button class="lien danger rf-sig-sup" data-id="${esc(s.id)}">Supprimer</button></td>` : "";
   let corps = "";
-  if (onglet === "es") corps = `<div class="bloc"><table><thead><tr><th>Identifiant</th><th>Nature</th><th>Information</th><th>Présence</th><th>Type</th><th>Paramètres d'installation</th>${ed ? "<th></th>" : ""}</tr></thead><tbody>
+  if (onglet === "es") corps = `<div class="bloc"><table data-o-tableau><thead><tr><th>Identifiant</th><th>Nature</th><th>Information</th><th>Présence</th><th>Type</th><th>Paramètres d'installation</th>${ed ? "<th></th>" : ""}</tr></thead><tbody>
       ${t.es.map(s => `<tr${marque(s)}><td class="mono">${esc(s.id)}</td><td><span class="tag p-${esc(s.es)}">${esc(s.es)}</span></td><td>${esc(s.information)}${s.famille !== "ES" ? ` <span class="aide">· contact câblé porté par ${esc(s.famille)}_${esc(s.code)}</span>` : ""}</td>
         <td>${presenceBadge(s.presence)}${s.option ? ` <small>${esc(s.option)}</small>` : ""}</td><td>${esc(s.type_logique)}</td><td class="aide">dans la fiche de l'équipement</td>${actionSig(s)}</tr>`).join("") || '<tr><td colspan="7" class="vide">Aucune E/S physique déclarée pour ce type.</td></tr>'}</tbody></table>
       ${ed ? '<div class="pied-bloc"><button id="rf-add-es">+ Ajouter une E/S physique</button></div>' : ""}</div>`;
-  if (onglet === "fonct") corps = `<div class="bloc"><table><thead><tr><th>Information</th><th>Famille</th><th>Libellé</th><th>Présence</th><th>Source</th><th>Logique à programmer</th>${ed ? "<th></th>" : ""}</tr></thead><tbody>
+  if (onglet === "fonct") corps = `<div class="bloc"><table data-o-tableau><thead><tr><th>Information</th><th>Famille</th><th>Libellé</th><th>Présence</th><th>Source</th><th>Logique à programmer</th>${ed ? "<th></th>" : ""}</tr></thead><tbody>
       ${t.fonctionnelles.filter(s => s.famille !== "ES").map(s => `<tr${marque(s)}><td class="mono">${esc(s.famille)}_${esc(s.code)}</td><td><span class="role">${esc(s.famille)}</span></td><td>${esc(s.information)}${s.alarme ? ' <span class="tag">alarme</span>' : ""}</td>
         <td>${presenceBadge(s.presence)}${s.option ? ` <small>${esc(s.option)}</small>` : ""}</td><td class="mono">${esc(s.source || (s.es && s.es !== "Interne" ? "câblée (" + s.es + ")" : "—"))}</td><td class="justif">${esc(s.logique || "")}</td>${actionSig(s)}</tr>`).join("")}</tbody></table>
       ${ed ? '<div class="pied-bloc"><button id="rf-add-f">+ Ajouter une information</button></div>' : ""}</div>`;
@@ -1795,7 +1795,7 @@ function detailTypeReferentiel(t, onglet, ed) {
       <table><tbody>${m.lignes.map(l => `<tr><td><span class="role">${esc(l.role)}</span></td><td>${esc(l.libelle)}</td><td class="mono">${esc(l.suffixe)}</td><td>${esc(l.format)}</td><td>${esc(l.unite || "")}</td>
         ${ed ? `<td class="act"><button class="lien rf-lmod" data-n="${esc(m.nom)}" data-id="${esc(l.id)}">Modifier</button><button class="lien danger rf-lsup" data-n="${esc(m.nom)}" data-id="${esc(l.id)}">Supprimer</button></td>` : ""}</tr>`).join("") || '<tr><td class="vide">Aucune ligne.</td></tr>'}</tbody></table></div>`).join("") || '<div class="vide-bloc">Aucun modèle pour ce type.</div>'}
       ${ed ? '<div class="pied-bloc"><button id="rf-madd">+ Nouveau modèle pour ce type</button></div>' : ""}`;
-  if (onglet === "usage") corps = `<div class="bloc"><table><thead><tr><th>Ouvrage</th><th>Équipements</th><th>Référentiel figé</th></tr></thead><tbody>
+  if (onglet === "usage") corps = `<div class="bloc"><table data-o-tableau><thead><tr><th>Ouvrage</th><th>Équipements</th><th>Référentiel figé</th></tr></thead><tbody>
       ${t.usages.map(u => `<tr><td class="mono">${esc(u.repere)}</td><td>${u.equipements}</td><td>${esc(u.revision)}</td></tr>`).join("") || '<tr><td colspan="3" class="vide">Aucun ouvrage enregistré n\'utilise ce type.</td></tr>'}</tbody></table>
       <p class="aide" style="padding:0 14px">Un ouvrage garde son référentiel figé ; il adopte une nouvelle révision depuis sa propre fiche, sur décision.</p></div>`;
   if (onglet === "audit") corps = `<div class="bloc">${t.audit.length ? `<ul class="liste-controles">${t.audit.map(x => `<li class="${x.gravite === "Erreur" ? "c-err" : "c-al"}"><b>${esc(x.code)}</b> — ${esc(x.message)}${x.cles.length ? ` <span class="mono">${esc(x.cles.join(", "))}</span>` : ""}</li>`).join("")}</ul>`
@@ -1927,7 +1927,7 @@ function modaleTypeCatalogue(t) {
 const ACTION_DIFF = {ajout: ["b-ok", "ajout"], suppression: ["b-err", "suppression"], modification: ["b-n", "modification"], ordre: ["b-n", "ordre"]};
 const champsDiff = d => Object.entries(d.champs || {}).map(([c, [a, b]]) => `<div><small>${esc(c)}</small> <s>${esc(JSON.stringify(a))}</s> → <b>${esc(JSON.stringify(b))}</b></div>`).join("");
 function tableDifferences(diffs) {
-  return diffs.length ? `<table><thead><tr><th>Changement</th><th>Élément</th><th>Détail</th><th>Conséquence</th></tr></thead><tbody>${diffs.map(d => `<tr>
+  return diffs.length ? `<table data-o-tableau><thead><tr><th>Changement</th><th>Élément</th><th>Détail</th><th>Conséquence</th></tr></thead><tbody>${diffs.map(d => `<tr>
     <td><span class="badge ${(ACTION_DIFF[d.action] || ["b-n"])[0]}">${esc(d.action)}</span></td><td><small>${esc(d.objet)}</small><br><span class="mono">${esc(d.id)}</span></td>
     <td>${champsDiff(d)}</td><td class="justif">${esc(d.consequence || "")}</td></tr>`).join("")}</tbody></table>` : '<div class="vide-bloc">Aucune différence.</div>';
 }
@@ -2299,7 +2299,7 @@ function blocComposition(m) {
 function blocNomenclature(m) {
   if (!(m.nomenclature || []).length) return "";
   return `<div class="bloc"><div class="bloc-tete"><h2>Nomenclature de commande</h2><span class="aide">matériel retenu · références à confirmer à la commande</span><div class="droite"><button id="m-nomenclature">Exporter (Excel)</button></div></div>
-    <table><thead><tr><th>Référence</th><th>Désignation</th><th class="num">Quantité</th><th>Rôle</th></tr></thead><tbody>
+    <table data-o-tableau><thead><tr><th>Référence</th><th>Désignation</th><th class="num">Quantité</th><th>Rôle</th></tr></thead><tbody>
     ${m.nomenclature.map(x => `<tr><td class="mono">${esc(x.reference)}</td><td>${esc(x.designation)}</td><td class="num">${x.quantite}</td><td>${esc(x.role)}</td></tr>`).join("")}</tbody></table></div>`;
 }
 // Fenêtre d'un emplacement du rack : ce que l'emplacement peut recevoir (réservé ou libre), rien d'autre.
@@ -2658,7 +2658,7 @@ function vueMateriel() {
    ${blocComposition(m)}
    <div class="grille-2">
      <div class="bloc"><div class="bloc-tete"><h2>Besoin calculé</h2><span class="aide">${cables.length} E/S câblées · ${b.communication || 0} par communication</span></div>
-     ${besoins.length ? `<table><thead><tr><th>Nature</th><th class="num">E/S</th><th>Carte proposée</th><th class="num">Voies utiles</th><th class="num">Cartes</th><th class="num">Réserve</th></tr></thead><tbody>
+     ${besoins.length ? `<table data-o-tableau><thead><tr><th>Nature</th><th class="num">E/S</th><th>Carte proposée</th><th class="num">Voies utiles</th><th class="num">Cartes</th><th class="num">Réserve</th></tr></thead><tbody>
        ${besoins.map(x => `<tr><td><span class="tag p-${x.nature}">${x.nature}</span> ${nature(x.nature)}</td><td class="num">${x.es}</td><td>${esc(x.reference)}</td><td class="num">${x.utilisables} / ${x.voies}</td><td class="num"><b>${x.cartes}</b></td><td class="num">${Math.round(x.reserve * 100)} %</td></tr>`).join("")}</tbody></table>`
        : `<div class="vide-bloc">${m.blocage ? "Validez la liste des E/S pour obtenir le besoin." : "Aucune E/S câblée."}</div>`}
      ${prop && prop.remarques.length ? `<ul class="remarques">${prop.remarques.map(r => `<li>${esc(r)}</li>`).join("")}</ul>` : ""}</div>

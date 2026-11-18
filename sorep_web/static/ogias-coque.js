@@ -48,6 +48,7 @@ const Coque = (() => {
                ...ETAPES_PARCOURS.map(([, lib, route], i) => [`${i + 1}. ${lib}`, "", () => naviguer(route), () => !!E.ouvrage?.ouvert])]],
   ["Outils", [["Référentiel métier", "", () => naviguer("#/referentiel")]]],
   ["Aide", [["Aide d'OGIAS", "F1", () => window.open("aide.html", "_blank", "noopener")],
+            ["Raccourcis clavier", "Ctrl /", () => Composants.aideRaccourcis()],
             ["À propos d'OGIAS", "", () => document.getElementById("v31-about")?.click()]]],
  ];
  function nouveau(mode) {

@@ -417,3 +417,70 @@ html[data-theme] .o-sortie .pp-pret { padding: var(--o-e-2) var(--o-e-3); color:
 .o-journal li .o-ico { color: var(--o-action); flex: none; }
 .o-journal li.err .o-ico, .o-journal li.err span { color: var(--o-erreur); }
 .o-journal time { font-family: var(--o-mono); font-size: var(--o-t-xs); color: var(--o-texte-2); }
+
+/* =====================================================================================================
+   Composants de bureau (lot 3) : tableau dense, menu contextuel, grille de propriétés, raccourcis.
+   ===================================================================================================== */
+/* ---------------------------------------------------------------- tableau dense */
+html[data-theme] table.o-tableau { border-collapse: separate; border-spacing: 0; width: 100%; font-size: var(--o-t-s); }
+html[data-theme] table.o-tableau th {
+  position: sticky; top: 0; z-index: 1; height: 28px; padding: 0 var(--o-e-2); background: var(--o-surface-2);
+  color: var(--o-texte-2); font-size: var(--o-t-s); font-weight: 600; text-align: left; white-space: nowrap;
+  border-bottom: 1px solid var(--o-ligne); user-select: none;
+}
+html[data-theme] table.o-tableau td {
+  height: var(--o-h-ligne); padding: 3px var(--o-e-2); border-bottom: 1px solid var(--o-ligne); color: var(--o-texte);
+}
+html[data-theme] table.o-tableau tbody tr:hover td { background: var(--o-surface-2); }
+html[data-theme] table.o-tableau tbody tr[aria-selected="true"] td { background: var(--o-action-fond); }
+html[data-theme] table.o-tableau tbody tr.o-actif:focus-visible { outline: 2px solid var(--o-action-plein); outline-offset: -2px; }
+table.o-tableau tbody tr { cursor: default; }
+/* Tri : indicateur dans le titre, trois états (croissant, décroissant, ordre d'origine) */
+table.o-tableau th.o-triable { cursor: pointer; padding-right: 18px; position: sticky; }
+table.o-tableau th.o-triable:hover { color: var(--o-texte); background: var(--o-surface-3); }
+table.o-tableau th.o-triable::after { content: ""; position: absolute; right: 8px; top: 50%; margin-top: -2px;
+  border: 4px solid transparent; opacity: 0; }
+table.o-tableau th[aria-sort="ascending"]::after { opacity: 1; border-bottom-color: var(--o-action); margin-top: -6px; }
+table.o-tableau th[aria-sort="descending"]::after { opacity: 1; border-top-color: var(--o-action); margin-top: -1px; }
+table.o-tableau th[aria-sort] { color: var(--o-texte); }
+/* Redimensionnement : poignée sur le bord droit du titre */
+.o-poignee { position: absolute; top: 0; right: -3px; width: 7px; height: 100%; cursor: col-resize; z-index: 2; }
+.o-poignee:hover, body.o-redim .o-poignee:active { background: var(--o-action-plein); opacity: .35; }
+html[data-theme] body.o-redim, html[data-theme] body.o-redim * { cursor: col-resize; user-select: none; }
+/* Filtres par colonne */
+html[data-theme] table.o-tableau tr.o-filtres th { top: 28px; height: 30px; padding: 2px var(--o-e-1); background: var(--o-surface); }
+table.o-tableau tr.o-filtres input {
+  width: 100%; min-width: 60px; height: 24px; padding: 0 6px; border: 1px solid var(--o-champ-bord);
+  border-radius: var(--o-r-s); background: var(--o-surface); color: var(--o-texte); font: inherit; font-weight: 400;
+}
+.o-tableau-filtre:empty { display: none; }
+.o-tableau-filtre { margin: var(--o-e-1) 0 0; color: var(--o-alerte); font-size: var(--o-t-xs); }
+
+/* ---------------------------------------------------------------- menu contextuel (reprend le style des menus) */
+.o-menu.o-contextuel { top: auto; min-width: 260px; }
+
+/* ---------------------------------------------------------------- grille de propriétés */
+.o-grille { font-size: var(--o-t-s); border-top: 1px solid var(--o-ligne); }
+.o-grille-groupe > summary {
+  display: flex; align-items: center; gap: 6px; height: 26px; padding: 0 var(--o-e-3); cursor: pointer; list-style: none;
+  background: var(--o-surface-2); border-bottom: 1px solid var(--o-ligne); color: var(--o-texte-2);
+  font-size: var(--o-t-xs); font-weight: 650; letter-spacing: .06em; text-transform: uppercase;
+}
+.o-grille-groupe > summary::-webkit-details-marker { display: none; }
+.o-grille-groupe > summary::before { content: ""; border: 4px solid transparent; border-left-color: var(--o-texte-2); margin-left: 2px; transition: transform .12s; transform-origin: 2px 50%; }
+.o-grille-groupe[open] > summary::before { transform: rotate(90deg); }
+.o-grille dl { margin: 0; }
+.o-prop { display: grid; grid-template-columns: minmax(96px, 40%) 1fr; min-height: 26px; border-bottom: 1px solid var(--o-ligne); }
+.o-prop dt { display: flex; align-items: center; padding: 3px var(--o-e-3); color: var(--o-texte-2); border-right: 1px solid var(--o-ligne); }
+.o-prop dd { display: flex; align-items: center; margin: 0; padding: 3px var(--o-e-2); min-width: 0; overflow-wrap: anywhere; color: var(--o-texte); }
+.o-prop.lecture dd { color: var(--o-texte-2); background: var(--o-surface-2); }
+.o-prop dd.mono { font-family: var(--o-mono); }
+.o-sans-valeur { color: var(--o-texte-3); }
+
+/* ---------------------------------------------------------------- liste des raccourcis */
+.o-raccourcis h3 { margin: var(--o-e-3) 0 var(--o-e-1); font-size: var(--o-t-s); color: var(--o-texte-2); }
+.o-raccourcis h3:first-child { margin-top: 0; }
+.o-raccourcis dl { margin: 0; }
+.o-raccourcis dl > div { display: grid; grid-template-columns: 220px 1fr; gap: var(--o-e-3); padding: 3px 0; border-bottom: 1px solid var(--o-ligne); }
+.o-raccourcis dt, .o-raccourcis dd { margin: 0; }
+.o-raccourcis kbd { font-family: var(--o-mono); font-size: var(--o-t-xs); padding: 1px 5px; border: 1px solid var(--o-ligne-forte); border-radius: var(--o-r-s); background: var(--o-surface-2); }
