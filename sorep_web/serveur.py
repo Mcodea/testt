@@ -1800,10 +1800,17 @@ def ouvrir_fenetre(url):
     webbrowser.open(url)
 
 
+class ServeurLocal(ThreadingHTTPServer):
+    """File d'attente de connexions élargie : la page charge une dizaine de feuilles et de scripts à la fois ; avec
+    la file par défaut (5), un poste lent pouvait refuser un script (constaté le 18/11 sur la CI Windows)."""
+    request_queue_size = 64
+    daemon_threads = True
+
+
 def demarrer(ouvrir_navigateur=True, port=None):
     app = Application()
     port = port or port_libre()
-    serveur = ThreadingHTTPServer(("127.0.0.1", port), fabriquer_gestionnaire(app))
+    serveur = ServeurLocal(("127.0.0.1", port), fabriquer_gestionnaire(app))
     url = f"http://127.0.0.1:{port}/"
     if ouvrir_navigateur:
         threading.Timer(0.6, lambda: ouvrir_fenetre(url)).start()

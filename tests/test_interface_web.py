@@ -201,3 +201,9 @@ class TestInterfaceWeb(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_serveur_local_file_de_connexions_elargie():
+    """18/11 : la page charge une dizaine de fichiers à la fois ; la file par défaut (5) refusait parfois un script."""
+    from sorep_web.serveur import ServeurLocal
+    assert ServeurLocal.request_queue_size >= 32 and ServeurLocal.daemon_threads
