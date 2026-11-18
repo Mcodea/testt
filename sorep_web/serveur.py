@@ -765,6 +765,22 @@ class Application:
         libelles = sum(1 for v in variables if v.libelle_topkapi)
         sortie["supervision"] = {"etat": "", "titre": "Supervision",
                                  "detail": f"{libelles} libellé{'s' if libelles > 1 else ''}" if libelles else "aucun libellé"}
+        if q.get("detail"):
+            # Vue « Fil des informations » de la fiche (lot 5a) : une ligne par information, avec sa chaîne.
+            lignes, utilisees = [], set()
+            for v in variables:
+                utilisees.add(v.nom_es)
+                lignes.append({"information": v.information, "famille": v.famille, "es": v.nom_es, "voie": v.adresse_es,
+                               "variable": v.nom, "type": v.type_logique, "adresse": v.adresse,
+                               "libelle": v.libelle_topkapi,
+                               "etat": "validée" if v.adresse and v.adresse_validee else "à valider" if v.adresse
+                               else "sans adresse"})
+            for p in pts:                              # E/S sans variable d'échange (commandes câblées, par exemple)
+                if p.nom not in utilisees:
+                    lignes.append({"information": p.information, "famille": p.point, "es": p.nom, "voie": p.adresse,
+                                   "variable": "", "type": "", "adresse": "", "libelle": "",
+                                   "etat": "E/S seule"})
+            sortie["lignes"] = lignes
         return sortie
 
     def variables_web(self, _):

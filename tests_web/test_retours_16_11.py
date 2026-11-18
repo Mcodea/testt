@@ -32,11 +32,13 @@ class TestRetours1611(ServeurNavigateur):
         self.assertEqual(self.erreurs, [])
 
     def test_en_tete_de_l_arborescence_compact_et_lisible(self):
+        # Refonte, lot 5a : les commandes de l'inventaire sont au ruban de l'écran (groupe « Inventaire »).
         self.page.goto(self.url + '#/inventaire', wait_until='networkidle')
-        self.page.locator('#vue > aside .aside-btns').wait_for()
-        hauts = {round(self.page.locator(s).bounding_box()['y']) for s in ('#b-eq', '#b-uf', '#b-import')}
-        self.assertEqual(len(hauts), 1, 'Les trois commandes sur une seule ligne')
+        groupe = self.page.locator('#o-ruban [role="group"][aria-label="Inventaire"]')
+        groupe.wait_for()
         for s in ('#b-eq', '#b-uf', '#b-import'):
+            self.assertEqual(groupe.locator(s).count(), 1, s)
+            self.assertTrue(self.page.locator(s).is_visible(), s)
             self.assertLessEqual(self.page.locator(s).evaluate('e => e.scrollWidth - e.clientWidth'), 1, s)
         self.assertIn("Arborescence", self.page.locator('#vue > aside h2').inner_text())
 
@@ -107,7 +109,9 @@ class TestRetours1611Parcours(ServeurNavigateur):
         self.page.locator('.parcours-eq').wait_for()
         blocs = ('#configuration-es', '#infos-fonctionnelles', '#lignes-supervision')
         self.assertTrue(self.page.locator('.parcours-eq .prochaine-action').is_visible())
-        self.assertEqual(self.page.locator('.onglets-eq [role=tab]').count(), 3)
+        # Trois onglets de paramétrage, plus la vue d'ensemble « Fil des informations » (refonte, lot 5a)
+        self.assertEqual(self.page.locator('.onglets-eq [role=tab]').count(), 4)
+        blocs = blocs + ('#fil-informations',)
         self.assertEqual(len(self.visibles(blocs)), 1, 'Un seul onglet affiché à la fois')
         for onglet, bloc in (('fonc', '#infos-fonctionnelles'), ('lignes', '#lignes-supervision'), ('es', '#configuration-es')):
             self.page.locator(f'[data-onglet-eq="{onglet}"]').click()
@@ -273,13 +277,13 @@ class TestPosteDeTravailEquipementsEtES(ServeurNavigateur):
         self.page.locator('.parcours-eq').wait_for()
         self.assertEqual(self.page.locator('#contenu .avert').count(), 0, 'Plus de bandeaux redondants')
         self.assertEqual(self.page.locator('#contenu .prochaine-action').count(), 1)
+        # Refonte, lot 5a : les commandes de l'équipement quittent le menu « ⋯ » pour le ruban de l'écran.
+        groupe = self.page.locator('#o-ruban [role="group"][aria-label="Équipement sélectionné"]')
         for s in ('#e-mod', '#e-dep', '#e-sup', '#e-val'):
-            self.assertFalse(self.page.locator(s).is_visible(), s)
-        self.page.locator('.menu-eq > summary').click()
-        for s in ('#e-mod', '#e-dep', '#e-sup', '#e-val'):
+            self.assertEqual(groupe.locator(s).count(), 1, s)
             self.assertTrue(self.page.locator(s).is_visible(), s)
-        self.page.mouse.click(5, 5)
-        self.assertFalse(self.page.locator('#e-sup').is_visible(), 'Le menu se ferme au clic ailleurs')
+            self.assertEqual(self.page.locator(s).count(), 1, 'Identifiant unique : ' + s)
+        self.assertFalse(self.page.locator('.menu-eq').is_visible(), 'Plus de menu « ⋯ » vide')
 
     def test_liste_des_es_une_ligne_par_es_sans_debordement(self):
         self.page.goto(self.url + '#/es', wait_until='networkidle')

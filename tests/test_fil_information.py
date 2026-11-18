@@ -47,6 +47,17 @@ class TestFilInformation(_Base):
         self.assertRegex(fil["carte"]["titre"], r"^Carte \d+\.\d+ · voies \d+ à \d+$")
         self.assertEqual(fil["carte"]["detail"], f"{len([p for p in self.app.s.points() if p.ident_eq == ids[0]])} voie(s) à valider")
 
+    def test_detail_une_ligne_par_information(self):
+        ids = self.equipements_valides(self.app, types=("PM",))
+        fil = self.app.fil_web({"ident": ids[0], "detail": "1"})
+        variables = [v for v in self.app.s.variables() if v.ident_eq == ids[0]]
+        self.assertGreaterEqual(len(fil["lignes"]), len(variables))
+        self.assertEqual({x["variable"] for x in fil["lignes"] if x["variable"]}, {v.nom for v in variables})
+        cablees = [x for x in fil["lignes"] if x["es"] and x["variable"]]
+        self.assertTrue(cablees, "Au moins une variable lit une E/S câblée")
+        self.assertTrue(all(x["etat"] in ("validée", "à valider", "sans adresse", "E/S seule") for x in fil["lignes"]))
+        self.assertNotIn("lignes", self.app.fil_web({"ident": ids[0]}), "Détail seulement sur demande")
+
     def test_plages_de_voies(self):
         self.assertEqual(Application._plages_voies(["0", "1", "2", "5", "7", "8"]), "0 à 2, 5, 7 à 8")
         self.assertEqual(Application._plages_voies(["3"]), "3")

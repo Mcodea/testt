@@ -241,17 +241,18 @@ html[data-theme] * { scrollbar-width: thin; scrollbar-color: var(--o-ligne-forte
 html[data-theme] body.o-coque {
   display: grid;
   grid-template-columns: var(--o-l-explorateur) minmax(0, 1fr);
-  grid-template-rows: var(--o-h-titre) var(--o-h-documents) auto minmax(0, 1fr) auto var(--o-h-etat);
+  grid-template-rows: var(--o-h-titre) var(--o-h-documents) auto auto minmax(0, 1fr) auto var(--o-h-etat);
   gap: 0;
 }
 html[data-theme] body.o-coque.o-sans-explorateur { grid-template-columns: 0 minmax(0, 1fr); }
 body.o-coque #o-titre { grid-column: 1 / -1; grid-row: 1; }
-body.o-coque #o-explorateur { grid-column: 1; grid-row: 2 / 6; }
-body.o-coque #o-fil { grid-column: 2; grid-row: 3; }
-body.o-coque #o-sortie { grid-column: 2; grid-row: 5; }
+body.o-coque #o-explorateur { grid-column: 1; grid-row: 2 / 7; }
+body.o-coque #o-ruban { grid-column: 2; grid-row: 3; }
+body.o-coque #o-fil { grid-column: 2; grid-row: 4; }
+body.o-coque #o-sortie { grid-column: 2; grid-row: 6; }
 body.o-coque #o-documents { grid-column: 2; grid-row: 2; }
-body.o-coque #v30-workspace { grid-column: 2; grid-row: 4; }
-body.o-coque #v30-status.v30-status { grid-column: 1 / -1; grid-row: 6; }
+body.o-coque #v30-workspace { grid-column: 2; grid-row: 5; }
+body.o-coque #v30-status.v30-status { grid-column: 1 / -1; grid-row: 7; }
 
 /* ---------------------------------------------------------------- barre de titre */
 .o-titre {
@@ -522,3 +523,43 @@ table.o-tableau tr.o-filtres input {
 .o-etape.on > .o-ico { color: var(--o-action); }
 .o-onglet > .o-ico { color: var(--o-texte-2); flex: none; }
 .o-onglet.on > .o-ico { color: var(--o-action); }
+
+/* =====================================================================================================
+   Écrans (lot 5) : ruban de l'écran ; Équipements (5a).
+   ===================================================================================================== */
+.o-ruban {
+  display: flex; align-items: stretch; gap: 0; min-width: 0; padding: var(--o-e-1) var(--o-e-2) 0;
+  background: var(--o-surface); border-bottom: 1px solid var(--o-ligne); overflow-x: auto; scrollbar-width: thin;
+}
+.o-ruban[hidden] { display: none; }
+.o-rb-groupe { display: flex; flex-direction: column; flex: none; padding: 0 var(--o-e-2); border-right: 1px solid var(--o-ligne); }
+.o-rb-cmds { display: grid; grid-template-rows: repeat(3, 22px); grid-auto-flow: column; grid-auto-columns: max-content; gap: 1px 2px; align-items: center; }
+.o-rb-nom { padding: 2px 0 3px; text-align: center; color: var(--o-texte-2); font-size: var(--o-t-xs); white-space: nowrap; }
+html[data-theme] .o-ruban .o-cmd {
+  display: flex; align-items: center; gap: 6px; min-height: 0; height: 22px; padding: 0 var(--o-e-2) 0 4px; margin: 0;
+  border: 1px solid transparent; border-radius: var(--o-r-m); background: none; box-shadow: none;
+  color: var(--o-texte); font: inherit; font-size: var(--o-t-s); font-weight: 400; white-space: nowrap; cursor: pointer;
+}
+html[data-theme] .o-ruban .o-cmd-grand {
+  grid-row: 1 / span 3; flex-direction: column; justify-content: center; gap: 3px; width: 76px; height: 68px;
+  padding: 4px 2px; white-space: normal; text-align: center; line-height: 1.15; font-size: var(--o-t-xs);
+}
+html[data-theme] .o-ruban .o-cmd .o-ico { color: var(--o-texte-2); flex: none; }
+html[data-theme] .o-ruban .o-cmd-grand .o-ico { color: var(--o-action); }
+html[data-theme] .o-ruban .o-cmd-danger .o-ico { color: var(--o-erreur); }
+html[data-theme] .o-ruban .o-cmd:hover:not(:disabled) { background: var(--o-surface-3); border-color: var(--o-ligne); }
+html[data-theme] .o-ruban .o-cmd:disabled { color: var(--o-texte-3); cursor: default; }
+html[data-theme] .o-ruban .o-cmd:disabled .o-ico { color: var(--o-texte-3); }
+/* Fiche équipement : onglet « Fil des informations » */
+.oe-num.oe-symbole { display: inline-grid; place-items: center; color: var(--o-action); }
+.fi-resume { margin: 0 0 var(--o-e-2); }
+.fi-defile { overflow: auto; max-height: 60vh; border: 1px solid var(--o-ligne); border-radius: var(--o-r-m); }
+.fi-vide { color: var(--o-texte-3); font-style: italic; font-family: var(--o-police); }
+.fi-etat { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; color: var(--o-texte-2); }
+.fi-etat::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--o-texte-3); }
+.fi-etat.ok { color: var(--o-ok); } .fi-etat.ok::before { background: var(--o-ok-filet); }
+.fi-etat.al { color: var(--o-alerte); } .fi-etat.al::before { background: var(--o-alerte-filet); }
+/* Quatre onglets sur une ligne : le « Fil des informations » est plus étroit (vue d'ensemble, non numérotée) */
+html[data-theme] #contenu .onglets-eq { grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, .85fr); }
+/* Le fil d'Ariane de la fiche répète la barre « Fil de l'information » : masqué quand celle-ci est affichée */
+body.o-coque:has(#o-fil:not([hidden])) #contenu > .fil { display: none; }

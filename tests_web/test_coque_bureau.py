@@ -175,3 +175,41 @@ class TestCoqueBureau(ServeurNavigateur):
         noms = self.page.locator('.v31-variable-row').evaluate_all('rs => rs.map(r => r.dataset.variable)')
         self.assertTrue(noms and all('HV01' in n for n in noms), noms)
         self.assertEqual(self.projet.read_bytes(), avant)
+
+    def test_ruban_equipements_et_fil_des_informations(self):
+        """Lot 5a : commandes de l'écran Équipements au ruban (boutons déplacés, identifiants uniques) ; chaque
+        commande agit sur l'équipement sélectionné, même après un changement de sélection ; vue « Fil des
+        informations » de la fiche."""
+        mv = self.api('/api/equipement/ajouter', {'type': 'MV', 'numero': '02', 'se': '00'})['ident']
+        self.api('/api/equipement/proposition', {'ident_eq': mv, 'decision': 'retenir'})
+        self.api('/api/equipement/valider', {'idents': [mv], 'valide': True})
+        avant = self.projet.read_bytes()
+        self.ouvrir('#/inventaire')
+        ruban = self.page.locator('#o-ruban')
+        self.assertEqual(ruban.locator('[role="group"]').evaluate_all('g => g.map(x => x.getAttribute("aria-label"))'),
+                         ['Inventaire'])
+        for repere in ('HV01', 'MV02', 'HV01'):
+            self.page.locator('#vue [data-v]', has_text=repere).first.click()
+            self.page.locator('#o-ruban #e-mod').wait_for()
+            self.assertEqual(self.page.evaluate("['e-val','e-mod','e-dep','e-sup','b-eq'].map(i => document.querySelectorAll('#' + i).length)"),
+                             [1, 1, 1, 1, 1])
+            self.page.locator('#o-ruban #e-mod').click()
+            self.assertIn(repere, self.page.locator('#modale h2').first.inner_text(), 'La commande vise la sélection courante')
+            self.page.keyboard.press('Escape')
+            self.page.locator('#modale').wait_for(state='hidden')
+        # Retour à l'ouvrage : le groupe de l'équipement disparaît ; autre écran : ruban masqué
+        self.page.locator('#vue .noeud.racine').click()
+        self.page.wait_for_function("!document.querySelector('#o-ruban #e-val')")
+        self.page.locator('#o-explorateur [data-nav="#/es"]').click()
+        self.titre('Liste des E/S')
+        self.assertTrue(ruban.is_hidden())
+        # Fil des informations : une ligne par variable, copiable (tableau dense)
+        self.page.locator('#o-explorateur [data-nav="#/inventaire"]').click()
+        self.page.locator('#vue [data-v]', has_text='HV01').first.click()
+        self.page.locator('[data-onglet-eq="fil"]').click()
+        lignes = self.page.locator('#fil-informations table.o-tableau tbody tr')
+        lignes.first.wait_for()
+        variables = [v for v in self.api('/api/variables')['lignes'] if v['repere'].endswith('HV01')]
+        self.assertEqual(self.page.locator('#fil-informations tbody td:nth-child(5)').evaluate_all(
+            'cs => cs.map(c => c.innerText.trim()).filter(x => x !== "—").sort()'), sorted(v['nom'] for v in variables))
+        self.assertEqual(self.projet.read_bytes(), avant)

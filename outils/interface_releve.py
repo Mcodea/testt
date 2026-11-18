@@ -23,7 +23,7 @@ ECRANS = [("01_ouvrages", "#/ouvrages"), ("02_tableau_de_bord", "#/dashboard"), 
 
 # Clé stable d'une commande : son id, sinon ses attributs data-* (avec la valeur pour ceux qui désignent l'action).
 SELECTEUR = ("#vue button, #vue [role=button], #vue a[data-nav], #vue input, #vue select, #vue textarea, "
-             ".v30-ribbon button, #o-sortie .parcours-points button")   # lot 2b : contrôles déplacés au panneau de sortie
+             ".v30-ribbon button, #o-ruban button, #o-sortie .parcours-points button")   # lot 2b : contrôles déplacés au panneau de sortie
 COMMANDES = """() => [...document.querySelectorAll('""" + SELECTEUR + """')]
   .filter(e => e.offsetParent !== null)
   .map(e => { const d = Object.keys(e.dataset).filter(k => !k.startsWith('v31')).sort();

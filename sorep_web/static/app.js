@@ -666,6 +666,7 @@ function vueOuvrage() {
     contenu();
     return;
   }
+  Coque.ruban(null);                      // lot 5a : retire les anciennes commandes avant de reconstruire l'écran
   $("#vue").innerHTML = `<aside><div class="aside-tete"><div class="aside-titre"><h2>Arborescence de l'ouvrage</h2><span class="aside-compte" title="Équipements de l'ouvrage">${E.ouvrage.equipements.length} éq.</span></div>
       ${E.ouvrage.en_conception ? `<p class="aide-champs">Validez d’abord la création de l’ouvrage avant d’ajouter des équipements.</p>` : `<label class="aside-recherche" title="Rechercher un repère, un libellé, un type">${V31.icon("search",14)}<input id="recherche" placeholder="Filtrer : repère, libellé, type…" aria-label="Rechercher un repère, un libellé, un type" value="${esc(E.recherche)}"></label>`}
       <div class="aside-btns" role="toolbar" aria-label="Commandes de l'arborescence" ${E.ouvrage.en_conception ? "hidden" : ""}><button class="prim" id="b-eq" title="Ajouter un équipement">+ Équipement</button><button id="b-uf" title="Ajouter une unité fonctionnelle">+ UF</button>
@@ -676,8 +677,32 @@ function vueOuvrage() {
     $("#b-uf").onclick = () => modaleUF();
     $("#b-eq").onclick = () => choisirModele(ufSelectionnee());
     $("#b-import").onclick = modaleImport;
+    rubanEquipements();
   }
   arbre(); contenu();
+}
+/* Lot 5a : ruban de l'écran Équipements. Les commandes de l'arborescence (ajout, UF, import) et celles de
+   l'élément sélectionné (menu « ⋯ » de la fiche, commandes de l'UF) sont rangées par tâche. Boutons déplacés,
+   jamais recréés : écouteurs et états restent ceux posés par l'écran. */
+const COMMANDES_SELECTION = ["e-val", "e-mod", "e-dep", "e-sup", "g-mod", "g-ren", "g-sup"];
+function rubanEquipements() {
+  const id = x => document.getElementById(x);
+  const c = document.getElementById("contenu");
+  // Commande de la sélection : encore dans la fiche (premier rendu) ou déjà au ruban (rendu suivant). Les anciennes
+  // commandes sont retirées du ruban avant chaque nouvelle fiche (contenu(), detailEquipement()).
+  const fiche = x => c?.querySelector("#" + x) || document.querySelector(`#o-ruban #${x}`);
+  Coque.ruban([
+    {nom: "Inventaire", commandes: [{el: id("b-eq"), icone: "plus", grand: true, libelle: "Nouvel équipement"},
+      {el: id("b-uf"), icone: "groupe", libelle: "Unité fonctionnelle"},
+      {el: id("b-import"), icone: "importer", libelle: "Importer une liste"}]},
+    {nom: "Équipement sélectionné", commandes: [{el: fiche("e-val"), icone: "valider", grand: true},
+      {el: fiche("e-mod"), icone: "modifier", libelle: "Modifier"}, {el: fiche("e-dep"), icone: "ranger", libelle: "Ranger dans une UF"},
+      {el: fiche("e-sup"), icone: "supprimer", libelle: "Supprimer", danger: true}]},
+    {nom: "Unité fonctionnelle", commandes: [{el: fiche("g-mod"), icone: "modifier", libelle: "Modifier l'UF"},
+      {el: fiche("g-ren"), icone: "modifier", libelle: "Renommer le groupe"},
+      {el: fiche("g-sup"), icone: "supprimer", libelle: "Supprimer l'UF", danger: true}]}]);
+  c?.querySelectorAll(".menu-eq").forEach(m => { m.hidden = true; });   // menu « ⋯ » vide : tout est au ruban
+  document.querySelectorAll("#vue .aside-btns").forEach(x => { x.style.display = x.querySelector("button") ? "" : "none"; });
 }
 /* Ajouter un équipement (retour du 16/11, 13 h 40) : deux temps. 1) choisir ce qu'on ajoute dans une liste de
    modèles classée par domaine, avec filtre ; 2) fenêtre courte pré-remplie (type, modèle, UF, numéro libre) où il
@@ -757,7 +782,14 @@ function arbre() {
 }
 
 /* ------------------------------------------------------------------ ouvrage : détail */
-async function contenu() { await contenuDetail(); piedEtape(); if (typeof Coque !== "undefined") Coque.majFil(); }
+async function contenu() {
+  // Lot 5a : les commandes de la sélection précédente quittent le ruban AVANT le rendu de la nouvelle fiche, pour
+  // que ses écouteurs se posent sur ses propres boutons (même identifiants).
+  COMMANDES_SELECTION.forEach(x => document.querySelector(`#o-ruban #${x}`)?.remove());
+  await contenuDetail(); piedEtape();
+  if (E.vue === "ouvrage" && !E.ouvrage?.en_conception && document.getElementById("b-eq")) rubanEquipements();
+  Coque.majFil();
+}
 async function contenuDetail() {
   const c = $("#contenu"), s = E.sel;
   if (s.nature === "eq" && eqParIdent(s.valeur)) {
@@ -1044,6 +1076,7 @@ function detailGroupe() {
   }
 }
 function detailEquipement(e) {
+  COMMANDES_SELECTION.forEach(x => document.querySelector(`#o-ruban #${x}`)?.remove());   // lot 5a, voir contenu()
   const c = $("#contenu"), o = E.ouvrage;
   const roles = {}; e.informations.forEach(i => roles[i.role] = (roles[i.role] || 0) + 1);
   const liste = Object.keys(roles).sort((a, b) => ((ROLES_ORDRE.indexOf(a) + 99) % 99) - ((ROLES_ORDRE.indexOf(b) + 99) % 99));
@@ -1159,6 +1192,7 @@ function detailEquipement(e) {
   if ($("#e-act")) $("#e-act").onclick = () => confirmer("Actualiser le modèle dans cet ouvrage ?",
     "Tous les équipements qui partagent ce modèle dans cet ouvrage seront remis à valider. Les repères et adresses restent conservés ; aucune migration automatique des anciens projets.",
     "Actualiser", async () => { await agir(api("/api/equipement/ligne", {action: "actualiser", ident_eq: e.ident}), "Modèle actualisé : équipements à revalider."); recharge(); });
+  if (document.getElementById("b-eq")) rubanEquipements();
 }
 /* Retour du 16/11 (11 h 03) : la fiche d'un équipement était une longue page sans fil conducteur. Elle
    devient un parcours en trois onglets (E/S physiques → informations fonctionnelles → lignes de
@@ -1170,7 +1204,12 @@ function parcoursEquipement(e, c, n) {
   const onglets = [
     {id: "es", bloc: "#configuration-es", titre: "E/S physiques", etat: n.echelles ? `${n.echelles} échelle(s) à définir` : `${n.retenues} E/S retenue(s)`, al: n.echelles > 0},
     {id: "fonc", bloc: "#infos-fonctionnelles", titre: "Informations fonctionnelles", etat: aDecider ? `${aDecider} à décider` : `${retenuesF} retenue(s)`, al: aDecider > 0},
-    {id: "lignes", bloc: "#lignes-supervision", titre: "Lignes de supervision", etat: `${e.informations.length} ligne(s)`, al: false}];
+    {id: "lignes", bloc: "#lignes-supervision", titre: "Lignes de supervision", etat: `${e.informations.length} ligne(s)`, al: false},
+    // Lot 5a : vue d'ensemble en lecture seule, une ligne par information avec toute sa chaîne
+    {id: "fil", bloc: "#fil-informations", titre: "Fil des informations", etat: "vue d'ensemble", al: false, symbole: "fil"}];
+  if (!c.querySelector("#fil-informations")) c.insertAdjacentHTML("beforeend", `<div class="bloc" id="fil-informations" hidden data-ident="${esc(e.ident)}">
+     <div class="bloc-tete"><h2>Fil des informations</h2><span class="aide">chaque information de l'équipement, de son E/S physique à sa supervision · lecture seule</span></div>
+     <p class="aide fi-chargement">Chargement…</p></div>`);
   // Prochaine action : une seule, dans l'ordre du travail
   let action;
   if (e.valide) action = {cls: "ok", texte: "Paramétrage validé. Les voies physiques se placent à l'étape « Matériel ».", bouton: ["Liste des E/S →", () => location.hash = "#/es"]};
@@ -1188,12 +1227,13 @@ function parcoursEquipement(e, c, n) {
   barre.innerHTML = `<div class="prochaine-action pa-${action.cls}" role="status"><span class="pa-etiq">${e.valide ? "Terminé" : "Prochaine action"}</span><span class="pa-texte">${esc(action.texte)}</span>
       ${action.onglet ? `<button class="prim" data-pa-onglet="${action.onglet}">Ouvrir</button>` : action.bouton ? `<button class="${e.valide ? "" : "prim"}" id="pa-bouton">${esc(action.bouton[0])}</button>` : ""}</div>
     <div class="onglets-eq" role="tablist" aria-label="Paramétrage de l'équipement">${onglets.map((o, i) => `<button role="tab" id="onglet-eq-${o.id}" data-onglet-eq="${o.id}" aria-selected="${o.id === actif}" aria-controls="${o.bloc.slice(1)}" class="${o.id === actif ? "on" : ""}">
-      <span class="oe-num">${i + 1}</span><span class="oe-titre">${o.titre}</span><span class="oe-etat ${o.al ? "al" : ""}">${esc(o.etat)}</span></button>`).join("")}</div>`;
+      <span class="oe-num ${o.symbole ? "oe-symbole" : ""}">${o.symbole ? Coque.symbole(o.symbole, 14) : i + 1}</span><span class="oe-titre">${o.titre}</span><span class="oe-etat ${o.al ? "al" : ""}">${esc(o.etat)}</span></button>`).join("")}</div>`;
   c.querySelector("#configuration-es").before(barre);
   const montrer = (id, choisi = true) => { if (choisi) E.ongletEq[e.ident] = id;
     onglets.forEach(o => { const b = c.querySelector(o.bloc), t = barre.querySelector(`[data-onglet-eq="${o.id}"]`);
       if (b) { b.hidden = o.id !== id; b.setAttribute("role", "tabpanel"); b.setAttribute("aria-labelledby", "onglet-eq-" + o.id); }
-      t.classList.toggle("on", o.id === id); t.setAttribute("aria-selected", String(o.id === id)); }); };
+      t.classList.toggle("on", o.id === id); t.setAttribute("aria-selected", String(o.id === id)); });
+    if (id === "fil") filInformations(c.querySelector("#fil-informations"), e); };
   barre.querySelectorAll("[data-onglet-eq]").forEach(t => t.onclick = () => montrer(t.dataset.ongletEq));
   barre.querySelector("[role=tablist]").onkeydown = ev => {
     if (!["ArrowLeft", "ArrowRight"].includes(ev.key)) return;
@@ -1202,6 +1242,28 @@ function parcoursEquipement(e, c, n) {
   barre.querySelectorAll("[data-pa-onglet]").forEach(b => b.onclick = () => montrer(b.dataset.paOnglet));
   if (barre.querySelector("#pa-bouton")) barre.querySelector("#pa-bouton").onclick = action.bouton[1];
   montrer(actif, false);
+}
+/* Lot 5a : « Fil des informations » de la fiche équipement. Une ligne par information avec toute sa chaîne :
+   E/S physique, voie, variable automate, type, adresse posée, libellé de supervision, état. Lecture seule
+   (/api/fil?detail=1) ; tableau dense du lot 3 : tri, filtres, copie vers Excel. */
+async function filInformations(bloc, e) {
+  if (!bloc || bloc.dataset.charge === e.ident) return;
+  let f;
+  try { f = await api(`/api/fil?ident=${encodeURIComponent(e.ident)}&detail=1`); }
+  catch (err) { bloc.querySelector(".fi-chargement").textContent = err.message; return; }
+  if (!document.body.contains(bloc)) return;
+  bloc.dataset.charge = e.ident;
+  const lignes = f.lignes || [], vide = '<span class="fi-vide">—</span>';
+  const cls = {"validée": "ok", "à valider": "al", "sans adresse": "", "E/S seule": "n"};
+  const cablees = lignes.filter(x => x.es).length;
+  bloc.querySelector(".fi-chargement")?.remove();
+  bloc.insertAdjacentHTML("beforeend", lignes.length ? `<p class="aide fi-resume">${lignes.length} information(s) · ${cablees} lue(s) sur une E/S câblée, ${lignes.length - cablees} calculée(s) par l'automate · clic droit ou Ctrl C pour copier vers Excel</p>
+    <div class="fi-defile"><table data-o-tableau class="t-fil"><thead><tr><th>Information</th><th>Fam.</th><th>E/S physique</th><th>Voie</th><th>Variable automate</th><th>Type</th><th>Adresse</th><th>Libellé de supervision</th><th>État</th></tr></thead><tbody>
+    ${lignes.map(x => `<tr><td>${esc(x.information) || vide}</td><td><span class="tag">${esc(x.famille)}</span></td>
+      <td class="mono">${x.es ? esc(x.es) : '<span class="fi-vide">calculée</span>'}</td><td class="mono">${esc(x.voie) || vide}</td>
+      <td class="mono">${esc(x.variable) || vide}</td><td>${esc(x.type) || vide}</td><td class="mono">${esc(x.adresse) || vide}</td>
+      <td>${esc(x.libelle) || vide}</td><td><span class="fi-etat ${cls[x.etat] ?? ""}">${esc(x.etat)}</span></td></tr>`).join("")}</tbody></table></div>`
+    : '<div class="vide-bloc">Aucune information pour cet équipement : validez d\'abord son paramétrage.</div>');
 }
 /* Informations fonctionnelles (TS, TM, CP, TC, TR, RTR) : ce que l'automate calcule ou reçoit, distinct
    des E/S câblées. Une information proposée par une règle se retient ou s'écarte avec un motif : rien

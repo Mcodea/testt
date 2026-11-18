@@ -27,6 +27,14 @@ const Coque = (() => {
   alerte: '<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/>',
   erreur: '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  // Commandes du ruban (lot 5)
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  importer: '<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>',
+  valider: '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
+  modifier: '<path d="m4 20 1-4L16 5l3 3L8 19z"/><path d="m14 7 3 3"/>',
+  ranger: '<path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11H3z"/><path d="M9 13h6M12 10v6"/>',
+  supprimer: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  groupe: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 13h8M8 16h5"/>',
  };
  const ico = (nom, t = 16) => `<svg class="o-ico" width="${t}" height="${t}" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${TRACES[nom] || ""}</svg>`;
  const ETAPES_PARCOURS = [["ouvrage", "Équipements", "#/inventaire"], ["es", "Liste des E/S", "#/es"],
@@ -116,10 +124,16 @@ const Coque = (() => {
   const zone = document.getElementById("v30-workspace");
   zone.parentNode.insertBefore(docs, zone);
 
+  // Ruban de l'écran (lot 5) : les commandes de l'écran, groupées par tâche, sous les onglets de documents.
+  const ruban = document.createElement("section");
+  ruban.id = "o-ruban"; ruban.className = "o-ruban"; ruban.hidden = true;
+  ruban.setAttribute("role", "toolbar"); ruban.setAttribute("aria-label", "Ruban : commandes de l'écran");
+  docs.after(ruban);
+
   // Fil de l'information (lot 4) : chaîne de l'équipement sélectionné, sous les onglets de documents.
   const fil = document.createElement("nav");
   fil.id = "o-fil"; fil.className = "o-fil"; fil.hidden = true;
-  docs.after(fil);
+  ruban.after(fil);
   fil.addEventListener("click", ev => { const m = ev.target.closest("[data-o-maillon]"); if (m) allerMaillon(m.dataset.oMaillon); });
 
   // Panneau de sortie (lot 2b) : contrôles de l'étape et journal des messages, sous la zone de travail.
@@ -187,6 +201,42 @@ const Coque = (() => {
   try { localStorage.setItem("ogias-explorateur", etat.explorateur ? "visible" : "masque"); } catch (e) { /* stockage indisponible */ }
   document.getElementById("o-explorateur").hidden = !etat.explorateur;
   document.body.classList.toggle("o-sans-explorateur", !etat.explorateur);
+ }
+
+ // ------------------------------------------------------------------ ruban de l'écran (lot 5)
+ /** Range les commandes EXISTANTES de l'écran dans le ruban. Les boutons sont déplacés, jamais recréés : leurs
+     écouteurs, identifiants et états (désactivé, infobulle) restent ceux posés par l'écran.
+     groupes : [{nom, commandes: [{el, icone, grand?, libelle?}]}] ; null ou vide : ruban masqué. */
+ function ranger(groupes) {
+  const r = document.getElementById("o-ruban");
+  if (!r) return;
+  const garder = (groupes || []).flatMap(g => g.commandes.map(c => c.el)).filter(Boolean);
+  garder.forEach(el => el.remove());
+  r.replaceChildren();
+  const utiles = (groupes || []).map(g => ({...g, commandes: g.commandes.filter(c => c.el)})).filter(g => g.commandes.length);
+  r.hidden = !utiles.length;
+  document.body.classList.toggle("o-avec-ruban", !r.hidden);
+  for (const g of utiles) {
+   const groupe = document.createElement("div");
+   groupe.className = "o-rb-groupe"; groupe.setAttribute("role", "group"); groupe.setAttribute("aria-label", g.nom);
+   const cmds = document.createElement("div");
+   cmds.className = "o-rb-cmds";
+   for (const c of g.commandes) {
+    const el = c.el;
+    el.classList.add("o-cmd", c.grand ? "o-cmd-grand" : "o-cmd-petit");
+    el.classList.remove("prim", "danger", "lien");
+    if (c.danger) el.classList.add("o-cmd-danger");
+    if (!el.dataset.oCmd) {                                 // une seule fois par bouton : icône et libellé court
+     el.dataset.oCmd = "1";
+     if (c.libelle) { if (!el.title) el.title = el.textContent.trim(); el.textContent = c.libelle; }
+     el.insertAdjacentHTML("afterbegin", ico(c.icone || "plus", c.grand ? 22 : 15));
+    }
+    cmds.append(el);
+   }
+   groupe.append(cmds);
+   groupe.insertAdjacentHTML("beforeend", `<span class="o-rb-nom">${esc(g.nom)}</span>`);
+   r.append(groupe);
+  }
  }
 
  // ------------------------------------------------------------------ fil de l'information (lot 4)
@@ -321,12 +371,13 @@ const Coque = (() => {
  function render(E, ETAPES, etatEtape, vueEtape) {
   explorateur(E, etatEtape, vueEtape);
   ongletsDocuments(E);
+  if (E.vue !== etat.vueRuban) { ranger(null); etat.vueRuban = E.vue; }
   const etape = ETAPES_PARCOURS.some(([v]) => v === vueEtape(E.vue)) && E.ouvrage?.ouvert && !E.ouvrage?.en_conception;
   if (!etape) controles(null);
   majFil();
   const theme = document.getElementById("v31-settings");
   if (theme) theme.innerHTML = document.documentElement.dataset.theme === "dark" ? V31.icon("sun", 15) : V31.icon("moon", 15);
  }
- return {init, render, controles, journal, majFil, sortie: () => { if (!etat.sortieOuverte) plierSortie(); ongletSortie("controles"); },
+ return {init, render, controles, journal, majFil, ruban: ranger, symbole: ico, sortie: () => { if (!etat.sortieOuverte) plierSortie(); ongletSortie("controles"); },
          actions: () => document.querySelector("#o-documents .o-documents-actions")};
 })();
