@@ -113,6 +113,8 @@ class TestGeometrieResolutions(ServeurNavigateur):
             for route in ('#/inventaire', '#/es', '#/materiel', '#/recette'):
                 with self.subTest(resolution=f'{largeur}x{hauteur}', ecran=route):
                     self.ouvrir(route)
+                    # Attendre la barre elle-même (et non un délai fixe) : CI Windows lente, 18/11
+                    self.page.locator('.pied-etape').wait_for()
                     mesure = self.page.evaluate("""() => {
                       const p = document.querySelector('.pied-etape'); let sc = p.parentElement;
                       while (sc && !/(auto|scroll)/.test(getComputedStyle(sc).overflowY)) sc = sc.parentElement;
