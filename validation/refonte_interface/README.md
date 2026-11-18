@@ -10,7 +10,7 @@ au moteur ni aux règles métier. Huit lots, appliqués dans l'ordre, chacun vé
 | 2. Coque de bureau | Menus, explorateur et parcours, onglets de documents, panneau de sortie, barre d'état | Fait |
 | 3. Composants de bureau | Tableau dense, grille de propriétés, menu contextuel, raccourcis | Fait |
 | 4. Identité | Fil de l'information, symboles propres | Fait |
-| 5. Écrans | Un sous-lot par écran : 5a Équipements fait | En cours |
+| 5. Écrans | Un sous-lot par écran : 5a Équipements, 5b Liste des E/S faits | En cours |
 | 6. Fenêtre Windows | Fenêtre native et installateur | À faire |
 | 7. Finition | Retrait des anciennes couches, accessibilité, performances | À faire |
 

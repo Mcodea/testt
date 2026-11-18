@@ -202,7 +202,9 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.wait_for_function("!document.querySelector('#o-ruban #e-val')")
         self.page.locator('#o-explorateur [data-nav="#/es"]').click()
         self.titre('Liste des E/S')
-        self.assertTrue(ruban.is_hidden())
+        # Autre écran : ses propres commandes, plus aucune de l'écran Équipements (lot 5b)
+        self.page.locator('#o-ruban #x-val').wait_for()
+        self.assertEqual(self.page.evaluate("['e-val','b-eq'].map(i => document.querySelectorAll('#' + i).length)"), [0, 0])
         # Fil des informations : une ligne par variable, copiable (tableau dense)
         self.page.locator('#o-explorateur [data-nav="#/inventaire"]').click()
         self.page.locator('#vue [data-v]', has_text='HV01').first.click()
@@ -212,4 +214,29 @@ class TestCoqueBureau(ServeurNavigateur):
         variables = [v for v in self.api('/api/variables')['lignes'] if v['repere'].endswith('HV01')]
         self.assertEqual(self.page.locator('#fil-informations tbody td:nth-child(5)').evaluate_all(
             'cs => cs.map(c => c.innerText.trim()).filter(x => x !== "—").sort()'), sorted(v['nom'] for v in variables))
+        self.assertEqual(self.projet.read_bytes(), avant)
+
+    def test_liste_des_es_ruban_et_tableau_dense(self):
+        """Lot 5b : commandes de la Liste des E/S au ruban (l'ancien bandeau factice disparaît) ; tableau dense sans
+        sélection propre (les cases à cocher de l'écran restent la sélection) ; tri conservé quand l'écran se
+        redessine (ouverture d'une ligne)."""
+        avant = self.projet.read_bytes()
+        self.ouvrir('#/es')
+        self.titre('Liste des E/S')
+        groupes = self.page.locator('#o-ruban [role="group"]').evaluate_all('g => g.map(x => x.getAttribute("aria-label"))')
+        self.assertEqual(groupes, ['Validation du contenu', 'Échanges', 'Étape suivante'])
+        self.assertEqual(self.page.locator('.es-ruban').count(), 0, 'Plus de bandeau aux onglets inactifs')
+        t = self.page.locator('table.t-es')
+        self.assertEqual(t.get_attribute('data-o-pret'), '1')
+        self.assertIsNone(t.get_attribute('aria-multiselectable'))
+        t.locator('thead th').nth(2).click()
+        self.assertEqual(t.locator('thead th').nth(2).get_attribute('aria-sort'), 'ascending')
+        self.page.locator('.x-coche').first.check()
+        self.assertIn('(1)', self.page.locator('#o-ruban #x-val').inner_text())
+        self.assertEqual(self.page.locator('#o-ruban #x-val .o-ico').count(), 1, 'Icône conservée')
+        self.page.locator('.es-ligne').first.click()
+        self.page.locator('.es-panneau').wait_for()
+        self.assertEqual(self.page.locator('table.t-es thead th').nth(2).get_attribute('aria-sort'), 'ascending')
+        self.assertEqual(self.page.evaluate("['x-val','x-val-tout','es-export','es-detail-toggle'].map(i => document.querySelectorAll('#' + i).length)"),
+                         [1, 1, 1, 1])
         self.assertEqual(self.projet.read_bytes(), avant)

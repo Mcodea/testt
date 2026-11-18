@@ -61,6 +61,11 @@ const Composants = (() => {
  }
 
  // ------------------------------------------------------------------ tableau dense
+ // État conservé par tableau (data-o-cle) : un écran redessiné à chaque action retrouve son tri et ses filtres.
+ const MEMOIRE = new Map();
+ const memoire = t => t.dataset.oCle ? (MEMOIRE.get(t.dataset.oCle) || MEMOIRE.set(t.dataset.oCle, {}).get(t.dataset.oCle)) : null;
+ // data-o-tableau="sans-selection" : l'écran gère déjà sa propre sélection (cases à cocher, ligne ouverte).
+ const avecSelection = t => t.dataset.oTableau !== "sans-selection";
  const texteCellule = c => (c?.innerText ?? c?.textContent ?? "").replace(/\s+/g, " ").trim();
  function colonnes(t) { return [...(t.tHead?.rows[0]?.cells || [])]; }
  function lignes(t) { return [...t.tBodies].flatMap(b => [...b.rows]).filter(r => !r.classList.contains("o-filtres")); }
@@ -96,6 +101,7 @@ const Composants = (() => {
   });
   if (sens) th.setAttribute("aria-sort", sens === "asc" ? "ascending" : "descending");
   t.dataset.oTri = sens ? `${i}:${sens}` : "";
+  const m = memoire(t); if (m) m.tri = t.dataset.oTri;
  }
  function basculerTri(t, i) {
   const [col, sens] = (t.dataset.oTri || ":").split(":");
@@ -109,13 +115,16 @@ const Composants = (() => {
   lignes(t).forEach(r => { r.hidden = actifs.some(([i, v]) => !norm(texteCellule(r.cells[+champs[i].dataset.oCol])).includes(v)); });
   const n = visibles(t).length, total = lignes(t).length;
   t.dataset.oFiltre = actifs.length ? `${n}/${total}` : "";
+  const m = memoire(t); if (m) m.filtres = champs.map(c => c.value);
   const legende = t.parentElement?.querySelector(":scope > .o-tableau-filtre");
   if (legende) legende.textContent = actifs.length ? `${n} ligne(s) affichée(s) sur ${total} (filtre actif)` : "";
  }
  function basculerFiltres(t, afficher) {
   let rang = t.tHead.querySelector(".o-filtres");
   if (afficher === undefined) afficher = !rang;
+  const m = memoire(t); if (m) m.filtresAffiches = !!afficher;
   if (!afficher) {
+   if (m) m.filtres = [];
    rang?.remove();
    lignes(t).forEach(r => { r.hidden = false; });
    filtrer(t);
@@ -164,7 +173,7 @@ const Composants = (() => {
   const entrees = [
    {libelle: n ? `Copier la sélection (${n} ligne${n > 1 ? "s" : ""})` : "Copier les lignes affichées", raccourci: "Ctrl C", action: () => copierLignes(t, false)},
    {libelle: "Copier tout le tableau", action: () => copierLignes(t, true)},
-   {libelle: "Tout sélectionner", raccourci: "Ctrl A", action: () => { visibles(t).forEach(r => r.setAttribute("aria-selected", "true")); }}, "-"];
+   ...(avecSelection(t) ? [{libelle: "Tout sélectionner", raccourci: "Ctrl A", action: () => { visibles(t).forEach(r => r.setAttribute("aria-selected", "true")); }}] : []), "-"];
   if (nom) entrees.push({libelle: `Trier « ${nom} » par ordre croissant`, action: () => trier(t, colonne, "asc")},
                         {libelle: `Trier « ${nom} » par ordre décroissant`, action: () => trier(t, colonne, "desc")});
   entrees.push({libelle: "Ordre d'origine", actif: !!t.dataset.oTri, action: () => trier(t, 0, "")}, "-",
@@ -180,7 +189,9 @@ const Composants = (() => {
   t.dataset.oPret = "1";
   t.classList.add("o-tableau");
   t.setAttribute("aria-multiselectable", "true");
-  lignes(t).forEach((r, k) => { r.dataset.oRang = k; r.setAttribute("aria-selected", "false"); r.tabIndex = k ? -1 : 0; });
+  const sel = avecSelection(t);
+  if (!sel) t.removeAttribute("aria-multiselectable");
+  lignes(t).forEach((r, k) => { r.dataset.oRang = k; if (sel) { r.setAttribute("aria-selected", "false"); r.tabIndex = k ? -1 : 0; } });
   colonnes(t).forEach((th, i) => {
    if (!texteCellule(th) || th.dataset.oNonTriable !== undefined) return;
    th.classList.add("o-triable");
@@ -203,14 +214,14 @@ const Composants = (() => {
   });
   t.addEventListener("click", ev => {
    const r = ev.target.closest("tbody tr");
-   if (!r || r.classList.contains("o-filtres") || ev.target.closest("button, a, input, select, textarea, label, summary")) return;
+   if (!sel || !r || r.classList.contains("o-filtres") || ev.target.closest("button, a, input, select, textarea, label, summary")) return;
    selectionner(t, r, ev.shiftKey ? "plage" : ev.ctrlKey || ev.metaKey ? "ajout" : "seule");
   });
   t.addEventListener("contextmenu", ev => {
    if (ev.target.closest("input, textarea")) return;
    ev.preventDefault();
    const r = ev.target.closest("tbody tr");
-   if (r && r.getAttribute("aria-selected") !== "true") selectionner(t, r, "seule");
+   if (sel && r && r.getAttribute("aria-selected") !== "true") selectionner(t, r, "seule");
    const th = ev.target.closest("thead th");
    menuTableau(t, ev, th ? th.cellIndex : r ? ev.target.closest("td")?.cellIndex : undefined);
   });
@@ -218,9 +229,9 @@ const Composants = (() => {
    if (ev.target.closest("input, textarea, select")) return;
    const r = ev.target.closest("tbody tr"), vis = visibles(t);
    if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "c") { ev.preventDefault(); copierLignes(t, false); return; }
-   if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "a") { ev.preventDefault(); vis.forEach(x => x.setAttribute("aria-selected", "true")); return; }
+   if (sel && (ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "a") { ev.preventDefault(); vis.forEach(x => x.setAttribute("aria-selected", "true")); return; }
    if (ev.key === "ContextMenu" || (ev.shiftKey && ev.key === "F10")) { ev.preventDefault(); menuTableau(t, ev, r ? 0 : undefined); return; }
-   if (!r) return;
+   if (!sel || !r) return;
    const k = vis.indexOf(r);
    const aller = cible => { if (!cible) return; ev.preventDefault();
     if (ev.shiftKey) { if (!selection(t).length) t.oAncre = r; selectionner(t, cible, "plage"); } else activer(t, cible);
@@ -232,6 +243,17 @@ const Composants = (() => {
    else if (ev.key === " ") { ev.preventDefault(); selectionner(t, r, "ajout"); }
    else if (ev.key === "Escape") vis.forEach(x => x.setAttribute("aria-selected", "false"));
   });
+  const m = memoire(t);
+  if (m?.tri) { const [i, sens] = m.tri.split(":"); if (colonnes(t)[+i]) trier(t, +i, sens); }
+  if (m?.filtresAffiches) {
+   const valeurs = m.filtres || [], avant = document.activeElement;
+   basculerFiltres(t, true);
+   t.querySelectorAll("thead .o-filtres input").forEach((c, k) => { c.value = valeurs[k] || ""; });
+   filtrer(t);
+   // Le focus reste où l'utilisateur l'avait mis (champ de recherche de l'écran, par exemple)
+   if (avant && avant !== document.body && document.contains(avant)) avant.focus({preventScroll: true});
+   else if (t.contains(document.activeElement)) document.activeElement.blur();
+  }
   return t;
  }
  /** Améliore tous les tableaux marqués data-o-tableau sous `racine`. */

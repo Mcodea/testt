@@ -91,13 +91,7 @@ const V31 = (() => {
   render(E,ETAPES,etatEtape,vueEtape);
   const root=document.getElementById('vue');
   // Les commandes métier sont déplacées, jamais dupliquées : leurs événements restent actifs.
-  if(E.vue==='es'){
-    const target=root.querySelector('.es-compteurs');
-    if(target){const bar=document.createElement('div');bar.className='v31-page-actions';
-      for(const id of ['x-val-tout','x-val','es-export']){const b=root.querySelector('#'+id);if(b)bar.appendChild(b);}
-      target.before(bar);
-    }
-  }
+  // Liste des E/S : commandes au ruban de l'écran depuis la refonte (lot 5b, rubanES dans app.js).
   if(E.vue==='supervision'){
     const target=root.querySelector('.v29-title')||root.querySelector('.titre');
     if(target){const bar=document.createElement('div');bar.className='v31-page-actions';

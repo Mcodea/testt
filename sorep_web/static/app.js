@@ -2118,6 +2118,7 @@ function vueES() {
   if (erreurs) compteurs.push(["ERR", erreurs, "Erreurs", "err"]);
   const a = p && p.analogique;
   const analogique = p && typesANA.has(p.point);
+  Coque.ruban(null);                      // lot 5b : retire les anciennes commandes avant de redessiner l'écran
   $("#vue").innerHTML = `<section class="contenu es-page poste-travail" data-poste="es">
     <div class="titre"><div><div class="fil">Ouvrage › Étape 2 / 5</div><h1>Liste des E/S physiques</h1>
       <div class="sous">Contrôlez chaque signal avant la configuration du matériel ; la voie ne se renseigne pas ici.</div></div>
@@ -2127,7 +2128,7 @@ function vueES() {
       <div class="es-ruban-actions"><div class="es-ruban-groupe"><button type="button" id="x-val-tout" ${visibles.some(x => !x.contenu_valide) ? "" : "disabled"} title="Valider les E/S visibles après contrôle">${V31.icon("check",14)} Valider les affichées</button>
         <button type="button" id="x-val" class="prim" disabled>${V31.icon("check",14)} Valider la sélection</button><span>Validation du contenu</span></div>
         <div class="es-ruban-groupe"><button type="button" id="es-export">⇩ Exporter la liste</button><span>Échanges de données</span></div>
-        <div class="es-ruban-groupe"><button type="button" data-nav="#/materiel" ${invalides ? "disabled title=\"Validez le contenu avant le calcul du matériel\"" : ""}>▣ Matériel</button><span>Étape suivante</span></div></div>
+        <div class="es-ruban-groupe"><button type="button" id="es-materiel" data-nav="#/materiel" ${invalides ? "disabled title=\"Validez le contenu avant le calcul du matériel\"" : ""}>▣ Matériel</button><span>Étape suivante</span></div></div>
     </div>
     <div class="es-compteurs" role="group" aria-label="Filtres par nature et par validation">
       ${compteurs.map(([code, nb, label, grav]) => pastille(code, nb, label, grav, E.filtreES)).join("")}</div>
@@ -2141,7 +2142,7 @@ function vueES() {
     </div>
     <div class="es-corps"><div class="bloc es-table"><div class="bloc-tete es-table-tete"><h2>Points physiques</h2><span class="aide">${visibles.length} / ${tous.length} E/S · ${invalides} à valider</span>
        ${p ? '<button type="button" id="es-detail-toggle">' + (E.esPanneauOuvert ? 'Masquer le détail' : 'Afficher le détail') + '</button>' : ''}</div>
-       <div class="es-scroll"><table class="t-es" aria-label="Liste des E/S physiques"><thead><tr>
+       <div class="es-scroll"><table class="t-es" data-o-tableau="sans-selection" data-o-cle="liste-es" aria-label="Liste des E/S physiques"><thead><tr>
        <th><input type="checkbox" id="x-coche-tout" aria-label="Sélectionner les E/S affichées"></th>
        <th>Équipement</th><th>Variable automate</th><th>Point</th><th>Désignation</th><th>Sens / Échelle</th><th>Raccordement</th><th>Voie</th><th>État</th></tr></thead><tbody>
        ${visibles.map(x => {const sid = cleVueES(x), i = indices.get(sid);return `<tr data-i="${i}" role="button" tabindex="0" aria-label="Ouvrir le détail de ${esc(x.nom)}" class="es-ligne ${p && p === x ? "es-active" : ""}">
@@ -2185,7 +2186,9 @@ function brancherVueES(visibles, actif) {
   const majBouton = () => {
     const n = selectionActuelle().length, b = $("#x-val");
     b.disabled = !n || !selectionActuelle().some(p => !p.contenu_valide);
+    const ic = b.querySelector(".o-ico");                // icône du ruban (lot 5b) conservée
     b.textContent = n ? `Valider la sélection (${n})` : "Valider la sélection";
+    if (ic) b.prepend(ic);
     const tout = $("#x-coche-tout");
     if (tout) { tout.checked = !!visibles.length && n === visibles.length; tout.indeterminate = n > 0 && n < visibles.length; }
   };
@@ -2270,6 +2273,22 @@ function brancherVueES(visibles, actif) {
     if ($("#es-invalider")) $("#es-invalider").onclick = () => { if (avantPerteES()) validerES([actif], "contenu", false); };
   }
   majBouton();
+  rubanES();
+}
+/* Lot 5b : ruban de la Liste des E/S. Les commandes de l'ancien bandeau « es-ruban » (dont les onglets Général,
+   Affichage, Outils n'agissaient pas) passent au ruban de l'écran ; le bandeau disparaît. Boutons déplacés,
+   jamais recréés. */
+function rubanES() {
+  const id = x => document.getElementById(x);
+  // Les libellés se mettent à jour (compte de la sélection) : on garde le texte posé par l'écran, sans libellé court.
+  [id("x-val"), id("x-val-tout")].forEach(b => b && b.querySelector(".v31-icon")?.remove());
+  Coque.ruban([
+    {nom: "Validation du contenu", commandes: [{el: id("x-val"), icone: "valider", grand: true},
+      {el: id("x-val-tout"), icone: "valider", libelle: "Valider les affichées"}]},
+    {nom: "Affichage", commandes: [{el: id("es-detail-toggle"), icone: "groupe"}]},
+    {nom: "Échanges", commandes: [{el: id("es-export"), icone: "importer", libelle: "Exporter la liste (Excel)"}]},
+    {nom: "Étape suivante", commandes: [{el: id("es-materiel"), icone: "carte", grand: true, libelle: "Matériel"}]}]);
+  document.querySelector("#vue .es-ruban")?.remove();
 }
 
 // Recherche, filtres, sélection et validation : communs aux tableaux des étapes 2 et 3.

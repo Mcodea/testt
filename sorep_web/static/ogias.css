@@ -446,7 +446,7 @@ table.o-tableau th[aria-sort="ascending"]::after { opacity: 1; border-bottom-col
 table.o-tableau th[aria-sort="descending"]::after { opacity: 1; border-top-color: var(--o-action); margin-top: -1px; }
 table.o-tableau th[aria-sort] { color: var(--o-texte); }
 /* Redimensionnement : poignée sur le bord droit du titre */
-.o-poignee { position: absolute; top: 0; right: -3px; width: 7px; height: 100%; cursor: col-resize; z-index: 2; }
+.o-poignee { position: absolute; top: 0; right: 0; width: 6px; height: 100%; cursor: col-resize; z-index: 2; }
 .o-poignee:hover, body.o-redim .o-poignee:active { background: var(--o-action-plein); opacity: .35; }
 html[data-theme] body.o-redim, html[data-theme] body.o-redim * { cursor: col-resize; user-select: none; }
 /* Filtres par colonne */
@@ -563,3 +563,10 @@ html[data-theme] .o-ruban .o-cmd:disabled .o-ico { color: var(--o-texte-3); }
 html[data-theme] #contenu .onglets-eq { grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, .85fr); }
 /* Le fil d'Ariane de la fiche répète la barre « Fil de l'information » : masqué quand celle-ci est affichée */
 body.o-coque:has(#o-fil:not([hidden])) #contenu > .fil { display: none; }
+/* Liste des E/S (5b) : en-tête de page allégé (le titre est dans l'onglet de document, l'étape dans le parcours) */
+html[data-theme] .es-page > .titre .fil { display: none; }
+html[data-theme] .es-page > .titre h1 { font-size: var(--o-t-l); margin: 0; }
+html[data-theme] .es-page > .titre .sous { font-size: var(--o-t-s); }
+/* Lignes denses du tableau des E/S, en-têtes fixes */
+html[data-theme] #vue table.t-es.o-tableau td { padding-block: 2px; height: var(--o-h-ligne); }
+html[data-theme] #vue table.t-es.o-tableau tbody tr.es-active td { background: var(--o-action-fond); }
