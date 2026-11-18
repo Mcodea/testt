@@ -321,10 +321,15 @@ def _teletransmission(session, plan, plat, controleur, eqs):
             a.etat, a.motif = "non résolue", "variable source sans adresse"
         else:
             reg = registre_modbus(va.adresse, o.decalage_modbus)
+            if reg.startswith("-"):
+                a.etat, a.motif = "en conflit", f"décalage {o.decalage_modbus} : adresse de télétransmission négative ({reg})"
+                plan.conflits.append(("teletransmission", f"{va.nom} : {a.motif}."))   # exports refusés
+                plan.affectations.append(a)
+                continue
             a.proposee = reg
             a.etat = "validée" if va.etat == "validée" else "proposée"
-            # Retour du 18/11 (19 h 28) : la télétransmission lit l'adresse automate ; un décalage n'est appliqué
-            # que s'il est réglé pour l'ouvrage (0 par défaut, sinon à régler dans la supervision).
+            # Retours du 18/11 : la télétransmission reprend l'adresse automate ; l'utilisateur peut saisir un
+            # décalage (0 par défaut), appliqué à la télétransmission seulement, jamais à l'adresse automate.
             a.regle = (f"Adresse automate {va.adresse}" + (f" + décalage {o.decalage_modbus}" if o.decalage_modbus else "")
                        + f" ; source {va.nom}.")
             if reg in reserves_points:

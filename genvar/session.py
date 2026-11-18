@@ -1801,10 +1801,14 @@ class Session:
         self._change(devalider=False)
 
     def declarer_protocole(self, declare, decalage=0):
-        """Décalage de l'adresse de télétransmission (0 par défaut : la télétransmission lit l'adresse automate).
-        `declare` est conservé pour les fichiers et appels existants ; il n'est plus exigé (retour du 18/11)."""
-        if int(decalage) not in (0, 1):
-            raise RegleMetier("Décalage : 0 ou 1.")
+        """Décalage des adresses de télétransmission, saisi par l'utilisateur (entier, 0 par défaut). Il ne touche
+        jamais l'adresse automate. `declare` est conservé pour les fichiers et appels existants (retour du 18/11)."""
+        try:
+            decalage = int(decalage)
+        except (TypeError, ValueError):
+            raise RegleMetier("Décalage : un nombre entier (0 par défaut).") from None
+        if abs(decalage) > 65535:
+            raise RegleMetier("Décalage : entre -65535 et 65535.")
         self.ouvrage.protocole_declare, self.ouvrage.decalage_modbus = bool(declare), int(decalage)
         self._change(devalider=False)
 

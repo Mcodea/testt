@@ -79,6 +79,21 @@ class TestVariablesV031(ServeurNavigateur):
         self.assertIn('Adresse télétransmission', entetes)
         self.assertNotIn('Adresse automate', entetes)
         self.assertNotIn('Télétransmission', entetes)
+        # 20 h : la famille (TS, TC, TM, TR, RTR, CP) reste ; le type de donnée (BOOL, INT…) est ajouté à côté
+        self.assertEqual(entetes[2:4], ['Famille', 'Type'])
+        from genvar.modele import TAILLE_MOTS
+        self.assertIn(self.page.locator('.v31-variable-row').first.locator('td').nth(3).inner_text().strip(), TAILLE_MOTS)
+        # Adresse en %MW ; décalage Modbus saisi : les %MW affichés sont décalés (la supervision lit ces adresses)
+        premiere = self.page.locator('.v31-variable-row').first
+        nom = premiere.get_attribute('data-variable')
+        mot = lambda: int(premiere.locator('td').nth(5).inner_text().strip().removeprefix('%MW').split('.')[0])
+        avant_mot = mot()
+        self.api('/api/adressage/action', {'action': 'protocole', 'declare': True, 'decalage': 100})
+        self.page.evaluate('v31ReloadVariables()')          # attend la fin du rechargement
+        self.assertEqual(premiere.get_attribute('data-variable'), nom)
+        self.assertEqual(mot(), avant_mot + 100)
+        self.api('/api/adressage/action', {'action': 'protocole', 'declare': True, 'decalage': 0})
+        avant = fichier.read_bytes()
         self.assertEqual(fichier.read_bytes(), avant)
 
     def test_rows_match_mockup_density_and_keep_accessible_selection(self):
@@ -202,7 +217,7 @@ class TestVariablesV031(ServeurNavigateur):
                     self.assertIn("%MW", cellules[noms.index("Adresse télétransmission")]["texte"])
 
     def test_view_headers_match_visible_cells(self):
-        for view, excluded, count in [("unique", "Télétransmission", 7)]:
+        for view, excluded, count in [("unique", "Télétransmission", 8)]:
             with self.subTest(view=view):
                 headers = self.page.locator(".v31-table thead th").evaluate_all(
                     "els => els.filter(e => getComputedStyle(e).display !== 'none').map(e => e.textContent.trim())"

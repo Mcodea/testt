@@ -862,7 +862,7 @@ class Application:
             self.s.retirer_reservation(d.get("niveau", ""), d.get("cible", ""))
             r = {}
         elif a == "protocole":
-            self.s.declarer_protocole(bool(d.get("declare")), int(d.get("decalage", 0) or 0))
+            self.s.declarer_protocole(bool(d.get("declare")), d.get("decalage", 0) or 0)
             r = {}
         elif a == "disponibilite":
             self.s.declarer_disponibilite(bool(d.get("verifiee")))

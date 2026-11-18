@@ -61,14 +61,15 @@ document.addEventListener('keydown',ev=>{
    porte sur toute la liste filtrée : la colonne triée est appliquée aux données avant le découpage en pages. */
 const V31_PAGE=150;
 // Même texte que les cellules affichées (« — » compris), pour que le tri de la page par le tableau dense suive cet ordre.
-const V31_COLONNES={1:v=>v.nom,2:v=>v.famille,3:v=>v.libelle||v.commentaire||'—',4:(v,t)=>v31AdresseTele(v,t),
- 5:v=>v.etat_adressage||'non résolue',6:v=>v.motif||v.regle||'—'};
-/* Retour du 18/11 (19 h 28) : une seule colonne « Adresse télétransmission » = adresse automate. Si un décalage est
-   réglé pour l'ouvrage, le registre transmis suit la flèche (%MW400 → 401). */
+const V31_COLONNES={1:v=>v.nom,2:v=>v.famille,3:v=>v.type||'—',4:v=>v.libelle||v.commentaire||'—',5:(v,t)=>v31AdresseTele(v,t),
+ 6:v=>v.etat_adressage||'non résolue',7:v=>v.motif||v.regle||'—'};
+/* Retour du 18/11 (19 h 59) : une seule colonne « Adresse télétransmission », en %MW : c'est l'adresse que lit la
+   supervision. Sans décalage, c'est l'adresse automate ; avec le décalage Modbus réglé par l'utilisateur (écran
+   Adressage), c'est elle qui est décalée. Projet existant (pas de plan de télétransmission) : adresse historique. */
 function v31AdresseTele(v,t){
- const adr=v.adresse||v.adresse_proposee||'';if(!adr)return '—';
+ if(!t||!t.nom)return v.adresse||v.adresse_proposee||'—';
  const reg=t.adresse_protocole_actuelle||t.adresse_protocole_proposee||'';
- return reg&&reg!==adr.replace(/^%MW/i,'')?`${adr} → ${reg}`:adr;
+ return reg?'%MW'+reg:'—';
 }
 function v31Trier(rows,teleMap){
  const tri=Composants.triMemorise('variables');if(!tri||!V31_COLONNES[tri[0]])return rows;
@@ -82,12 +83,12 @@ function vueVariablesV31(){
  const shown=v31Trier(v31VarFilter(rows),teleMap);const page=Math.max(0,Math.min(E.v31Page||0,Math.floor(Math.max(shown.length-1,0)/V31_PAGE)));E.v31Page=page;const pageRows=shown.slice(page*V31_PAGE,(page+1)*V31_PAGE);const selectedVar=rows.find(x=>x.nom===selected)||null;
  const counts=['proposée','à valider','en conflit','validée','non résolue'].map(status=>[status,rows.filter(x=>x.etat_adressage===status).length]).filter(x=>x[1]);
  const withDetail=opened&&!!selectedVar;
- const body=pageRows.map(v=>{const t=teleMap.get(v.nom)||{}, current=v.adresse||'',proposed=v.adresse_proposee||'';
+ const body=pageRows.map(v=>{const t=teleMap.get(v.nom)||{};
    return `<tr class="v31-variable-row ${withDetail&&v.nom===selected?'selected':''}" tabindex="0" data-variable="${V31.esc(v.nom)}" title="Ouvrir le détail de ${V31.esc(v.nom)}">
      <td><input type="checkbox" class="v31-choose" data-ident="${V31.esc(v.ident_eq||'')}" data-cle="${V31.esc(v.cle||'')}" aria-label="Sélectionner ${V31.esc(v.nom)}" ${!neuf?'disabled':''}></td>
-     <td class="mono" title="${V31.esc(v.nom)}">${V31.esc(v.nom)}</td><td><span class="v31-family">${V31.esc(v.famille)}</span></td>
+     <td class="mono" title="${V31.esc(v.nom)}">${V31.esc(v.nom)}</td><td><span class="v31-family">${V31.esc(v.famille)}</span></td><td class="mono">${V31.esc(v.type||'—')}</td>
      <td class="v31-libelle" title="${V31.esc(v.libelle||v.commentaire||'')}">${V31.esc(v.libelle||v.commentaire||'—')}</td>
-     <td class="mono" title="${V31.esc(current||proposed?'Adresse automate, lue par la télétransmission':'Non attribuée')}">${V31.esc(v31AdresseTele(v,t))}${v.validee?` <span title="Adresse validée et protégée">${V31.icon('shield',13)}</span>`:''}</td>
+     <td class="mono" title="Adresse lue par la supervision (décalage Modbus compris)">${V31.esc(v31AdresseTele(v,t))}${v.validee?` <span title="Adresse validée et protégée">${V31.icon('shield',13)}</span>`:''}</td>
      <td>${v31Status(v.etat_adressage)}</td>
      <td class="v31-rule" title="${V31.esc(v.motif||v.regle||'')}">${V31.esc(v.motif||v.regle||'—')}</td></tr>`;}).join('');
  const available=rows.filter(x=>x.etat_adressage==='proposée'&&!x.validee).length;
@@ -115,8 +116,8 @@ function vueVariablesV31(){
  <button type="button" id="v31-livrables" title="La table des variables se télécharge dans Recette et livrables">Livrables</button></div></div>
  ${!neuf?'<div class="v31-inform">Projet existant : les adresses historiques sont conservées, sans réaffectation automatique.</div>':''}
  ${errCount?`<div class="v31-inform warning">${errCount} point(s) bloquant(s) ou non résolu(s). Les conflits doivent être corrigés avant la validation.</div>`:''}
- <div class="v31-table-area"><table class="v31-table" data-o-tableau="sans-selection" data-o-cle="variables"><thead><tr><th data-o-non-triable><input type="checkbox" id="v31-select-all" aria-label="Tout sélectionner" ${!neuf?'disabled':''}></th><th>Variable</th><th>Famille</th><th class="v31-libelle">Libellé</th><th>Adresse télétransmission</th><th>Statut</th><th class="v31-rule">Règle</th></tr></thead><tbody>
- ${body||`<tr><td colspan="7"><div class="v31-blank">Aucune variable à afficher avec ces filtres.</div></td></tr>`}</tbody></table></div>
+ <div class="v31-table-area"><table class="v31-table" data-o-tableau="sans-selection" data-o-cle="variables"><thead><tr><th data-o-non-triable><input type="checkbox" id="v31-select-all" aria-label="Tout sélectionner" ${!neuf?'disabled':''}></th><th>Variable</th><th>Famille</th><th>Type</th><th class="v31-libelle">Libellé</th><th>Adresse télétransmission</th><th>Statut</th><th class="v31-rule">Règle</th></tr></thead><tbody>
+ ${body||`<tr><td colspan="8"><div class="v31-blank">Aucune variable à afficher avec ces filtres.</div></td></tr>`}</tbody></table></div>
  <footer class="v31-table-footer"><span>${rows.length?`${rows.length} variable(s) · ${shown.length?`${shown.length} filtrée(s)`:'Aucun résultat'}`:'Aucune variable'} · page ${page+1}/${Math.max(1,Math.ceil(shown.length/V31_PAGE))}</span><div class="v31-page-controls"><button type="button" id="v31-prev-page" ${page===0?'disabled':''}>Précédent</button><button type="button" id="v31-next-page" ${(page+1)*V31_PAGE>=shown.length?'disabled':''}>Suivant</button></div>
  <button type="button" id="v31-adr-settings" class="v31-text-button">Paramètres d’adressage</button></footer></div>${detail}</section>`;
  // Tableau dense amélioré tout de suite, avant toute mise en page : une seule mise en page par rendu (banc des 5000 variables).

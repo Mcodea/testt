@@ -316,9 +316,21 @@ class ScenarioF_Robustesse(Base):
         for k, a in tt.items():
             self.assertEqual(_mot("%MW" + a.proposee)[0], _mot(variables[k].adresse)[0])
         self.assertTrue(any("Retour" in a.regle for a in tt.values() if a.nature == "TR"))
-        s.declarer_protocole(True, 1)                                   # décalage réglé : registre = mot + 1
+        # Décalage saisi par l'utilisateur (19 h 53) : télétransmission seulement, l'adresse automate ne bouge jamais
+        avant = {k: v.adresse for k, v in variables.items()}
+        s.declarer_protocole(True, 100)
         for k, a in par_niveau(s.plan_adressage(), "teletransmission").items():
-            self.assertEqual(_mot("%MW" + a.proposee)[0], _mot(variables[k].adresse)[0] + 1)
+            self.assertEqual(_mot("%MW" + a.proposee)[0], _mot(variables[k].adresse)[0] + 100)
+        self.assertEqual({(v.ident_eq, v.cle): v.adresse for v in s.variables()}, avant)
+        auto = par_niveau(s.plan_adressage(), "automate")
+        self.assertTrue(all(_mot(a.actuelle or a.proposee)[0] == _mot(avant[k])[0] for k, a in auto.items()))
+        s.declarer_protocole(True, -100000 // 2)                        # adresse négative : en conflit, exports refusés
+        p = s.plan_adressage()
+        self.assertTrue(any(n == "teletransmission" and "négative" in m for n, m in p.conflits))
+        with self.assertRaises(RegleMetier):
+            s.declarer_protocole(True, "un")
+        with self.assertRaises(RegleMetier):
+            s.declarer_protocole(True, 70000)
 
     def test_persistance_des_affectations_et_traces(self):
         s = nouvelle("M340")

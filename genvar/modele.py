@@ -153,7 +153,8 @@ class Ouvrage:
     produit_xsy: str = "Control Expert"
     zones: dict = field(default_factory=lambda: dict(ZONES_DEFAUT))           # premier mot de chaque famille
     zones_fin: dict = field(default_factory=lambda: dict(ZONES_FIN_DEFAUT))   # dernier mot (inclus)
-    decalage_modbus: int = 0        # registre Modbus = numéro du mot %MW + décalage (0 ou 1 selon la convention)
+    decalage_modbus: int = 0        # décalage des adresses de TÉLÉTRANSMISSION, saisi par l'utilisateur (0 par défaut) ;
+                                    # l'adresse automate n'est jamais décalée
     sous_ensembles: list = field(default_factory=list)
     equipements: list = field(default_factory=list)
     unites: list = field(default_factory=list)          # UniteFonctionnelle
