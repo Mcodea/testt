@@ -22,11 +22,12 @@ ECRANS = [("01_ouvrages", "#/ouvrages"), ("02_tableau_de_bord", "#/dashboard"), 
           ("07_recette", "#/recette"), ("08_referentiel", "#/referentiel")]
 
 # Clé stable d'une commande : son id, sinon ses attributs data-* (avec la valeur pour ceux qui désignent l'action).
+# Les attributs posés par les composants de la refonte (data-o-…) et par la couche V31 sont ignorés.
 SELECTEUR = ("#vue button, #vue [role=button], #vue a[data-nav], #vue input, #vue select, #vue textarea, "
              ".v30-ribbon button, #o-ruban button, #o-sortie .parcours-points button")   # lot 2b : contrôles déplacés au panneau de sortie
 COMMANDES = """() => [...document.querySelectorAll('""" + SELECTEUR + """')]
   .filter(e => e.offsetParent !== null)
-  .map(e => { const d = Object.keys(e.dataset).filter(k => !k.startsWith('v31')).sort();
+  .map(e => { const d = Object.keys(e.dataset).filter(k => !k.startsWith('v31') && !/^o[A-Z]/.test(k)).sort();
     const cle = e.id ? '#' + e.id : d.length ? '[' + d.map(k => k + (['export', 'action', 'nav', 'onglet', 'ptOnglet']
       .includes(k) ? '=' + e.dataset[k] : '')).join('][') + ']' : '';
     const texte = (e.innerText || e.value || e.getAttribute('aria-label') || e.placeholder || '').trim()
@@ -45,13 +46,13 @@ def _commandes(page) -> list[dict]:
     return sortie
 
 
-def releve(url: str, sortie: Path) -> dict:
+def releve(url: str, sortie: Path, captures: bool = True) -> dict:
     (sortie / "captures").mkdir(parents=True, exist_ok=True)
     registre: dict[str, list] = {}
     erreurs: list[str] = []
     with sync_playwright() as p:
         navigateur = p.chromium.launch()
-        for theme in ("clair", "sombre"):
+        for theme in ("clair", "sombre") if captures else ("clair",):
             ctx = navigateur.new_context(viewport={"width": 1600, "height": 900})
             valeur = "dark" if theme == "sombre" else "light"
             ctx.add_init_script(f"try{{localStorage.setItem('ogias-ui-theme','{valeur}')}}catch(e){{}}")
@@ -65,13 +66,15 @@ def releve(url: str, sortie: Path) -> dict:
                 page.evaluate(f"location.hash='{route}'")
                 page.wait_for_load_state("networkidle")
                 time.sleep(0.9)
-                page.screenshot(path=str(sortie / "captures" / f"{nom}_{theme}.png"))
+                if captures:
+                    page.screenshot(path=str(sortie / "captures" / f"{nom}_{theme}.png"))
                 if theme == "clair":
                     registre[nom[3:]] = _commandes(page)
                 if nom == "03_equipements":                    # fiche d'un équipement : premier de l'arborescence
                     page.locator("[data-v]").nth(1).click()
                     time.sleep(0.8)
-                    page.screenshot(path=str(sortie / "captures" / f"03b_fiche_equipement_{theme}.png"))
+                    if captures:
+                        page.screenshot(path=str(sortie / "captures" / f"03b_fiche_equipement_{theme}.png"))
                     if theme == "clair":
                         registre["fiche_equipement"] = _commandes(page)
             ctx.close()
