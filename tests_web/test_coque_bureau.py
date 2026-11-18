@@ -240,3 +240,26 @@ class TestCoqueBureau(ServeurNavigateur):
         self.assertEqual(self.page.evaluate("['x-val','x-val-tout','es-export','es-detail-toggle'].map(i => document.querySelectorAll('#' + i).length)"),
                          [1, 1, 1, 1])
         self.assertEqual(self.projet.read_bytes(), avant)
+
+    def test_materiel_ruban_et_grille_de_proprietes(self):
+        """Lot 5c : commandes du Matériel au ruban (plus de barre « Autres actions »), propriétés de l'emplacement
+        sélectionné en grille, plus d'onglet « Contrôles » en double avec le panneau de sortie."""
+        points = self.api('/api/es')['points']
+        self.api('/api/es/valider', {'niveau': 'contenu', 'paires': [{'ident_eq': p['ident_eq'], 'cle': p['cle']} for p in points]})
+        self.api('/api/materiel/action', {'action': 'appliquer'})
+        self.api('/api/modules', {'action': 'implanter'})
+        avant = self.projet.read_bytes()
+        self.ouvrir('#/materiel')
+        self.titre('Matériel')
+        groupes = self.page.locator('#o-ruban [role="group"]').evaluate_all('g => g.map(x => x.getAttribute("aria-label"))')
+        self.assertEqual(groupes, ['Matériel', 'Voies des E/S', 'Livrables'])
+        self.assertEqual(self.page.locator('.v31-actions-more').count(), 0)
+        ids = ['m-calc', 'm-valider', 'm-cartes', 'm-impl', 'm-lib', 'x-val', 'x-val-tout', 'x-es-cartes', 'x-xl', 'x-ca', 'x-xsy', 'x-txt']
+        self.assertEqual(self.page.evaluate("ids => ids.map(i => document.querySelectorAll('#o-ruban #' + i).length)", ids), [1] * len(ids))
+        self.page.locator('.rack [data-carte]').first.click()
+        self.page.locator('[data-pt-onglet="props"]').click()
+        grille = self.page.locator('#pt-inspecteur .pt-props .o-grille')
+        self.assertIn('Référence', grille.inner_text())
+        self.assertEqual(grille.locator('details[open]').count(), 2)
+        self.assertEqual(self.page.locator('[data-pt-onglet="controles"]').count(), 0)
+        self.assertEqual(self.projet.read_bytes(), avant)

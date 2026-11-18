@@ -102,7 +102,7 @@ const V31 = (() => {
   // Les actions historiques encore disponibles sont redistribuées sans recréation de bouton.
   // La validation reste confiée à leurs événements/API et aux états disabled d'origine.
   const actionGroups={
-    materiel:{primary:['m-calc','m-valider','m-deval'],extra:['m-cartes','m-impl','x-val-tout','x-val','x-xl','x-ca','x-xsy','x-txt']},
+    // materiel : commandes au ruban de l'écran depuis la refonte (lot 5c, rubanMateriel dans app.js).
     adressage:{primary:['ad-recalc','ad-app','ad-val'],extra:['ad-res','ad-tpk']},
     recette:{primary:['r-dossier'],extra:['r-actualiser'],inPlace:true,bar:'.rc-hero-actions'},
     referentiel:{primary:['rf-creer','rf-ouvrir-b','rf-pub'],extra:['rf-hist','rf-exp','rf-voir-pub','rf-exp-b','rf-imp','rf-abandon'],inPlace:true}

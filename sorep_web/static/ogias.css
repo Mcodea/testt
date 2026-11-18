@@ -570,3 +570,10 @@ html[data-theme] .es-page > .titre .sous { font-size: var(--o-t-s); }
 /* Lignes denses du tableau des E/S, en-têtes fixes */
 html[data-theme] #vue table.t-es.o-tableau td { padding-block: 2px; height: var(--o-h-ligne); }
 html[data-theme] #vue table.t-es.o-tableau tbody tr.es-active td { background: var(--o-action-fond); }
+/* Matériel (5c) : titre de page allégé (titre déjà dans l'onglet), grille de propriétés dans l'inspecteur */
+html[data-theme] .poste-travail[data-poste="materiel"] #pt-editeur > .titre h1 { font-size: var(--o-t-l); margin: 0; }
+html[data-theme] #pt-inspecteur .pt-props { display: block; margin: 0; padding: 0; }
+html[data-theme] #pt-inspecteur .pt-props .o-grille { border-top: 0; }
+html[data-theme] #pt-inspecteur .pt-props :is(dt, dd) { margin: 0; }
+/* Exports vers Control Expert repérés par le trait de la cible (jeton de marque déjà défini) */
+html[data-theme] .o-ruban :is(#x-xsy, #x-txt) { box-shadow: inset 3px 0 0 var(--brand-schneider); border-left-color: var(--brand-schneider); }

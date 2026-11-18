@@ -2298,7 +2298,8 @@ function brancherListeES(pts, niveau) {
   document.querySelectorAll("#vue [data-f]").forEach(x => x.onclick = () => { E.filtreES = E.filtreES === x.dataset.f ? "" : x.dataset.f; vue(); });
   if ($("#x-tout")) $("#x-tout").onclick = () => { E.filtreES = ""; vue(); };
   const coches = () => [...document.querySelectorAll(".x-coche:checked")].map(x => d.points[+x.value]);
-  const maj = () => { const n = coches().length; $("#x-val").disabled = !n; $("#x-val").textContent = n ? `Valider la sélection (${n})` : "Valider la sélection"; };
+  const maj = () => { const n = coches().length, b = $("#x-val"), ic = b.querySelector(".o-ico"); b.disabled = !n;
+    b.textContent = n ? `Valider la sélection (${n})` : "Valider la sélection"; if (ic) b.prepend(ic); };
   document.querySelectorAll(".x-coche").forEach(x => { x.onchange = maj; x.onclick = ev => ev.stopPropagation(); });
   if ($("#x-coche-tout")) $("#x-coche-tout").onchange = ev => { document.querySelectorAll(".x-coche").forEach(x => x.checked = ev.target.checked); maj(); };
   $("#x-val").onclick = () => validerES(coches(), niveau);
@@ -2573,45 +2574,41 @@ function majSelectionMateriel() {
   document.querySelectorAll(".rack .emplacement.selection").forEach(x => x.classList.remove("selection"));
   if (el) el.classList.add("selection");
   const carte = el && el.dataset.carte ? d.modules.find(x => x.module === el.dataset.carte) : null;
-  const ligne = (k, v) => `<dt>${k}</dt><dd>${v}</dd>`;
+  const ligne = (k, v) => ({libelle: k, html: v});       // lot 5c : grille de propriétés (Composants.grille)
   let titre, props, actions = "";
   if (carte) {
     titre = `Carte ${esc(carte.module)} — ${esc(carte.reference)}`;
     const info = (m.cartes_catalogue || []).find(x => x.reference === carte.reference) || {};
-    props = ligne("Emplacement", `<span class="mono">${esc(carte.module)}</span>`) + ligne("Référence", `<span class="mono">${esc(carte.reference)}</span>`)
-      + ligne("Nature", `<span class="tag p-${carte.nature}">${carte.nature}</span> ${carte.voies} voies`) + (info.description ? ligne("Description", esc(info.description)) : "")
-      + ligne("Occupation", `${carte.occupees} / ${carte.voies} voies`) + ligne("Réserve", `${carte.reserve} voie(s) · ${Math.round(carte.taux * 100)} %${carte.sous_seuil && carte.occupees ? ' <span class="badge b-al">sous le seuil</span>' : ""}`);
+    props = [{titre: "Carte d'E/S", proprietes: [ligne("Emplacement", `<span class="mono">${esc(carte.module)}</span>`), ligne("Référence", `<span class="mono">${esc(carte.reference)}</span>`),
+      ligne("Nature", `<span class="tag p-${carte.nature}">${carte.nature}</span> ${carte.voies} voies`), ...(info.description ? [ligne("Description", esc(info.description))] : [])]},
+      {titre: "Occupation", proprietes: [ligne("Voies occupées", `${carte.occupees} / ${carte.voies}`), ligne("Réserve", `${carte.reserve} voie(s) · ${Math.round(carte.taux * 100)} %${carte.sous_seuil && carte.occupees ? ' <span class="badge b-al">sous le seuil</span>' : ""}`)]}];
     actions = `<button id="pt-carte">Modifier la carte…</button>`;
   } else if (el) {
     const role = el.dataset.role, ref = el.querySelector("b")?.textContent || "";
     const R = {alimentation: "Alimentation (emplacement CPS)", processeur: "Processeur", communication: "Module de communication", libre: "Emplacement libre"};
     titre = `Rack ${esc(cle.split(".")[0])} — ${role === "alimentation" ? "CPS" : "emplacement " + esc(cle.split(".")[1])}`;
-    props = ligne("Rôle", R[role] || role) + (role !== "libre" ? ligne("Module", `<span class="mono">${esc(ref)}</span>`) : "")
-      + ligne("Peut recevoir", role === "libre" ? "carte d'E/S ou module de communication" : role === "communication" ? "module de communication (remplacement) ou rien" : R[role]);
+    props = [{titre: "Emplacement", proprietes: [ligne("Rôle", R[role] || role), ...(role !== "libre" ? [ligne("Module", `<span class="mono">${esc(ref)}</span>`)] : []),
+      ligne("Peut recevoir", role === "libre" ? "carte d'E/S ou module de communication" : role === "communication" ? "module de communication (remplacement) ou rien" : R[role])]}];
     actions = `<button class="${role === "libre" ? "prim" : ""}" id="pt-modifier">${role === "libre" ? "Installer…" : "Changer…"}</button>`;
   } else {
     titre = "Rack";
     const racks = racksAffiches(m, d.modules);
-    props = ligne("Plateforme", esc(m.plateforme || "")) + ligne("Racks", racks.map(r => `<span class="mono">${esc(r.reference)}</span>`).join(", ") || "—")
-      + ligne("Cartes d'E/S", d.modules.length) + ligne("Matériel", m.materiel_valide ? '<span class="badge b-ok">validé</span>' : '<span class="badge b-al">à valider</span>');
+    props = [{titre: "Configuration", proprietes: [ligne("Plateforme", esc(m.plateforme || "")), ligne("Racks", racks.map(r => `<span class="mono">${esc(r.reference)}</span>`).join(", ") || "—"),
+      ligne("Cartes d'E/S", String(d.modules.length)), ligne("Matériel", m.materiel_valide ? '<span class="badge b-ok">validé</span>' : '<span class="badge b-al">à valider</span>')]}];
   }
   const v = carte ? voiesCarte(carte.module) : null;
-  const ancien = document.querySelector("#vue .parcours-points");
   let onglet = E.ongletInsp || "props";
-  if (onglet === "voies" && !v) onglet = "props";
+  if (onglet !== "props" && !v) onglet = "props";
   ins.innerHTML = `<div class="pt-tete"><div class="pt-onglets" role="tablist" aria-label="Inspecteur">
       <button role="tab" data-pt-onglet="props" aria-selected="${onglet === "props"}">Propriétés</button>
       ${v ? `<button role="tab" data-pt-onglet="voies" aria-selected="${onglet === "voies"}">Voies et E/S</button>` : ""}
-      <button role="tab" data-pt-onglet="controles" aria-selected="${onglet === "controles"}">Contrôles <span class="pt-compte"></span></button></div>
+      </div>
       <h2 class="pt-titre">${titre}</h2><div class="droite">${actions}</div></div>
     <div class="pt-corps">
-      <div data-pt-panneau="props" ${onglet === "props" ? "" : "hidden"}><dl class="pt-props">${props}</dl>
+      <div data-pt-panneau="props" ${onglet === "props" ? "" : "hidden"}><div class="pt-props">${Composants.grille(props)}</div>
         ${!el ? '<p class="pt-cat-aide">Sélectionnez un emplacement du rack pour voir ses propriétés et, pour une carte, ses voies.</p>' : ""}</div>
       ${v ? `<div data-pt-panneau="voies" ${onglet === "voies" ? "" : "hidden"}><p class="pt-resume">${v.resume}</p>${v.table}<div class="erreur-form"></div></div>` : ""}
-      <div data-pt-panneau="controles" id="pt-controles" ${onglet === "controles" ? "" : "hidden"}><p class="pt-cat-aide">Aucun point bloquant signalé pour cette étape.</p></div>
     </div>`;
-  if (ancien) ins.querySelector("#pt-controles").replaceChildren(ancien);
-  const n = ancien ? ancien.querySelectorAll("li").length : 0; ins.querySelector('[data-pt-onglet="controles"] .pt-compte').textContent = n || "";
   ins.querySelectorAll("[data-pt-onglet]").forEach(t => t.onclick = () => { E.ongletInsp = t.dataset.ptOnglet;
     ins.querySelectorAll("[data-pt-onglet]").forEach(x => x.setAttribute("aria-selected", String(x === t)));
     ins.querySelectorAll("[data-pt-panneau]").forEach(p => p.hidden = p.dataset.ptPanneau !== t.dataset.ptOnglet); });
@@ -2708,6 +2705,7 @@ function vueMateriel() {
   const besoins = prop ? prop.besoins.filter(x => x.es) : [];
   const s4w = m.plateforme === "S4W";
   const differe = prop && prop.applicable && d.modules.length && JSON.stringify(prop.modules.map(x => `${x.rack}.${x.position}:${x.reference}`)) !== JSON.stringify(d.modules.map(x => `${x.module}:${x.reference}`));
+  Coque.ruban(null);                      // lot 5c : retire les anciennes commandes avant de redessiner l'écran
   $("#vue").innerHTML = `<section class="contenu poste-travail" data-poste="materiel"><div class="poste-grille"><div class="poste-editeur" id="pt-editeur">
    <div class="titre"><div><h1>Matériel automate</h1><div class="sous">Proposé à partir des E/S validées, ${Math.round(m.reserve_min * 100)} % de réserve par carte · cliquez un emplacement du rack pour l'équiper</div></div>
      <div class="actions">${m.materiel_valide ? '<span class="badge b-ok grand">Matériel validé</span><button id="m-deval">Repasser à valider</button>'
@@ -2801,6 +2799,26 @@ function vueMateriel() {
   $("#x-ca").onclick = () => telecharger("cartes");
   $("#x-xsy").onclick = () => telecharger("es_xsy");
   $("#x-txt").onclick = () => telecharger("es_txt");
+  rubanMateriel();
+}
+/* Lot 5c : ruban de l'écran Matériel. Les commandes du titre, du bandeau, de l'onglet des voies et de celui des
+   livrables (avant : barre « Autres actions » et boutons dispersés) sont rangées par tâche. Boutons déplacés,
+   jamais recréés. Matériel pas encore calculé : pas de ruban, seul le cadre de démarrage s'affiche (13 h 40). */
+function rubanMateriel() {
+  if (document.querySelector("#vue .etat-vide")) return Coque.ruban(null);
+  const id = x => document.getElementById(x);
+  Coque.ruban([
+    {nom: "Matériel", commandes: [{el: id("m-calc"), icone: "carte", grand: true},
+      {el: id("m-valider"), icone: "valider", grand: true}, {el: id("m-deval"), icone: "valider", grand: true},
+      {el: id("m-cartes"), icone: "modifier", libelle: "Ajuster les cartes"}]},
+    {nom: "Voies des E/S", commandes: [{el: id("m-impl"), icone: "es", libelle: "Implanter les E/S sans voie"},
+      {el: id("m-lib"), icone: "supprimer", libelle: "Libérer les voies non validées"},
+      {el: id("x-val"), icone: "valider"}, {el: id("x-val-tout"), icone: "valider", libelle: "Valider les voies affichées"}]},
+    {nom: "Livrables", commandes: [{el: id("x-es-cartes"), icone: "importer", libelle: "E/S par carte (Excel)"},
+      {el: id("x-xl"), icone: "importer", libelle: "Liste d'E/S (Excel)"}, {el: id("x-ca"), icone: "importer", libelle: "Cartes d'E/S (Excel)"},
+      {el: id("x-xsy"), icone: "importer", libelle: "E/S Control Expert (XSY)"}, {el: id("x-txt"), icone: "importer", libelle: "E/S Control Expert (TXT)"}]}]);
+  document.querySelectorAll("#vue .boutons-ligne, #vue .bloc-tete .droite").forEach(x => {
+    if (!x.querySelector("button")) x.style.display = "none"; });
 }
 /* Import du référentiel depuis Excel : contrôle, aperçu des différences, application avec motif. */
 function modaleImportReferentiel() {

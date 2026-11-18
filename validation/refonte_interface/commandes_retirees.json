@@ -1,0 +1,6 @@
+{
+ "_explication": "Commandes du registre du lot 0 retirées VOLONTAIREMENT par la refonte. Chaque retrait indique où la fonction se retrouve : aucune fonction n'est perdue. L'essai tests_web/test_registre_commandes.py refuse toute autre disparition.",
+ "materiel": {
+  "[ptOnglet=controles]": "Lot 5c : l'onglet « Contrôles » de l'inspecteur répétait les points de contrôle de l'étape, désormais dans l'onglet « Contrôles » du panneau de sortie (lot 2b), visible sur tous les écrans."
+ }
+}

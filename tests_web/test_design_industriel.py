@@ -127,8 +127,10 @@ class TestDesignIndustriel(ServeurNavigateur):
             self.assertEqual(self.page.url, self.url + route)
         self.page.locator('#o-explorateur [data-nav="#/materiel"]').click()
         self.page.locator('#m-calc').wait_for()
-        self.page.locator('.v31-actions-more summary').click()
+        # Refonte, lot 5c : exports Control Expert au ruban de l'écran (groupe « Livrables »), toujours repérés
+        livrables = self.page.locator('#o-ruban [role="group"][aria-label="Livrables"]')
         for selector in ('#x-xsy', '#x-txt'):
+            self.assertEqual(livrables.locator(selector).count(), 1)
             self.assertTrue(self.page.locator(selector).is_visible())
             self.assertEqual(self.style(selector, 'borderLeftColor'), 'rgb(16, 185, 129)')
         self.assertEqual(project.read_bytes(), before)

@@ -228,8 +228,10 @@ class TestPosteDeTravailMateriel(ServeurNavigateur):
         self.page.locator('.emplacement.cpu[data-emplacement]').first.click()
         self.assertIn('Processeur', self.page.locator('#pt-inspecteur .pt-props').inner_text())
         self.assertEqual(self.page.locator('#modale').is_visible(), False, 'Un clic ne doit pas ouvrir de fenêtre')
-        self.page.locator('[data-pt-onglet="controles"]').click()
-        self.assertTrue(self.page.locator('#pt-controles').is_visible())
+        # Refonte, lot 5c : plus d'onglet « Contrôles » dans l'inspecteur ; les contrôles sont au panneau de sortie.
+        self.assertEqual(self.page.locator('[data-pt-onglet="controles"]').count(), 0)
+        self.page.locator('#o-sortie [data-o-sortie="controles"]').click()
+        self.assertTrue(self.page.locator('#o-sortie .parcours-points').is_visible())
         # Filtre du catalogue
         self.page.locator('#pt-cat-q').fill('NOE')
         visibles = [t for t in self.page.locator('.cat-item:visible b').all_text_contents()]
@@ -331,7 +333,7 @@ class TestDemarrageMateriel(ServeurNavigateur):
         self.page.goto(self.url + '#/materiel', wait_until='networkidle')
         carte = self.page.locator('.demarrage-materiel')
         carte.wait_for()
-        for s in ('#pt-catalogue', '#pt-inspecteur', '#onglets-mat', '.rack', '.v31-page-actions'):
+        for s in ('#pt-catalogue', '#pt-inspecteur', '#onglets-mat', '.rack', '.v31-page-actions', '#o-ruban'):
             self.assertFalse(self.page.locator(s).first.is_visible(), s)
         self.assertIn('non renseignée', carte.inner_text())
         # Audit du 16/11 : sans source d'acquisition, aucune gamme n'est supposée et le calcul est impossible.

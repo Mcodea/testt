@@ -5,6 +5,7 @@ Lance le serveur de démonstration FICTIF (outils/interface_demo.py), relève le
 validation/refonte_interface/lot0_avant/actions.json. Une commande déplacée (ruban, panneau de sortie) est retrouvée ;
 une commande disparue fait échouer l'essai.
 """
+import json
 import os
 from pathlib import Path
 import signal
@@ -20,6 +21,8 @@ sys.path.insert(0, str(RACINE / "outils"))
 from interface_releve import disparues, releve  # noqa: E402
 
 REFERENCE = RACINE / "validation" / "refonte_interface" / "lot0_avant" / "actions.json"
+# Retraits volontaires, chacun avec son motif et l'endroit où la fonction se retrouve.
+RETIREES = RACINE / "validation" / "refonte_interface" / "commandes_retirees.json"
 
 
 def arreter(processus):
@@ -60,7 +63,13 @@ class TestRegistreCommandes(unittest.TestCase):
                 self.assertTrue(url, "Le serveur de démonstration n'a pas démarré")
                 resultat = releve(url, dossier / "releve", captures=False)
                 self.assertEqual(resultat["erreurs_js"], [])
-                self.assertEqual(disparues(REFERENCE, dossier / "releve" / "actions.json"), {})
+                declarees = {k: v for k, v in json.loads(RETIREES.read_text(encoding="utf-8")).items() if not k.startswith("_")}
+                for ecran, commandes in declarees.items():
+                    for cle, motif in commandes.items():
+                        self.assertGreater(len(motif), 40, f"Motif du retrait de {cle} ({ecran}) trop court")
+                restantes = {e: [c for c in l if c not in declarees.get(e, {})]
+                             for e, l in disparues(REFERENCE, dossier / "releve" / "actions.json").items()}
+                self.assertEqual({e: l for e, l in restantes.items() if l}, {}, "Commande disparue sans retrait déclaré")
             finally:
                 arreter(serveur)
 
