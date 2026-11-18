@@ -196,7 +196,7 @@ body{grid-template-columns:188px minmax(0,1fr);grid-template-rows:auto auto minm
 #vue .v31-page-actions button,#vue .v31-actions-more summary{border:1px solid var(--v31-separator);border-radius:var(--radius-m);min-height:var(--control-h);height:auto;padding:5px 12px}
 #vue .v31-actions-menu{border:1px solid var(--v31-separator);border-radius:var(--radius-m);gap:2px;padding:6px;background:var(--v31-white)}
 /* Couleurs de plateforme seulement sur les cibles d'export identifiées */
-#vue #x-xsy,#vue #x-txt{border-left:3px solid var(--brand-schneider)}
+
 #vue #ad-tpk{border-left:3px solid var(--brand-topkapi)}
 #vue .v31-platform-sofrel{border-left:3px solid var(--brand-sofrel)!important}
 /* Fenêtres modales : fond opaque, bordure nette */

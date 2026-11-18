@@ -127,12 +127,12 @@ class TestDesignIndustriel(ServeurNavigateur):
             self.assertEqual(self.page.url, self.url + route)
         self.page.locator('#o-explorateur [data-nav="#/materiel"]').click()
         self.page.locator('#m-calc').wait_for()
-        # Refonte, lot 5c : exports Control Expert au ruban de l'écran (groupe « Livrables »), toujours repérés
-        livrables = self.page.locator('#o-ruban [role="group"][aria-label="Livrables"]')
-        for selector in ('#x-xsy', '#x-txt'):
-            self.assertEqual(livrables.locator(selector).count(), 1)
-            self.assertTrue(self.page.locator(selector).is_visible())
-            self.assertEqual(self.style(selector, 'borderLeftColor'), 'rgb(16, 185, 129)')
+        # Retour du 18/11 : les exports Control Expert se téléchargent dans Recette ; Matériel y renvoie
+        self.assertEqual(self.page.locator('#o-ruban [role="group"][aria-label="Livrables"] #m-livrables').count(), 1)
+        self.page.locator('#m-livrables').click()
+        self.page.wait_for_function('() => location.hash === "#/recette"')
+        for quoi in ('es_xsy', 'es_txt', 'cartes', 'es_cartes', 'liste_es'):
+            self.page.locator(f'[data-export="{quoi}"]').first.wait_for()
         self.assertEqual(project.read_bytes(), before)
 
     def test_cibles_sofrel_et_topkapi_sans_inventer_de_donnees(self):

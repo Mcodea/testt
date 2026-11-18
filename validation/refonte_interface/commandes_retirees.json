@@ -1,6 +1,11 @@
 {
  "_explication": "Commandes du registre du lot 0 retirées VOLONTAIREMENT par la refonte. Chaque retrait indique où la fonction se retrouve : aucune fonction n'est perdue. L'essai tests_web/test_registre_commandes.py refuse toute autre disparition.",
  "materiel": {
-  "[ptOnglet=controles]": "Lot 5c : l'onglet « Contrôles » de l'inspecteur répétait les points de contrôle de l'étape, désormais dans l'onglet « Contrôles » du panneau de sortie (lot 2b), visible sur tous les écrans."
+  "[ptOnglet=controles]": "Lot 5c : l'onglet « Contrôles » de l'inspecteur répétait les points de contrôle de l'étape, désormais dans l'onglet « Contrôles » du panneau de sortie (lot 2b), visible sur tous les écrans.",
+  "#x-es-cartes": "Retour du 18/11 : téléchargement déplacé dans Recette et livrables (seul endroit où l'on livre, après les contrôles) ; Matériel garde le bouton « Livrables » qui y mène.",
+  "#x-xl": "Retour du 18/11 : téléchargement déplacé dans Recette et livrables (seul endroit où l'on livre, après les contrôles) ; Matériel garde le bouton « Livrables » qui y mène.",
+  "#x-ca": "Retour du 18/11 : téléchargement déplacé dans Recette et livrables (seul endroit où l'on livre, après les contrôles) ; Matériel garde le bouton « Livrables » qui y mène.",
+  "#x-xsy": "Retour du 18/11 : téléchargement déplacé dans Recette et livrables (seul endroit où l'on livre, après les contrôles) ; Matériel garde le bouton « Livrables » qui y mène.",
+  "#x-txt": "Retour du 18/11 : téléchargement déplacé dans Recette et livrables (seul endroit où l'on livre, après les contrôles) ; Matériel garde le bouton « Livrables » qui y mène."
  }
 }

@@ -159,6 +159,8 @@ class TestInterfaceWeb(unittest.TestCase):
         self.assertTrue(all(p["adresse"].startswith("%I0.2.") for p in et))
         self.assertEqual(self.appel("/api/es/valider", {"paires": [{"ident_eq": p["ident_eq"], "cle": p["cle"]} for p in et]})[1]["n"], len(et))
         self.assertEqual(self.appel("/api/es/definir", {"ident_eq": et[0]["ident_eq"], "cle": et[0]["cle"], "sens": "1 = Ouverte"})[0], 200)
+        # Retour du 18/11 : « Cartes d'E/S » se télécharge dans Recette, prêt dès qu'une carte est déclarée
+        self.assertEqual(self.appel("/api/recette")[1]["livrables"]["cartes"]["pret"], True)
         for quoi in ("liste_es", "cartes"):
             with urllib.request.urlopen(self.url + "api/export?quoi=" + quoi) as rep:
                 self.assertEqual(rep.read(2), b"PK")

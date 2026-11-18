@@ -150,7 +150,7 @@ class TestRetours1611Parcours(ServeurNavigateur):
         self.page.locator('[data-onglet-mat="livrables"]').click()
         self.assertTrue(self.page.locator('#m-nomenclature').is_visible())
         # Toutes les commandes restent dans la page
-        for s in ('#m-impl', '#m-lib', '#x-q', '#x-xl', '#x-xsy', '#m-calc'):
+        for s in ('#m-impl', '#m-lib', '#x-q', '#m-livrables', '#m-calc'):
             self.assertEqual(self.page.locator(s).count(), 1, s)
         # La prochaine action déclenche la commande existante (ici : implanter les E/S sans voie)
         if self.page.locator('#pa-bouton').inner_text() == 'Implanter les E/S':

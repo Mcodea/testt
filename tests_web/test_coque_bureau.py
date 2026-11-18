@@ -254,7 +254,7 @@ class TestCoqueBureau(ServeurNavigateur):
         groupes = self.page.locator('#o-ruban [role="group"]').evaluate_all('g => g.map(x => x.getAttribute("aria-label"))')
         self.assertEqual(groupes, ['Matériel', 'Voies des E/S', 'Livrables'])
         self.assertEqual(self.page.locator('.v31-actions-more').count(), 0)
-        ids = ['m-calc', 'm-valider', 'm-cartes', 'm-impl', 'm-lib', 'x-val', 'x-val-tout', 'x-es-cartes', 'x-xl', 'x-ca', 'x-xsy', 'x-txt']
+        ids = ['m-calc', 'm-valider', 'm-cartes', 'm-impl', 'm-lib', 'x-val', 'x-val-tout', 'm-livrables']
         self.assertEqual(self.page.evaluate("ids => ids.map(i => document.querySelectorAll('#o-ruban #' + i).length)", ids), [1] * len(ids))
         self.page.locator('.rack [data-carte]').first.click()
         self.page.locator('[data-pt-onglet="props"]').click()

@@ -983,6 +983,7 @@ class Application:
         poser("es_cartes", "Aucune carte d'E/S : calculez le matériel." if not o.modules
               else f"{len(err_mat)} incohérence(s) de cartes ou de voies." if err_mat else "")
         poser("liste_es", "" if cables else "Aucune E/S câblée.")
+        poser("cartes", "" if o.modules else "Aucune carte d'E/S : calculez le matériel.")
         poser("nomenclature", "" if o.racks or o.modules else "Matériel non calculé.")
         etat["sofrel_configure"] = gamme == "S4W"
         etat["gamme"] = gamme

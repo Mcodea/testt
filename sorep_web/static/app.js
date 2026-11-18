@@ -564,6 +564,7 @@ const LIVRABLES = [
   {groupe: "documents", titre: "Documents", icone: "clipboard", sous: "Formats d'études, pour les échanges avec les autres entreprises", cartes: [
     {titre: "Liste des entrées / sorties", texte: "Architecture des racks, une feuille par carte, colonne de validation SAT.", formats: [["XLSX", "es_cartes"]], second: ["Tableau de travail (une ligne par E/S)", "liste_es"]},
     {titre: "Table de télétransmission", texte: "Repère, famille, adresse, registre Modbus, alarme et priorité, libellés automate et TOPKAPI.", formats: [["XLSX", "tele_etudes"]]},
+    {titre: "Cartes d'E/S", texte: "Un onglet par carte, une ligne par voie, voies libres en réserve ; colonne de validation à remplir à la recette.", formats: [["XLSX", "cartes"]]},
     {titre: "Nomenclature", texte: "Configuration matérielle : références, quantités et rôles, à confirmer à la commande.", formats: [["XLSX", "nomenclature"]]}]}];
 function vueRecette() {
   const d = E.detailEtape, f = E.filtreRecette || "", L = d.livrables || {};
@@ -2759,10 +2760,9 @@ function vueMateriel() {
    </div></div>
    <div class="panneau-mat" id="panneau-mat-livrables" data-panneau-mat="livrables" role="tabpanel" aria-labelledby="onglet-mat-livrables">
    ${blocNomenclature(m) || '<div class="bloc"><div class="vide-bloc">La nomenclature de commande apparaît une fois le matériel calculé.</div></div>'}
-   <div class="bloc livrables"><div class="bloc-tete"><h2>Livrables matériel</h2><span class="aide">XSY et TXT au format des exports Control Expert V14.1 fournis : import dans Control Expert à essayer</span></div>
-     <div class="boutons-ligne"><button id="x-es-cartes" data-export="es_cartes" ${rien ? "disabled" : ""}>E/S par carte (Excel)</button><button id="x-xl" ${cables.length ? "" : "disabled"}>Liste d'E/S (Excel)</button><button id="x-ca" ${rien ? "disabled" : ""}>Cartes d'E/S (Excel)</button>
-     <button id="x-xsy" ${places.length ? "" : "disabled"} title="Format de l'export des variables de Control Expert V14.1, voies de réserve comprises">E/S pour Control Expert (XSY)</button><button id="x-txt" ${places.length ? "" : "disabled"}>E/S pour Control Expert (TXT)</button>
-     <span class="aide">${places.length < cables.length ? `${cables.length - places.length} E/S n'ont pas encore de voie : elles figureront sans adresse.` : "Toutes les E/S câblées ont une voie."}</span></div></div></div>
+   <div class="bloc livrables"><div class="bloc-tete"><h2>Livrables matériel</h2></div>
+     <div class="boutons-ligne"><button id="m-livrables" type="button" data-nav="#/recette">Ouvrir les livrables (Recette)</button>
+     <span class="aide">Les fichiers (E/S par carte, liste d'E/S, cartes d'E/S, exports Control Expert) se téléchargent dans Recette et livrables, après les contrôles de la livraison.${places.length < cables.length ? ` ${cables.length - places.length} E/S n'ont pas encore de voie : elles y figureront sans adresse.` : ""}</span></div></div></div>
   </div>
   <aside class="poste-catalogue" id="pt-catalogue" aria-label="Catalogue matériel"></aside>
   <div class="poste-inspecteur" id="pt-inspecteur" aria-label="Inspecteur"></div></div>
@@ -2794,15 +2794,13 @@ function vueMateriel() {
   liaisonsComposition();
   posteMateriel();
   if (rien && (["M340", "M580"].includes(m.plateforme) || !m.automate)) demarrageMateriel({m, d, prop, cables});
-  $("#x-xl").onclick = () => telecharger("liste_es");
-  $("#x-es-cartes").onclick = () => telecharger("es_cartes");
-  $("#x-ca").onclick = () => telecharger("cartes");
-  $("#x-xsy").onclick = () => telecharger("es_xsy");
-  $("#x-txt").onclick = () => telecharger("es_txt");
+  // Retour du 18/11 (16 h 21) : les téléchargements sont dans Recette et livrables, seul endroit où l'on livre.
+  $("#m-livrables").onclick = () => { location.hash = "#/recette"; };
   rubanMateriel();
 }
 /* Lot 5c : ruban de l'écran Matériel. Les commandes du titre, du bandeau, de l'onglet des voies et de celui des
-   livrables (avant : barre « Autres actions » et boutons dispersés) sont rangées par tâche. Boutons déplacés,
+   livrables (avant : barre « Autres actions » et boutons dispersés) sont rangées par tâche. Les téléchargements
+   sont dans Recette (retour du 18/11) : le groupe « Livrables » n'y renvoie que. Boutons déplacés,
    jamais recréés. Matériel pas encore calculé : pas de ruban, seul le cadre de démarrage s'affiche (13 h 40). */
 function rubanMateriel() {
   if (document.querySelector("#vue .etat-vide")) return Coque.ruban(null);
@@ -2814,9 +2812,7 @@ function rubanMateriel() {
     {nom: "Voies des E/S", commandes: [{el: id("m-impl"), icone: "es", libelle: "Implanter les E/S sans voie"},
       {el: id("m-lib"), icone: "supprimer", libelle: "Libérer les voies non validées"},
       {el: id("x-val"), icone: "valider"}, {el: id("x-val-tout"), icone: "valider", libelle: "Valider les voies affichées"}]},
-    {nom: "Livrables", commandes: [{el: id("x-es-cartes"), icone: "importer", libelle: "E/S par carte (Excel)"},
-      {el: id("x-xl"), icone: "importer", libelle: "Liste d'E/S (Excel)"}, {el: id("x-ca"), icone: "importer", libelle: "Cartes d'E/S (Excel)"},
-      {el: id("x-xsy"), icone: "importer", libelle: "E/S Control Expert (XSY)"}, {el: id("x-txt"), icone: "importer", libelle: "E/S Control Expert (TXT)"}]}]);
+    {nom: "Livrables", commandes: [{el: id("m-livrables"), icone: "recette", grand: true, libelle: "Livrables"}]}]);
   document.querySelectorAll("#vue .boutons-ligne, #vue .bloc-tete .droite").forEach(x => {
     if (!x.querySelector("button")) x.style.display = "none"; });
 }

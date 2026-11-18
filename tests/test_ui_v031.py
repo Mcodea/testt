@@ -42,7 +42,7 @@ def test_old_business_buttons_are_moved_not_cloned() -> None:
     # Refonte, lot 5 : les écrans refaits rangent leurs boutons au ruban (déplacés par Coque.ruban, jamais clonés).
     app = (STATIC / 'app.js').read_text(encoding='utf-8')
     coque = (STATIC / 'ogias-coque.js').read_text(encoding='utf-8')
-    for button_id in ('x-val-tout', 'x-val', 'es-export', 'b-eq', 'e-val', 'm-calc', 'm-valider', 'x-xsy'):
+    for button_id in ('x-val-tout', 'x-val', 'es-export', 'b-eq', 'e-val', 'm-calc', 'm-valider', 'm-livrables'):
         assert f'id("{button_id}")' in app or f'fiche("{button_id}")' in app
     assert 'cmds.append(el)' in coque and 'cloneNode' not in coque
     assert '.v31-page-actions .v30-source-command' in css

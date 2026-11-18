@@ -575,5 +575,3 @@ html[data-theme] .poste-travail[data-poste="materiel"] #pt-editeur > .titre h1 {
 html[data-theme] #pt-inspecteur .pt-props { display: block; margin: 0; padding: 0; }
 html[data-theme] #pt-inspecteur .pt-props .o-grille { border-top: 0; }
 html[data-theme] #pt-inspecteur .pt-props :is(dt, dd) { margin: 0; }
-/* Exports vers Control Expert repérés par le trait de la cible (jeton de marque déjà défini) */
-html[data-theme] .o-ruban :is(#x-xsy, #x-txt) { box-shadow: inset 3px 0 0 var(--brand-schneider); border-left-color: var(--brand-schneider); }
