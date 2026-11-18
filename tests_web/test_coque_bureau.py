@@ -147,3 +147,31 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.locator('#o-sortie [data-o-sortie="controles"]').click()
         self.assertIn('Aucun contrôle', self.page.locator('#o-sortie [data-o-sortie-panneau="controles"]').inner_text())
         self.assertEqual(self.projet.read_bytes(), avant)
+
+    def test_fil_de_l_information(self):
+        """Lot 4 : fil de l'équipement sélectionné ; chaque maillon mène à l'écran filtré sur l'équipement."""
+        avant = self.projet.read_bytes()
+        self.ouvrir('#/inventaire')
+        self.assertTrue(self.page.locator('#o-fil').is_hidden(), 'Pas de fil sans équipement sélectionné')
+        self.page.locator('#vue [data-v]', has_text='HV01').first.click()
+        fil = self.page.locator('#o-fil')
+        fil.wait_for()
+        self.assertTrue(self.page.locator('#o-fil .o-fil-titre .mono').inner_text().endswith('HV01'))
+        maillons = fil.locator('[data-o-maillon]')
+        self.assertEqual([m.get_attribute('data-o-maillon') for m in maillons.all()],
+                         ['equipement', 'es', 'carte', 'variables', 'supervision'])
+        self.assertEqual(fil.locator('[aria-current="true"]').get_attribute('data-o-maillon'), 'equipement')
+        self.assertIn('ok', fil.locator('[data-o-maillon="equipement"]').get_attribute('class'))
+        # Maillon E/S : liste des E/S filtrée sur l'équipement
+        repere = self.page.evaluate("document.querySelector('#o-fil .o-fil-titre .mono').textContent")
+        fil.locator('[data-o-maillon="es"]').click()
+        self.titre('Liste des E/S')
+        self.assertEqual(self.page.locator('#x-equip').input_value(), repere)
+        # Maillon Variables (depuis la fiche) : variables de l'équipement seulement
+        self.page.locator('#o-explorateur [data-nav="#/inventaire"]').click()
+        self.page.locator('#vue [data-v]', has_text='HV01').first.click()
+        self.page.locator('#o-fil [data-o-maillon="variables"]').click()
+        self.titre('Variables')
+        noms = self.page.locator('.v31-variable-row').evaluate_all('rs => rs.map(r => r.dataset.variable)')
+        self.assertTrue(noms and all('HV01' in n for n in noms), noms)
+        self.assertEqual(self.projet.read_bytes(), avant)

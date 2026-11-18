@@ -241,16 +241,17 @@ html[data-theme] * { scrollbar-width: thin; scrollbar-color: var(--o-ligne-forte
 html[data-theme] body.o-coque {
   display: grid;
   grid-template-columns: var(--o-l-explorateur) minmax(0, 1fr);
-  grid-template-rows: var(--o-h-titre) var(--o-h-documents) minmax(0, 1fr) auto var(--o-h-etat);
+  grid-template-rows: var(--o-h-titre) var(--o-h-documents) auto minmax(0, 1fr) auto var(--o-h-etat);
   gap: 0;
 }
 html[data-theme] body.o-coque.o-sans-explorateur { grid-template-columns: 0 minmax(0, 1fr); }
 body.o-coque #o-titre { grid-column: 1 / -1; grid-row: 1; }
-body.o-coque #o-explorateur { grid-column: 1; grid-row: 2 / 5; }
-body.o-coque #o-sortie { grid-column: 2; grid-row: 4; }
+body.o-coque #o-explorateur { grid-column: 1; grid-row: 2 / 6; }
+body.o-coque #o-fil { grid-column: 2; grid-row: 3; }
+body.o-coque #o-sortie { grid-column: 2; grid-row: 5; }
 body.o-coque #o-documents { grid-column: 2; grid-row: 2; }
-body.o-coque #v30-workspace { grid-column: 2; grid-row: 3; }
-body.o-coque #v30-status.v30-status { grid-column: 1 / -1; grid-row: 5; }
+body.o-coque #v30-workspace { grid-column: 2; grid-row: 4; }
+body.o-coque #v30-status.v30-status { grid-column: 1 / -1; grid-row: 6; }
 
 /* ---------------------------------------------------------------- barre de titre */
 .o-titre {
@@ -484,3 +485,40 @@ table.o-tableau tr.o-filtres input {
 .o-raccourcis dl > div { display: grid; grid-template-columns: 220px 1fr; gap: var(--o-e-3); padding: 3px 0; border-bottom: 1px solid var(--o-ligne); }
 .o-raccourcis dt, .o-raccourcis dd { margin: 0; }
 .o-raccourcis kbd { font-family: var(--o-mono); font-size: var(--o-t-xs); padding: 1px 5px; border: 1px solid var(--o-ligne-forte); border-radius: var(--o-r-s); background: var(--o-surface-2); }
+
+/* =====================================================================================================
+   Identité (lot 4) : fil de l'information et symboles OGIAS.
+   ===================================================================================================== */
+.o-fil {
+  display: flex; align-items: center; gap: 0; min-width: 0; padding: 6px var(--o-e-3);
+  background: var(--o-surface); border-bottom: 1px solid var(--o-ligne); overflow-x: auto; scrollbar-width: none;
+}
+.o-fil[hidden] { display: none; }
+.o-fil-titre { display: flex; align-items: center; gap: var(--o-e-2); flex: none; padding-right: var(--o-e-3); color: var(--o-action); }
+.o-fil-titre .mono { color: var(--o-texte); font-size: var(--o-t-m); }
+.o-maillon {
+  display: flex; align-items: center; gap: var(--o-e-2); flex: none; min-height: 36px; padding: 2px var(--o-e-2) 2px 4px;
+  border: 1px solid transparent; border-radius: var(--o-r-m); background: none; color: var(--o-texte); font: inherit;
+  text-align: left; cursor: pointer;
+}
+.o-maillon:hover { background: var(--o-surface-3); }
+.o-maillon.cur { border-color: var(--o-action-plein); background: var(--o-action-fond); }
+.o-maillon-sym {
+  display: grid; place-items: center; width: 26px; height: 26px; border-radius: var(--o-r-m); flex: none;
+  border: 1.5px solid var(--o-ligne-forte); color: var(--o-texte-2); background: var(--o-surface);
+}
+.o-maillon.ok .o-maillon-sym { border-color: var(--o-ok-filet); color: var(--o-ok); }
+.o-maillon.al .o-maillon-sym { border-color: var(--o-alerte-filet); color: var(--o-alerte); }
+.o-maillon.cur .o-maillon-sym { border-color: var(--o-action-plein); background: var(--o-action-plein); color: var(--o-sur-action); }
+.o-maillon-txt b { display: block; font-size: var(--o-t-s); font-weight: 600; white-space: nowrap; }
+.o-maillon-txt small { display: block; font-size: var(--o-t-xs); color: var(--o-texte-2); white-space: nowrap; }
+.o-maillon.ok small { color: var(--o-ok); }
+.o-maillon.al small { color: var(--o-alerte); }
+/* Le lien entre deux maillons : le trait du logo (nœud – bloc – nœud) */
+.o-fil-lien { flex: 1 1 16px; min-width: 12px; max-width: 64px; height: 2px; margin: 0 2px; background: var(--o-ligne-forte); }
+.o-fil-note { margin-left: var(--o-e-3); color: var(--o-texte-2); font-size: var(--o-t-s); }
+/* Symboles dans le parcours et les onglets */
+.o-etape > .o-ico { color: var(--o-texte-2); flex: none; }
+.o-etape.on > .o-ico { color: var(--o-action); }
+.o-onglet > .o-ico { color: var(--o-texte-2); flex: none; }
+.o-onglet.on > .o-ico { color: var(--o-action); }

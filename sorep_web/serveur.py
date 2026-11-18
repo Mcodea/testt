@@ -693,6 +693,80 @@ class Application:
         plan = self.s.plan_adressage()
         return {(a.ident_eq, a.cle): a for a in plan.affectations if a.niveau == niveau}
 
+    @staticmethod
+    def _plages_voies(voies):
+        """[0, 1, 2, 5] → « 0 à 2, 5 » : voies d'une carte en plages contiguës."""
+        nums = sorted({int(v) for v in voies if str(v).isdigit()})
+        plages, debut = [], None
+        for i, n in enumerate(nums):
+            if debut is None:
+                debut = n
+            if i + 1 == len(nums) or nums[i + 1] != n + 1:
+                plages.append(f"{debut}" if debut == n else f"{debut} à {n}")
+                debut = None
+        return ", ".join(plages)
+
+    def fil_web(self, q):
+        """Fil de l'information d'un équipement (refonte, lot 4) : son état à chaque maillon de la chaîne
+        équipement → E/S physiques → carte et voies → variables → supervision. Lecture seule ; aucun calcul
+        d'adressage n'est lancé (seules les adresses posées et validées sont comptées)."""
+        if not self.ouvert:
+            raise RegleMetier("Ouvrez d'abord un ouvrage.")
+        o = self.s.ouvrage
+        eq = o.equipement(str(q.get("ident", "")))
+        if eq is None:
+            raise RegleMetier("Équipement introuvable.")
+        repere = o.repere(eq)
+        sortie: dict[str, Any] = {"ident": eq.ident, "repere": repere, "nom_court": o.repere_nom(eq), "mode": o.mode}
+        sortie["equipement"] = {"etat": "ok" if eq.valide else "al",
+                                "titre": f"Équipement {eq.code_court()}",
+                                "detail": "paramétrage validé" if eq.valide else "paramétrage à valider"}
+        if o.mode != "Neuf":
+            sortie["note"] = "Projet existant : le fil se lit dans le programme en place."
+            return sortie
+        pts = [p for p in self.s.liste_es() if p.ident_eq == eq.ident] if eq.valide else []
+        cables = [p for p in pts if p.raccordement != "Communication"]
+        a_valider = sum(1 for p in pts if not p.contenu_valide)
+        if not eq.valide:
+            es = {"etat": "", "titre": "E/S physiques", "detail": "après validation de l'équipement"}
+        elif not pts:
+            es = {"etat": "", "titre": "Aucune E/S", "detail": "équipement sans E/S physique"}
+        else:
+            es = {"etat": "al" if a_valider else "ok", "titre": f"{len(pts)} E/S physique{'s' if len(pts) > 1 else ''}",
+                  "detail": f"{a_valider} à valider" if a_valider else "contenu validé"}
+        sortie["es"] = es
+        par_carte: dict[str, list] = {}
+        for p in cables:
+            if p.adresse:
+                par_carte.setdefault(p.module or "?", []).append(p.voie)
+        sans_voie = sum(1 for p in cables if not p.adresse)
+        non_validees = sum(1 for p in cables if p.adresse and not p.validee)
+        if not cables:
+            carte = {"etat": "", "titre": "Carte et voies", "detail": "aucune E/S câblée"}
+        else:
+            titre = (f"Carte {next(iter(par_carte))} · voie{'s' if len(cables) > 1 else ''} "
+                     f"{self._plages_voies(next(iter(par_carte.values())))}" if len(par_carte) == 1
+                     else f"{len(par_carte)} cartes · {sum(len(v) for v in par_carte.values())} voies" if par_carte
+                     else "Carte et voies")
+            carte = {"etat": "al" if sans_voie or non_validees else "ok", "titre": titre,
+                     "detail": (f"{sans_voie} E/S sans voie" if sans_voie else
+                                f"{non_validees} voie(s) à valider" if non_validees else "voies validées")}
+        sortie["carte"] = carte
+        variables = [v for v in self.s.variables() if v.ident_eq == eq.ident] if eq.valide else []
+        validees = sum(1 for v in variables if v.adresse and v.adresse_validee)
+        if not variables:
+            var = {"etat": "", "titre": "Variables", "detail": "aucune variable" if eq.valide else "après validation"}
+        else:
+            var = {"etat": "ok" if validees == len(variables) else "al",
+                   "titre": f"{len(variables)} variable{'s' if len(variables) > 1 else ''}",
+                   "detail": "adresses validées" if validees == len(variables)
+                   else f"{len(variables) - validees} adresse(s) à valider"}
+        sortie["variables"] = var
+        libelles = sum(1 for v in variables if v.libelle_topkapi)
+        sortie["supervision"] = {"etat": "", "titre": "Supervision",
+                                 "detail": f"{libelles} libellé{'s' if libelles > 1 else ''}" if libelles else "aucun libellé"}
+        return sortie
+
     def variables_web(self, _):
         if not self.ouvert:
             raise RegleMetier("Ouvrez d'abord un ouvrage.")
@@ -1534,7 +1608,7 @@ ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle":
               "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre",
               "/api/es": "es", "/api/numero-ouvrage": "numero_ouvrage_suggere",
               "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page",
-              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web",
+              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web",
               "/api/referentiel/synchronisation": "synchronisation_referentiel", "/api/ouvrage/copies": "copies_ouvrage",
               "/api/referentiel/impact": "rapport_impact", "/api/referentiel/propagation": "apercu_propagation",
               "/api/referentiel/apercu-modele": "apercu_modele"}

@@ -757,7 +757,7 @@ function arbre() {
 }
 
 /* ------------------------------------------------------------------ ouvrage : détail */
-async function contenu() { await contenuDetail(); piedEtape(); }
+async function contenu() { await contenuDetail(); piedEtape(); if (typeof Coque !== "undefined") Coque.majFil(); }
 async function contenuDetail() {
   const c = $("#contenu"), s = E.sel;
   if (s.nature === "eq" && eqParIdent(s.valeur)) {

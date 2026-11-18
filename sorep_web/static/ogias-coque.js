@@ -16,6 +16,14 @@ const Coque = (() => {
   coche: '<path d="m6 12 4 4 8-8"/>',
   replier: '<path d="m15 6-6 6 6 6"/>',
   bas: '<path d="m6 9 6 6 6-6"/>',
+  // Symboles OGIAS des maillons du fil de l'information (lot 4), dérivés du motif du logo : nœud – bloc – nœud.
+  fil: '<circle cx="4" cy="12" r="2.5"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><circle cx="20" cy="12" r="2.5"/><path d="M6.5 12h3M14.5 12h3"/>',
+  equipement: '<rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="12" cy="12" r="4"/><path d="M12 8v-4"/>',
+  es: '<circle cx="3.5" cy="12" r="1.5"/><path d="M5 12h4"/><rect x="9" y="6" width="12" height="12" rx="2"/><path d="M13 10v4M17 10v4"/>',
+  carte: '<rect x="5" y="3" width="14" height="15" rx="1.5"/><path d="M8 18v3M12 18v3M16 18v3M8 7.5h8M8 11.5h5"/>',
+  variable: '<path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/><path d="M9 12h6M12 9v6"/>',
+  supervision: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/><path d="m6.5 12 3-3 2.5 2 5-4.5"/>',
+  recette: '<path d="M9 4h6v3H9z"/><path d="M9 5.5H6a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6.5a1 1 0 0 0-1-1h-3"/><path d="m8.5 14 2.5 2.5 4.5-5"/>',
   alerte: '<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/>',
   erreur: '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
@@ -23,6 +31,9 @@ const Coque = (() => {
  const ico = (nom, t = 16) => `<svg class="o-ico" width="${t}" height="${t}" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${TRACES[nom] || ""}</svg>`;
  const ETAPES_PARCOURS = [["ouvrage", "Équipements", "#/inventaire"], ["es", "Liste des E/S", "#/es"],
    ["materiel", "Matériel", "#/materiel"], ["variables", "Variables", "#/variables"], ["recette", "Recette", "#/recette"]];
+ const SYMBOLE_ETAPE = {ouvrage: "equipement", es: "es", materiel: "carte", variables: "variable", recette: "recette"};
+ const SYMBOLE_ROUTE = {"#/ouvrages": "dossier", "#/dashboard": "bord", "#/inventaire": "equipement", "#/es": "es",
+   "#/materiel": "carte", "#/variables": "variable", "#/recette": "recette", "#/referentiel": "referentiel"};
  const TITRES_ROUTE = {"#/ouvrages": "Mes ouvrages", "#/dashboard": "Tableau de bord", "#/inventaire": "Équipements",
    "#/es": "Liste des E/S", "#/materiel": "Matériel", "#/variables": "Variables", "#/recette": "Recette",
    "#/referentiel": "Référentiel métier"};
@@ -105,6 +116,12 @@ const Coque = (() => {
   const zone = document.getElementById("v30-workspace");
   zone.parentNode.insertBefore(docs, zone);
 
+  // Fil de l'information (lot 4) : chaîne de l'équipement sélectionné, sous les onglets de documents.
+  const fil = document.createElement("nav");
+  fil.id = "o-fil"; fil.className = "o-fil"; fil.hidden = true;
+  docs.after(fil);
+  fil.addEventListener("click", ev => { const m = ev.target.closest("[data-o-maillon]"); if (m) allerMaillon(m.dataset.oMaillon); });
+
   // Panneau de sortie (lot 2b) : contrôles de l'étape et journal des messages, sous la zone de travail.
   const sortie = document.createElement("section");
   sortie.id = "o-sortie"; sortie.className = "o-sortie"; sortie.setAttribute("aria-label", "Panneau de sortie");
@@ -172,6 +189,49 @@ const Coque = (() => {
   document.body.classList.toggle("o-sans-explorateur", !etat.explorateur);
  }
 
+ // ------------------------------------------------------------------ fil de l'information (lot 4)
+ const MAILLONS = [["equipement", "equipement", "Équipement"], ["es", "es", "E/S physiques"], ["carte", "carte", "Carte et voies"],
+   ["variables", "variable", "Variables"], ["supervision", "supervision", "Supervision"]];
+ const MAILLON_VUE = {ouvrage: "equipement", es: "es", materiel: "carte", variables: "variables", supervision: "variables", adressage: "variables"};
+ let jetonFil = 0, filCourant = null;
+ /** Équipement dont on affiche le fil : sélection de l'arborescence (Équipements) ou variable ouverte (Variables). */
+ function identFil(E) {
+  if (!E.ouvrage?.ouvert || E.ouvrage?.en_conception) return "";
+  if (E.vue === "ouvrage" && E.sel?.nature === "eq") return E.sel.valeur || "";
+  if (["variables", "supervision", "adressage"].includes(E.vue) && E.v31VarDetail && E.v31Selected)
+   return (E.detailEtape?.lignes || []).find(x => x.nom === E.v31Selected)?.ident_eq || "";
+  return "";
+ }
+ async function majFil() {
+  const el = document.getElementById("o-fil");
+  if (!el) return;
+  const ident = identFil(E), j = ++jetonFil;
+  if (!ident) { el.hidden = true; filCourant = null; return; }
+  let f;
+  try { f = await api(`/api/fil?ident=${encodeURIComponent(ident)}`); } catch (e) { if (j === jetonFil) el.hidden = true; return; }
+  if (j !== jetonFil) return;                               // une sélection plus récente a pris le relais
+  filCourant = f;
+  const courant = MAILLON_VUE[E.vue];
+  el.setAttribute("aria-label", `Fil de l'information de ${f.repere}`);
+  el.innerHTML = `<span class="o-fil-titre">${ico("fil", 16)}<span class="mono">${esc(f.repere)}</span></span>`
+   + MAILLONS.filter(([cle]) => f[cle]).map(([cle, symbole, nom], i) => {
+     const m = f[cle];
+     return `${i ? '<span class="o-fil-lien" aria-hidden="true"></span>' : ""}<button type="button" class="o-maillon ${m.etat} ${courant === cle ? "cur" : ""}"
+       data-o-maillon="${cle}" ${courant === cle ? 'aria-current="true"' : ""} title="${esc(nom)} : ${esc(m.detail)} — ouvrir">
+       <span class="o-maillon-sym">${ico(symbole, 16)}</span><span class="o-maillon-txt"><b>${esc(m.titre)}</b><small>${esc(m.detail)}</small></span></button>`;
+   }).join("") + (f.note ? `<span class="o-fil-note">${esc(f.note)}</span>` : "");
+  el.hidden = false;
+ }
+ function allerMaillon(cle) {
+  const f = filCourant;
+  if (!f) return;
+  if (cle === "equipement") return allerOuvrage({nature: "eq", valeur: f.ident});
+  if (cle === "es") { E.esEquip = f.repere; E.esUF = ""; E.filtreES = ""; return naviguer("#/es"); }
+  if (cle === "carte") { E.rechercheES = f.repere; return naviguer("#/materiel"); }
+  E.v31Query = f.nom_court; E.v31Page = 0; E.v31Status = "";       // variables et supervision : variables de l'équipement
+  naviguer("#/variables");
+ }
+
  // ------------------------------------------------------------------ panneau de sortie
  function plierSortie() {
   etat.sortieOuverte = !etat.sortieOuverte;
@@ -234,7 +294,7 @@ const Coque = (() => {
      const s = etatEtape(v, o), cur = vueEtape(E.vue) === v;
      const cls = s === "validée" ? "ok" : s === "en cours" ? "al" : "";
      return `<li><a href="${route}" data-nav="${route}" class="o-etape ${cur ? "on" : ""}" ${cur ? 'aria-current="step"' : ""} title="${esc(lib)} : ${esc(s)}">
-       <span class="o-pastille ${cls}">${s === "validée" ? ico("coche", 12) : i + 1}</span><span class="o-etape-lib">${esc(lib)}</span><small>${esc(comptes[v] || s)}</small></a></li>`;
+       <span class="o-pastille ${cls}">${s === "validée" ? ico("coche", 12) : i + 1}</span>${ico(SYMBOLE_ETAPE[v], 14)}<span class="o-etape-lib">${esc(lib)}</span><small>${esc(comptes[v] || s)}</small></a></li>`;
    }).join("")}</ol>`;
   }
   el.innerHTML = `<div class="o-panneau-tete">Explorateur<button type="button" class="o-replier" title="Masquer l'explorateur (Ctrl B)" aria-label="Masquer l'explorateur">${ico("replier", 14)}</button></div>
@@ -254,7 +314,7 @@ const Coque = (() => {
   document.querySelector("#o-documents .o-onglets").innerHTML = etat.documents.map(r => {
    const on = r === route;
    return `<div class="o-onglet ${on ? "on" : ""}" role="tab" aria-selected="${on}">
-     ${on ? `<h1 id="v31-title">${esc(titre(r))}</h1>` : `<a href="${r}" data-nav="${r}">${esc(titre(r))}</a>`}
+     ${ico(SYMBOLE_ROUTE[r] || "dossier", 14)}${on ? `<h1 id="v31-title">${esc(titre(r))}</h1>` : `<a href="${r}" data-nav="${r}">${esc(titre(r))}</a>`}
      ${etat.documents.length > 1 ? `<button type="button" class="o-fermer" data-o-fermer="${r}" title="Fermer « ${esc(titre(r))} »" aria-label="Fermer ${esc(titre(r))}">${ico("fermer", 12)}</button>` : ""}</div>`;
   }).join("");
  }
@@ -263,9 +323,10 @@ const Coque = (() => {
   ongletsDocuments(E);
   const etape = ETAPES_PARCOURS.some(([v]) => v === vueEtape(E.vue)) && E.ouvrage?.ouvert && !E.ouvrage?.en_conception;
   if (!etape) controles(null);
+  majFil();
   const theme = document.getElementById("v31-settings");
   if (theme) theme.innerHTML = document.documentElement.dataset.theme === "dark" ? V31.icon("sun", 15) : V31.icon("moon", 15);
  }
- return {init, render, controles, journal, sortie: () => { if (!etat.sortieOuverte) plierSortie(); ongletSortie("controles"); },
+ return {init, render, controles, journal, majFil, sortie: () => { if (!etat.sortieOuverte) plierSortie(); ongletSortie("controles"); },
          actions: () => document.querySelector("#o-documents .o-documents-actions")};
 })();
