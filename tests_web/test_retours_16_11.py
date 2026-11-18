@@ -443,5 +443,7 @@ class TestRetours1611Apres15h(ServeurNavigateur):
                 self.page.locator(f'[data-export="{code}"]').click()
             self.assertTrue(dl.value.suggested_filename.endswith(suffixe), code)
         # Dossier complet et actualisation dans l'en-tête, sans barre en double
-        self.assertEqual(self.page.locator('.rc-hero-actions #r-dossier').count(), 1)
-        self.assertEqual(self.page.locator('.rc-hero-actions #r-actualiser').count(), 1)
+        # Lot 5e : commandes de la livraison au ruban, une seule fois
+        self.assertEqual(self.page.locator('#o-ruban [aria-label="Livraison"] #r-dossier').count(), 1)
+        self.assertEqual(self.page.locator('#o-ruban [aria-label="Livraison"] #r-actualiser').count(), 1)
+        self.assertEqual(self.page.locator('#vue #r-dossier, #vue #r-actualiser').count(), 0)

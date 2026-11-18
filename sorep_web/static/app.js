@@ -568,6 +568,7 @@ const LIVRABLES = [
     {titre: "Cartes d'E/S", texte: "Un onglet par carte, une ligne par voie, voies libres en réserve ; colonne de validation à remplir à la recette.", formats: [["XLSX", "cartes"]]},
     {titre: "Nomenclature", texte: "Configuration matérielle : références, quantités et rôles, à confirmer à la commande.", formats: [["XLSX", "nomenclature"]]}]}];
 function vueRecette() {
+  Coque.ruban(null);   // lot 5e : boutons du rendu précédent retirés du ruban
   const d = E.detailEtape, f = E.filtreRecette || "", L = d.livrables || {};
   const etapes = [...new Set(d.controles.map(c => c.etape))];
   const nb = (et, niv) => d.controles.filter(c => c.etape === et && (!niv || c.niveau === niv)).length;
@@ -586,27 +587,31 @@ function vueRecette() {
   const toutes = LIVRABLES.flatMap(g => g.cartes.map(c => ({c, e: etatCarte(c)}))).filter(x => x.e.cls !== "sans-objet");
   const prets = toutes.filter(x => x.e.cls === "pret").length;
   const titre = d.erreurs ? `${d.erreurs} point${d.erreurs > 1 ? "s" : ""} à régler avant la livraison` : prets === toutes.length ? "Tous les livrables sont prêts" : "Livraison presque prête";
+  /* Lot 5e : livrables en lignes denses, groupés par destination (mêmes états, motifs et boutons qu'avant) ;
+     les commandes de la livraison passent au ruban ; l'en-tête garde l'état en une phrase et la jauge. */
   const carte = c => { const e = etatCarte(c);
-    return `<article class="rc-carte ${e.cls}">
-      <div class="rc-carte-tete">${c.formats.map(([fmt]) => `<span class="rc-format">${fmt}</span>`).join("") || '<span class="rc-format vide">—</span>'}
-        <span class="rc-etat ${e.cls}">${e.badge}</span></div>
-      <h3>${c.titre}</h3><p class="rc-texte">${c.texte}</p>
-      ${e.motif ? `<p class="rc-motif">${esc(e.motif)}</p>` : ""}
-      <div class="rc-carte-pied">${c.formats.map(([fmt, q]) => `<button class="${(L[q] || {}).pret ? "prim" : ""}" data-export="${q}" ${(L[q] || {}).pret ? "" : `disabled title="${esc((L[q] || {}).motif || "")}"`}>Télécharger ${fmt} <span aria-hidden="true">↓</span></button>`).join("")}
-        ${c.second ? `<button class="lien" data-export="${c.second[1]}" ${(L[c.second[1]] || {}).pret ? "" : "disabled"}>${c.second[0]}</button>` : ""}</div></article>`; };
+    return `<tr class="rc-carte ${e.cls}">
+      <td class="rc-livrable"><h3>${c.titre}</h3><p class="rc-texte">${c.texte}</p></td>
+      <td class="rc-formats">${c.formats.map(([fmt]) => `<span class="rc-format">${fmt}</span>`).join("") || '<span class="rc-format vide">—</span>'}</td>
+      <td><span class="rc-etat ${e.cls}">${e.badge}</span></td>
+      <td>${e.motif ? `<p class="rc-motif">${esc(e.motif)}</p>` : ""}</td>
+      <td class="rc-carte-pied">${c.formats.map(([fmt, q]) => `<button class="${(L[q] || {}).pret ? "prim" : ""}" data-export="${q}" ${(L[q] || {}).pret ? "" : `disabled title="${esc((L[q] || {}).motif || "")}"`}>Télécharger ${fmt} <span aria-hidden="true">↓</span></button>`).join("")}
+        ${c.second ? `<button class="lien" data-export="${c.second[1]}" ${(L[c.second[1]] || {}).pret ? "" : "disabled"}>${c.second[0]}</button>` : ""}</td></tr>`; };
+  const part = toutes.length ? Math.round(prets / toutes.length * 100) : 0;
   $("#vue").innerHTML = `<section class="contenu recette-lux">
    <header class="rc-hero ${d.erreurs ? "a-regler" : "pret"}">
      <div class="rc-hero-texte"><span class="rc-surtitre">Recette et livrables · révision ${esc(d.revision)}</span>
        <h1>${titre}</h1>
        <p>${prets} livrable${prets > 1 ? "s" : ""} prêt${prets > 1 ? "s" : ""} sur ${toutes.length}${d.erreurs ? ` · ${d.erreurs} erreur(s)` : ""}${d.alertes ? ` · ${d.alertes} alerte(s)` : ""} · source d'acquisition : ${esc(auto || "non renseignée")}</p></div>
-     <div class="rc-jauge" role="img" aria-label="${prets} livrables prêts sur ${toutes.length}" style="--part:${toutes.length ? Math.round(prets / toutes.length * 100) : 0}">
-       <b>${prets}</b><span>/ ${toutes.length}</span></div>
+     <div class="rc-jauge" role="meter" aria-label="Livrables prêts" aria-valuemin="0" aria-valuemax="${toutes.length}" aria-valuenow="${prets}">
+       <span class="rc-jauge-barre"><i style="width:${part}%"></i></span><b>${prets}</b><span>/ ${toutes.length} prêts</span></div>
      <div class="rc-hero-actions"><button class="prim" id="r-dossier" title="Zip : sommaire imprimable en PDF, équipements, E/S, cartes, variables et formats cibles">Dossier de recette complet (zip)</button>
        <button id="r-actualiser">Actualiser les contrôles</button></div>
    </header>
-   <div class="rc-groupes">${LIVRABLES.map(g => `<section class="rc-groupe" data-groupe="${g.groupe}"><div class="rc-groupe-tete"><span class="rc-icone">${V31.icon(g.icone, 18)}</span>
-       <div><h2>${g.titre}</h2><p>${g.sous}</p></div></div>
-     <div class="rc-grille">${g.cartes.map(carte).join("")}</div></section>`).join("")}</div>
+   <div class="rc-groupes">${LIVRABLES.map(g => `<section class="rc-groupe" data-groupe="${g.groupe}"><div class="rc-groupe-tete"><span class="rc-icone">${V31.icon(g.icone, 16)}</span>
+       <h2>${g.titre}</h2><p>${g.sous}</p></div>
+     <table class="rc-table"><colgroup><col class="rc-c-livrable"><col class="rc-c-formats"><col class="rc-c-etat"><col><col class="rc-c-actions"></colgroup><thead class="o-masque"><tr><th>Livrable</th><th>Formats</th><th>État</th><th>Remarque</th><th>Téléchargement</th></tr></thead>
+       <tbody>${g.cartes.map(carte).join("")}</tbody></table></section>`).join("")}</div>
    <details class="rc-controles" ${d.erreurs ? "open" : ""}><summary><h2>Contrôles consolidés</h2>
      <span class="rc-compte">${d.erreurs ? `<span class="badge b-err">${d.erreurs} erreur(s)</span>` : '<span class="badge b-ok">aucune erreur</span>'} ${d.alertes ? `<span class="badge b-al">${d.alertes} alerte(s)</span>` : ""}</span>
      <span class="aide">chaque constat se corrige à l'endroit indiqué</span></summary>
@@ -625,6 +630,13 @@ function vueRecette() {
     if (c.ident && (c.etape === "Équipements" || c.etape === "Ouvrage")) { E.sel = {nature: "eq", valeur: c.ident}; location.hash = "#/inventaire"; }
     else location.hash = ROUTE_ETAPE[c.etape] || "#/inventaire";
   });
+  rubanRecette();
+}
+function rubanRecette() {
+  const id = x => document.getElementById(x);
+  Coque.ruban([{nom: "Livraison", commandes: [{el: id("r-dossier"), icone: "dossier", grand: true, libelle: "Dossier de recette"},
+    {el: id("r-actualiser"), icone: "valider", grand: true, libelle: "Actualiser les contrôles"}]}]);
+  document.querySelectorAll("#vue .rc-hero-actions").forEach(x => { if (!x.querySelector("button")) x.remove(); });
 }
 function enTete() { V31.render(E, ETAPES, etatEtape, vueEtape); }
 /* ------------------------------------------------------------------ accueil */

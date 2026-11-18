@@ -585,3 +585,64 @@ html[data-theme] .v31-variable-detail .o-grille { margin: var(--o-e-3) 0; }
 html[data-theme] .v31-variable-detail .o-grille dl { display: block; margin: 0; }
 html[data-theme] .v31-variable-detail .o-grille :is(dt, dd) { margin: 0; }
 html[data-theme] .v31-variable-detail .o-grille dd { overflow-wrap: anywhere; }
+
+/* ===================================================================== Lot 5e : Recette et livrables
+   En-tête d'état compact (bleu nuit de structure, pastille d'état, jauge linéaire), livrables en lignes denses
+   groupées par destination, contrôles consolidés repliables. Remplace les cartes de 190 px (16/11). */
+.o-masque { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+html[data-theme] .recette-lux { max-width: 1480px; margin: 0 auto; }
+html[data-theme] .recette-lux > .titre { display: none; }
+html[data-theme] .rc-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--o-e-5);
+  padding: var(--o-e-3) var(--o-e-5); margin: 0 0 var(--o-e-4); background: var(--o-nuit); color: var(--o-nuit-texte);
+  border-radius: var(--o-r-m); }
+html[data-theme] .rc-surtitre { display: block; font-size: var(--o-t-xs); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--o-nuit-texte-2); }
+html[data-theme] .rc-hero h1 { margin: 2px 0; font-size: var(--o-t-xl); font-weight: 650; color: var(--o-nuit-texte); line-height: 1.25; }
+html[data-theme] .rc-hero h1::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: var(--o-e-2); border-radius: 50%; vertical-align: middle; background: var(--o-alerte-filet); }
+html[data-theme] .rc-hero.pret h1::before { background: var(--o-ok-filet); }
+html[data-theme] .rc-hero p { margin: 0; font-size: var(--o-t-s); color: var(--o-nuit-texte-2); }
+html[data-theme] .rc-jauge { display: grid; grid-template-columns: 160px auto auto; align-items: center; gap: var(--o-e-2); }
+html[data-theme] .rc-jauge-barre { display: block; height: 6px; border-radius: 3px; background: var(--o-nuit-ligne); overflow: hidden; }
+html[data-theme] .rc-jauge-barre i { display: block; height: 100%; background: var(--o-ok-filet); }
+html[data-theme] .rc-jauge b { font-size: var(--o-t-xl); font-variant-numeric: tabular-nums; color: var(--o-nuit-texte); }
+html[data-theme] .rc-jauge > span:last-child { font-size: var(--o-t-s); color: var(--o-nuit-texte-2); }
+html[data-theme] .rc-groupes { display: grid; gap: var(--o-e-4); margin: 0 0 var(--o-e-4); }
+html[data-theme] .rc-groupe { border: 1px solid var(--o-ligne); border-radius: var(--o-r-m); background: var(--o-surface); overflow: hidden; }
+html[data-theme] .rc-groupe-tete { display: flex; align-items: baseline; gap: var(--o-e-2); padding: var(--o-e-2) var(--o-e-3); background: var(--o-surface-2); border-bottom: 1px solid var(--o-ligne); }
+html[data-theme] .rc-icone { align-self: center; display: inline-grid; place-items: center; color: var(--o-action); }
+html[data-theme] .rc-groupe-tete h2 { margin: 0; font-size: var(--o-t-m); font-weight: 650; }
+html[data-theme] .rc-groupe-tete p { margin: 0; font-size: var(--o-t-s); color: var(--o-texte-2); }
+html[data-theme] table.rc-table { width: 100%; table-layout: fixed; border-collapse: collapse; margin: 0; border: 0; }
+html[data-theme] table.rc-table td { padding: var(--o-e-2) var(--o-e-3); border-top: 1px solid var(--o-ligne); vertical-align: middle; background: transparent; }
+html[data-theme] table.rc-table tr:first-child td { border-top: 0; }
+html[data-theme] table.rc-table .rc-c-livrable { width: 32%; }
+html[data-theme] table.rc-table .rc-c-formats { width: 104px; }
+html[data-theme] table.rc-table .rc-c-etat { width: 136px; }
+html[data-theme] table.rc-table .rc-c-actions { width: 280px; }
+html[data-theme] .rc-carte h3 { margin: 0; font-size: var(--o-t-m); font-weight: 600; }
+html[data-theme] .rc-texte { margin: 2px 0 0; font-size: var(--o-t-s); color: var(--o-texte-2); }
+html[data-theme] .rc-carte.indispo, html[data-theme] .rc-carte.sans-objet { color: var(--o-texte-2); }
+html[data-theme] .rc-carte.indispo h3, html[data-theme] .rc-carte.sans-objet h3 { color: var(--o-texte-2); }
+html[data-theme] .rc-formats { white-space: nowrap; }
+html[data-theme] .rc-format { display: inline-block; margin-right: 4px; padding: 1px 6px; border-radius: var(--o-r-s); font-family: var(--o-mono); font-size: var(--o-t-xs); font-weight: 700;
+  background: var(--o-surface-3); color: var(--o-texte); border: 1px solid var(--o-ligne-forte); }
+html[data-theme] .rc-format.vide { color: var(--o-texte-3); border-style: dashed; background: transparent; }
+html[data-theme] .rc-etat { display: inline-block; padding: 1px 8px; border-radius: var(--o-r-s); font-size: var(--o-t-xs); font-weight: 600; border: 1px solid var(--o-ligne-forte); color: var(--o-texte-2); background: var(--o-surface-2); }
+html[data-theme] .rc-etat.pret { color: var(--o-ok); background: var(--o-ok-fond); border-color: var(--o-ok-filet); }
+html[data-theme] .rc-etat.bloque { color: var(--o-alerte); background: var(--o-alerte-fond); border-color: var(--o-alerte-filet); }
+html[data-theme] .rc-motif { margin: 0; font-size: var(--o-t-s); color: var(--o-texte-2); }
+html[data-theme] .rc-carte.bloque .rc-motif { color: var(--o-alerte); }
+html[data-theme] .rc-carte-pied { text-align: right; }
+html[data-theme] .rc-carte-pied button { margin: 2px 0 2px var(--o-e-1); min-height: var(--o-h-champ); padding: 0 var(--o-e-3); }
+html[data-theme] .rc-carte-pied .lien { font-size: var(--o-t-s); }
+html[data-theme] .rc-controles { margin: 0 0 var(--o-e-4); padding: var(--o-e-2) var(--o-e-3); background: var(--o-surface); border: 1px solid var(--o-ligne); border-radius: var(--o-r-m); }
+html[data-theme] .rc-controles > summary { display: flex; align-items: center; flex-wrap: wrap; gap: var(--o-e-3); cursor: pointer; list-style: none; }
+html[data-theme] .rc-controles > summary::-webkit-details-marker { display: none; }
+html[data-theme] .rc-controles > summary::before { content: "▸"; color: var(--o-texte-2); }
+html[data-theme] .rc-controles[open] > summary::before { content: "▾"; }
+html[data-theme] .rc-controles > summary h2 { margin: 0; font-size: var(--o-t-m); }
+html[data-theme] .rc-controles > summary .aide { margin-left: auto; color: var(--o-texte-2); font-size: var(--o-t-s); }
+html[data-theme] .rc-controles[open] > summary { margin-bottom: var(--o-e-3); }
+html[data-theme] .rc-controles .chip i.pt-err { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 4px; padding: 0 4px; border-radius: 9px;
+  font-style: normal; font-size: var(--o-t-xs); font-weight: 700; color: var(--o-sur-action); background: var(--o-erreur-filet); }
+html[data-theme] .rc-note { margin: 0 0 var(--o-e-4); font-size: var(--o-t-s); color: var(--o-texte-2); }
+@media (max-width: 1200px) { html[data-theme] .rc-hero { grid-template-columns: minmax(0, 1fr); } }
