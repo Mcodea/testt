@@ -294,7 +294,8 @@ const Composants = (() => {
   const vue = document.getElementById("vue");
   if (!vue) return;
   let prevu = false;
-  new MutationObserver(() => { if (prevu) return; prevu = true; requestAnimationFrame(() => { prevu = false; ameliorer(vue); }); })
+  // Micro-tâche, et non image suivante : le tableau redessiné retrouve son tri et ses filtres AVANT d'être affiché.
+  new MutationObserver(() => { if (prevu) return; prevu = true; queueMicrotask(() => { prevu = false; ameliorer(vue); }); })
    .observe(vue, {childList: true, subtree: true});
  }
  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", surveiller, {once: true}); else surveiller();
