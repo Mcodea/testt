@@ -37,7 +37,9 @@ class TestComposantsBureau(ServeurNavigateur):
     def tableau(self):
         self.page.goto(self.url + '#/recette', wait_until='networkidle')
         self.page.evaluate("document.querySelector('details.rc-controles').open = true")
-        t = self.page.locator('table.o-tableau').first
+        self.page.locator('[data-rc-vue="detail"]').click()          # 18/11 : vue « Détail », un constat par ligne
+        self.page.evaluate("document.querySelector('details.rc-controles').open = true")
+        t = self.page.locator('table[data-o-cle="recette-controles"]')
         t.wait_for()
         t.scroll_into_view_if_needed()
         self.assertGreaterEqual(t.locator('tbody tr').count(), 3, 'Jeu d\'essai : au moins trois contrôles')

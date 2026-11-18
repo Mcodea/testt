@@ -951,7 +951,14 @@ class Application:
         controles.sort(key=lambda x: (ordre.get(x["etape"], 9), x["niveau"] != "Erreur"))
         erreurs = sum(x["niveau"] == "Erreur" for x in controles)
         alertes = sum(x["niveau"] == "Alerte" for x in controles)
+        # 18/11 : synthèse par règle, calculée sur TOUS les constats (avant la limite d'affichage de 500)
+        par_regle: dict[tuple[str, str], dict] = {}
+        for x in controles:
+            g = par_regle.setdefault((x["regle"], x["niveau"]), {"regle": x["regle"], "niveau": x["niveau"],
+                                     "etape": x["etape"], "nombre": 0, "exemple": x["message"], "detail": x["regle_detail"]})
+            g["nombre"] += 1
         return {"erreurs": erreurs, "alertes": alertes, "controles": controles[:500],
+                "par_regle": sorted(par_regle.values(), key=lambda g: (g["niveau"] != "Erreur", -g["nombre"], g["regle"])),
                 "tronque": len(controles) > 500, "revision": o.revision,
                 "livrables": self._etat_livrables(erreurs),
                 "export_qualifie": False,

@@ -449,6 +449,16 @@ class TestRetours1611Apres15h(ServeurNavigateur):
         codes = self.page.locator('.rc-controles td.rc-regle').all_inner_texts()
         self.assertTrue(codes and all(re.fullmatch(r'R-[A-Z]{2,3}-\d{2}', c.strip()) for c in codes), codes[:5])
         self.assertTrue(self.page.locator('.rc-controles .rc-corriger').count() > 0)
+        # Vue « Par règle » par défaut : une ligne par règle, son nombre de constats ; « Voir » ouvre le détail filtré
+        groupes = self.api('/api/recette')['par_regle']
+        self.assertEqual(sum(g['nombre'] for g in groupes), self.api('/api/recette')['erreurs'] + self.api('/api/recette')['alertes'])
+        self.assertEqual(self.page.locator('table.rc-par-regle tbody tr').count(), len(groupes))
+        premier = groupes[0]
+        self.page.locator(f'table.rc-par-regle [data-rc-regle="{premier["regle"]}"]').click()
+        self.page.evaluate("document.querySelector('details.rc-controles').open = true")
+        self.assertEqual(self.page.locator('table[data-o-cle="recette-controles"] tbody tr').count(), min(premier['nombre'], 500))
+        self.assertEqual(set(self.page.locator('table[data-o-cle="recette-controles"] td.rc-regle').all_inner_texts()), {premier['regle']})
+        self.page.locator('[data-rc-vue="regles"]').click()
         regles = self.api('/api/regles')['regles']
         self.assertTrue(all(r['corriger'] for r in regles))
         # Lot 5e : commandes de la livraison au ruban, une seule fois

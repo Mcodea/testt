@@ -572,7 +572,11 @@ function vueRecette() {
   const d = E.detailEtape, f = E.filtreRecette || "", L = d.livrables || {};
   const etapes = [...new Set(d.controles.map(c => c.etape))];
   const nb = (et, niv) => d.controles.filter(c => c.etape === et && (!niv || c.niveau === niv)).length;
-  const vis = d.controles.filter(c => !f || c.etape === f);
+  // 18/11 : vue « Par règle » (une ligne par règle, nombre de constats) ou « Détail » (un constat par ligne) ;
+  // une règle ouverte depuis la synthèse filtre le détail sur elle.
+  const vueRc = E.rcVue || "regles", fr = E.filtreRegle || "";
+  const vis = d.controles.filter(c => (!f || c.etape === f) && (!fr || c.regle === fr));
+  const groupes = (d.par_regle || []).filter(g => !f || g.etape === f);
   const auto = ((E.ouvrage || {}).identification || {}).automate || "";
   // État de chaque carte : prête, à régler (motif du serveur), non disponible (format non décrit)
   const etatCarte = c => {
@@ -616,7 +620,13 @@ function vueRecette() {
      <span class="rc-compte">${d.erreurs ? `<span class="badge b-err">${d.erreurs} erreur(s)</span>` : '<span class="badge b-ok">aucune erreur</span>'} ${d.alertes ? `<span class="badge b-al">${d.alertes} alerte(s)</span>` : ""}</span>
      <span class="aide">chaque constat se corrige à l'endroit indiqué</span></summary>
    ${etapes.length ? `<div class="compteurs"><span class="chip ${f ? "" : "on"}" data-et="">Toutes<b>${d.controles.length}</b></span>${etapes.map(et => `<span class="chip ${f === et ? "on" : ""}" data-et="${esc(et)}">${esc(et)}<b>${nb(et)}</b>${nb(et, "Erreur") ? `<i class="pt-err">${nb(et, "Erreur")}</i>` : ""}</span>`).join("")}</div>` : ""}
-   ${vis.length ? `<table data-o-tableau data-o-cle="recette-controles"><thead><tr><th style="width:90px">Niveau</th><th style="width:96px">Règle</th><th style="width:190px">Étape</th><th>Constat</th><th style="width:110px"></th></tr></thead><tbody>${vis.map(c => `<tr><td><span class="badge ${c.niveau === 'Erreur' ? 'b-err' : 'b-al'}">${esc(c.niveau)}</span></td>
+   ${d.controles.length ? `<div class="rc-vues" role="group" aria-label="Présentation des constats"><button type="button" class="${vueRc === "regles" ? "on" : ""}" data-rc-vue="regles" aria-pressed="${vueRc === "regles"}">Par règle</button><button type="button" class="${vueRc === "detail" ? "on" : ""}" data-rc-vue="detail" aria-pressed="${vueRc === "detail"}">Détail</button>
+     ${fr && vueRc === "detail" ? `<span class="rc-filtre-regle">Règle <b class="mono">${esc(fr)}</b> <button type="button" class="lien" data-rc-regle="">Toutes les règles</button></span>` : ""}</div>` : ""}
+   ${vueRc === "regles" && groupes.length ? `<table data-o-tableau="sans-selection" data-o-cle="recette-regles" class="rc-par-regle"><thead><tr><th style="width:90px">Niveau</th><th style="width:96px">Règle</th><th>Titre et correction</th><th style="width:90px">Constats</th><th>Exemple</th><th style="width:150px"></th></tr></thead><tbody>${groupes.map(g => `<tr><td><span class="badge ${g.niveau === 'Erreur' ? 'b-err' : 'b-al'}">${esc(g.niveau)}</span></td>
+     <td class="mono rc-regle"><abbr title="${esc(g.detail?.pourquoi || "")}">${esc(g.regle || "—")}</abbr></td><td><b>${esc(g.detail?.titre || g.etape)}</b>${g.detail?.corriger ? `<div class="rc-corriger">${esc(g.detail.corriger)}</div>` : ""}</td>
+     <td class="num">${g.nombre}</td><td class="rc-exemple" title="${esc(g.exemple)}">${esc(g.exemple)}</td>
+     <td style="text-align:right"><button class="lien" data-rc-regle="${esc(g.regle)}">Voir les ${g.nombre} constat${g.nombre > 1 ? "s" : ""}</button></td></tr>`).join("")}</tbody></table>`
+   : vis.length ? `<table data-o-tableau data-o-cle="recette-controles"><thead><tr><th style="width:90px">Niveau</th><th style="width:96px">Règle</th><th style="width:190px">Étape</th><th>Constat</th><th style="width:110px"></th></tr></thead><tbody>${vis.map(c => `<tr><td><span class="badge ${c.niveau === 'Erreur' ? 'b-err' : 'b-al'}">${esc(c.niveau)}</span></td>
      <td class="mono rc-regle">${c.regle ? `<abbr title="${esc(c.regle_detail?.titre ? `${c.regle_detail.titre}. Pourquoi : ${c.regle_detail.pourquoi} Corriger : ${c.regle_detail.corriger}` : "")}">${esc(c.regle)}</abbr>` : "—"}</td><td>${esc(c.etape)}</td><td>${esc(c.message)}${c.regle_detail?.corriger ? `<div class="rc-corriger">${esc(c.regle_detail.corriger)}</div>` : ""}</td>
      <td style="text-align:right"><button class="lien r-corr" data-i="${d.controles.indexOf(c)}">${c.ident && ["Équipements", "Ouvrage"].includes(c.etape) ? "Ouvrir la fiche" : "Aller à l'étape"}</button></td></tr>`).join('')}</tbody></table>`
      : '<div class="vide-bloc">Aucune anomalie détectée par les contrôles automatisés.</div>'}
@@ -626,6 +636,8 @@ function vueRecette() {
   $("#r-actualiser").onclick = async () => { E.detailEtape = await api('/api/recette'); rendre(); };
   $("#r-dossier").onclick = () => confirmer("Constituer le dossier de recette ?", "Archive zip des livrables à partir des exports existants, avec un sommaire imprimable en PDF (empreintes, pièces non produites et leur motif, points restant à traiter). Exports non qualifiés : à vérifier dans les logiciels cibles.", "Télécharger le dossier", () => telecharger("dossier_recette"));
   document.querySelectorAll("[data-et]").forEach(x => x.onclick = () => { E.filtreRecette = x.dataset.et; vueRecette(); });
+  document.querySelectorAll("[data-rc-vue]").forEach(x => x.onclick = () => { E.rcVue = x.dataset.rcVue; if (E.rcVue === "regles") E.filtreRegle = ""; vueRecette(); });
+  document.querySelectorAll("[data-rc-regle]").forEach(x => x.onclick = () => { E.filtreRegle = x.dataset.rcRegle; E.rcVue = "detail"; vueRecette(); });
   document.querySelectorAll(".r-corr").forEach(b => b.onclick = () => {
     const c = d.controles[+b.dataset.i];
     if (c.ident && (c.etape === "Équipements" || c.etape === "Ouvrage")) { E.sel = {nature: "eq", valeur: c.ident}; location.hash = "#/inventaire"; }

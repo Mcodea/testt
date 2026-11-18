@@ -706,3 +706,9 @@ html[data-theme] .v31-secondary-header[aria-pressed="true"] { background: var(--
 /* Règles de cohérence nommées (18/11) : code de la règle et façon de corriger sous chaque constat de la recette */
 html[data-theme] .rc-regle abbr { text-decoration: none; border-bottom: 1px dotted var(--o-texte-3); cursor: help; }
 html[data-theme] .rc-corriger { margin-top: 2px; font-size: var(--o-t-s); color: var(--o-texte-2); }
+html[data-theme] .rc-vues { display: flex; align-items: center; gap: var(--o-e-1); margin: 0 0 var(--o-e-2); }
+html[data-theme] .rc-vues > button { min-height: var(--o-h-champ); padding: 0 var(--o-e-3); }
+html[data-theme] .rc-vues > button.on { background: var(--o-action-fond); border-color: var(--o-action); color: var(--o-texte); }
+html[data-theme] .rc-filtre-regle { margin-left: var(--o-e-3); font-size: var(--o-t-s); color: var(--o-texte-2); }
+html[data-theme] table.rc-par-regle td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+html[data-theme] table.rc-par-regle .rc-exemple { max-width: 34ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--o-texte-2); }
