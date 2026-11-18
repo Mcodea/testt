@@ -241,15 +241,16 @@ html[data-theme] * { scrollbar-width: thin; scrollbar-color: var(--o-ligne-forte
 html[data-theme] body.o-coque {
   display: grid;
   grid-template-columns: var(--o-l-explorateur) minmax(0, 1fr);
-  grid-template-rows: var(--o-h-titre) var(--o-h-documents) minmax(0, 1fr) var(--o-h-etat);
+  grid-template-rows: var(--o-h-titre) var(--o-h-documents) minmax(0, 1fr) auto var(--o-h-etat);
   gap: 0;
 }
 html[data-theme] body.o-coque.o-sans-explorateur { grid-template-columns: 0 minmax(0, 1fr); }
 body.o-coque #o-titre { grid-column: 1 / -1; grid-row: 1; }
-body.o-coque #o-explorateur { grid-column: 1; grid-row: 2 / 4; }
+body.o-coque #o-explorateur { grid-column: 1; grid-row: 2 / 5; }
+body.o-coque #o-sortie { grid-column: 2; grid-row: 4; }
 body.o-coque #o-documents { grid-column: 2; grid-row: 2; }
 body.o-coque #v30-workspace { grid-column: 2; grid-row: 3; }
-body.o-coque #v30-status.v30-status { grid-column: 1 / -1; grid-row: 4; }
+body.o-coque #v30-status.v30-status { grid-column: 1 / -1; grid-row: 5; }
 
 /* ---------------------------------------------------------------- barre de titre */
 .o-titre {
@@ -360,3 +361,59 @@ html[data-theme] .o-onglet h1 { margin: 0; padding-right: var(--o-e-2); font-siz
 .o-fermer:hover { background: var(--o-surface-3); color: var(--o-texte); }
 .o-documents-actions { display: flex; align-items: center; gap: var(--o-e-2); align-self: center; flex: none; }
 html[data-theme] .o-documents-actions .v31-secondary-header { min-height: 24px; height: 24px; padding: 0 var(--o-e-2); font-size: var(--o-t-s); }
+
+/* ---------------------------------------------------------------- panneau de sortie (lot 2b) */
+.o-sortie { min-width: 0; background: var(--o-surface); border-top: 1px solid var(--o-ligne-forte); font-size: var(--o-t-s); }
+.o-sortie-tete {
+  display: flex; align-items: center; gap: 2px; height: 28px; padding: 0 var(--o-e-2);
+  background: var(--o-surface-2); border-bottom: 1px solid var(--o-ligne);
+}
+.o-sortie.plie .o-sortie-tete { border-bottom: 0; }
+.o-sortie-tete [role="tab"] {
+  display: flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border: 0; border-radius: var(--o-r-s);
+  background: none; color: var(--o-texte-2); font: inherit; cursor: pointer;
+}
+.o-sortie-tete [role="tab"][aria-selected="true"] { color: var(--o-texte); font-weight: 600; background: var(--o-surface); box-shadow: inset 0 -2px 0 var(--o-action-plein); }
+.o-compte:empty { display: none; }
+.o-compte {
+  min-width: 18px; height: 16px; padding: 0 4px; border-radius: var(--o-r-s); border: 1px solid var(--o-ligne-forte);
+  font-size: var(--o-t-xs); line-height: 14px; text-align: center; color: var(--o-texte-2); font-weight: 600;
+}
+.o-compte.al { color: var(--o-alerte); background: var(--o-alerte-fond); border-color: var(--o-alerte-filet); }
+.o-compte.err { color: var(--o-erreur); background: var(--o-erreur-fond); border-color: var(--o-erreur-filet); }
+.o-sortie-resume { flex: 1; min-width: 0; padding: 0 var(--o-e-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--o-texte-2); text-align: right; }
+.o-sortie-resume.al { color: var(--o-alerte); }
+.o-sortie-resume.ok { color: var(--o-ok); }
+.o-sortie-plier { display: grid; place-items: center; width: 24px; height: 22px; border: 0; border-radius: var(--o-r-s); background: none; color: var(--o-texte-2); cursor: pointer; }
+.o-sortie-plier:hover { background: var(--o-surface-3); }
+.o-sortie.plie .o-sortie-plier svg { transform: rotate(180deg); }
+.o-sortie-corps { max-height: 148px; overflow: auto; }
+.o-sortie.plie .o-sortie-corps { display: none; }
+.o-sortie-vide { margin: 0; padding: var(--o-e-2) var(--o-e-3); color: var(--o-texte-2); }
+/* Contrôles de l'étape : une ligne par point, cliquable vers l'endroit à corriger */
+html[data-theme] .o-sortie :is(.parcours-points, .pp-bloquants, .pp-verifier, .pp-pret) { margin: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+html[data-theme] .o-sortie .parcours-points h3,
+html[data-theme] .o-sortie .pp-verifier summary {
+  margin: 0; padding: 6px var(--o-e-3) 2px; font-size: var(--o-t-s); font-weight: 600; color: var(--o-texte-2); background: none;
+}
+html[data-theme] .o-sortie .pp-bloquants h3 { color: var(--o-alerte); }
+html[data-theme] .o-sortie .pp-verifier summary { cursor: pointer; }
+html[data-theme] .o-sortie .parcours-points ul { margin: 0; padding: 0; list-style: none; }
+html[data-theme] .o-sortie .parcours-points li { border-bottom: 1px solid var(--o-ligne); }
+html[data-theme] .o-sortie .parcours-points li button {
+  display: block; width: 100%; min-height: 24px; padding: 3px var(--o-e-3) 3px 34px; border: 0; border-radius: 0;
+  background: none; color: var(--o-texte); font: inherit; text-align: left; text-decoration: none; cursor: pointer; position: relative;
+}
+html[data-theme] .o-sortie .parcours-points li button::before {
+  content: ""; position: absolute; left: 14px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%;
+  background: var(--o-texte-3);
+}
+html[data-theme] .o-sortie .pp-bloquants li button::before { background: var(--o-alerte-filet); }
+html[data-theme] .o-sortie .parcours-points li button:hover { background: var(--o-action-fond); color: var(--o-action); }
+html[data-theme] .o-sortie .pp-pret { padding: var(--o-e-2) var(--o-e-3); color: var(--o-ok); background: none; border: 0; }
+/* Journal */
+.o-journal { margin: 0; padding: 0; list-style: none; }
+.o-journal li { display: flex; align-items: center; gap: var(--o-e-2); min-height: 24px; padding: 0 var(--o-e-3); border-bottom: 1px solid var(--o-ligne); }
+.o-journal li .o-ico { color: var(--o-action); flex: none; }
+.o-journal li.err .o-ico, .o-journal li.err span { color: var(--o-erreur); }
+.o-journal time { font-family: var(--o-mono); font-size: var(--o-t-xs); color: var(--o-texte-2); }

@@ -17,6 +17,7 @@ async function api(chemin, donnees) {
   return j;
 }
 function toast(texte, err) {
+  if (typeof Coque !== "undefined") Coque.journal(texte, err);     // lot 2b : chaque message reste au journal
   const t = document.createElement("div");
   t.className = "toast" + (err ? " err" : "");
   t.textContent = texte;
@@ -211,9 +212,18 @@ const ROUTE_VUE = {ouvrage: "#/inventaire", es: "#/es", materiel: "#/materiel", 
 async function panneauParcours(vue, zone) {
   let etapes;
   try { etapes = (await api("/api/parcours")).etapes || []; } catch (e) { return; }
+  if (vueEtape(E.vue) !== vue) return;                    // écran quitté pendant la lecture du parcours
   const et = etapes.find(x => x.vue === vue);
   zone.querySelector(".parcours-points")?.remove();
-  if (!et || (!et.bloquants.length && !et.a_verifier.length)) return;
+  // Refonte, lot 2b : les contrôles de l'étape sont dans le panneau de sortie, en bas de la fenêtre.
+  const n = et ? et.bloquants.length + et.a_verifier.length : 0;
+  const cible = zone.querySelector("#pt-controles");
+  if (cible) {
+    cible.innerHTML = `<p class="pt-cat-aide">${n ? `${n} point(s) de contrôle pour cette étape : ` : "Aucun point de contrôle pour cette étape. "}ils sont listés dans le panneau de sortie, en bas de la fenêtre.</p><button type="button" class="lien" data-o-voir-sortie>Afficher les contrôles</button>`;
+    cible.querySelector("[data-o-voir-sortie]").onclick = () => Coque.sortie();
+    const t = zone.querySelector('[data-pt-onglet="controles"] .pt-compte'); if (t) t.textContent = n;
+  }
+  if (!et) return Coque.controles(null);
   const precedente = etapes.find(x => x.etape < et.etape && !x.pret);
   const ligne = p => `<li><button type="button" class="lien" data-pp-vue="${esc(p.vue)}" data-pp-eq="${esc(p.ident_eq || "")}">${esc(p.message)}</button></li>`;
   const bloc = document.createElement("div");
@@ -221,15 +231,14 @@ async function panneauParcours(vue, zone) {
   bloc.innerHTML = (et.bloquants.length ? `<div class="pp-bloquants"><h3>Pour passer à l'étape suivante (${et.bloquants.length})</h3><ul>${et.bloquants.map(ligne).join("")}</ul></div>`
       : `<div class="pp-pret"><b>${precedente ? "Cette étape est prête ; terminez d'abord l'étape « " + esc(precedente.libelle) + " »." : "Étape prête : vous pouvez passer à la suivante."}</b></div>`)
     + (et.a_verifier.length ? `<details class="pp-verifier"><summary>À vérifier (${et.a_verifier.length})</summary><ul>${et.a_verifier.map(ligne).join("")}</ul></details>` : "");
-  const cible = zone.querySelector("#pt-controles");
-  if (cible) { cible.innerHTML = ""; cible.appendChild(bloc); const n = et.bloquants.length + et.a_verifier.length;
-    const t = zone.querySelector('[data-pt-onglet="controles"] .pt-compte'); if (t) t.textContent = n; }
-  else zone.querySelector(".pied-etape")?.before(bloc);
   bloc.querySelectorAll("[data-pp-vue]").forEach(b => b.onclick = () => {
     if (b.dataset.ppVue === "ouvrage" && b.dataset.ppEq)
       return allerOuvrage({nature: "eq", valeur: b.dataset.ppEq});
     naviguer(ROUTE_VUE[b.dataset.ppVue] || "#/inventaire");
   });
+  const resume = et.bloquants.length ? `${et.bloquants.length} point(s) à régler pour passer à l'étape suivante`
+    : precedente ? `Étape prête ; terminez d'abord « ${precedente.libelle} »` : "Étape prête";
+  Coque.controles(bloc, n, resume, et.bloquants.length > 0);
 }
 function rendre() {
   enTete();

@@ -267,9 +267,7 @@ body[data-ecran="ouvrage"] #contenu .bloc>.titre>.actions{flex-wrap:wrap;justify
 .v31-variable-screen.has-detail{grid-template-columns:minmax(0,1fr) clamp(280px,22vw,360px)}
 /* Pied d'étape et points bloquants sous le tableau des variables, sur toute la largeur */
 .v31-variable-screen:has(>.pied-etape){grid-template-rows:minmax(0,1fr) auto}
-.v31-variable-screen:has(>.parcours-points){grid-template-rows:minmax(0,1fr) auto auto}
-.v31-variable-screen>:is(.pied-etape,.parcours-points){grid-column:1 / -1;margin:0!important}
-.v31-variable-screen>.parcours-points{max-height:96px;overflow:auto}
+.v31-variable-screen>.pied-etape{grid-column:1 / -1;margin:0!important}
 .v31-main-table,.v31-variable-detail{min-width:0;max-width:100%}
 .v31-table-toolbar{padding:8px var(--sp-3);gap:var(--sp-2);border-bottom:1px solid var(--v31-separator);flex-wrap:wrap}
 .v31-view-switch{border:1px solid var(--v31-separator);border-radius:var(--radius-m);padding:2px;background:var(--workspace-panel)}
@@ -341,10 +339,6 @@ html[data-theme="dark"] .emplacement.cpu{background:var(--ogias-primary-light);b
 
 /* Recette : points à traiter et à vérifier */
 /* Ce qui reste avant l'étape suivante : information, pas alarme (retour du 16/11, 13 h 40) */
-.pp-bloquants{border:1px solid var(--v31-separator)!important;border-left:3px solid var(--ogias-warning-line)!important;background:var(--v31-white)!important;border-radius:var(--radius-m)!important}
-.pp-bloquants h3{font-size:13px!important;font-weight:600}
-.pp-verifier{border-left:3px solid var(--ogias-warning-line);background:var(--ogias-warning-bg)}
-.pp-pret{border-left:3px solid var(--ogias-success)!important}
 
 /* Parcours guidés (retour du 16/11, 11 h 03) : une « prochaine action », des onglets numérotés avec leur état. */
 .prochaine-action{display:flex;align-items:center;gap:var(--sp-3);margin:0 0 var(--sp-3);padding:var(--sp-2) var(--sp-3);min-height:44px;
@@ -435,8 +429,6 @@ details.aide-pliable>p{margin:var(--sp-1) 0 0;max-width:90ch}
 .pt-props dt{color:var(--v31-muted)}.pt-props dd{margin:0}
 .pt-resume{margin:0 0 var(--sp-2);color:var(--v31-muted)}
 .pt-corps .voies-carte select{max-width:240px}
-.pt-corps .parcours-points{margin:0;border:0;padding:0}
-.poste-travail>.parcours-points{flex:none;max-height:112px;overflow:auto;margin:0!important}
 /* Liste des E/S en poste de travail : une ligne par E/S, tableau sur toute la hauteur, détail ancré à droite */
 .es-page.poste-travail>.titre,.es-page.poste-travail>.es-ruban{display:none!important}
 .es-page.poste-travail>:is(.es-compteurs,.es-filtres,.avert){flex:none;margin:0!important}

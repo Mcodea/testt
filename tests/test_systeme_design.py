@@ -16,8 +16,9 @@ OGIAS = (STATIC / "ogias.css").read_text(encoding="utf-8")
 BLOC_CLAIR = ':root, html[data-theme="light"] {'
 BLOC_SOMBRE = 'html[data-theme="dark"] {'
 RE_COULEUR = re.compile(r"#[0-9a-fA-F]{3,8}\b|rgba?\(")
-# Mesures du lot 0 (validation/refonte_interface/lot0_avant/inventaire_styles.json) : plafonds qui ne remontent pas.
-PLAFONDS = {"app.css": (348, 28), "v031.css": (56, 103), "industrial-ui.css": (83, 109)}
+# Plafonds qui ne remontent jamais : mesures du lot 0, abaissées à chaque lot qui retire d'anciennes règles
+# (lot 2b : contrôles d'étape déplacés au panneau de sortie, leurs anciens styles retirés).
+PLAFONDS = {"app.css": (348, 28), "v031.css": (53, 103), "industrial-ui.css": (83, 102)}
 
 
 def _sans_commentaires(texte: str) -> str:

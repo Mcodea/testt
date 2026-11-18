@@ -15,6 +15,10 @@ const Coque = (() => {
   fermer: '<path d="M6 6l12 12M18 6 6 18"/>',
   coche: '<path d="m6 12 4 4 8-8"/>',
   replier: '<path d="m15 6-6 6 6 6"/>',
+  bas: '<path d="m6 9 6 6 6-6"/>',
+  alerte: '<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/>',
+  erreur: '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
  };
  const ico = (nom, t = 16) => `<svg class="o-ico" width="${t}" height="${t}" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${TRACES[nom] || ""}</svg>`;
  const ETAPES_PARCOURS = [["ouvrage", "Équipements", "#/inventaire"], ["es", "Liste des E/S", "#/es"],
@@ -24,8 +28,11 @@ const Coque = (() => {
    "#/referentiel": "Référentiel métier"};
  const ROUTE_VUE = {accueil: "#/ouvrages", dashboard: "#/dashboard", ouvrage: "#/inventaire", es: "#/es", materiel: "#/materiel",
    variables: "#/variables", supervision: "#/variables", adressage: "#/variables", recette: "#/recette", referentiel: "#/referentiel"};
- const etat = {documents: [], explorateur: true, menuOuvert: ""};
- try { etat.explorateur = localStorage.getItem("ogias-explorateur") !== "masque"; } catch (e) { /* stockage indisponible */ }
+ const etat = {documents: [], explorateur: true, menuOuvert: "", sortieOuverte: true, journal: []};
+ try {
+  etat.explorateur = localStorage.getItem("ogias-explorateur") !== "masque";
+  etat.sortieOuverte = localStorage.getItem("ogias-sortie") !== "pliee";
+ } catch (e) { /* stockage indisponible */ }
 
  // ------------------------------------------------------------------ menus
  // Chaque entrée : [libellé, raccourci affiché, action] ; "-" = séparateur. Les actions réutilisent l'existant.
@@ -97,6 +104,25 @@ const Coque = (() => {
   const zone = document.getElementById("v30-workspace");
   zone.parentNode.insertBefore(docs, zone);
 
+  // Panneau de sortie (lot 2b) : contrôles de l'étape et journal des messages, sous la zone de travail.
+  const sortie = document.createElement("section");
+  sortie.id = "o-sortie"; sortie.className = "o-sortie"; sortie.setAttribute("aria-label", "Panneau de sortie");
+  sortie.innerHTML = `<div class="o-sortie-tete" role="tablist" aria-label="Panneau de sortie">
+     <button type="button" role="tab" data-o-sortie="controles" aria-selected="true">Contrôles <span class="o-compte" data-o-compte="controles"></span></button>
+     <button type="button" role="tab" data-o-sortie="journal" aria-selected="false">Journal <span class="o-compte" data-o-compte="journal"></span></button>
+     <span class="o-sortie-resume" aria-live="polite"></span>
+     <button type="button" class="o-sortie-plier" aria-expanded="true" title="Réduire le panneau de sortie" aria-label="Réduire le panneau de sortie">${ico("bas", 14)}</button></div>
+   <div class="o-sortie-corps" data-o-sortie-panneau="controles" role="tabpanel"><p class="o-sortie-vide">Aucun contrôle pour cet écran.</p></div>
+   <div class="o-sortie-corps" data-o-sortie-panneau="journal" role="tabpanel" hidden><ol class="o-journal"></ol><p class="o-sortie-vide">Aucun message depuis l'ouverture d'OGIAS.</p></div>`;
+  zone.after(sortie);
+  sortie.classList.toggle("plie", !etat.sortieOuverte);
+  sortie.querySelector(".o-sortie-plier").setAttribute("aria-expanded", String(etat.sortieOuverte));
+  sortie.addEventListener("click", ev => {
+   const o = ev.target.closest("[data-o-sortie]");
+   if (o) { ongletSortie(o.dataset.oSortie); if (!etat.sortieOuverte) plierSortie(); return; }
+   if (ev.target.closest(".o-sortie-plier")) plierSortie();
+  });
+
   titre.addEventListener("click", ev => {
    const b = ev.target.closest("[data-o-menu]");
    if (!b) return;
@@ -145,6 +171,52 @@ const Coque = (() => {
   document.body.classList.toggle("o-sans-explorateur", !etat.explorateur);
  }
 
+ // ------------------------------------------------------------------ panneau de sortie
+ function plierSortie() {
+  etat.sortieOuverte = !etat.sortieOuverte;
+  try { localStorage.setItem("ogias-sortie", etat.sortieOuverte ? "ouverte" : "pliee"); } catch (e) { /* stockage indisponible */ }
+  const s = document.getElementById("o-sortie");
+  s.classList.toggle("plie", !etat.sortieOuverte);
+  const b = s.querySelector(".o-sortie-plier");
+  b.setAttribute("aria-expanded", String(etat.sortieOuverte));
+  b.title = b.ariaLabel = etat.sortieOuverte ? "Réduire le panneau de sortie" : "Afficher le panneau de sortie";
+ }
+ function ongletSortie(nom) {
+  const s = document.getElementById("o-sortie");
+  s.querySelectorAll("[data-o-sortie]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.oSortie === nom)));
+  s.querySelectorAll("[data-o-sortie-panneau]").forEach(p => { p.hidden = p.dataset.oSortiePanneau !== nom; });
+ }
+ /** Contrôles de l'étape : `bloc` = élément à afficher (ou null : aucun contrôle pour cet écran), `n` = nombre de
+     points, `resume` = phrase courte affichée dans l'en-tête même quand le panneau est réduit. */
+ function controles(bloc, n = 0, resume = "", bloquant = false) {
+  const s = document.getElementById("o-sortie");
+  if (!s) return;
+  const corps = s.querySelector('[data-o-sortie-panneau="controles"]');
+  corps.replaceChildren(...(bloc ? [bloc] : []));
+  if (!bloc) corps.innerHTML = '<p class="o-sortie-vide">Aucun contrôle pour cet écran.</p>';
+  const c = s.querySelector('[data-o-compte="controles"]');
+  c.textContent = n || "";
+  c.className = "o-compte" + (n ? (bloquant ? " al" : " n") : "");
+  const r = s.querySelector(".o-sortie-resume");
+  r.textContent = resume;
+  r.className = "o-sortie-resume" + (bloquant ? " al" : resume ? " ok" : "");
+ }
+ /** Journal : chaque message affiché (succès ou refus) y reste consultable pendant la session. */
+ function journal(texte, erreur) {
+  const heure = new Date().toLocaleTimeString("fr-FR", {hour: "2-digit", minute: "2-digit", second: "2-digit"});
+  etat.journal.unshift({heure, texte: String(texte ?? ""), erreur: !!erreur});
+  etat.journal = etat.journal.slice(0, 200);
+  const s = document.getElementById("o-sortie");
+  if (!s) return;
+  s.querySelector(".o-journal").innerHTML = etat.journal.map(x =>
+   `<li class="${x.erreur ? "err" : ""}">${ico(x.erreur ? "erreur" : "info", 14)}<time>${x.heure}</time><span>${esc(x.texte)}</span></li>`).join("");
+  s.querySelector('[data-o-sortie-panneau="journal"] .o-sortie-vide').hidden = true;
+  const erreurs = etat.journal.filter(x => x.erreur).length;
+  const c = s.querySelector('[data-o-compte="journal"]');
+  c.textContent = etat.journal.length;
+  c.className = "o-compte" + (erreurs ? " err" : " n");
+ }
+
  // ------------------------------------------------------------------ rendu
  function explorateur(E, etatEtape, vueEtape) {
   const el = document.getElementById("o-explorateur");
@@ -188,8 +260,11 @@ const Coque = (() => {
  function render(E, ETAPES, etatEtape, vueEtape) {
   explorateur(E, etatEtape, vueEtape);
   ongletsDocuments(E);
+  const etape = ETAPES_PARCOURS.some(([v]) => v === vueEtape(E.vue)) && E.ouvrage?.ouvert && !E.ouvrage?.en_conception;
+  if (!etape) controles(null);
   const theme = document.getElementById("v31-settings");
   if (theme) theme.innerHTML = document.documentElement.dataset.theme === "dark" ? V31.icon("sun", 15) : V31.icon("moon", 15);
  }
- return {init, render, actions: () => document.querySelector("#o-documents .o-documents-actions")};
+ return {init, render, controles, journal, sortie: () => { if (!etat.sortieOuverte) plierSortie(); ongletSortie("controles"); },
+         actions: () => document.querySelector("#o-documents .o-documents-actions")};
 })();

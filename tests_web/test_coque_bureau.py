@@ -112,3 +112,38 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.locator('#o-explorateur [data-nav="#/referentiel"]').click()
         self.titre('Référentiel métier')
         self.assertEqual(reponses, [('POST', 200)])
+
+    def test_panneau_de_sortie_controles_et_journal(self):
+        """Lot 2b : contrôles de l'étape et journal des messages dans le panneau de sortie, réductible (mémorisé)."""
+        self.api('/api/equipement/ajouter', {'type': 'MV', 'numero': '02', 'se': '00'})   # équipement à valider
+        avant = self.projet.read_bytes()
+        self.ouvrir('#/inventaire')
+        sortie = self.page.locator('#o-sortie')
+        bloquants = sortie.locator('.parcours-points .pp-bloquants')
+        bloquants.wait_for()
+        self.assertIn('MV02', bloquants.inner_text())
+        self.assertEqual(self.page.locator('#vue .parcours-points').count(), 0, 'Plus de bloc de contrôles dans l\'écran')
+        self.assertIn('à régler', sortie.locator('.o-sortie-resume').inner_text())
+        self.assertTrue(sortie.locator('[data-o-compte="controles"]').inner_text().strip())
+        # Réduire : le résumé reste visible, la liste disparaît ; le choix survit au rechargement
+        sortie.locator('.o-sortie-plier').click()
+        self.assertFalse(bloquants.is_visible())
+        self.assertTrue(sortie.locator('.o-sortie-resume').is_visible())
+        self.page.reload(wait_until='networkidle')
+        self.assertIn('plie', self.page.locator('#o-sortie').get_attribute('class'))
+        # Cliquer un onglet réaffiche le panneau ; un message affiché reste au journal
+        self.page.locator('#o-sortie [data-o-sortie="journal"]').click()
+        self.assertNotIn('plie', self.page.locator('#o-sortie').get_attribute('class'))
+        self.page.evaluate("toast('Message fictif de démonstration')")
+        self.page.evaluate("toast('Refus fictif', true)")
+        journal = self.page.locator('#o-sortie .o-journal li')
+        self.assertEqual(journal.count(), 2)
+        self.assertIn('Refus fictif', journal.first.inner_text())
+        self.assertIn('err', journal.first.get_attribute('class'))
+        self.assertEqual(self.page.locator('#o-sortie [data-o-compte="journal"]').inner_text(), '2')
+        # Écran sans étape : aucun contrôle
+        self.page.locator('#o-explorateur [data-nav="#/referentiel"]').click()
+        self.titre('Référentiel métier')
+        self.page.locator('#o-sortie [data-o-sortie="controles"]').click()
+        self.assertIn('Aucun contrôle', self.page.locator('#o-sortie [data-o-sortie-panneau="controles"]').inner_text())
+        self.assertEqual(self.projet.read_bytes(), avant)

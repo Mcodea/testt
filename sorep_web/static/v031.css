@@ -303,14 +303,6 @@ body[data-view="referentiel"] .ref-types{position:sticky;top:8px;align-self:flex
 body[data-view="referentiel"] .ref-detail{align-self:flex-start}
 
 /* Retours d'essai 4, 5, 7 : ce qui empêche de passer à l'étape suivante. */
-.parcours-points{margin:16px 0 0;display:flex;flex-direction:column;gap:8px}
-.parcours-points h3{margin:0 0 6px;font-size:14px}
-.parcours-points ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
-.parcours-points .lien{text-align:left;padding:0;font-size:13px}
-.pp-bloquants{border:1px solid var(--al,#d99a00);border-left-width:4px;border-radius:8px;padding:10px 14px;background:var(--al-l,#fff8e6)}
-.pp-pret{border:1px solid var(--ok,#1f8a4c);border-left-width:4px;border-radius:8px;padding:10px 14px}
-.pp-verifier{border:1px solid var(--bord);border-radius:8px;padding:8px 14px}
-.pp-verifier summary{cursor:pointer;font-weight:600;font-size:13px}
 
 /* Répartition des E/S et îlot STB (retours 8, 10). */
 .champs-ligne{display:flex;flex-wrap:wrap;gap:18px;align-items:center;padding:10px 16px}
