@@ -2,8 +2,8 @@
 par l'utilisateur le 16/11/2026 : Repère, UF, Sous-ensemble, Équipement, Information, Famille, Nom de variable,
 Type, Adresse, Adresse validée, Registre Modbus, Unité, Alarme, Priorité, Commentaire automate, Libellé Topkapi.
 
-Rien n'est inventé : une adresse seulement proposée est marquée « proposée » ; le registre Modbus n'est donné que
-si la convention protocolaire est déclarée (registre = mot %MW + décalage), sinon « convention à déclarer » ;
+Rien n'est inventé : une adresse seulement proposée est marquée « proposée » ; le registre Modbus est l'adresse
+automate (mot %MW), plus le décalage de l'ouvrage s'il en a un (0 par défaut, retour du 18/11) ;
 la priorité d'alarme, absente de l'ouvrage, est une liste à remplir (P1 / P2 / P3).
 """
 from __future__ import annotations
@@ -55,8 +55,7 @@ def lignes(session):
         a, t = auto.get((v.ident_eq, v.cle)), tele.get((v.ident_eq, v.cle))
         adresse = v.adresse or (a.proposee if a else "")
         etat = "Oui" if v.adresse and v.adresse_validee else ("Appliquée" if v.adresse else ("Proposée" if adresse else "Non"))
-        registre = (t.actuelle or t.proposee) if t and (t.actuelle or t.proposee) else (
-            "convention à déclarer" if adresse and not o.protocole_declare else "")
+        registre = (t.actuelle or t.proposee) if t and (t.actuelle or t.proposee) else ""   # adresse automate (+ décalage éventuel)
         eq = eqs.get(v.ident_eq)
         sortie.append({"repere": v.repere, "uf": v.uf, "se": eq.sous_ensemble if eq else "",
                        "equipement": v.designation, "information": v.information, "famille": v.famille,
@@ -117,8 +116,6 @@ def exporter(chemin, session):
         fam.font = _f(True, 10)
         if d["validee"] != "Oui":
             ws.cell(r, 10).font = _f(True, 10, "A84A00")
-        if d["registre"] == "convention à déclarer":
-            ws.cell(r, 11).font = _f(False, 9, "A84A00", italique=True)
     derniere = entete + max(len(donnees), 1)
     prio = DataValidation(type="list", formula1='"P1,P2,P3"', allow_blank=True,
                           errorTitle="Priorité d'alarme", error="Choisissez P1, P2 ou P3.")

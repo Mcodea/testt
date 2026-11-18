@@ -286,7 +286,7 @@ class TestCoqueBureau(ServeurNavigateur):
         self.assertEqual(self.page.locator('table.v31-table thead th').nth(1).get_attribute('aria-sort'), 'ascending')
         self.assertTrue(self.page.evaluate('''() => { const n = [...document.querySelectorAll('.v31-variable-row')].map(x => x.dataset.variable);
           return n.length > 1 && n.every((v, i) => !i || n[i - 1].localeCompare(v, 'fr', {numeric: true}) <= 0); }'''))
-        self.assertIn('Adresse automate', self.page.locator('.v31-variable-detail .o-grille').inner_text())
+        self.assertIn('Adresse télétransmission', self.page.locator('.v31-variable-detail .o-grille').inner_text())
         # Plusieurs pages (150 lignes) : le tri porte sur toute la liste, pas sur la page affichée. Lignes fictives
         # ajoutées en mémoire du navigateur seulement (aucun appel au serveur).
         self.page.locator('#v31-close-detail').click()

@@ -976,9 +976,7 @@ class Application:
               else "Format Control Expert : source M340 ou M580 requise." if not ce
               else f"{erreurs_recette} erreur(s) de recette à corriger." if erreurs_recette else "")
         poser("topkapi", "Projet existant : table à rapprocher, pas d'import automatique." if not neuf
-              else "Aucune variable." if not variables
-              else "Déclarez la convention protocolaire (registre = %MW + décalage) dans l'écran Adressage."
-              if not o.protocole_declare else "")
+              else "Aucune variable." if not variables else "")
         poser("tele_etudes", "Aucune variable de télétransmission." if not variables else "")
         poser("es_cartes", "Aucune carte d'E/S : calculez le matériel." if not o.modules
               else f"{len(err_mat)} incohérence(s) de cartes ou de voies." if err_mat else "")

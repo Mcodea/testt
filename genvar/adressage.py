@@ -317,18 +317,16 @@ def _teletransmission(session, plan, plat, controleur, eqs):
             a.etat, a.motif = "en conflit", "identifiant de point réservé"
         elif plat == "S4W":
             a.etat, a.motif = "non résolue", "SOFREL S4W : identification des points S4W-Tools non connue d'OGIAS."
-        elif not o.protocole_declare:
-            a.etat = "non résolue"
-            a.motif = ("Convention protocolaire non déclarée (registre = mot %MW + décalage) : à confirmer dans "
-                       "les paramètres de communication de l'ouvrage.")
         elif not va.adresse:
             a.etat, a.motif = "non résolue", "variable source sans adresse"
         else:
             reg = registre_modbus(va.adresse, o.decalage_modbus)
             a.proposee = reg
             a.etat = "validée" if va.etat == "validée" else "proposée"
-            a.regle = (f"Registre = mot de {va.adresse} + décalage {o.decalage_modbus} (convention déclarée) ; "
-                       f"source {va.nom}.")
+            # Retour du 18/11 (19 h 28) : la télétransmission lit l'adresse automate ; un décalage n'est appliqué
+            # que s'il est réglé pour l'ouvrage (0 par défaut, sinon à régler dans la supervision).
+            a.regle = (f"Adresse automate {va.adresse}" + (f" + décalage {o.decalage_modbus}" if o.decalage_modbus else "")
+                       + f" ; source {va.nom}.")
             if reg in reserves_points:
                 a.etat, a.motif = "en conflit", f"registre {reg} réservé"
         plan.affectations.append(a)

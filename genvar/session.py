@@ -1801,7 +1801,8 @@ class Session:
         self._change(devalider=False)
 
     def declarer_protocole(self, declare, decalage=0):
-        """Convention « registre = mot %MW + décalage » confirmée par l'automaticien pour cet ouvrage."""
+        """Décalage de l'adresse de télétransmission (0 par défaut : la télétransmission lit l'adresse automate).
+        `declare` est conservé pour les fichiers et appels existants ; il n'est plus exigé (retour du 18/11)."""
         if int(decalage) not in (0, 1):
             raise RegleMetier("Décalage : 0 ou 1.")
         self.ouvrage.protocole_declare, self.ouvrage.decalage_modbus = bool(declare), int(decalage)
@@ -1819,9 +1820,6 @@ class Session:
         plan = adressage.calculer(self)
         if plan.conflits:
             raise RegleMetier(f"Export TOPKAPI refusé : {len(plan.conflits)} conflit(s) d'adressage (ex. {plan.conflits[0][1]}).")
-        if not self.ouvrage.protocole_declare:
-            raise RegleMetier("Déclarez d'abord la convention protocolaire (registre = mot %MW + décalage) dans "
-                              "l'écran Adressage : sans elle, aucune adresse TOPKAPI n'est certaine.")
         variables = {(v.ident_eq, v.cle): v for v in self.variables()}
         points, exclus = [], []
         for a in plan.affectations:
@@ -1849,7 +1847,7 @@ class Session:
         rapport = [f"Export TOPKAPI d'OGIAS — {base}", "",
                    "STATUT : NON QUALIFIÉ. Format .$$t « Version 1 » relevé sur un projet TOPKAPI réel (2008-2018) ;",
                    "à importer d'abord dans une COPIE d'application TOPKAPI 6.3, puis à vérifier point par point.", "",
-                   f"Convention déclarée : adresse TOPKAPI = mot %MW + décalage {self.ouvrage.decalage_modbus} ; bit en hexadécimal (mot$bit).",
+                   f"Adresse TOPKAPI = adresse automate (mot %MW) + décalage {self.ouvrage.decalage_modbus} (0 par défaut ; un décalage se règle de préférence dans la supervision) ; bit en hexadécimal (mot$bit).",
                    "Codes de format écrits : 0 = bit (TS, TC), 2 = mot 16 bits (INT).",
                    "Dans le projet de référence, les télécommandes étaient des mots entiers (format 0 sur une adresse de mot) :",
                    "les TC d'OGIAS sont des bits ; vérifiez la commande attendue par le programme automate.", "",

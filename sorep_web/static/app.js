@@ -327,8 +327,8 @@ function vueAdressage() {
       <input id="ad-rc" placeholder="Cible"><input id="ad-rm" placeholder="Motif"><button id="ad-res">Réserver</button></div></div>
     <div class="bloc"><div class="bloc-tete"><h2>Conventions de l'ouvrage</h2><span class="aide">déclarées par l'automaticien, jamais déduites</span></div>
      ${s4w ? `<div class="avert">SOFREL S4W : l'identification des points et des adresses dans S4W-Tools n'est pas connue. Aucun %MW ni registre Schneider n'est proposé.</div>` : `
-     <label class="case"><input type="checkbox" id="ad-proto" ${d.protocole_declare ? "checked" : ""}> Registre protocolaire = numéro du mot %MW + décalage</label>
-     <label class="case">Décalage <select id="ad-dec"><option value="0" ${d.decalage == 0 ? "selected" : ""}>0</option><option value="1" ${d.decalage == 1 ? "selected" : ""}>1</option></select></label>
+     <p class="aide">Adresse de télétransmission = adresse automate. Un décalage éventuel se règle de préférence dans la supervision.</p>
+     <label class="case">Décalage de l'adresse de télétransmission <select id="ad-dec"><option value="0" ${d.decalage == 0 ? "selected" : ""}>0 (par défaut)</option><option value="1" ${d.decalage == 1 ? "selected" : ""}>1</option></select></label>
      ${d.mode === "Existant" ? `<label class="case"><input type="checkbox" id="ad-dispo" ${d.disponibilite_verifiee ? "checked" : ""}> L'import couvre toute la mémoire utilisée (disponibilité vérifiée)</label>` : ""}`}
      ${d.journal.length ? `<p class="aide">Dernières applications : ${d.journal.slice(-3).reverse().map(j => `${esc(j.le)} (${esc(j.par || "?")}) : ${j.physique || 0} voie(s), ${j.automate || 0} adresse(s)`).join(" · ")}</p>` : ""}</div>
    </div></section>`;
@@ -346,8 +346,8 @@ function vueAdressage() {
     confirmer(`Valider ${paires.length} affectation(s) ?`, "Vous attestez ces adresses ; elles ne seront plus déplacées par le moteur.", "Valider", () => act({action: "valider", niveau: niv, paires}, "Affectations validées.")); };
   document.querySelectorAll(".ad-lib").forEach(b => b.onclick = () => act({action: "liberer", niveau: b.dataset.n, cible: b.dataset.c}, "Réservation libérée."));
   $("#ad-res").onclick = () => act({action: "reserver", niveau: $("#ad-rn").value, cible: $("#ad-rc").value, motif: $("#ad-rm").value}, "Réservation enregistrée.");
-  if($("#ad-proto")) $("#ad-proto").onchange = ev => act({action: "protocole", declare: ev.target.checked, decalage: $("#ad-dec").value}, "Convention enregistrée.");
-  if($("#ad-dec")) $("#ad-dec").onchange = ev => act({action: "protocole", declare: $("#ad-proto").checked, decalage: ev.target.value}, "Décalage enregistré.");
+  // Retour du 18/11 (19 h 28) : plus de convention à déclarer ; seul le décalage (0 par défaut) reste réglable.
+  if($("#ad-dec")) $("#ad-dec").onchange = ev => act({action: "protocole", declare: true, decalage: ev.target.value}, "Décalage enregistré.");
   if ($("#ad-dispo")) $("#ad-dispo").onchange = ev => act({action: "disponibilite", verifiee: ev.target.checked}, "Disponibilité enregistrée.");
   piedEtape();
 }

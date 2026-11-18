@@ -171,7 +171,7 @@ input,select,textarea{border-radius:var(--v31-control-radius);background:var(--v
  .v31-variable-screen.has-detail{grid-template-columns:minmax(0,1fr) 290px}
  .v31-table-toolbar{padding:12px;gap:7px}
  .v31-table .mono{font-size:10.5px}
- .v31-variable-screen.has-detail .v31-col-tele{display:none}
+ 
 }
 @media(max-width:1120px){
  .v31-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -189,7 +189,7 @@ input,select,textarea{border-radius:var(--v31-control-radius);background:var(--v
 #vue.v31-show-tree>aside .aside-btns{display:flex;flex-wrap:wrap}
 .v31-page-controls{display:flex;gap:5px}
 .v31-page-controls button{background:var(--v31-bg);border:0;padding:4px 9px;color:var(--v31-muted);border-radius:999px;font-size:12px}
-.v31-variable-screen .v31-hide-in-exchange,.v31-variable-screen .v31-hide-in-tele{display:none}
+
 /* Thème sombre local, compatible avec la préférence déjà présente en V0.30. */
 html[data-theme="dark"]{
  --v31-bg:#171b35;--v31-white:#252a47;--v31-subtle:#2d3353;--v31-row:#313759;--v31-selected:#353b68;

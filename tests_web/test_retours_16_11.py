@@ -435,10 +435,9 @@ class TestRetours1611Apres15h(ServeurNavigateur):
         self.assertEqual(vijeo.locator('button').count(), 0, 'Format non décrit : aucun bouton, jamais simulé')
         quoi = set(self.page.locator('.rc-groupe [data-export]').evaluate_all('b => b.map(x => x.dataset.export)'))
         self.assertTrue({'es_xsy', 'es_txt', 'xsy', 'topkapi', 'es_cartes', 'liste_es', 'tele_etudes', 'nomenclature'} <= quoi)
-        # TOPKAPI sans convention protocolaire : bouton désactivé avec la raison
+        # Retour du 18/11 : plus de convention à déclarer, la télétransmission lit l'adresse automate
         topkapi = self.page.locator('[data-export="topkapi"]')
-        self.assertTrue(topkapi.is_disabled())
-        self.assertIn('convention', topkapi.get_attribute('title'))
+        self.assertNotIn('convention', topkapi.get_attribute('title') or '')
         for code, suffixe in (('es_cartes', '_ES_par_carte.xlsx'), ('tele_etudes', '_teletransmission_etudes.xlsx')):
             with self.page.expect_download() as dl:
                 self.page.locator(f'[data-export="{code}"]').click()

@@ -304,13 +304,11 @@ class ScenarioF_Robustesse(Base):
         with self.assertRaises(RegleMetier):
             s.ajouter_reservation("memoire", "%MW1200", "")             # motif obligatoire
 
-    def test_teletransmission_convention_declaree_seulement(self):
+    def test_teletransmission_lit_l_adresse_automate(self):
+        # Retour du 18/11 : par défaut, adresse de télétransmission = adresse automate (décalage 0), sans déclaration
         s = nouvelle("M340")
         equiper(s, ("FT", "01", ["Seuils réglables"]))
         p = s.plan_adressage(); s.appliquer_adressage(p.empreinte)
-        tt = par_niveau(s.plan_adressage(), "teletransmission")
-        self.assertTrue(all(a.etat == "non résolue" and not a.proposee for a in tt.values()))
-        s.declarer_protocole(True, 0)
         tt = par_niveau(s.plan_adressage(), "teletransmission")
         noms = [a.nom for a in tt.values()]
         self.assertEqual(len(noms), len(set(noms)))                     # aucun point en double
@@ -318,6 +316,9 @@ class ScenarioF_Robustesse(Base):
         for k, a in tt.items():
             self.assertEqual(_mot("%MW" + a.proposee)[0], _mot(variables[k].adresse)[0])
         self.assertTrue(any("Retour" in a.regle for a in tt.values() if a.nature == "TR"))
+        s.declarer_protocole(True, 1)                                   # décalage réglé : registre = mot + 1
+        for k, a in par_niveau(s.plan_adressage(), "teletransmission").items():
+            self.assertEqual(_mot("%MW" + a.proposee)[0], _mot(variables[k].adresse)[0] + 1)
 
     def test_persistance_des_affectations_et_traces(self):
         s = nouvelle("M340")

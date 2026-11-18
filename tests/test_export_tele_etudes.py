@@ -59,8 +59,8 @@ class TestExportTeleEtudes(unittest.TestCase):
             self.assertEqual(r[12] or "", "Oui" if v.alarme else "")
             self.assertIn(r[9], ("Oui", "Appliquée", "Proposée", "Non"))
             self.assertIsNone(r[13])                                   # priorité : à renseigner, jamais inventée
-            if r[8]:                                                   # convention non déclarée : pas de registre
-                self.assertEqual(r[10], "convention à déclarer")
+            if r[8] and r[9] != "Non":                                 # retour du 18/11 : registre = mot %MW (décalage 0)
+                self.assertEqual(str(r[10]), r[8].replace("%MW", ""))
 
 
 if __name__ == "__main__":

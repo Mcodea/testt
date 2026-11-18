@@ -69,17 +69,16 @@ class TestVariablesV031(ServeurNavigateur):
         self.assertTrue(checkbox.is_checked())
         self.assertEqual(self.page.locator("#v31-close-detail").count(), 0)
 
-    def test_presets_describe_columns_without_changing_variables(self):
+    def test_une_seule_colonne_adresse_teletransmission(self):
+        """Retour du 18/11 (19 h 28) : la télétransmission lit l'adresse automate ; une seule colonne, plus de vues
+        « Adresses automate » / « Télétransmission »."""
         fichier = Path(self.api('/api/ouvrage')['chemin'])
         avant = fichier.read_bytes()
-        noms = self.page.locator('.v31-variable-row').evaluate_all("els => els.map(e => e.dataset.variable)")
-        for vue, libelle in (('all', 'Toutes'), ('exchange', 'Adresses automate'), ('tele', 'Télétransmission')):
-            with self.subTest(vue=vue):
-                bouton = self.page.locator(f'[data-var-view="{vue}"]')
-                self.assertEqual(bouton.inner_text(), libelle)
-                bouton.click()
-                self.assertEqual(self.page.locator('.v31-variable-row').evaluate_all(
-                    "els => els.map(e => e.dataset.variable)"), noms)
+        self.assertEqual(self.page.locator('[data-var-view]').count(), 0)
+        entetes = self.page.locator('.v31-table thead th').evaluate_all('els => els.map(e => e.textContent.trim())')
+        self.assertIn('Adresse télétransmission', entetes)
+        self.assertNotIn('Adresse automate', entetes)
+        self.assertNotIn('Télétransmission', entetes)
         self.assertEqual(fichier.read_bytes(), avant)
 
     def test_rows_match_mockup_density_and_keep_accessible_selection(self):
@@ -116,8 +115,7 @@ class TestVariablesV031(ServeurNavigateur):
         fichier = Path(self.api('/api/ouvrage')['chemin'])
         avant = fichier.read_bytes()
         self.page.locator('.v31-variable-row').first.click()
-        for vue in ('all', 'exchange', 'tele'):
-            self.page.locator(f'[data-var-view="{vue}"]').click()
+        for vue in ('unique',):
             self.page.locator('#v31-var-search').fill('aucune-variable-fictive-correspondante')
             for largeur in (1366, 1920, 2560):
                 with self.subTest(vue=vue, largeur=largeur):
@@ -188,9 +186,8 @@ class TestVariablesV031(ServeurNavigateur):
         self.page.locator(".v31-variable-row").first.click()
         for largeur in (1366, 1920, 2560):
             self.page.set_viewport_size({"width": largeur, "height": 1080})
-            for vue in ("all", "exchange", "tele"):
+            for vue in ("unique",):
                 with self.subTest(largeur=largeur, vue=vue):
-                    self.page.locator(f'[data-var-view="{vue}"]').click()
                     entetes = self.page.locator(".v31-table thead th").evaluate_all(
                         "els => els.filter(e => getComputedStyle(e).display !== 'none').map(e => ({texte:e.textContent.trim(),x:e.getBoundingClientRect().x}))")
                     cellules = self.page.locator(".v31-variable-row").first.locator("td").evaluate_all(
@@ -200,16 +197,13 @@ class TestVariablesV031(ServeurNavigateur):
                     self.assertIn("Libellé", noms)
                     self.assertNotIn("Source", noms)          # retour du 16/11 : colonne sans intérêt retirée
                     self.assertNotIn("Règle", noms)
-                    self.assertEqual("Télétransmission" in noms, largeur > 1400 and vue != "exchange")
                     for h, c in zip(entetes, cellules):
                         self.assertAlmostEqual(h["x"], c["x"], delta=1)
-                    self.assertIn("%MW", cellules[noms.index("Adresse automate")]["texte"])
+                    self.assertIn("%MW", cellules[noms.index("Adresse télétransmission")]["texte"])
 
     def test_view_headers_match_visible_cells(self):
-        for view, excluded, count in [("all", None, 8), ("exchange", "Télétransmission", 7),
-                                      ("tele", "Règle", 7)]:
+        for view, excluded, count in [("unique", "Télétransmission", 7)]:
             with self.subTest(view=view):
-                self.page.locator(f'[data-var-view="{view}"]').click()
                 headers = self.page.locator(".v31-table thead th").evaluate_all(
                     "els => els.filter(e => getComputedStyle(e).display !== 'none').map(e => e.textContent.trim())"
                 )

@@ -9,7 +9,7 @@ import zipfile
 from genvar import chemins, formats_topkapi as ft
 from genvar.catalogue import Catalogue
 from genvar.modele import Equipement
-from genvar.session import Session, RegleMetier
+from genvar.session import Session
 
 VIDE = "\t" * 33
 ECHANTILLON = ("Version\t1\r\n" + "\t".join(ft.ENTETE) + "\r\n"
@@ -48,11 +48,9 @@ class TestExportOuvrage(unittest.TestCase):
         s.decider_propositions(e.ident, "retenir")
         p = s.plan_adressage(); s.appliquer_adressage(p.empreinte)
 
-    def test_convention_obligatoire_puis_export(self):
+    def test_export_sans_convention_a_declarer(self):
+        # Retour du 18/11 : la télétransmission lit l'adresse automate ; aucune convention n'est exigée
         z = os.path.join(self.d, "t.zip")
-        with self.assertRaises(RegleMetier):
-            self.s.exporter_topkapi(z)                          # convention protocolaire non déclarée
-        self.s.declarer_protocole(True, 0)
         n, exclus = self.s.exporter_topkapi(z)
         with zipfile.ZipFile(z) as f:
             nom = next(x for x in f.namelist() if x.endswith(".$$t"))
