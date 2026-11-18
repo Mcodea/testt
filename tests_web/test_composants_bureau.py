@@ -4,7 +4,7 @@ from pathlib import Path
 
 from support import ServeurNavigateur
 
-LIGNES = "() => [...document.querySelectorAll('table.o-tableau tbody tr')].map(r => r.cells[2].innerText.trim())"
+LIGNES = "() => [...document.querySelectorAll('table.o-tableau tbody tr')].map(r => r.cells[3].innerText.trim())"
 
 
 class TestComposantsBureau(ServeurNavigateur):
@@ -46,7 +46,7 @@ class TestComposantsBureau(ServeurNavigateur):
     def test_tri_trois_etats(self):
         t = self.tableau()
         origine = self.page.evaluate(LIGNES)
-        titre = t.locator('thead th').nth(2)
+        titre = t.locator('thead th').nth(3)
         titre.click()
         self.assertEqual(titre.get_attribute('aria-sort'), 'ascending')
         croissant = self.page.evaluate(LIGNES)
@@ -73,9 +73,9 @@ class TestComposantsBureau(ServeurNavigateur):
         # Copie : titres puis lignes sélectionnées, séparés par des tabulations ; colonne d'actions ignorée
         self.page.keyboard.press('Control+c')
         texte = self.page.evaluate('navigator.clipboard.readText()').split('\r\n')
-        self.assertEqual(texte[0], 'Niveau\tÉtape\tConstat')
+        self.assertEqual(texte[0], 'Niveau\tRègle\tÉtape\tConstat')
         self.assertEqual(len(texte), 3)
-        self.assertTrue(all(len(x.split('\t')) == 3 for x in texte))
+        self.assertTrue(all(len(x.split('\t')) == 4 for x in texte))
         self.assertIn('copiée', self.page.locator('#o-sortie .o-journal li').first.inner_text())
         # Clavier : Échap vide, flèche bas avec Maj étend, Ctrl A sélectionne tout
         lignes.nth(0).focus()
@@ -96,7 +96,7 @@ class TestComposantsBureau(ServeurNavigateur):
     def test_menu_contextuel_filtres_et_redimensionnement(self):
         t = self.tableau()
         total = t.locator('tbody tr').count()
-        t.locator('thead th').nth(1).click(button='right')
+        t.locator('thead th').nth(2).click(button='right')
         menu = self.page.locator('.o-contextuel')
         self.assertTrue(menu.is_visible())
         self.assertIn('Trier « Étape »', menu.inner_text())

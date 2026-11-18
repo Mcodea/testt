@@ -1,5 +1,6 @@
 """Retours de l'utilisateur du 16/11/2026 : en-tête de l'arborescence, rack équipé emplacement par emplacement,
 sources d'acquisition classées."""
+import re
 from support import ServeurNavigateur
 
 
@@ -443,6 +444,13 @@ class TestRetours1611Apres15h(ServeurNavigateur):
                 self.page.locator(f'[data-export="{code}"]').click()
             self.assertTrue(dl.value.suggested_filename.endswith(suffixe), code)
         # Dossier complet et actualisation dans l'en-tête, sans barre en double
+        # 18/11 : chaque constat porte sa règle nommée (R-…) et la façon de corriger
+        self.page.evaluate("document.querySelector('details.rc-controles').open = true")
+        codes = self.page.locator('.rc-controles td.rc-regle').all_inner_texts()
+        self.assertTrue(codes and all(re.fullmatch(r'R-[A-Z]{2,3}-\d{2}', c.strip()) for c in codes), codes[:5])
+        self.assertTrue(self.page.locator('.rc-controles .rc-corriger').count() > 0)
+        regles = self.api('/api/regles')['regles']
+        self.assertTrue(all(r['corriger'] for r in regles))
         # Lot 5e : commandes de la livraison au ruban, une seule fois
         self.assertEqual(self.page.locator('#o-ruban [aria-label="Livraison"] #r-dossier').count(), 1)
         self.assertEqual(self.page.locator('#o-ruban [aria-label="Livraison"] #r-actualiser').count(), 1)

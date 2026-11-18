@@ -911,31 +911,42 @@ class Application:
             "note": "Point fonctionnel, variable source et adresse protocolaire distincts. "
                     "Aucun import S4W-Tools ou TOPKAPI n'est qualifié."}
 
+    def regles_web(self, _):
+        """Catalogue des règles de cohérence nommées (lecture seule, sans ouvrage ouvert)."""
+        from genvar.coherence import REGLES, decrire
+        return {"regles": [decrire(c) for c in REGLES]}
+
     def recette_web(self, _):
         if not self.ouvert:
             raise RegleMetier("Ouvrez d'abord un ouvrage.")
         o = self.s.ouvrage
         controles = []
-        def ajouter(etape, niveau, texte, ident=""):
-            controles.append({"code": etape, "etape": etape, "niveau": niveau, "message": texte, "ident": ident})
+        # Orientation du 18/11 : chaque contrôle porte sa règle nommée (genvar/coherence.py) ; « regle_detail » donne
+        # son titre, la raison et la façon de corriger. « code » reste l'étape pour les anciens appelants.
+        from genvar.coherence import decrire
+        def ajouter(etape, niveau, texte, ident="", regle=""):
+            controles.append({"code": etape, "etape": etape, "niveau": niveau, "message": texte, "ident": ident,
+                              "regle": regle, "regle_detail": decrire(regle)})
         if not (o.lieu and o.code_ouvrage and o.libelle):
-            ajouter("Ouvrage", "Erreur", "Identification de l'ouvrage incomplète.")
+            ajouter("Ouvrage", "Erreur", "Identification de l'ouvrage incomplète.", regle="R-OUV-01")
         for e in o.equipements:
             if not e.valide:
-                ajouter("Équipements", "Erreur", f"{o.repere(e)} : paramétrage non validé.", e.ident)
+                ajouter("Équipements", "Erreur", f"{o.repere(e)} : paramétrage non validé.", e.ident, "R-EQ-01")
         if not o.equipements:
-            ajouter("Équipements", "Alerte", "Inventaire sans équipement.")
+            ajouter("Équipements", "Alerte", "Inventaire sans équipement.", regle="R-EQ-02")
         for a in self.s.anomalies_existant() if o.mode == "Existant" else self.s.anomalies():
-            ajouter(getattr(a, "etape", "") or "Équipements", a.niveau, f"{a.repere} : {a.message}", a.ident_eq)
+            ajouter(getattr(a, "etape", "") or "Équipements", a.niveau, f"{a.repere} : {a.message}", a.ident_eq,
+                    getattr(a, "code", ""))
         for a in self.s.anomalies_homonymes():           # P8 / R9 : autres ouvrages du même programme automate
-            ajouter(a.etape, a.niveau, f"{a.repere} : {a.message}", a.ident_eq)
+            ajouter(a.etape, a.niveau, f"{a.repere} : {a.message}", a.ident_eq, getattr(a, "code", ""))
         if o.mode == "Neuf":
             # Adresses de variables manquantes : déjà signalées par les contrôles (« pas d'adresse »).
             # Les E/S ne sont accessibles qu'après validation de l'inventaire.
             if o.equipements and all(e.valide for e in o.equipements):
                 for pt in self.s.points():
                     if pt.raccordement != "Communication" and not pt.adresse:
-                        ajouter("Liste des E/S et matériel", "Erreur", f"Voie E/S non renseignée : {pt.nom}", pt.ident_eq)
+                        ajouter("Liste des E/S et matériel", "Erreur", f"Voie E/S non renseignée : {pt.nom}", pt.ident_eq,
+                                "R-ES-10")
         ordre = {"Ouvrage": 0, "Équipements": 1, "Liste des E/S et matériel": 2, "Variables": 3}
         controles.sort(key=lambda x: (ordre.get(x["etape"], 9), x["niveau"] != "Erreur"))
         erreurs = sum(x["niveau"] == "Erreur" for x in controles)
@@ -1624,7 +1635,7 @@ ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle":
               "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre",
               "/api/es": "es", "/api/numero-ouvrage": "numero_ouvrage_suggere",
               "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page",
-              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web",
+              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web",
               "/api/referentiel/synchronisation": "synchronisation_referentiel", "/api/ouvrage/copies": "copies_ouvrage",
               "/api/referentiel/impact": "rapport_impact", "/api/referentiel/propagation": "apercu_propagation",
               "/api/referentiel/apercu-modele": "apercu_modele"}

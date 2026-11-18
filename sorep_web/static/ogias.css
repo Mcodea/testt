@@ -702,3 +702,7 @@ html[data-theme] .v31-secondary-header:not([aria-pressed="true"]) { background: 
 html[data-theme] .emplacement .ajout { color: var(--o-action); }
 html[data-theme] #vue .v31-actions-more summary { background: var(--o-surface-2); color: var(--o-texte); }
 html[data-theme] .v31-secondary-header[aria-pressed="true"] { background: var(--o-action-fond); color: var(--o-texte); border-color: var(--o-action); }
+
+/* Règles de cohérence nommées (18/11) : code de la règle et façon de corriger sous chaque constat de la recette */
+html[data-theme] .rc-regle abbr { text-decoration: none; border-bottom: 1px dotted var(--o-texte-3); cursor: help; }
+html[data-theme] .rc-corriger { margin-top: 2px; font-size: var(--o-t-s); color: var(--o-texte-2); }

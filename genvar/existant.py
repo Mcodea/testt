@@ -424,10 +424,10 @@ def _occupation(adresse, type_logique):
 def controler_existant(ouvrage, catalogue):
     """Anomalies du projet existant. Les adresses lues sont contrôlées, jamais corrigées."""
     anomalies = []
-    err = lambda rep, msg: anomalies.append(Anomalie("Erreur", rep, msg))
-    alerte = lambda rep, msg: anomalies.append(Anomalie("Alerte", rep, msg))
+    err = lambda rep, msg, code="": anomalies.append(Anomalie("Erreur", rep, msg, code=code))
+    alerte = lambda rep, msg, code="": anomalies.append(Anomalie("Alerte", rep, msg, code=code))
     for a, b in doublons_identification(ouvrage):
-        err(a, f"Doublon d'identification : {a} et {b} sont rattachées au même signal du même équipement.")
+        err(a, f"Doublon d'identification : {a} et {b} sont rattachées au même signal du même équipement.", "R-EXI-01")
     mots: dict[int, str] = {}
     bits: dict[tuple[int, int], str] = {}
     for v in ouvrage.existantes:
@@ -436,22 +436,22 @@ def controler_existant(ouvrage, catalogue):
         if occ is None:
             continue
         if typ in ("BOOL", "EBOOL") and occ["mots"]:
-            alerte(v.nom, f"{typ} placé sur le mot entier {v.adresse} : vérifier l'adresse dans le programme (bit manquant ?).")
+            alerte(v.nom, f"{typ} placé sur le mot entier {v.adresse} : vérifier l'adresse dans le programme (bit manquant ?).", "R-EXI-02")
         if (TAILLE_MOTS.get(typ) in (2, 4) and occ["mots"]
                 and (ouvrage.automate or "").upper() in ("M340", "M580")
                 and min(occ["mots"]) % 2):
-            err(v.nom, f"{typ} sur l'adresse impaire {v.adresse} : refusé sur {ouvrage.automate} (adresse paire obligatoire).")
+            err(v.nom, f"{typ} sur l'adresse impaire {v.adresse} : refusé sur {ouvrage.automate} (adresse paire obligatoire).", "R-EXI-03")
         for m in occ["mots"]:
             if m in mots:
-                err(v.nom, f"Chevauchement : le mot %MW{m} est aussi utilisé par {mots[m]}.")
+                err(v.nom, f"Chevauchement : le mot %MW{m} est aussi utilisé par {mots[m]}.", "R-EXI-04")
             mots.setdefault(m, v.nom)
         for bt in occ["bits"]:
             if bt in bits:
-                err(v.nom, f"Chevauchement : le bit %MW{bt[0]}.{bt[1]} est aussi utilisé par {bits[bt]}.")
+                err(v.nom, f"Chevauchement : le bit %MW{bt[0]}.{bt[1]} est aussi utilisé par {bits[bt]}.", "R-EXI-04")
             bits.setdefault(bt, v.nom)
     for (m, b), nom in bits.items():
         if m in mots and mots[m] != nom:
-            err(nom, f"Chevauchement : %MW{m}.{b} est un bit du mot %MW{m} utilisé par {mots[m]}.")
+            err(nom, f"Chevauchement : %MW{m}.{b} est un bit du mot %MW{m} utilisé par {mots[m]}.", "R-EXI-04")
     if ouvrage.table_tt:
         # La table de télétransmission est la référence : elle remplace la qualification
         # variable par variable et la liste des écarts (une ligne « Sans source » les couvre).
@@ -465,9 +465,9 @@ def controler_existant(ouvrage, catalogue):
     for v in ouvrage.existantes:
         q = qualifs[id(v)]
         if q.niveau == "À confirmer":
-            alerte(v.nom, q.motif)
+            alerte(v.nom, q.motif, "R-EXI-05")
         elif q.niveau == "Incohérence":
-            err(v.nom, q.motif)
+            err(v.nom, q.motif, "R-EXI-06")
     for e in ecarts(ouvrage, catalogue):
         if e[0] == "Obligatoire absent":
             err(e[1], f"Signal obligatoire absent de l'automate : {e[3]} ({e[4]}).")

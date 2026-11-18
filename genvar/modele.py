@@ -904,6 +904,7 @@ class Anomalie:
     message: str
     ident_eq: str = ""
     etape: str = "Équipements"   # étape du parcours où l'anomalie se corrige
+    code: str = ""               # règle de cohérence nommée (genvar/coherence.py), ex. « R-VAR-05 »
 
 
 def controler(ouvrage, catalogue, variables=None):
@@ -911,22 +912,22 @@ def controler(ouvrage, catalogue, variables=None):
         variables = generer(ouvrage, catalogue)
     anomalies = []
     etape = ["Équipements"]
-    err = lambda rep, msg, ident="": anomalies.append(Anomalie("Erreur", rep, msg, ident, etape[0]))
-    alerte = lambda rep, msg, ident="": anomalies.append(Anomalie("Alerte", rep, msg, ident, etape[0]))
+    err = lambda rep, msg, ident="", code="": anomalies.append(Anomalie("Erreur", rep, msg, ident, etape[0], code))
+    alerte = lambda rep, msg, ident="", code="": anomalies.append(Anomalie("Alerte", rep, msg, ident, etape[0], code))
 
     # --- ouvrage
     if not re.match(r"^[A-Z0-9]{4}$", ouvrage.lieu or ""):
-        err("Ouvrage", "Le lieu doit faire 4 caractères (lettres majuscules ou chiffres), ex. ATMS.")
+        err("Ouvrage", "Le lieu doit faire 4 caractères (lettres majuscules ou chiffres), ex. ATMS.", "", "R-OUV-02")
     if not re.match(r"^[A-Z]{2}$", ouvrage.code_ouvrage or ""):
-        err("Ouvrage", "Le code de l'ouvrage doit faire 2 lettres majuscules, ex. RV.")
+        err("Ouvrage", "Le code de l'ouvrage doit faire 2 lettres majuscules, ex. RV.", "", "R-OUV-03")
     if ouvrage.numero_ouvrage and not re.fullmatch(r"(?:0[1-9]|[1-9][0-9])", ouvrage.numero_ouvrage):
-        err("Ouvrage", "Numéro d’ouvrage invalide : 01 à 99.")
+        err("Ouvrage", "Numéro d’ouvrage invalide : 01 à 99.", "", "R-OUV-04")
     codes_se = [s.code for s in ouvrage.sous_ensembles]
     for s in ouvrage.sous_ensembles:
         if not re.match(r"^[A-Z0-9]{2}$", s.code):
-            err("Ouvrage", f"Sous-ensemble « {s.code} » : 2 caractères (lettres majuscules ou chiffres).")
+            err("Ouvrage", f"Sous-ensemble « {s.code} » : 2 caractères (lettres majuscules ou chiffres).", "", "R-OUV-05")
         if codes_se.count(s.code) > 1:
-            err("Ouvrage", f"Sous-ensemble {s.code} déclaré plusieurs fois.")
+            err("Ouvrage", f"Sous-ensemble {s.code} déclaré plusieurs fois.", "", "R-OUV-06")
 
     # --- équipements
     reperes = {}
@@ -936,48 +937,48 @@ def controler(ouvrage, catalogue, variables=None):
         if "signaux" in modele:
             from .modeles import verifier_signaux_modele
             for probleme in verifier_signaux_modele(modele["signaux"], eq.type):
-                err(rep, f"Modèle {eq.modele} : {probleme}", eq.ident)
+                err(rep, f"Modèle {eq.modele} : {probleme}", eq.ident, code="R-EQ-03")
         if catalogue.type(eq.type) is None:
-            err(rep, f"Type {eq.type} absent du catalogue.", eq.ident)
+            err(rep, f"Type {eq.type} absent du catalogue.", eq.ident, code="R-EQ-04")
         if eq.sous_ensemble not in codes_se:
-            err(rep, f"Sous-ensemble {eq.sous_ensemble} non déclaré dans l'ouvrage.", eq.ident)
+            err(rep, f"Sous-ensemble {eq.sous_ensemble} non déclaré dans l'ouvrage.", eq.ident, code="R-EQ-05")
         if not re.match(r"^\d{2}$", eq.numero or ""):
-            err(rep, "Le numéro doit faire 2 chiffres (01 à 99).", eq.ident)
+            err(rep, "Le numéro doit faire 2 chiffres (01 à 99).", eq.ident, code="R-EQ-06")
         if rep in reperes:
-            err(rep, "Repère utilisé par deux équipements.", eq.ident)
+            err(rep, "Repère utilisé par deux équipements.", eq.ident, code="R-EQ-07")
         reperes[rep] = True
         catalogue_eq = catalogue_pour_equipement(ouvrage, catalogue, eq)
         for opt in eq.options:
             if opt not in catalogue_eq.options_du_type(eq.type):
-                alerte(rep, f"Option « {opt} » inconnue pour le type {eq.type}.", eq.ident)
+                alerte(rep, f"Option « {opt} » inconnue pour le type {eq.type}.", eq.ident, code="R-EQ-08")
         adaptes = {f"{x.famille}_{x.code}" for x in eq.ajouts}
         for s in catalogue_eq.signaux_du_type(eq.type):
             if (s["presence"] == "Obligatoire" and f"{s['famille']}_{s['code']}" in eq.exclus
                     and f"{s['famille']}_{s['code']}" not in adaptes):
-                alerte(rep, f"Signal obligatoire retiré : {s['famille']}_{s['code']} ({s['information']}).", eq.ident)
+                alerte(rep, f"Signal obligatoire retiré : {s['famille']}_{s['code']} ({s['information']}).", eq.ident, code="R-EQ-09")
         props = propositions_regles(catalogue_eq, eq)
         for cle, p in sorted(props.items()):
             if p.etat == "proposé":
                 err(rep, f"Information attendue non décidée : {cle} « {p.signal.get('information', '')} » "
                          f"(proposée par {', '.join(r.get('id', '?') for r in p.regles)}). "
-                         "Retenez-la ou écartez-la avec un motif dans la fiche de l'équipement.", eq.ident)
+                         "Retenez-la ou écartez-la avec un motif dans la fiche de l'équipement.", eq.ident, code="R-EQ-10")
             elif p.etat == "refusé" and not (getattr(eq, "motifs", {}) or {}).get(cle):
                 alerte(rep, f"Information {cle} « {p.signal.get('information', '')} » écartée sans motif écrit.",
-                       eq.ident)
+                       eq.ident, code="R-EQ-11")
         for cle in eq.acceptes:
             if cle not in props or props[cle].etat != "retenu":
                 alerte(rep, f"Signal {cle} accepté mais sa règle n'est plus satisfaite (E/S retirée ?) : "
-                            "il n'est plus généré.", eq.ident)
+                            "il n'est plus généré.", eq.ident, code="R-EQ-12")
         retenues = {f"{x['famille']}_{x['code']}" for x, _ in signaux_retenus(catalogue_eq, eq)}
         for cle in sorted(set(eq.adresses) - retenues):
             alerte(rep, f"Adresse {eq.adresses[cle]} conservée pour {cle}, signal non retenu : "
-                        "elle sera réutilisée s'il revient, sinon la libérer.", eq.ident)
+                        "elle sera réutilisée s'il revient, sinon la libérer.", eq.ident, code="R-EQ-13")
         for a in eq.ajouts:
             sens = sens_incoherent(a.famille, a.es)
             if sens:
-                err(rep, f"Signal propre {a.famille}_{a.code} : {sens}.", eq.ident)
+                err(rep, f"Signal propre {a.famille}_{a.code} : {sens}.", eq.ident, code="R-EQ-14")
             for m in anomalies_interne({"famille": a.famille, "es": a.es, "alarme": a.alarme}):
-                err(rep, f"Signal propre {a.famille}_{a.code} : {m}.", eq.ident)
+                err(rep, f"Signal propre {a.famille}_{a.code} : {m}.", eq.ident, code="R-EQ-14")
 
     # --- variables et entrées-sorties
     points = generer_points(ouvrage, catalogue)
@@ -988,16 +989,16 @@ def controler(ouvrage, catalogue, variables=None):
                       + [(x.repere, x.ident_eq, x.nom) for x in internes])
     for rep_, ident, nom in controles_noms:
         if len(nom) > LONGUEUR_MAX_NOM:
-            err(rep_, f"{nom} : {len(nom)} caractères, {LONGUEUR_MAX_NOM} au plus.", ident)
+            err(rep_, f"{nom} : {len(nom)} caractères, {LONGUEUR_MAX_NOM} au plus.", ident, code="R-NOM-01")
         if not RE_NOM.match(nom) or "__" in nom or nom.endswith("_"):
-            err(rep_, f"{nom} : caractères non autorisés (lettres, chiffres, _ simple).", ident)
+            err(rep_, f"{nom} : caractères non autorisés (lettres, chiffres, _ simple).", ident, code="R-NOM-02")
         if nom in noms:
-            err(rep_, f"{nom} : nom en double.", ident)
+            err(rep_, f"{nom} : nom en double.", ident, code="R-NOM-03")
         noms[nom] = True
     for x in internes:
         if x.type_logique not in TAILLE_MOTS:
             err(x.repere, f"{x.nom} : type logique « {x.type_logique} » non pris en charge pour une variable "
-                          "interne.", x.ident_eq)
+                          "interne.", x.ident_eq, code="R-VAR-01")
     # --- informations attendues ou sans source (contrôle de conception, par équipement)
     from .audit_referentiel import CODES_CALCULES, TYPES_INTERNES
     par_eq: dict[str, list[PointES]] = {}
@@ -1013,69 +1014,74 @@ def controler(ouvrage, catalogue, variables=None):
                            if s.get("code") in CODES_CALCULES and o == "Catalogue"]
             if sans_source:
                 alerte(rep, f"{', '.join(sans_source)} : information(s) calculée(s) sans E/S de retour ni d'ordre "
-                            "pour les calculer. Ajoutez les E/S (fins de course, commande) ou retirez-les.", eq.ident)
+                            "pour les calculer. Ajoutez les E/S (fins de course, commande) ou retirez-les.", eq.ident, code="R-EQ-15")
             if ouvrage.mode == "Neuf" and fonct and eq.type not in TYPES_INTERNES:
                 alerte(rep, f"Aucune E/S physique pour {len(fonct)} information(s) transmise(s) : ajoutez les E/S "
-                            "câblées (E/S personnalisées) ou confirmez une liaison par communication.", eq.ident)
+                            "câblées (E/S personnalisées) ou confirmez une liaison par communication.", eq.ident, code="R-EQ-16")
     non_validees = [p for p in points if not p.validee]
     etape[0] = "Liste des E/S et matériel"
     if non_validees:
         alerte("Liste des E/S", f"{len(non_validees)} E/S non validée(s) dans la liste des E/S "
-                                f"(ex. {non_validees[0].nom}).")
+                                f"(ex. {non_validees[0].nom}).", "", "R-ES-01")
     for p in points:
         if p.raccordement == "Communication":
             continue                            # information transmise par bus : pas d'adresse %I / %Q
         if not p.adresse:
-            alerte(p.repere, f"{p.nom} : adresse physique à renseigner.", p.ident_eq)
+            alerte(p.repere, f"{p.nom} : adresse physique à renseigner.", p.ident_eq, code="R-ES-02")
             continue
         if p.adresse in adresses_es:
-            err(p.repere, f"{p.nom} : adresse {p.adresse} déjà utilisée par {adresses_es[p.adresse]}.", p.ident_eq)
+            err(p.repere, f"{p.nom} : adresse {p.adresse} déjà utilisée par {adresses_es[p.adresse]}.", p.ident_eq, code="R-ES-03")
         adresses_es[p.adresse] = p.nom
         attendu = {"ET": "%I", "ST": "%Q", "EA": "%IW", "SA": "%QW"}[p.point]
         a = p.adresse.upper()
         if not a.startswith(attendu) or (p.point in ("ET", "ST") and a.startswith(attendu + "W")):
-            alerte(p.repere, f"{p.nom} : une {p.point} s'adresse en {attendu}…", p.ident_eq)
+            alerte(p.repere, f"{p.nom} : une {p.point} s'adresse en {attendu}…", p.ident_eq, code="R-ES-04")
     from .cartes_es import controler as controler_cartes
     for niveau, rep_, msg, ident in controler_cartes(points, ouvrage.modules, ouvrage.reserve_min):
-        (err if niveau == "Erreur" else alerte)(rep_, msg, ident)
+        code = ("R-ES-05" if "déjà affectée" in msg else "R-ES-06" if "non déclaré" in msg else
+                "R-ES-07" if "de nature" in msg else "R-ES-08" if "hors du module" in msg else "R-ES-09")
+        (err if niveau == "Erreur" else alerte)(rep_, msg, ident, code)
     etape[0] = "Variables"
     mem = Memoire()
     for v in variables:
         if v.type_logique not in TAILLE_MOTS:
             err(v.repere, f"{v.nom} : type logique « {v.type_logique} » inconnu ; "
-                           "aucune occupation mémoire fiable ne peut être calculée.", v.ident_eq)
+                           "aucune occupation mémoire fiable ne peut être calculée.", v.ident_eq, code="R-VAR-01")
             continue
         if not v.adresse:
-            err(v.repere, f"{v.nom} : pas d'adresse dans la table d'échange.", v.ident_eq)
+            err(v.repere, f"{v.nom} : pas d'adresse dans la table d'échange.", v.ident_eq, code="R-VAR-02")
         else:
             p = _mot(v.adresse)
             if not p:
-                err(v.repere, f"{v.nom} : adresse « {v.adresse} » non reconnue (format %MW, bit de 0 à 15).", v.ident_eq)
+                err(v.repere, f"{v.nom} : adresse « {v.adresse} » non reconnue (format %MW, bit de 0 à 15).", v.ident_eq, code="R-VAR-03")
                 continue
             if (v.type_logique == "BOOL") != (p[1] is not None):
-                err(v.repere, f"{v.nom} : un BOOL doit être adressé en %MWn.bit, une valeur numérique en %MWn.", v.ident_eq)
+                err(v.repere, f"{v.nom} : un BOOL doit être adressé en %MWn.bit, une valeur numérique en %MWn.", v.ident_eq, code="R-VAR-04")
             deja = mem.conflit(v.adresse, v.type_logique)
             if deja:
-                err(v.repere, f"{v.nom} : {v.adresse} chevauche {deja}.", v.ident_eq)
+                err(v.repere, f"{v.nom} : {v.adresse} chevauche {deja}.", v.ident_eq, code="R-VAR-05")
             mem.occuper(v.adresse, v.type_logique, v.nom)
             debut, fin = zone(ouvrage, v.famille)
             taille = max(1, TAILLE_MOTS.get(v.type_logique, 1))
             if p[0] < debut or p[0] + (taille - 1 if p[1] is None else 0) > fin:
-                err(v.repere, f"{v.nom} : {v.adresse} hors de la plage {v.famille} (%MW{debut} à %MW{fin}).", v.ident_eq)
+                err(v.repere, f"{v.nom} : {v.adresse} hors de la plage {v.famille} (%MW{debut} à %MW{fin}).", v.ident_eq, code="R-VAR-06")
             if TAILLE_MOTS.get(v.type_logique) == 2 and p[0] % 2:
-                err(v.repere, f"{v.nom} : variable 32 bits sur une adresse impaire (refusé sur M340 / M580).", v.ident_eq)
+                err(v.repere, f"{v.nom} : variable 32 bits sur une adresse impaire (refusé sur M340 / M580).", v.ident_eq, code="R-VAR-07")
         if v.famille == "RTR" and v.adresse:
             tr = next((x for x in variables if x.ident_eq == v.ident_eq and x.famille == "TR" and x.code == v.code), None)
             if tr and tr.adresse and _mot(tr.adresse) and _mot(v.adresse):
                 attendu = zone(ouvrage, "RTR")[0] + _mot(tr.adresse)[0] - zone(ouvrage, "TR")[0]
                 if _mot(v.adresse)[0] != attendu:
-                    err(v.repere, f"{v.nom} : {v.adresse} n'est pas en miroir de {tr.nom} ({tr.adresse} → %MW{attendu} attendu).", v.ident_eq)
+                    err(v.repere, f"{v.nom} : {v.adresse} n'est pas en miroir de {tr.nom} ({tr.adresse} → %MW{attendu} attendu).", v.ident_eq, code="R-VAR-08")
                 if v.type_logique != tr.type_logique:
-                    err(v.repere, f"{v.nom} / {tr.nom} : types TR/RTR différents sans conversion déclarée.", v.ident_eq)
+                    err(v.repere, f"{v.nom} / {tr.nom} : types TR/RTR différents sans conversion déclarée.", v.ident_eq, code="R-VAR-09")
         if len(v.libelle_topkapi) > LONGUEUR_MAX_LIBELLE:
-            alerte(v.repere, f"Libellé Topkapi de {len(v.libelle_topkapi)} caractères (40 au plus) : {v.libelle_topkapi}", v.ident_eq)
+            alerte(v.repere, f"Libellé Topkapi de {len(v.libelle_topkapi)} caractères (40 au plus) : {v.libelle_topkapi}", v.ident_eq, code="R-VAR-10")
     non_validees = [v for v in variables if v.adresse and not v.adresse_validee]
     if non_validees:
         alerte("Adresses", f"{len(non_validees)} adresse(s) d'échange proposée(s), pas encore validée(s) "
-                           f"par l'automaticien (ex. {non_validees[0].nom}).")
+                           f"par l'automaticien (ex. {non_validees[0].nom}).", "", "R-VAR-11")
+    # --- chaîne de l'information : contrôles transversaux (orientation du 18/11)
+    from .coherence import controler_chaine
+    anomalies.extend(controler_chaine(ouvrage, variables, points))
     return anomalies

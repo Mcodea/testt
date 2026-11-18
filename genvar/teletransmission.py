@@ -613,17 +613,18 @@ def anomalies(ouvrage, catalogue):
     lignes = vue(ouvrage, catalogue)
     for x in lignes:
         if x.statut == "Incohérence":
-            resultat.append(Anomalie("Erreur", x.repere, f"{x.nom_standard or x.ligne.cle} : {x.motif}", x.ligne.ident_eq))
+            resultat.append(Anomalie("Erreur", x.repere, f"{x.nom_standard or x.ligne.cle} : {x.motif}", x.ligne.ident_eq,
+                                     code="R-TEL-04"))
     sans = [x for x in lignes if x.statut == "Sans source"]
     incompletes = [x for x in lignes if x.statut == "À compléter"]
     if sans:
         resultat.append(Anomalie("Alerte", "Télétransmission",
                                  f"{len(sans)} information(s) sans source : associer une variable ou déclarer "
-                                 f"non accessible (ex. {sans[0].nom_standard})."))
+                                 f"non accessible (ex. {sans[0].nom_standard}).", code="R-TEL-05"))
     if incompletes:
         resultat.append(Anomalie("Alerte", "Télétransmission",
                                  f"{len(incompletes)} ligne(s) à compléter : fonction et/ou accès TOPKAPI "
-                                 f"à valider (ex. {incompletes[0].nom_standard})."))
+                                 f"à valider (ex. {incompletes[0].nom_standard}).", code="R-TEL-06"))
     return resultat
 
 

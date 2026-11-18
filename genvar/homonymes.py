@@ -65,5 +65,5 @@ def homonymes(ouvrage, catalogue, autres: Iterable[tuple[str, object, object]]) 
             "Erreur", reperes.get(ident, "Ouvrage"),
             f"{len(noms)} nom(s) aussi employé(s) par l'ouvrage {rep} du même programme automate "
             f"« {ouvrage.nom_projet.strip()} » : {', '.join(sorted(noms))}. Arbitrage nécessaire : mettre le lieu "
-            "dans les noms ou renuméroter l'un des ouvrages. Aucun renommage automatique.", ident, "Variables"))
+            "dans les noms ou renuméroter l'un des ouvrages. Aucun renommage automatique.", ident, "Variables", "R-NOM-04"))
     return anomalies
