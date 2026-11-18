@@ -11,6 +11,7 @@ function brancherNavigationReferentiel() {
  });
 }
 function vueCodesReferentiel() {
+ if(typeof Coque!=='undefined')Coque.ruban(null);   // lot 5f
  const lex=E.refObjet==='lexique', corr=E.refObjet==='correspondances';
  const titre=lex?'Lexique':corr?'Correspondances':'Dictionnaire des E/S', ed=E.ref.source==='brouillon';
  const lignes=E.ref[E.refObjet]||[], q=(E.refCodeQuery||'').toLocaleLowerCase('fr');

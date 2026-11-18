@@ -171,11 +171,15 @@ class TestReferentielCodes(ServeurNavigateur):
         for ident in ('rf-creer', 'rf-exp', 'rf-hist'):
             self.assertEqual(self.page.locator('#' + ident).count(), 1)
             self.assertTrue(self.page.locator('#' + ident).is_visible())
+            self.assertEqual(self.page.locator('#o-ruban #' + ident).count(), 1)     # lot 5f : au ruban
         self.vue('lexique', brouillon=True)
-        self.page.locator('.bandeau-ref summary').click()
+        # Lot 5f : plus de menu « Autres actions » ; les commandes du brouillon sont visibles au ruban
+        self.assertEqual(self.page.locator('.bandeau-ref summary').count(), 0)
         for ident in ('rf-voir-pub', 'rf-pub', 'rf-exp-b', 'rf-imp', 'rf-abandon'):
             self.assertEqual(self.page.locator('#' + ident).count(), 1)
             self.assertTrue(self.page.locator('#' + ident).is_visible())
+            self.assertEqual(self.page.locator('#o-ruban [aria-label="Brouillon"] #' + ident).count(), 1)
+        self.assertEqual(self.page.locator('#o-ruban #rf-creer, #o-ruban #rf-hist').count(), 0)   # ruban renouvelé
 
 
 if __name__ == '__main__':

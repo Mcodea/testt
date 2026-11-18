@@ -1819,6 +1819,7 @@ function bandeauReferentiel() {
       ${b ? '<button class="prim" id="rf-ouvrir-b">Reprendre le brouillon en cours</button>' : '<button class="prim" id="rf-creer">Modifier : créer un brouillon</button>'}</div></section>`;
 }
 async function vueReferentiel() {
+  Coque.ruban(null);   // lot 5f : boutons du rendu précédent retirés du ruban
   if (E.refEcran === "publication" && E.cycle.brouillon) return vuePublicationReferentiel();
   if (E.refEcran === "historique") return vueHistoriqueReferentiel();
   if (["lexique", "dictionnaire_es", "correspondances"].includes(E.refObjet)) return vueCodesReferentiel();
@@ -1902,6 +1903,7 @@ function brancherReferentiel(t, ed) {
   on("#rf-imp", modaleImportReferentiel);
   on("#rf-hist", () => { E.refEcran = "historique"; vueReferentiel(); });
   on("#rf-pub", () => { E.refEcran = "publication"; vueReferentiel(); });
+  rubanReferentiel();
   if (!t || !ed) return;
   on("#rf-type-mod", () => modaleTypeCatalogue(t));
   on("#rf-type-archive", () => confirmer(t.archive?'Réactiver ce type ?':'Archiver ce type ?',
@@ -2007,7 +2009,25 @@ function tableDifferences(diffs) {
     <td><span class="badge ${(ACTION_DIFF[d.action] || ["b-n"])[0]}">${esc(d.action)}</span></td><td><small>${esc(d.objet)}</small><br><span class="mono">${esc(d.id)}</span></td>
     <td>${champsDiff(d)}</td><td class="justif">${esc(d.consequence || "")}</td></tr>`).join("")}</tbody></table>` : '<div class="vide-bloc">Aucune différence.</div>';
 }
+/* Lot 5f : commandes du bandeau au ruban. Révision publiée : Révision (créer ou reprendre le brouillon, récupérer)
+   et Consultation (historique, export) ; brouillon : Brouillon (contrôler et publier, voir la révision publiée,
+   importer, exporter, supprimer), commandes jusqu'ici cachées sous « Autres actions ». */
+function rubanReferentiel() {
+  const id = x => document.getElementById(x);
+  const groupes = E.ref.source === "brouillon"
+    ? [{nom: "Brouillon", commandes: [{el: id("rf-pub"), icone: "valider", grand: true}, {el: id("rf-voir-pub"), icone: "referentiel", grand: true},
+        {el: id("rf-imp"), icone: "importer", libelle: "Importer un classeur…"}, {el: id("rf-exp-b"), icone: "importer", libelle: "Exporter vers Excel"},
+        {el: id("rf-abandon"), icone: "supprimer", libelle: "Supprimer le brouillon"}]}]
+    : [{nom: "Révision", commandes: [{el: id("rf-creer"), icone: "modifier", grand: true, libelle: "Modifier (brouillon)"}, {el: id("rf-ouvrir-b"), icone: "modifier", grand: true, libelle: "Reprendre le brouillon"},
+        {el: id("rf-recuperer"), icone: "importer"}]},
+       {nom: "Consultation", commandes: [{el: id("rf-hist"), icone: "referentiel", grand: true, libelle: "Historique"},
+        {el: id("rf-exp"), icone: "importer", grand: true, libelle: "Exporter vers Excel"}]}];
+  Coque.ruban(groupes.map(g => ({...g, commandes: g.commandes.filter(c => c.el)})).filter(g => g.commandes.length));
+  document.querySelectorAll("#vue .bandeau-ref .v31-actions-more").forEach(x => { if (!x.querySelector("button")) x.remove(); });
+  document.querySelectorAll("#vue .bandeau-ref .actions").forEach(x => { if (!x.querySelector("button")) x.remove(); });
+}
 function vuePublicationReferentiel() {
+  Coque.ruban(null);   // lot 5f : écran sans commandes de ruban
   const c = E.cycle, b = c.brouillon, ctl = c.controles || {erreurs: [], alertes: []};
   $("#vue").innerHTML = `<section class="contenu publication-ref">
     <div class="fil"><button class="lien" id="rf-retour">Brouillon (basé sur R${String(b.base_revision).padStart(4, "0")})</button> › Contrôle et publication</div>
@@ -2051,6 +2071,7 @@ function brancherHistorique() {
     async () => { await agir(api("/api/referentiel/cycle/action", {action: "restaurer", numero: Number(b.dataset.n)}), "Brouillon créé à partir de la révision."); E.refEcran = ""; E.refSource = ""; await chargerReferentiel(); vueReferentiel(); }));
 }
 function vueHistoriqueReferentiel() {
+  Coque.ruban(null);   // lot 5f : écran sans commandes de ruban
   $("#vue").innerHTML = `<section class="contenu"><div class="fil"><button class="lien" id="rf-retour">Référentiel</button> › Historique</div><h1>Historique des révisions</h1>
     ${E.cycle.brouillon ? '<div class="avert">Un brouillon est en cours : terminez-le ou abandonnez-le avant une restauration.</div>' : ""}${blocHistorique(E.cycle.revisions)}</section>`;
   $("#rf-retour").onclick = () => { E.refEcran = ""; vueReferentiel(); };
