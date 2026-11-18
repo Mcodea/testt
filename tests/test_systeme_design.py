@@ -18,7 +18,7 @@ BLOC_SOMBRE = 'html[data-theme="dark"] {'
 RE_COULEUR = re.compile(r"#[0-9a-fA-F]{3,8}\b|rgba?\(")
 # Plafonds qui ne remontent jamais : mesures du lot 0, abaissées à chaque lot qui retire d'anciennes règles
 # (lot 2b : contrôles d'étape déplacés au panneau de sortie, leurs anciens styles retirés).
-PLAFONDS = {"app.css": (348, 28), "v031.css": (53, 98), "industrial-ui.css": (83, 95)}
+PLAFONDS = {"app.css": (291, 28), "v031.css": (49, 94), "industrial-ui.css": (67, 92)}   # lot 7a : règles mortes retirées
 
 
 def _sans_commentaires(texte: str) -> str:
@@ -99,3 +99,17 @@ class TestSystemeDesign(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_aucune_regle_morte_dans_les_anciennes_feuilles():
+    """Lot 7a : aucune règle des anciennes feuilles ne vise une classe ou un identifiant que plus rien ne produit
+    (outil outils/interface_css_mort.py ; --appliquer pour nettoyer)."""
+    import importlib.util
+    chemin = Path(__file__).resolve().parents[1] / "outils" / "interface_css_mort.py"
+    spec = importlib.util.spec_from_file_location("interface_css_mort", chemin)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    sources = module._sources()
+    for nom in module.FEUILLES:
+        _css, morts = module.analyser(module.STATIQUE / nom, sources)
+        assert not morts, f"{nom} : {[m[4] for m in morts][:5]}"

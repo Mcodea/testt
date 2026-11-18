@@ -12,7 +12,7 @@ au moteur ni aux règles métier. Huit lots, appliqués dans l'ordre, chacun vé
 | 4. Identité | Fil de l'information, symboles propres | Fait |
 | 5. Écrans | Un sous-lot par écran : 5a Équipements, 5b Liste des E/S, 5c Matériel (téléchargements regroupés dans Recette), 5d Variables, 5e Recette, 5f Référentiel, 5g Mes ouvrages et Tableau de bord faits | Fait |
 | 6. Fenêtre Windows | Fenêtre native et installateur | À faire |
-| 7. Finition | Retrait des anciennes couches, accessibilité, performances | À faire |
+| 7. Finition | Retrait des anciennes couches, accessibilité, performances : 7a règles mortes retirées | En cours |
 
 ## Règles
 
