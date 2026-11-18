@@ -287,6 +287,23 @@ class TestCoqueBureau(ServeurNavigateur):
         self.assertTrue(self.page.evaluate('''() => { const n = [...document.querySelectorAll('.v31-variable-row')].map(x => x.dataset.variable);
           return n.length > 1 && n.every((v, i) => !i || n[i - 1].localeCompare(v, 'fr', {numeric: true}) <= 0); }'''))
         self.assertIn('Adresse automate', self.page.locator('.v31-variable-detail .o-grille').inner_text())
+        # Plusieurs pages (150 lignes) : le tri porte sur toute la liste, pas sur la page affichée. Lignes fictives
+        # ajoutées en mémoire du navigateur seulement (aucun appel au serveur).
+        self.page.locator('#v31-close-detail').click()
+        self.page.evaluate('''() => { const base = E.detailEtape.lignes[0];
+          E.detailEtape.lignes = Array.from({length: 400}, (_, k) => ({...base, nom: 'ZZ_' + String(399 - k).padStart(3, '0')}))
+            .concat([{...base, nom: 'AA_PREMIERE'}]); E.v31Page = 0; vueVariablesV31(); }''')
+        entete = self.page.locator('table.v31-table thead th').nth(1)
+        premiere = lambda: self.page.locator('.v31-variable-row').first.get_attribute('data-variable')
+        self.assertEqual(premiere(), 'AA_PREMIERE')         # tri croissant mémorisé, appliqué à toute la liste
+        entete.click()                                       # décroissant
+        self.assertEqual(premiere(), 'ZZ_399')
+        entete.click()                                       # ordre d'origine
+        self.assertEqual(premiere(), 'ZZ_399')
+        entete.click()                                       # croissant
+        self.assertEqual(premiere(), 'AA_PREMIERE')
+        self.assertEqual(self.page.locator('.v31-variable-row').count(), 150)
+        self.assertIn('page 1/3', self.page.locator('.v31-table-footer').inner_text())
         # Valider la sélection sans case cochée : refus explicite, rien n'est écrit
         self.page.locator('#v31-validate-selection').click()
         self.assertEqual(self.page.locator('#modale:not([hidden])').count(), 0)

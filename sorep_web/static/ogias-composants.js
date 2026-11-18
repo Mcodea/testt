@@ -102,6 +102,8 @@ const Composants = (() => {
   if (sens) th.setAttribute("aria-sort", sens === "asc" ? "ascending" : "descending");
   t.dataset.oTri = sens ? `${i}:${sens}` : "";
   const m = memoire(t); if (m) m.tri = t.dataset.oTri;
+  // Un écran paginé (Variables) trie toute sa liste, pas seulement la page affichée : il écoute ce signal.
+  if (!t.dataset.oRestauration) t.dispatchEvent(new CustomEvent("o-tri", {detail: {colonne: i, sens}}));
  }
  function basculerTri(t, i) {
   const [col, sens] = (t.dataset.oTri || ":").split(":");
@@ -192,11 +194,14 @@ const Composants = (() => {
   const sel = avecSelection(t);
   if (!sel) t.removeAttribute("aria-multiselectable");
   lignes(t).forEach((r, k) => { r.dataset.oRang = k; if (sel) { r.setAttribute("aria-selected", "false"); r.tabIndex = k ? -1 : 0; } });
+  // Titres lus une seule fois, avant toute modification : innerText après chaque ajout de poignée relançait la mise
+  // en page du tableau entier à chaque colonne (banc des 5000 variables, lot 5d).
+  const titres = colonnes(t).map(th => th.textContent.replace(/\s+/g, " ").trim());   // textContent : aucune mise en page forcée
   colonnes(t).forEach((th, i) => {
-   if (!texteCellule(th) || th.dataset.oNonTriable !== undefined) return;
+   if (!titres[i] || th.dataset.oNonTriable !== undefined) return;
    th.classList.add("o-triable");
    th.tabIndex = 0;
-   th.title = th.title || `Trier par « ${texteCellule(th)} » (clic droit : autres commandes)`;
+   th.title = th.title || `Trier par « ${titres[i]} » (clic droit : autres commandes)`;
    const poignee = document.createElement("span");
    poignee.className = "o-poignee"; poignee.setAttribute("aria-hidden", "true");
    th.append(poignee);
@@ -244,7 +249,7 @@ const Composants = (() => {
    else if (ev.key === "Escape") vis.forEach(x => x.setAttribute("aria-selected", "false"));
   });
   const m = memoire(t);
-  if (m?.tri) { const [i, sens] = m.tri.split(":"); if (colonnes(t)[+i]) trier(t, +i, sens); }
+  if (m?.tri) { const [i, sens] = m.tri.split(":"); if (colonnes(t)[+i]) { t.dataset.oRestauration = "1"; trier(t, +i, sens); delete t.dataset.oRestauration; } }
   if (m?.filtresAffiches) {
    const valeurs = m.filtres || [], avant = document.activeElement;
    basculerFiltres(t, true);
@@ -300,5 +305,7 @@ const Composants = (() => {
  }
  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", surveiller, {once: true}); else surveiller();
 
- return {tableau, ameliorer, menuContextuel, grille, copier, versTexte, aideRaccourcis, RACCOURCIS};
+ /** Tri mémorisé d'un tableau (data-o-cle) : [colonne, "asc" | "desc"] ou null. */
+ const triMemorise = cle => { const tri = (MEMOIRE.get(cle) || {}).tri; if (!tri) return null; const [i, s] = tri.split(":"); return s ? [+i, s] : null; };
+ return {tableau, ameliorer, menuContextuel, grille, copier, versTexte, aideRaccourcis, RACCOURCIS, comparer, triMemorise};
 })();

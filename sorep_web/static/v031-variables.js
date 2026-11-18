@@ -57,16 +57,24 @@ document.addEventListener('keydown',ev=>{
  const close=document.querySelector('#v31-close-detail');
  if(close){ev.preventDefault();close.click();}
 },true); // Lire l'état des fenêtres avant leur fermeture par les gestionnaires en phase de bulle.
-/* Lot 5d : 1000 lignes par page (150 avant) : le tri et les filtres de colonne du tableau dense portent sur la liste
-   entière d'un ouvrage courant ; au-delà, ils portent sur la page affichée. */
-const V31_PAGE=1000;
+/* Lot 5d : pages de 150 lignes (budget du banc : 5000 variables affichées en moins de 0,2 s). Le tri du tableau dense
+   porte sur toute la liste filtrée : la colonne triée est appliquée aux données avant le découpage en pages. */
+const V31_PAGE=150;
+// Même texte que les cellules affichées (« — » compris), pour que le tri de la page par le tableau dense suive cet ordre.
+const V31_COLONNES={1:v=>v.nom,2:v=>v.famille,3:v=>v.libelle||v.commentaire||'—',4:v=>v.adresse||v.adresse_proposee||'—',
+ 5:(v,t)=>t.adresse_protocole_actuelle||t.adresse_protocole_proposee||'—',6:v=>v.etat_adressage||'non résolue',7:v=>v.motif||v.regle||'—'};
+function v31Trier(rows,teleMap){
+ const tri=Composants.triMemorise('variables');if(!tri||!V31_COLONNES[tri[0]])return rows;
+ const [col,sens]=tri,val=v=>String(V31_COLONNES[col](v,teleMap.get(v.nom)||{})||'');
+ return rows.map((v,k)=>[v,val(v),k]).sort((a,b)=>{if(!a[1]!==!b[1])return a[1]?-1:1;return (sens==='asc'?Composants.comparer(a[1],b[1]):Composants.comparer(b[1],a[1]))||a[2]-b[2];}).map(x=>x[0]);
+}
 function vueVariablesV31(){
  if(typeof Coque!=='undefined')Coque.ruban(null);   // lot 5d : boutons du rendu précédent retirés du ruban
  const d=E.detailEtape||{}, rows=d.lignes||[], neuf=d.mode==='Neuf',selected=E.v31Selected||'', opened=!!E.v31VarDetail;
- const shown=v31VarFilter(rows);const page=Math.max(0,Math.min(E.v31Page||0,Math.floor(Math.max(shown.length-1,0)/V31_PAGE)));E.v31Page=page;const pageRows=shown.slice(page*V31_PAGE,(page+1)*V31_PAGE);const selectedVar=rows.find(x=>x.nom===selected)||null;
+ const teleMap=new Map((E.v31Tele?.lignes||[]).map(x=>[x.nom,x]));
+ const shown=v31Trier(v31VarFilter(rows),teleMap);const page=Math.max(0,Math.min(E.v31Page||0,Math.floor(Math.max(shown.length-1,0)/V31_PAGE)));E.v31Page=page;const pageRows=shown.slice(page*V31_PAGE,(page+1)*V31_PAGE);const selectedVar=rows.find(x=>x.nom===selected)||null;
  const counts=['proposée','à valider','en conflit','validée','non résolue'].map(status=>[status,rows.filter(x=>x.etat_adressage===status).length]).filter(x=>x[1]);
  const view=E.v31VarView||'all';const withDetail=opened&&!!selectedVar;
- const teleMap=new Map((E.v31Tele?.lignes||[]).map(x=>[x.nom,x]));
  const body=pageRows.map(v=>{const t=teleMap.get(v.nom)||{}, current=v.adresse||'',proposed=v.adresse_proposee||'',protocol=t.adresse_protocole_actuelle||t.adresse_protocole_proposee||'';
    return `<tr class="v31-variable-row ${withDetail&&v.nom===selected?'selected':''}" tabindex="0" data-variable="${V31.esc(v.nom)}" title="Ouvrir le détail de ${V31.esc(v.nom)}">
      <td><input type="checkbox" class="v31-choose" data-ident="${V31.esc(v.ident_eq||'')}" data-cle="${V31.esc(v.cle||'')}" aria-label="Sélectionner ${V31.esc(v.nom)}" ${!neuf?'disabled':''}></td>
@@ -107,7 +115,11 @@ function vueVariablesV31(){
  ${body||`<tr><td colspan="${view==='all'?8:7}"><div class="v31-blank">Aucune variable à afficher avec ces filtres.</div></td></tr>`}</tbody></table></div>
  <footer class="v31-table-footer"><span>${rows.length?`${rows.length} variable(s) · ${shown.length?`${shown.length} filtrée(s)`:'Aucun résultat'}`:'Aucune variable'} · page ${page+1}/${Math.max(1,Math.ceil(shown.length/V31_PAGE))}</span><div class="v31-page-controls"><button type="button" id="v31-prev-page" ${page===0?'disabled':''}>Précédent</button><button type="button" id="v31-next-page" ${(page+1)*V31_PAGE>=shown.length?'disabled':''}>Suivant</button></div>
  <button type="button" id="v31-adr-settings" class="v31-text-button">Paramètres d’adressage</button></footer></div>${detail}</section>`;
+ // Tableau dense amélioré tout de suite, avant toute mise en page : une seule mise en page par rendu (banc des 5000 variables).
+ Composants.ameliorer(document.getElementById('vue'));
  v31EmptyColumns();
+ // Tri sur plusieurs pages : la liste entière est retriée et l'on revient à la première page.
+ document.querySelector('table.v31-table')?.addEventListener('o-tri',()=>{if(shown.length>V31_PAGE){E.v31Page=0;vueVariablesV31();}});
  document.querySelectorAll('[data-var-view]').forEach(el=>el.onclick=()=>{E.v31VarView=el.dataset.varView;E.v31Page=0;vueVariablesV31();});
  document.querySelectorAll('[data-var-status]').forEach(el=>el.onclick=()=>{E.v31Status=E.v31Status===el.dataset.varStatus?'':el.dataset.varStatus;E.v31Page=0;vueVariablesV31();});
  document.getElementById('v31-var-search').oninput=e=>{E.v31Query=e.target.value;E.v31Page=0;vueVariablesV31();const inp=document.getElementById('v31-var-search');inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);};
