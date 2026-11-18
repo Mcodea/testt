@@ -643,7 +643,8 @@ html[data-theme] .rc-controles > summary h2 { margin: 0; font-size: var(--o-t-m)
 html[data-theme] .rc-controles > summary .aide { margin-left: auto; color: var(--o-texte-2); font-size: var(--o-t-s); }
 html[data-theme] .rc-controles[open] > summary { margin-bottom: var(--o-e-3); }
 html[data-theme] .rc-controles .chip i.pt-err { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 4px; padding: 0 4px; border-radius: 9px;
-  font-style: normal; font-size: var(--o-t-xs); font-weight: 700; color: var(--o-sur-action); background: var(--o-erreur-filet); }
+  font-style: normal; font-size: var(--o-t-xs); font-weight: 700; color: var(--o-erreur); background: var(--o-erreur-fond);
+  border: 1px solid var(--o-erreur-filet); }   /* lot 7b : 3,9:1 en sombre avant */
 html[data-theme] .rc-note { margin: 0 0 var(--o-e-4); font-size: var(--o-t-s); color: var(--o-texte-2); }
 @media (max-width: 1200px) { html[data-theme] .rc-hero { grid-template-columns: minmax(0, 1fr); } }
 
@@ -691,3 +692,13 @@ html[data-theme] .v31-issue:hover { background: var(--o-action-fond); }
 html[data-theme] .v31-dash-recette > .v31-issue { margin: 0; width: 100%; }
 html[data-theme] .v31-stack { height: 10px; border-radius: var(--o-r-s); margin: var(--o-e-3); }
 html[data-theme] .v31-stack-legend { margin: 0 var(--o-e-3) var(--o-e-3); }
+
+/* ===================================================================== Lot 7b : contrastes (audit WCAG AA)
+   Corrigés d'après outils/interface_accessibilite.py : mention de la barre d'état (2,6:1 en clair), bouton
+   « Structure / ajouter » (2,4:1 en sombre), « + installer » du rack (3,4:1 en sombre), menu « Autres actions »
+   de l'écran Adressage (2,1:1 en sombre). */
+html[data-theme] #v30-status .v30-status-right { color: var(--o-nuit-texte-2); }
+html[data-theme] .v31-secondary-header:not([aria-pressed="true"]) { background: var(--o-surface-2); color: var(--o-texte); }
+html[data-theme] .emplacement .ajout { color: var(--o-action); }
+html[data-theme] #vue .v31-actions-more summary { background: var(--o-surface-2); color: var(--o-texte); }
+html[data-theme] .v31-secondary-header[aria-pressed="true"] { background: var(--o-action-fond); color: var(--o-texte); border-color: var(--o-action); }
