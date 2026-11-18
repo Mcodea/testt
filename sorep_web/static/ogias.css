@@ -646,3 +646,48 @@ html[data-theme] .rc-controles .chip i.pt-err { display: inline-grid; place-item
   font-style: normal; font-size: var(--o-t-xs); font-weight: 700; color: var(--o-sur-action); background: var(--o-erreur-filet); }
 html[data-theme] .rc-note { margin: 0 0 var(--o-e-4); font-size: var(--o-t-s); color: var(--o-texte-2); }
 @media (max-width: 1200px) { html[data-theme] .rc-hero { grid-template-columns: minmax(0, 1fr); } }
+
+/* ===================================================================== Lot 5g : Mes ouvrages
+   Ouvrages en tableau dense (au lieu de cartes) ; une ligne s'ouvre au clic ou avec Entrée. */
+html[data-theme] .v31-home .v31-project-header { display: flex; align-items: center; gap: var(--o-e-3); margin: 0 0 var(--o-e-2); }
+html[data-theme] .v31-home .v31-project-header h2 { margin: 0; font-size: var(--o-t-l); }
+html[data-theme] .v31-project-count { color: var(--o-texte-2); font-size: var(--o-t-s); margin-right: auto; }
+html[data-theme] .v31-project-list { border: 1px solid var(--o-ligne); border-radius: var(--o-r-m); background: var(--o-surface); overflow: auto; }
+html[data-theme] table.v31-project-table { width: 100%; margin: 0; border: 0; }
+html[data-theme] table.v31-project-table tbody tr { cursor: pointer; }
+html[data-theme] table.v31-project-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+html[data-theme] table.v31-project-table td.act { text-align: right; white-space: nowrap; padding-right: var(--o-e-3); }
+html[data-theme] table.v31-project-table th:last-child { width: 8em; }
+html[data-theme] table.v31-project-table th:nth-child(4) { width: 8em; }
+html[data-theme] table.v31-project-table th:nth-child(5) { width: 11em; }
+html[data-theme] table.v31-project-table th:nth-child(3) { width: 7em; }
+html[data-theme] table.v31-project-table th:nth-child(1) { width: 10em; }
+
+/* ===================================================================== Lot 5g : Tableau de bord de l'ouvrage
+   Indicateurs en bandeau continu, panneaux à barre de titre, points à traiter en lignes denses ; accès rapides
+   au ruban. Aucun indicateur ni taux ajouté : mêmes valeurs qu'avant. */
+html[data-theme] .v31-dashboard { gap: var(--o-e-3); }
+html[data-theme] .v31-dashboard .v31-kpi-grid { gap: 0; border: 1px solid var(--o-ligne); border-radius: var(--o-r-m); background: var(--o-surface); overflow: hidden; }
+html[data-theme] .v31-dashboard .v31-kpi-grid > .v31-kpi { padding: var(--o-e-2) var(--o-e-4); border-radius: 0; box-shadow: none; border: 0; border-left: 1px solid var(--o-ligne); background: transparent; min-height: 0; outline: 0; }
+html[data-theme] .v31-dashboard .v31-kpi-grid > .v31-kpi:first-child { border-left: 0; }
+html[data-theme] .v31-dashboard .v31-kpi-label { font-size: var(--o-t-s); color: var(--o-texte-2); gap: var(--o-e-2); }
+html[data-theme] .v31-dashboard .v31-kpi-label strong { font-weight: 600; }
+html[data-theme] .v31-dashboard .v31-kpi-icon { width: auto; height: auto; background: transparent; color: var(--o-texte-2); border-radius: 0; }
+html[data-theme] .v31-dashboard .v31-attention .v31-kpi-icon { color: var(--o-alerte); background: transparent; }
+html[data-theme] .v31-dashboard .v31-kpi-value { font-size: var(--o-t-xxl); font-weight: 600; margin: 2px 0 0; line-height: 1.2; }
+html[data-theme] .v31-dashboard .v31-kpi-empty { margin: 4px 0; color: var(--o-texte-2); }
+html[data-theme] .v31-dashboard .v31-kpi .v31-muted { font-size: var(--o-t-s); }
+html[data-theme] .v31-dash-grid { gap: var(--o-e-3); }
+html[data-theme] .v31-dash-grid > .v31-card { padding: 0; min-height: 0; border: 1px solid var(--o-ligne); border-radius: var(--o-r-m); box-shadow: none; background: var(--o-surface); overflow: hidden; }
+html[data-theme] .v31-dash-grid > .v31-card > h2, html[data-theme] .v31-dash-grid > .v31-card > header { margin: 0; padding: var(--o-e-2) var(--o-e-3); background: var(--o-surface-2); border-bottom: 1px solid var(--o-ligne); font-size: var(--o-t-m); }
+html[data-theme] .v31-dash-grid > .v31-card > header h2 { margin: 0; font-size: var(--o-t-m); }
+html[data-theme] .v31-dash-grid > .v31-card > :not(h2):not(header):not(table) { margin-left: var(--o-e-3); margin-right: var(--o-e-3); }
+html[data-theme] .v31-dash-grid h3 { margin: var(--o-e-3) var(--o-e-3) var(--o-e-1); font-size: var(--o-t-s); text-transform: uppercase; letter-spacing: .04em; color: var(--o-texte-2); }
+html[data-theme] .v31-dash-grid .v31-blank { margin: var(--o-e-3); }
+html[data-theme] .v31-recent-table { width: 100%; margin: 0; }
+html[data-theme] .v31-recent-table td { padding: var(--o-e-1) var(--o-e-3); border-top: 1px solid var(--o-ligne); }
+html[data-theme] .v31-issue { margin: 0; padding: var(--o-e-1) var(--o-e-3); border-top: 1px solid var(--o-ligne); border-radius: 0; font-size: var(--o-t-s); min-height: var(--o-h-ligne); }
+html[data-theme] .v31-issue:hover { background: var(--o-action-fond); }
+html[data-theme] .v31-dash-recette > .v31-issue { margin: 0; width: 100%; }
+html[data-theme] .v31-stack { height: 10px; border-radius: var(--o-r-s); margin: var(--o-e-3); }
+html[data-theme] .v31-stack-legend { margin: 0 var(--o-e-3) var(--o-e-3); }

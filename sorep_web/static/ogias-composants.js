@@ -94,7 +94,9 @@ const Composants = (() => {
    const rangs = [...corps.rows].filter(r => !r.classList.contains("o-filtres"));
    rangs.sort((a, b) => {
     if (!sens) return (+a.dataset.oRang) - (+b.dataset.oRang);
-    const x = texteCellule(a.cells[i]), y = texteCellule(b.cells[i]);
+    // data-o-valeur : clé de tri d'une cellule dont le texte ne se trie pas tel quel (date jj/mm/aaaa, par exemple)
+    const cle = c => c?.dataset.oValeur ?? texteCellule(c);
+    const x = cle(a.cells[i]), y = cle(b.cells[i]);
     if (!x !== !y) return x ? -1 : 1;                     // cellules vides en dernier, quel que soit le sens
     return sens === "asc" ? comparer(x, y) : comparer(y, x);
    }).forEach(r => corps.append(r));

@@ -135,7 +135,8 @@ body{grid-template-columns:188px minmax(0,1fr);grid-template-rows:auto auto minm
 
 /* ===================================================================== 4. COMPOSANTS */
 /* Cartes et panneaux : bordure fine, pas de décor */
-.v31-card,.v31-kpi,.v31-project-card,.v31-home-empty,
+/* lot 5g : indicateurs (.v31-kpi) en bandeau, bordures dans ogias.css */
+.v31-card,.v31-home-empty,
 #vue :is(.bloc,.carte-choix,.creation-contenu,.v29-tablebox,.v29-detail,.bandeau-ref,.bandeau-materiel,.ref-code-detail,.es-panneau,.chiffre),
 .v31-variable-detail{border:1px solid var(--v31-separator)!important;border-radius:var(--radius-l)!important;background:var(--v31-white)}
 #vue .bloc{padding:var(--sp-3) var(--sp-4);margin-bottom:var(--sp-3)}

@@ -2,6 +2,7 @@
 /* OGIAS 0.31 — Tableau de bord et table de variables unifiée.
    Les mutations passent EXCLUSIVEMENT par l'API existante et le moteur d'adressage. */
 function vueDashboardV31(){
+ Coque.ruban(null);   // lot 5g
  const o=E.ouvrage||{}, a=E.accueil||{}, r=E.recetteDashboard, es=E.esDashboard, vs=E.variablesDashboard;
  const equipConnus=Array.isArray(o.equipements), equip=equipConnus?o.equipements:[];
  const esConnues=Array.isArray(es?.points)||(equipConnus&&equip.length===0);
@@ -34,6 +35,10 @@ function vueDashboardV31(){
  ${!esConnues?'<div class="v31-blank">Ouvrez la liste des E/S pour consulter les contrôles à résoudre.</div>':points.length? `<div class="v31-stack">${counts.map(([name,n]) => n ? `<div class="v31-stack-piece v31-f-${name}" title="${name}: ${n}" style="width:${(n / total) * 100}%"></div>` : "").join("")}</div><div class="v31-stack-legend">${counts.filter(x=>x[1]).map(([name,n]) => `<span>${name} ${n}</span>`).join("")}</div>` : `<div class="v31-blank">Aucune E/S affectée à l’ouvrage.</div>`}
  <h3>Accès rapides</h3><div class="v31-quick"><button data-nav="#/inventaire">Équipements ${V31.icon('chevron',14)}</button><button data-nav="#/es">Liste des E/S ${V31.icon('chevron',14)}</button><button data-nav="#/variables">Variables ${V31.icon('chevron',14)}</button><button data-nav="#/recette">Recette ${V31.icon('chevron',14)}</button></div></section></div></section>`;
  document.querySelectorAll('[data-open]').forEach(b=>b.onclick=async()=>{try{await agir(api('/api/ouvrir',{chemin:b.dataset.open}));E.ficheDraft=null;E.ficheDirty=false;naviguer('#/dashboard');}catch(e){}});
+ // Lot 5g : les accès rapides deviennent le groupe « Parcours » du ruban (mêmes boutons, mêmes destinations)
+ const icones={'#/inventaire':'equipement','#/es':'es','#/variables':'variable','#/recette':'recette'};
+ Coque.ruban([{nom:'Parcours',commandes:[...document.querySelectorAll('#vue .v31-quick [data-nav]')].map(b=>({el:b,icone:icones[b.dataset.nav],grand:true,libelle:b.textContent.trim()}))}]);
+ document.querySelectorAll('#vue .v31-quick').forEach(x=>{if(!x.querySelector('button')){x.previousElementSibling?.remove();x.remove();}});
 }
 function v31Status(t){const kind=t==='validée'?'success':t==='en conflit'||t==='non résolue'?'error':t==='à valider'?'warning':'info';return `<span class="v31-pill ${kind}">${V31.esc(t||'non résolue')}</span>`;}
 function v31VarFilter(rows){const st=E.v31Status||'',q=(E.v31Query||'').toLocaleLowerCase('fr');
@@ -185,17 +190,21 @@ function rubanVariablesV31(){
  document.querySelectorAll('#vue .v31-actions').forEach(x=>{if(!x.querySelector('button'))x.style.display='none';});
 }
 function vueAccueilV31(){
+ Coque.ruban(null);   // lot 5g
  const a=E.accueil||{},ouvrages=a.ouvrages||[];
- const recent=ouvrages.slice().sort((x,y)=>String(y.date||'').localeCompare(String(x.date||'')));
- const cards=recent.map(f=>`<article class="v31-project-card" data-project="${V31.esc(f.chemin)}" tabindex="0" aria-label="Ouvrir ${V31.esc(f.libelle||f.repere)}">
-   <div class="v31-project-symbol">${V31.icon('folder',20)}</div><div class="v31-project-body"><b>${V31.esc(f.libelle||f.repere)}</b><span class="mono">${V31.esc(f.repere)}</span>
-   <small>${V31.esc(f.mode)}${f.equipements?` · ${f.equipements} équipement(s)`:''}</small></div>
-   <div class="v31-project-foot"><small>${V31.esc(f.date||'')}</small><button type="button" class="v31-project-delete" data-delete="${V31.esc(f.chemin)}" data-repere="${V31.esc(f.repere)}" title="Déplacer à la corbeille">${V31.icon('close',14)}</button></div>
- </article>`).join('');
+ // Le plus récent d'abord, par la valeur de la date (jj/mm/aaaa hh:mm triait par le jour : corrigé au lot 5g)
+ const iso=d=>{const m=String(d||'').match(/^(\d{2})\/(\d{2})\/(\d{4})(.*)$/);return m?`${m[3]}-${m[2]}-${m[1]}${m[4]}`:String(d||'');};
+ const recent=ouvrages.slice().sort((x,y)=>iso(y.date).localeCompare(iso(x.date)));
+ /* Lot 5g : les ouvrages en tableau dense (repère, ouvrage, mode, équipements, date), triable et filtrable, au lieu
+    de cartes ; commandes au ruban. Date triée par sa valeur (aaaa-mm-jj) et non par son texte. */
+ const rows=recent.map(f=>`<tr class="v31-project-row" data-project="${V31.esc(f.chemin)}" tabindex="0" aria-label="Ouvrir ${V31.esc(f.libelle||f.repere)}" title="Ouvrir ${V31.esc(f.repere)}">
+   <td class="mono"><b>${V31.esc(f.repere)}</b></td><td>${V31.esc(f.libelle||'')}</td><td>${V31.esc(f.mode)}</td>
+   <td class="num">${f.equipements||0}</td><td class="mono" data-o-valeur="${V31.esc(iso(f.date))}">${V31.esc(f.date||'')}</td>
+   <td class="act"><button type="button" class="lien danger v31-project-delete" data-delete="${V31.esc(f.chemin)}" data-repere="${V31.esc(f.repere)}" title="Déplacer à la corbeille">Supprimer</button></td></tr>`).join('');
  document.querySelector('#vue').innerHTML=`<div class="v31-home"><div class="v31-home-actions"><button type="button" class="v31-primary" id="v31-new-project">${V31.icon('folder',17)} Créer un ouvrage neuf</button>
    <button type="button" class="v31-secondary" id="v31-import-project">Ouvrir un projet existant</button><button type="button" class="v31-text-button" id="v31-ref-open">Référentiel métier</button></div>
- <div class="v31-project-header"><h2>Ouvrages enregistrés</h2>${ouvrages.length?`<label class="v31-search-field">${V31.icon('search',16)} <input id="v31-filter-projects" placeholder="Rechercher un ouvrage" aria-label="Rechercher parmi les ouvrages"></label>`:''}</div>
- ${recent.length?`<div class="v31-project-grid">${cards}</div>`:`<section class="v31-home-empty"><div class="v31-empty-symbol">${V31.icon('folder',34)}</div><h2>Votre espace est prêt</h2>
+ <div class="v31-project-header"><h2>Ouvrages enregistrés</h2>${ouvrages.length?`<span class="v31-project-count">${ouvrages.length} ouvrage(s)</span><label class="v31-search-field">${V31.icon('search',16)} <input id="v31-filter-projects" placeholder="Rechercher un ouvrage" aria-label="Rechercher parmi les ouvrages"></label>`:''}</div>
+ ${recent.length?`<div class="v31-project-list"><table class="v31-project-table" data-o-tableau="sans-selection" data-o-cle="ouvrages"><thead><tr><th>Repère</th><th>Ouvrage</th><th>Mode</th><th>Équipements</th><th>Modifié le</th><th data-o-non-triable><span class="o-masque">Actions</span></th></tr></thead><tbody>${rows}</tbody></table></div>`:`<section class="v31-home-empty"><div class="v31-empty-symbol">${V31.icon('folder',34)}</div><h2>Votre espace est prêt</h2>
  <p>Créez votre premier ouvrage ou reprenez les données d'une installation existante.</p><button type="button" class="v31-primary" id="v31-first-project">Créer un ouvrage</button></section>`}</div>`;
  const create=async mode=>{try{await agir(api('/api/nouveau',{mode}));E.ficheDraft=null;E.ficheDirty=false;allerOuvrage({nature:'ouvrage',valeur:''});}catch(_){}};
  document.querySelector('#v31-new-project').onclick=()=>create('Neuf');
@@ -206,4 +215,8 @@ function vueAccueilV31(){
  document.querySelectorAll('[data-project]').forEach(c=>{c.onclick=e=>{if(!e.target.closest('[data-delete]'))open(c.dataset.project);};c.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();open(c.dataset.project);}};});
  document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>confirmer(`Supprimer ${b.dataset.repere} ?`,'L’ouvrage sera placé dans la corbeille du dossier Projets.','Déplacer à la corbeille',async()=>{await agir(api('/api/supprimer_ouvrage',{chemin:b.dataset.delete}),'Ouvrage déplacé vers la corbeille.');allerAccueil();}));
  document.querySelector('#v31-filter-projects')?.addEventListener('input',e=>{const q=e.target.value.toLocaleLowerCase('fr');document.querySelectorAll('[data-project]').forEach(card=>{card.hidden=!card.textContent.toLocaleLowerCase('fr').includes(q);});});
+ Coque.ruban([{nom:'Ouvrage',commandes:[{el:document.getElementById('v31-new-project'),icone:'plus',grand:true,libelle:'Créer un ouvrage neuf'},
+   {el:document.getElementById('v31-import-project'),icone:'importer',grand:true,libelle:'Ouvrir un projet existant'}]},
+  {nom:'Référentiel',commandes:[{el:document.getElementById('v31-ref-open'),icone:'referentiel',grand:true,libelle:'Référentiel métier'}]}]);
+ document.querySelectorAll('#vue .v31-home-actions').forEach(x=>{if(!x.querySelector('button'))x.remove();});
 }
