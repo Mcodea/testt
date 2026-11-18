@@ -7,7 +7,7 @@ au moteur ni aux règles métier. Huit lots, appliqués dans l'ordre, chacun vé
 | --- | --- | --- |
 | 0. Socle | Branche à jour, inventaire des styles, captures et registre des commandes « avant » | Fait |
 | 1. Système de design | Jetons, thèmes clair et sombre, une feuille `ogias.css` | Fait |
-| 2. Coque de bureau | Menus, ruban, explorateur, onglets, inspecteur, barre d'état | À faire |
+| 2. Coque de bureau | Maquette validée ; 2a fait (menus, explorateur, onglets) ; 2b : panneau de sortie | En cours |
 | 3. Composants de bureau | Tableau dense, grille de propriétés, menu contextuel, raccourcis | À faire |
 | 4. Identité | Fil de l'information, symboles propres | À faire |
 | 5. Écrans | Un sous-lot par écran | À faire |

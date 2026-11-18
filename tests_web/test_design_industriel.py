@@ -33,11 +33,11 @@ class TestDesignIndustriel(ServeurNavigateur):
         self.assertEqual(self.page.locator('html').get_attribute('data-theme'), 'light')
         self.page.locator('#v31-settings').click()
         self.assertEqual(self.style('body', 'backgroundColor'), self.jeton('--o-fond'))
-        self.assertEqual(self.style('#v31-sidebar', 'backgroundColor'), self.jeton('--o-nuit'))
+        self.assertEqual(self.style('#o-titre', 'backgroundColor'), self.jeton('--o-nuit'))
         self.assertEqual(self.style('.v31-main-table', 'backgroundColor'), self.jeton('--o-surface'))
         self.assertEqual(self.style('.v31-main-table', 'borderTopColor'), self.jeton('--o-ligne'))
         self.assertEqual(self.style('.v31-main-table', 'borderTopWidth'), '1px')
-        self.assertEqual(self.style('#v31-sidebar', 'backgroundImage'), 'none')
+        self.assertEqual(self.style('#o-titre', 'backgroundImage'), 'none')
         for selector in ('.v31-main-table', '#v31-current', '#v31-global-search', '#v31-validate-proposed'):
             self.assertEqual(self.style(selector, 'boxShadow'), 'none')
         self.assertIn('OGIAS-Inter', self.style('body', 'fontFamily'))
@@ -83,14 +83,14 @@ class TestDesignIndustriel(ServeurNavigateur):
                     self.page.locator(selector).first.wait_for()
                     self.page.evaluate('document.fonts.ready')
                     self.assertTrue(self.page.evaluate('document.documentElement.scrollWidth <= innerWidth'))
-                    sidebar = self.page.locator('#v31-sidebar').bounding_box()
-                    # Refonte du 16/11 : 176 px entre 1121 et 1400 px (libellés coupés entre les mots), 188 px au-delà.
-                    self.assertEqual(sidebar['width'], 176 if width <= 1400 else 188)
-                    self.assertLessEqual(self.page.locator('#v31-top').bounding_box()['height'], 80)
+                    # Refonte, lot 2a : explorateur de 232 px, barre de titre et onglets de documents de 34 px.
+                    self.assertEqual(self.page.locator('#o-explorateur').bounding_box()['width'], 232)
+                    self.assertLessEqual(self.page.locator('#o-titre').bounding_box()['height'], 34)
+                    self.assertLessEqual(self.page.locator('#o-documents').bounding_box()['height'], 34)
                     self.assertTrue(self.page.locator('#v31-about').is_visible())
-                    self.assertTrue(self.page.locator('#v31-sidebar [data-nav="#/recette"] span').is_visible())
+                    self.assertTrue(self.page.locator('#o-explorateur [data-nav="#/recette"] .o-etape-lib').is_visible())
                     if width <= 1400:
-                        for nav_label in self.page.locator('#v31-sidebar [data-nav] span').all():
+                        for nav_label in self.page.locator('#o-explorateur [data-nav] span').all():
                             self.assertLessEqual(
                                 nav_label.evaluate('el => el.scrollWidth'),
                                 nav_label.evaluate('el => el.clientWidth') + 1,
@@ -110,7 +110,7 @@ class TestDesignIndustriel(ServeurNavigateur):
                 self.assertGreaterEqual(detail_box['x'], 0)
                 self.assertLessEqual(detail_box['x'] + detail_box['width'], width + 1)
                 self.assertGreaterEqual(detail_box['width'], 249)
-                measurements[width] = {'sidebar': sidebar, 'table': self.page.locator('.v31-main-table').bounding_box(),
+                measurements[width] = {'explorateur': self.page.locator('#o-explorateur').bounding_box(), 'table': self.page.locator('.v31-main-table').bounding_box(),
                                        'detail': detail_box}
         (folder / 'industriel-mesures.json').write_text(json.dumps(measurements, indent=2) + '\n', encoding='utf-8')
         self.assertEqual(project.read_bytes(), before)
@@ -122,10 +122,10 @@ class TestDesignIndustriel(ServeurNavigateur):
         for route, title in (('#/referentiel', 'Référentiel métier'), ('#/inventaire', 'Équipements'),
                              ('#/es', 'Liste des E/S'), ('#/materiel', 'Matériel'),
                              ('#/variables', 'Variables'), ('#/recette', 'Recette')):
-            self.page.locator(f'#v31-sidebar [data-nav="{route}"]').click()
+            self.page.locator(f'#o-explorateur [data-nav="{route}"]').click()
             self.page.wait_for_function('(title) => document.querySelector("#v31-title").textContent === title', arg=title)
             self.assertEqual(self.page.url, self.url + route)
-        self.page.locator('#v31-sidebar [data-nav="#/materiel"]').click()
+        self.page.locator('#o-explorateur [data-nav="#/materiel"]').click()
         self.page.locator('#m-calc').wait_for()
         self.page.locator('.v31-actions-more summary').click()
         for selector in ('#x-xsy', '#x-txt'):
@@ -181,7 +181,7 @@ class TestDesignIndustriel(ServeurNavigateur):
         self.capture('industriel-composition-1366.png')
         self.page.locator('.rack').first.scroll_into_view_if_needed()
         rack_top = self.page.locator('.rack-tete').first.bounding_box()['y']
-        header_bottom = self.page.locator('#v31-top').bounding_box()['y'] + self.page.locator('#v31-top').bounding_box()['height']
+        header_bottom = self.page.locator('#o-documents').bounding_box()['y'] + self.page.locator('#o-documents').bounding_box()['height']
         self.assertGreaterEqual(rack_top, header_bottom - 1, 'Le titre du rack ne doit pas passer sous l’en-tête')
         self.assertEqual(self.style('.emplacement.a-choisir', 'borderTopStyle'), 'dashed')
         # Refonte du 16/11 : « à choisir » est un avertissement, donc orange (cahier des charges § 2).

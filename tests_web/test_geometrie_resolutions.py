@@ -31,7 +31,7 @@ HORS_FENETRE = """() => {
   return sortie.slice(0, 10);
 }"""
 
-COUPURES = """() => [...document.querySelectorAll('#v31-sidebar [data-nav] span')].filter(span => {
+COUPURES = """() => [...document.querySelectorAll('#o-explorateur [data-nav] span')].filter(span => {
   const mots = span.textContent.trim().split(/\\s+/);
   const range = document.createRange(); range.selectNodeContents(span);
   const lignes = new Set([...range.getClientRects()].map(r => Math.round(r.top))).size;
@@ -98,7 +98,7 @@ class TestGeometrieResolutions(ServeurNavigateur):
                     self.ouvrir(route)
                     self.assertLessEqual(self.page.evaluate('document.documentElement.scrollWidth'), largeur)
                     self.assertEqual(self.page.evaluate(HORS_FENETRE), [])
-                    nav, top, vue = boite(self.page, '#v31-sidebar'), boite(self.page, '#v31-top'), boite(self.page, '#vue')
+                    nav, top, vue = boite(self.page, '#o-explorateur'), boite(self.page, '#o-documents'), boite(self.page, '#vue')
                     etat = boite(self.page, '#v30-status')
                     self.assertTrue(separes(nav, vue) and separes(nav, top) and separes(top, vue))
                     # Barre d'état en bas, pleine largeur de la zone de travail, sans recouvrir #vue

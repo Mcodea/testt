@@ -233,3 +233,130 @@ html[data-theme] :is(input:not([type=checkbox]):not([type=radio]):not([type=rang
 }
 /* Barres de défilement fines, comme un logiciel de bureau */
 html[data-theme] * { scrollbar-width: thin; scrollbar-color: var(--o-ligne-forte) transparent; }
+
+/* =====================================================================================================
+   Coque de bureau (lot 2a) : barre de titre et menus, explorateur, onglets de documents, barre d'état.
+   ===================================================================================================== */
+:root { --o-l-explorateur: 232px; --o-h-titre: 34px; --o-h-documents: 34px; }
+html[data-theme] body.o-coque {
+  display: grid;
+  grid-template-columns: var(--o-l-explorateur) minmax(0, 1fr);
+  grid-template-rows: var(--o-h-titre) var(--o-h-documents) minmax(0, 1fr) var(--o-h-etat);
+  gap: 0;
+}
+html[data-theme] body.o-coque.o-sans-explorateur { grid-template-columns: 0 minmax(0, 1fr); }
+body.o-coque #o-titre { grid-column: 1 / -1; grid-row: 1; }
+body.o-coque #o-explorateur { grid-column: 1; grid-row: 2 / 4; }
+body.o-coque #o-documents { grid-column: 2; grid-row: 2; }
+body.o-coque #v30-workspace { grid-column: 2; grid-row: 3; }
+body.o-coque #v30-status.v30-status { grid-column: 1 / -1; grid-row: 4; }
+
+/* ---------------------------------------------------------------- barre de titre */
+.o-titre {
+  display: flex; align-items: center; gap: var(--o-e-2); min-width: 0;
+  padding: 0 var(--o-e-2); background: var(--o-nuit); color: var(--o-nuit-texte);
+  font-size: var(--o-t-s); border-bottom: 1px solid var(--o-nuit-ligne);
+}
+.o-marque {
+  display: flex; align-items: center; gap: var(--o-e-2); padding: 0 var(--o-e-2) 0 var(--o-e-1);
+  color: var(--o-nuit-texte); font-weight: 650; letter-spacing: .08em; text-decoration: none;
+}
+.o-marque img { width: 20px; height: 20px; border-radius: var(--o-r-m); }
+.o-menus { display: flex; }
+.o-menus > button, .o-titre-bouton {
+  height: 26px; padding: 0 9px; border: 0; border-radius: var(--o-r-s); background: none;
+  color: var(--o-nuit-texte); font: inherit; cursor: pointer;
+}
+.o-menus > button:hover, .o-menus > button[aria-expanded="true"], .o-titre-bouton:hover { background: var(--o-nuit-2); }
+.o-titre-bouton { width: 28px; padding: 0; display: grid; place-items: center; font-weight: 650; }
+.o-vide { flex: 1; min-width: var(--o-e-2); }
+.o-commande {
+  display: flex; align-items: center; gap: var(--o-e-2); width: min(420px, 34vw); height: 24px; padding: 0 var(--o-e-2);
+  border: 1px solid var(--o-nuit-ligne); border-radius: var(--o-r-m); background: var(--o-nuit-2);
+  color: var(--o-nuit-texte-2); font: inherit; cursor: pointer; min-width: 0;
+}
+.o-commande span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.o-commande kbd { margin-left: auto; font-family: var(--o-mono); font-size: var(--o-t-xs); }
+.o-commande:hover { border-color: var(--o-nuit-texte-2); color: var(--o-nuit-texte); }
+.o-courant {
+  display: flex; align-items: center; gap: var(--o-e-2); max-width: 360px; height: 26px; padding: 0 var(--o-e-2);
+  border: 0; border-radius: var(--o-r-s); background: none; color: var(--o-nuit-texte-2); font: inherit; cursor: pointer; min-width: 0;
+}
+.o-courant[hidden] { display: none; }
+.o-courant b { color: var(--o-nuit-texte); font-family: var(--o-mono); font-weight: 400; }
+.o-courant span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.o-courant:hover { background: var(--o-nuit-2); }
+/* Menus déroulants */
+.o-menu {
+  position: fixed; top: calc(var(--o-h-titre) - 2px); z-index: 300; min-width: 240px; padding: var(--o-e-1);
+  background: var(--o-surface); color: var(--o-texte); border: 1px solid var(--o-ligne-forte);
+  border-radius: var(--o-r-m); box-shadow: var(--o-ombre-flottant);
+}
+.o-menu button {
+  display: flex; align-items: center; gap: var(--o-e-4); width: 100%; height: 28px; padding: 0 var(--o-e-2) 0 var(--o-e-3);
+  border: 0; border-radius: var(--o-r-s); background: none; color: var(--o-texte); font: inherit; font-size: var(--o-t-m);
+  text-align: left; cursor: pointer;
+}
+.o-menu button:hover:not(:disabled), .o-menu button:focus-visible { background: var(--o-action-fond); outline: none; }
+.o-menu button:disabled { color: var(--o-texte-3); cursor: default; }
+.o-menu kbd { margin-left: auto; font-family: var(--o-mono); font-size: var(--o-t-xs); color: var(--o-texte-3); }
+.o-menu hr { margin: var(--o-e-1) 0; border: 0; border-top: 1px solid var(--o-ligne); }
+
+/* ---------------------------------------------------------------- explorateur */
+.o-explorateur {
+  display: flex; flex-direction: column; min-height: 0; overflow: auto;
+  background: var(--o-surface); border-right: 1px solid var(--o-ligne); font-size: var(--o-t-s);
+}
+.o-explorateur[hidden] { display: none; }
+.o-panneau-tete {
+  display: flex; align-items: center; justify-content: space-between; flex: none; height: var(--o-h-documents);
+  padding: 0 var(--o-e-2) 0 var(--o-e-3); border-bottom: 1px solid var(--o-ligne); background: var(--o-surface-2);
+  color: var(--o-texte-2); font-size: var(--o-t-xs); font-weight: 650; letter-spacing: .07em; text-transform: uppercase;
+}
+.o-replier { display: grid; place-items: center; width: 22px; height: 22px; border: 0; border-radius: var(--o-r-s); background: none; color: var(--o-texte-2); cursor: pointer; }
+.o-replier:hover { background: var(--o-surface-3); }
+.o-section {
+  padding: var(--o-e-3) var(--o-e-3) var(--o-e-1); color: var(--o-texte-3);
+  font-size: var(--o-t-xs); font-weight: 650; letter-spacing: .07em; text-transform: uppercase;
+}
+.o-lien, .o-etape {
+  display: flex; align-items: center; gap: var(--o-e-2); min-height: 28px; padding: 0 var(--o-e-3);
+  color: var(--o-texte); text-decoration: none;
+}
+.o-lien .o-ico { color: var(--o-texte-2); flex: none; }
+.o-lien:hover, .o-etape:hover { background: var(--o-surface-3); }
+.o-lien.on, .o-etape.on { background: var(--o-action-fond); box-shadow: inset 2px 0 0 var(--o-action-plein); font-weight: 600; }
+.o-lien.on .o-ico { color: var(--o-action); }
+.o-code { margin-left: auto; font-family: var(--o-mono); font-size: var(--o-t-xs); color: var(--o-texte-2); font-weight: 400; }
+.o-parcours { list-style: none; margin: 0; padding: 0; }
+.o-etape-lib { flex: 1; min-width: 0; }
+.o-etape small { color: var(--o-texte-2); font-size: var(--o-t-xs); font-weight: 400; white-space: nowrap; }
+.o-pastille {
+  display: grid; place-items: center; flex: none; width: 18px; height: 18px; border-radius: 50%;
+  border: 1.5px solid var(--o-ligne-forte); color: var(--o-texte-2); font-size: 10px; font-weight: 700;
+}
+.o-pastille.ok { border-color: var(--o-ok-filet); background: var(--o-ok-filet); color: var(--o-sur-action); }
+.o-pastille.al { border-color: var(--o-alerte-filet); color: var(--o-alerte); }
+.o-vide-texte { margin: var(--o-e-3); color: var(--o-texte-2); font-size: var(--o-t-s); }
+
+/* ---------------------------------------------------------------- onglets de documents */
+.o-documents {
+  display: flex; align-items: flex-end; gap: var(--o-e-2); min-width: 0; padding: 0 var(--o-e-2);
+  background: var(--o-surface-2); border-bottom: 1px solid var(--o-ligne);
+}
+.o-onglets { display: flex; align-items: flex-end; gap: 2px; min-width: 0; overflow: hidden; flex: 1; }
+.o-onglet {
+  display: flex; align-items: center; gap: var(--o-e-1); flex: none; height: 28px; padding: 0 var(--o-e-1) 0 var(--o-e-3);
+  border: 1px solid transparent; border-bottom: 0; border-radius: var(--o-r-m) var(--o-r-m) 0 0; color: var(--o-texte-2);
+}
+.o-onglet a { color: inherit; text-decoration: none; font-size: var(--o-t-s); padding-right: var(--o-e-2); }
+.o-onglet:hover:not(.on) { background: var(--o-surface-3); }
+.o-onglet.on {
+  height: 30px; margin-bottom: -1px; background: var(--o-surface); color: var(--o-texte);
+  border-color: var(--o-ligne); box-shadow: inset 0 2px 0 var(--o-action-plein);
+}
+html[data-theme] .o-onglet h1 { margin: 0; padding-right: var(--o-e-2); font-size: var(--o-t-s); font-weight: 600; white-space: nowrap; }
+.o-fermer { display: grid; place-items: center; width: 18px; height: 18px; border: 0; border-radius: var(--o-r-s); background: none; color: var(--o-texte-3); cursor: pointer; }
+.o-fermer:hover { background: var(--o-surface-3); color: var(--o-texte); }
+.o-documents-actions { display: flex; align-items: center; gap: var(--o-e-2); align-self: center; flex: none; }
+html[data-theme] .o-documents-actions .v31-secondary-header { min-height: 24px; height: 24px; padding: 0 var(--o-e-2); font-size: var(--o-t-s); }

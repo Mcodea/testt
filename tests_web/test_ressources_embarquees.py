@@ -55,10 +55,11 @@ class TestRessourcesEmbarquees(ServeurNavigateur):
             self.assertIn(auteur, reponse.text())
 
     def test_icones_lucide_rendues_et_licence_disponible(self):
-        icones = self.page.locator(".v31-sidebar svg.v31-icon")
+        # Refonte, lot 2a : les icônes Lucide restent utilisées dans la barre de titre et la barre d'état.
+        icones = self.page.locator("#o-titre svg.v31-icon, #v30-status svg.v31-icon")
         self.assertGreaterEqual(icones.count(), 5)
         self.assertEqual(icones.locator("use").count(), icones.count())
-        self.page.wait_for_function("""() => [...document.querySelectorAll('.v31-sidebar svg.v31-icon')]
+        self.page.wait_for_function("""() => [...document.querySelectorAll('#o-titre svg.v31-icon, #v30-status svg.v31-icon')]
           .every(e => e.querySelector('use') && e.getBBox().width > 0 && e.getBBox().height > 0)""")
         for icone in icones.all():
             self.assertTrue(icone.get_attribute("data-lucide"))

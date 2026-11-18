@@ -64,7 +64,7 @@ class TestTableauDeBord(ServeurNavigateur):
         for route, titre in (('inventaire', 'Équipements'), ('es', 'Liste des E/S'),
                              ('materiel', 'Matériel'), ('variables', 'Variables'), ('recette', 'Recette')):
             with self.subTest(route=route):
-                etape = self.page.locator(f'#v31-progress [data-nav="#/{route}"]')
+                etape = self.page.locator(f'#o-parcours [data-nav="#/{route}"]')
                 self.assertTrue(etape.is_visible())
                 self.assertIn(' : ', etape.get_attribute('title'))
                 etape.click()

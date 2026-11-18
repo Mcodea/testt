@@ -149,7 +149,7 @@ async function naviguer(route) {
     E.esFormDirty = false;
   }
   if (route !== "#/inventaire" && E.ouvrage?.creation_en_attente) {
-    await api("/api/fermer"); E.ouvrage = null;
+    await api("/api/fermer", {}); E.ouvrage = null;
   }
   E.apresFermeture = null; fermerModale();
   if (location.hash === route) afficher(); else location.hash = route;
@@ -922,7 +922,7 @@ function detailOuvrage(c) {
     if (E.ficheDirty && !window.confirm("Abandonner les modifications non enregistrées ?")) return;
     E.ficheDirty = false; E.ficheDraft = null;
     if (o.en_conception) {
-      await api("/api/fermer"); E.ouvrage = null;
+      await api("/api/fermer", {}); E.ouvrage = null;
       allerAccueil();
     } else await recharger();
   };

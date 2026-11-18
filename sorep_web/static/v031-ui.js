@@ -25,24 +25,9 @@ const V31 = (() => {
  const state={detail:false,navOpen:false,searchOpen:false};
  const steps=[['ouvrage','Équipements','#/inventaire'],['es','Liste des E/S','#/es'],['materiel','Matériel','#/materiel'],['variables','Variables','#/variables'],['recette','Recette','#/recette']];
  function init(){
-  const bar=document.createElement('nav');bar.id='v31-sidebar';bar.className='v31-sidebar';bar.setAttribute('aria-label','Navigation principale');
-  bar.innerHTML=`<a class="v31-logo" href="#/ouvrages" data-nav="#/ouvrages" title="OGIAS"><img src="assets/ogias-icone-512.png" alt="OGIAS"></a>
-   <div class="v31-side-links"><a href="#/dashboard" data-nav="#/dashboard" data-view="dashboard" title="Tableau de bord" aria-label="Tableau de bord">${icon('home')}<span>Tableau de bord</span></a>
-   <a href="#/ouvrages" data-nav="#/ouvrages" data-view="accueil" title="Mes ouvrages" aria-label="Mes ouvrages">${icon('folder')}<span>Ouvrages</span></a>
-   <a href="#/referentiel" data-nav="#/referentiel" data-view="referentiel" title="Référentiel métier" aria-label="Référentiel métier">${icon('layers')}<span>Référentiel modèles</span></a>
-   <a href="#/inventaire" data-nav="#/inventaire" data-view="ouvrage" title="Ouvrages / Équipements" aria-label="Équipements">${icon('folder')}<span>Équipements</span></a>
-   <a href="#/es" data-nav="#/es" data-view="es" title="Liste des E/S" aria-label="Liste des E/S">${icon('list')}<span>Liste des E/S</span></a>
-   <a href="#/materiel" data-nav="#/materiel" data-view="materiel" title="Configuration matérielle" aria-label="Configuration matérielle">${icon('cpu')}<span>Config. matérielle</span></a>
-   <a href="#/variables" data-nav="#/variables" data-view="variables" title="Tags / Variables" aria-label="Tags / Variables">${icon('layers')}<span>Tags / Variables</span></a>
-   <a href="#/recette" data-nav="#/recette" data-view="recette" title="Recette / Exports" aria-label="Recette / Exports">${icon('clipboard')}<span>Recette / Exports</span></a></div>
-   <div class="v31-side-bottom"><button type="button" id="v31-settings" title="Thème clair / sombre" aria-label="Thème clair / sombre">${icon(document.documentElement.dataset.theme==='dark'?'sun':'moon')}</button>
-   <button type="button" id="v31-about" title="À propos" aria-label="À propos">${icon('info')}</button></div>`;
-  document.body.prepend(bar);
-  const top=document.createElement('div');top.id='v31-top';top.className='v31-top';top.innerHTML=`<div class="v31-page-info"><div id="v31-breadcrumb" class="v31-breadcrumb"></div><h1 id="v31-title"></h1></div>
-    <div class="v31-top-actions"><button type="button" id="v31-global-search" class="v31-search-trigger">${icon('search',17)}<span>Rechercher dans OGIAS</span><kbd>Ctrl K</kbd></button>
-    <button type="button" id="v31-current" class="v31-current" title="Fiche de l’ouvrage courant"></button></div>`;
-  const workspace=document.getElementById('v30-workspace');workspace.parentNode.insertBefore(top,workspace);
-  const progress=document.createElement('nav'); progress.className='v31-progress';progress.id='v31-progress';progress.setAttribute('aria-label','Étapes de l’ouvrage'); top.after(progress);
+  // Refonte, lot 2a : barre de titre (menus, recherche, ouvrage courant, thème), explorateur et onglets de
+  // documents remplacent la barre latérale, l'en-tête et la frise des étapes (voir ogias-coque.js).
+  Coque.init();
   document.getElementById('v31-global-search').onclick=()=>globalSearch();
   const boutonTheme=document.getElementById('v31-settings');
   boutonTheme.onclick=()=>{const dark=document.documentElement.dataset.theme==='dark';document.documentElement.dataset.theme=dark?'light':'dark';try{localStorage.setItem('ogias-ui-theme',dark?'light':'dark');}catch(e){}boutonTheme.innerHTML=icon(dark?'moon':'sun');boutonTheme.title=dark?'Passer au thème sombre':'Passer au thème clair';};
@@ -87,22 +72,19 @@ const V31 = (() => {
   document.body.dataset.ecran=E.vue||'';
   barreEtat(E,ETAPES,etatEtape,vueEtape,has);
   const titles={accueil:'Mes ouvrages',dashboard:'Tableau de bord de l’ouvrage',ouvrage:creation?'Créer un ouvrage':'Équipements',es:'Liste des E/S',materiel:'Matériel',variables:'Variables',supervision:'Variables',adressage:'Variables',recette:'Recette',referentiel:'Référentiel métier'};
-  const title=titles[E.vue]||'OGIAS';document.getElementById('v31-title').textContent=title;
-  document.getElementById('v31-breadcrumb').textContent=has?`Ouvrages › ${E.ouvrage.prefixe||E.ouvrage.identification?.code_ouvrage||'Ouvrage'} › ${title}`:E.vue==='referentiel'?'OGIAS › Bibliothèque métier':'OGIAS › Ouvrages';
+  Coque.render(E,ETAPES,etatEtape,vueEtape);
+  const title=titles[E.vue]||'OGIAS';const h1=document.getElementById('v31-title');if(h1)h1.textContent=title;
   const current=document.getElementById('v31-current');current.hidden=!has;
-  if(has){const o=E.ouvrage;const id=o.prefixe||o.identification?.code_ouvrage||'Ouvrage';current.innerHTML=`<span class="v31-avatar">${esc(String(id).slice(0,2))}</span><span><b>${esc(o.identification?.libelle||id)}</b><small>${esc(id)} · ${esc(o.identification?.mode||'')}</small></span>`;current.onclick=()=>naviguer('#/dashboard');}
+  if(has){const o=E.ouvrage;const id=o.prefixe||o.identification?.code_ouvrage||'Ouvrage';current.innerHTML=`<b>${esc(id)}</b><span>${esc(o.identification?.libelle||'')}</span>`;current.title=`${o.identification?.libelle||id} · ${o.identification?.mode||''} — tableau de bord`;current.onclick=()=>naviguer('#/dashboard');}
   document.querySelectorAll('[data-view]').forEach(el=>el.classList.toggle('active',el.dataset.view===E.vue));
-  const progress=document.getElementById('v31-progress');progress.hidden=!has||E.vue==='referentiel'||E.vue==='accueil';
   let drawer=document.getElementById('v31-tree-trigger');
   if(!drawer){drawer=document.createElement('button');drawer.type='button';drawer.id='v31-tree-trigger';drawer.className='v31-secondary-header';drawer.innerHTML=icon('folder',16)+' Structure / ajouter';
-    document.getElementById('v31-top').appendChild(drawer);
+    Coque.actions().appendChild(drawer);
     // Au-delà de 1280 px l'arborescence est ancrée à gauche : le bouton la masque ou la réaffiche.
     drawer.onclick=()=>{const vue=document.getElementById('vue');vue.classList.toggle('v31-show-tree');majArbre();};
   }
   drawer.hidden=E.vue!=='ouvrage'||creation;
   majArbre();
-  if(!progress.hidden){progress.innerHTML=steps.map(([v,label,link],i)=>{const s=etatEtape(v,E.ouvrage),active=vueEtape(E.vue)===v;
-    return `<button class="v31-step ${active?'active':''} ${s==='validée'?'done':''}" type="button" data-nav="${link}" title="${esc(label)} : ${esc(s)}"><span class="v31-step-mark">${s==='validée'?icon('check',12):i+1}</span>${label}</button>${i<4?'<span class="v31-step-dots" aria-hidden="true">····</span>':''}`;}).join('');}
   document.querySelector('#v30-workspace').classList.toggle('v31-new-creation',creation);
  }
  function refresh(E,ETAPES,etatEtape,vueEtape){
