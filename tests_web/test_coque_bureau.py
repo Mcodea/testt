@@ -438,8 +438,8 @@ class TestCoqueBureau(ServeurNavigateur):
         self.assertIn('a évolué', self.page.locator('.outils-standard').inner_text())
 
     def test_charte_de_nommage_construite_dans_ogias(self):
-        """19/11 : charte d'un client construite segment par segment, aperçu contrôlé en direct ; un standard qui
-        l'emploie n'est pas encore proposé à la création (repères pas encore fabriqués selon elle)."""
+        """19/11 : charte d'un client construite segment par segment, aperçu contrôlé en direct ; un ouvrage créé
+        selon le standard de ce client a ses repères et ses noms fabriqués selon la charte."""
         n = self.numero
         self.ouvrir('#/standards')
         self.page.locator('[data-nouvelle-brique="charte"]').click()
@@ -452,16 +452,34 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.locator('.std-seg[data-partie="ouvrage"][data-i="3"] [data-bouger="-1"]').click()
         self.page.locator('#charte-separateur').select_option('_')
         self.page.wait_for_function("() => document.querySelector('#charte-apercu')?.innerText.includes('XTST_RV_EAU_01_PM01')")
-        self.assertIn('pas encore', self.page.locator('#charte-apercu').inner_text())
+        self.assertIn('inventaire', self.page.locator('#charte-apercu').inner_text())
         self.page.locator('#brique-ok').click()
         self.page.wait_for_function("t => document.querySelector('.std-bibliotheque')?.innerText.includes(t)", arg=f'Charte fictive {n}')
         b = next(x for x in self.api('/api/standards')['bibliotheque']['charte'] if x['nom'] == f'Charte fictive {n}')
         self.assertEqual(b['exemple']['equipement'], 'XTST_RV_EAU_01_PM01')
         r = self.api('/api/standards/action', {'action': 'creer', 'nom': f'Client charte {n}',
                                                'choix': {'charte': b['ident'], 'adressage': 'adressage-defaut', 'outils': 'outils-topkapi'}})
-        self.assertFalse(next(s for s in r['standards'] if s['ident'] == r['ident'])['utilisable'])
-        with self.assertRaisesRegex(RuntimeError, 'pas encore'):
+        # Un ouvrage déjà équipé ne change pas de charte
+        with self.assertRaisesRegex(RuntimeError, 'autre charte'):
             self.api('/api/standards/appliquer', {'ident': r['ident'], 'confirme': True})
+        # Création selon ce standard : la fiche suit la charte (aperçu du repère), puis repères et noms
         self.api('/api/nouveau', {'mode': 'Neuf'})
         self.ouvrir('#/inventaire')
-        self.page.wait_for_function("i => document.querySelector(`#standard-choix option[value='${i}']`)?.disabled === true", arg=r['ident'])
+        self.page.locator('#standard-choix').wait_for()
+        self.page.wait_for_function("() => document.querySelectorAll('#standard-choix option').length > 1")
+        self.page.locator('#standard-choix').select_option(r['ident'])
+        self.page.locator('#lieu').select_option('XTST')
+        self.page.locator('#type_ouvrage').select_option('RV')
+        self.page.locator('#numero_ouvrage').fill(f'{50 + n:02d}')
+        self.page.locator('#numero_ouvrage').dispatch_event('input')
+        self.page.wait_for_function("t => document.querySelector('#code-ouvrage-affiche')?.textContent === t", arg=f'XTST_RV_EAU_{50 + n:02d}')
+        self.api('/api/fiche-ouvrage', {'action': 'creer', 'standard': r['ident'], 'identification': {
+            'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': f'{50 + n:02d}',
+            'libelle': 'Ouvrage fictif charte client', 'automate': 'Sch - M340', 'revision': 'A'}})
+        self.assertTrue(Path(self.api('/api/ouvrage')['chemin']).stem.startswith(f'XTST_RV_EAU_{50 + n:02d}'))
+        ident = self.api('/api/equipement/ajouter', {'type': 'HV', 'numero': '01', 'se': '00'})['ident']
+        self.api('/api/equipement/proposition', {'ident_eq': ident, 'decision': 'retenir'})
+        noms = [v['nom'] for v in self.api('/api/variables')['lignes'] if v.get('ident_eq') == ident]
+        self.assertTrue(noms and all(f'RV_EAU_{50 + n:02d}_HV01' in x for x in noms), noms[:3])
+        with self.assertRaisesRegex(RuntimeError, 'autre charte'):
+            self.api('/api/standards/appliquer', {'ident': 'standard-initial', 'confirme': True})

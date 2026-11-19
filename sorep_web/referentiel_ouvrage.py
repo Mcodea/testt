@@ -209,13 +209,14 @@ def _valider(groupe, code, libelle=""):
     code = str(code or "").strip().upper() if groupe in ("lieux", "types_ouvrage") else str(code or "").strip()
     libelle = str(libelle or "").strip()
     if groupe == "lieux":
-        if not charte.conforme(charte.LIEU, code):
-            raise RegleMetier("Un code de lieu doit contenir 4 caractères alphanumériques.")
+        # 19/11 : les listes servent à toutes les chartes ; la longueur exacte est contrôlée par la charte de l'ouvrage.
+        if not charte.conforme(charte.CODE_LISTE, code):
+            raise RegleMetier("Un code de lieu contient 1 à 8 lettres majuscules ou chiffres.")
         if not libelle or len(libelle) > 100:
             raise RegleMetier("Le lieu doit avoir un libellé de 1 à 100 caractères.")
     elif groupe == "types_ouvrage":
-        if not charte.conforme(charte.CODE_OUVRAGE, code):
-            raise RegleMetier("Un code d'ouvrage doit contenir exactement 2 lettres majuscules.")
+        if not charte.conforme(charte.CODE_LISTE, code):
+            raise RegleMetier("Un code d'ouvrage contient 1 à 8 lettres majuscules ou chiffres.")
         if not libelle or len(libelle) > 100:
             raise RegleMetier("Le type d'ouvrage doit avoir un libellé de 1 à 100 caractères.")
     else:

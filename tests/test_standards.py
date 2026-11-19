@@ -12,6 +12,10 @@ from genvar import charte, standards
 from genvar.session import RegleMetier
 from genvar.modele import ORDRE_ZONES, PLAN_DEFAUT, Ouvrage, zone
 from tests.test_coherence import nouvelle
+from genvar import chemins
+from genvar.catalogue import Catalogue
+from genvar.modele import Equipement
+from genvar.session import Session
 
 
 class AvecDossier(unittest.TestCase):
@@ -166,7 +170,7 @@ class TestChartesReglables(AvecDossier):
     def test_charte_ogias_inchangee(self):
         self.assertEqual(charte.controler(charte.CHARTE_OGIAS), charte.CHARTE_OGIAS)
         self.assertEqual(charte.exemple(charte.CHARTE_OGIAS), {"ouvrage": "XTSTRV01", "equipement": "XTSTRV01PM01"})
-        self.assertTrue(charte.applicable(charte.CHARTE_OGIAS))
+        self.assertTrue(charte.est_ogias(charte.CHARTE_OGIAS))
         self.assertEqual(charte.motif_champ(charte.CHARTE_OGIAS, "lieu"), "[A-Z0-9]{4}")
         b = standards.bibliotheque()["charte"]
         self.assertEqual([x["ident"] for x in b], ["charte-ogias"])
@@ -174,7 +178,7 @@ class TestChartesReglables(AvecDossier):
     def test_charte_client_personnalisee(self):
         c = charte.controler(self.CLIENT)
         self.assertEqual(charte.exemple(c), {"ouvrage": "EAU_RVR_001", "equipement": "EAU_RVR_001_00_PM01"})
-        self.assertFalse(charte.applicable(c))
+        self.assertFalse(charte.est_ogias(c))
         self.assertIsNone(charte.motif_champ(c, "lieu"))                     # pas de lieu dans cette charte
         self.assertTrue(re.fullmatch(charte.motif_champ(c, "numero_ouvrage"), "007"))
         self.assertFalse(re.fullmatch(charte.motif_champ(c, "numero_ouvrage"), "000"))
@@ -193,17 +197,58 @@ class TestChartesReglables(AvecDossier):
             with self.subTest(nom), self.assertRaises(RegleMetier):
                 charte.controler(c)
 
-    def test_standard_avec_charte_client_ne_cree_pas_d_ouvrage(self):
-        """Tant que les repères ne sont pas fabriqués selon une autre charte : refus clair, rien n'est modifié."""
+    def ouvrage_client(self):
         b, alertes = standards.creer_brique("charte", "Charte client fictif", self.CLIENT)
-        self.assertTrue(alertes and "pas encore" in alertes[0])
+        self.assertTrue(alertes and "inventaire" in alertes[0])
         s = standards.creer_standard("Client fictif", "", {"charte": b["ident"], "adressage": "adressage-defaut",
                                                          "outils": "outils-topkapi"})
-        session = nouvelle()
-        avant = asdict(session.ouvrage)
-        with self.assertRaisesRegex(RegleMetier, "pas encore"):
-            standards.appliquer(session, s)
-        self.assertEqual(asdict(session.ouvrage), avant)
+        session = Session(Catalogue.charger(chemins.fichier_catalogue_origine()))
+        session.nouveau(lieu_dans_le_nom=False)
+        session.definir("lieu", "XTST"); session.ouvrage.code_ouvrage = "RVR"; session.ouvrage.numero_ouvrage = "007"
+        session.definir("automate", "M340")
+        standards.appliquer(session, s)
+        return session
+
+    def test_reperes_fabriques_selon_la_charte(self):
+        s = self.ouvrage_client()
+        o = s.ouvrage
+        self.assertEqual(o.prefixe(), "EAU_RVR_007")
+        s.ajouter_sous_ensemble("00"); s.ajouter_sous_ensemble("11")
+        e1 = s.ajouter_equipement(Equipement("00", "PM", "01"))
+        e2 = s.ajouter_equipement(Equipement("11", "PM", "01"))       # même numéro, autre sous-ensemble : permis
+        self.assertTrue(o.se_dans_repere())
+        self.assertEqual((o.repere(e1), o.repere(e2)), ("EAU_RVR_007_00_PM01", "EAU_RVR_007_11_PM01"))
+        self.assertEqual(o.repere_nom(e1), "EAU_RVR_007_00_PM01")       # pas de lieu dans cette charte
+        s.decider_propositions(e1.ident, "retenir")
+        noms = [v.nom for v in s.variables() if v.ident_eq == e1.ident]
+        self.assertTrue(noms and all("EAU_RVR_007_00_PM01" in n for n in noms), noms[:3])
+        codes = {a.code for a in s.anomalies()}
+        self.assertFalse(codes & {"R-OUV-02", "R-OUV-03", "R-OUV-04", "R-EQ-07"}, codes)
+        o.numero_ouvrage = "07"                                       # 2 chiffres : contraire à la charte (3)
+        self.assertIn("R-OUV-04", {a.code for a in s.anomalies()})
+
+    def test_lieu_dans_le_nom_selon_la_charte(self):
+        c = dict(self.CLIENT, ouvrage=[{"type": "lieu", "longueur": 4, "caracteres": "lettres"}, *self.CLIENT["ouvrage"]])
+        b, _ = standards.creer_brique("charte", "Charte avec lieu", c)
+        s = Session(Catalogue.charger(chemins.fichier_catalogue_origine()))
+        s.nouveau(lieu_dans_le_nom=False)
+        s.definir("lieu", "XTST"); s.ouvrage.code_ouvrage = "RVR"; s.ouvrage.numero_ouvrage = "001"
+        standards.appliquer(s, standards.creer_standard("Client lieu", "", {"charte": b["ident"], "adressage": "adressage-defaut",
+                                                                            "outils": "outils-topkapi"}))
+        s.ajouter_sous_ensemble("00")
+        e = s.ajouter_equipement(Equipement("00", "PM", "01"))
+        self.assertEqual((s.ouvrage.repere(e), s.ouvrage.repere_nom(e)), ("XTST_EAU_RVR_001_00_PM01", "EAU_RVR_001_00_PM01"))
+
+    def test_charte_ogias_strictement_inchangee(self):
+        """Ouvrage du Standard initial : mêmes repères que sans standard."""
+        sans = nouvelle()
+        avec = nouvelle()
+        standards.appliquer(avec, standards.trouver(standards.IDENT_INITIAL))
+        self.assertIsNone(avec.ouvrage.charte_client())
+        for s in (sans, avec):
+            s.ajouter_equipement(Equipement("00", "PM", "01"))
+        self.assertEqual([sans.ouvrage.repere(e) for e in sans.ouvrage.equipements],
+                         [avec.ouvrage.repere(e) for e in avec.ouvrage.equipements])
 
 
 if __name__ == "__main__":

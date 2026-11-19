@@ -34,6 +34,9 @@ RE_ADRESSE_PHYSIQUE = re.compile(r"^%(I|Q|IW|QW)[\d.]+$")
 RESERVE_MINIMALE = 0.20      # réserve de voies par carte en dessous de laquelle on ne descend pas
 
 
+MESSAGE_INVENTAIRE_CHARTE = ("Import d'inventaire : disponible seulement avec la charte de nommage OGIAS ; cet ouvrage suit la charte de son client (lecture des repères non décrite).")
+
+
 class RegleMetier(Exception):
     """Opération refusée par une règle de l'outil ; le message s'affiche tel quel."""
 
@@ -1029,10 +1032,14 @@ class Session:
 
     def apercu_inventaire(self, chemin):
         from . import tableur, inventaire
+        if self.ouvrage.charte_client() is not None:
+            raise RegleMetier(MESSAGE_INVENTAIRE_CHARTE)
         return inventaire.analyser(tableur.lire_classeur(chemin), self)
 
     def appliquer_inventaire(self, lignes):
         from . import inventaire
+        if self.ouvrage.charte_client() is not None:
+            raise RegleMetier(MESSAGE_INVENTAIRE_CHARTE)
         with self._operation_lourde("inventaire"):
             return inventaire.appliquer(lignes, self)
 
@@ -1103,12 +1110,12 @@ class Session:
         nouveau.ident = uuid.uuid4().hex[:8]
         nouveau.adresses, nouveau.adresses_es = {}, {}
         pris = {int(e.numero) for e in self.ouvrage.equipements
-                if e.type == eq.type and (self.ouvrage.charte_12() or e.sous_ensemble == eq.sous_ensemble)
+                if e.type == eq.type and (not self.ouvrage.se_dans_repere() or e.sous_ensemble == eq.sous_ensemble)
                 and e.numero.isdigit()}
         libres = [n for n in range(1, 100) if n not in pris]
         if not libres:
             raise RegleMetier("Plus aucun numéro libre pour ce type dans l'ouvrage."
-                              if self.ouvrage.charte_12() else "Plus aucun numéro libre pour ce type dans ce sous-ensemble.")
+                              if not self.ouvrage.se_dans_repere() else "Plus aucun numéro libre pour ce type dans ce sous-ensemble.")
         nouveau.numero = f"{libres[0]:02d}"
         return nouveau
 

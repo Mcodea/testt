@@ -45,6 +45,22 @@ def journal(texte):
         pass
 
 
+def _charte_client(standard):
+    """Charte d'un standard au sens de l'ouvrage : None pour la structure OGIAS (comportement d'avant)."""
+    from genvar import charte
+    c = ((standard or {}).get("briques") or {}).get("charte")
+    return None if not c or "ouvrage" not in c or charte.est_ogias(c) else c
+
+
+def _motifs_identification(c):
+    """Motifs et consignes de saisie de l'identification selon une charte (None : charte OGIAS)."""
+    from genvar import charte
+    if c is not None and ("ouvrage" not in c or charte.est_ogias(c)):
+        c = None
+    return {champ: {"motif": charte.motif(c, champ), "consigne": charte.consigne(c, champ)}
+            for champ in ("lieu", "code_ouvrage", "numero_ouvrage")} | {"longueur_numero": charte.longueur_numero(c)}
+
+
 class Application:
     """État de l'interface : une Session, l'ouvrage ouvert, l'enregistrement automatique."""
 
@@ -165,6 +181,8 @@ class Application:
                                                                "revision", "statut")},
                 "prefixe": o.prefixe(),
                 "format_repere": o.format_repere,
+                # 19/11 : charte de nommage de l'ouvrage (None : charte OGIAS) et motifs de saisie qui en découlent
+                "charte_client": o.charte_client(), "charte_motifs": _motifs_identification(o.charte_client()),
                 "avancement": self._avancement(),
                 "referentiel": {"version_ouvrage": self.s.catalogue.version, "version_outil": self.s._catalogue_commun.version,
                                 "ecarts": self.s.ecarts_referentiel(), "adoption": self._apercu_adoption_interface(),
@@ -243,8 +261,9 @@ class Application:
             valeur = ", ".join(dict.fromkeys(choix))
         else:
             raise RegleMetier("Ce champ n'est pas géré par une liste.")
-        if champ == "numero_ouvrage" and valeur and not charte.conforme(charte.NUMERO_OUVRAGE, valeur):
-            raise RegleMetier("Numéro d’ouvrage invalide : 01 à 99.")
+        c = self._charte_cible()
+        if champ == "numero_ouvrage" and valeur and not charte.conforme(charte.motif(c, "numero_ouvrage"), valeur):
+            raise RegleMetier(f"Numéro d’ouvrage invalide : {charte.consigne(c, 'numero_ouvrage')}.")
         self.s.definir(champ, valeur)
         self._sauver()
         return {"champ": champ, "valeur": valeur}
@@ -940,13 +959,13 @@ class Application:
         def enrichir(f, b):
             b = {**b, "standards": emplois.get(f"{f}:{b['ident']}", 0)}
             if f == "charte":
-                b |= {"exemple": charte.exemple(b), "description": charte.decrire(b), "applicable": charte.applicable(b)}
+                b |= {"exemple": charte.exemple(b), "description": charte.decrire(b), "ogias": charte.est_ogias(b)}
             return b
         for s in (liste := standards.lire()):
             if "charte" in s["briques"]:
                 s["briques"]["charte"] = enrichir("charte", s["briques"]["charte"])
         return {"standards": [{**s, "ouvrages": compte.get(s["ident"], 0),
-                               "utilisable": charte.applicable(s["briques"].get("charte", charte.CHARTE_OGIAS))}
+                               "motifs": _motifs_identification(s["briques"].get("charte"))}
                               for s in liste],
                 "charte_meta": {"segments_ouvrage": charte.SEGMENTS_OUVRAGE, "segments_equipement": charte.SEGMENTS_EQUIPEMENT,
                                 "caracteres": {k: v[1] for k, v in charte.CARACTERES.items()},
@@ -989,7 +1008,9 @@ class Application:
             c = charte.controler(d.get("charte"))
         except RegleMetier as e:
             return {"erreur": str(e)}
-        return {"exemple": charte.exemple(c), "description": charte.decrire(c), "applicable": charte.applicable(c)}
+        from genvar.standards import AVIS_CHARTE_CLIENT
+        return {"exemple": charte.exemple(c), "description": charte.decrire(c), "ogias": charte.est_ogias(c),
+                "avis": "" if charte.est_ogias(c) else AVIS_CHARTE_CLIENT}
 
     def appliquer_standard(self, d):
         """Appliquer un standard (ou la nouvelle version du sien) à l'ouvrage ouvert, sur demande explicite (19/11).
@@ -1000,9 +1021,11 @@ class Application:
         choisi = standards.trouver(str(d.get("ident") or ""))
         if choisi is None or choisi.get("statut") != "actif":
             raise RegleMetier("Standard d'ingénierie introuvable ou archivé : choisissez-en un autre.")
+        # Changer la charte d'un ouvrage déjà équipé changerait tous ses repères et noms : refusé (19/11).
         from genvar import charte
-        if not charte.applicable(choisi["briques"].get("charte", charte.CHARTE_OGIAS)):
-            raise RegleMetier(f"« {choisi['nom']} » : OGIAS ne fabrique pas encore les repères selon sa charte de nommage.")
+        if _charte_client(choisi) != charte.de_ouvrage(self.s.ouvrage) and (self.s.ouvrage.equipements or self.s.ouvrage.existantes):
+            raise RegleMetier(f"« {choisi['nom']} » emploie une autre charte de nommage que cet ouvrage : appliquée à un "
+                              "ouvrage déjà équipé, elle changerait tous ses repères et noms. Rien n'a été modifié.")
         changements = standards.ecarts(self.s.ouvrage, choisi["briques"])
         if d.get("confirme") is not True:
             return {"apercu": changements, "nom": choisi["nom"], "version": choisi["version"]}
@@ -1146,7 +1169,7 @@ class Application:
     def numero_libre(self, q):
         o = self.s.ouvrage
         pris = {e.numero for e in o.equipements
-                if e.type == q.get("type") and (o.charte_12() or e.sous_ensemble == q.get("se"))}
+                if e.type == q.get("type") and (not o.se_dans_repere() or e.sous_ensemble == q.get("se"))}
         return {"numero": next((f"{n:02d}" for n in range(1, 100) if f"{n:02d}" not in pris), "")}
 
     def numero_ouvrage_suggere(self, q):
@@ -1157,17 +1180,29 @@ class Application:
         """
         lieu = str(q.get("lieu", "")).strip().upper()
         typ = str(q.get("type", "")).strip().upper()
-        if not charte.conforme(charte.LIEU, lieu) or not charte.conforme(charte.CODE_OUVRAGE, typ):
+        c = self._charte_cible(q)
+        if not charte.conforme(charte.motif(c, "lieu"), lieu) or not charte.conforme(charte.motif(c, "code_ouvrage"), typ):
             return {"numero": "", "disponible": False}
-        existants = []
-        for fiche in projets.lister():
-            if fiche.erreur:
-                continue
-            code = fiche.repere
-            if code.startswith(lieu + typ) and len(code) == 8 and code[6:].isdigit():
-                existants.append(int(code[6:]))
+        # Même lieu et même type, quelle que soit la charte de l'ouvrage existant (19/11).
+        existants = [int(f.numero_ouvrage) for f in projets.lister()
+                     if not f.erreur and f.lieu == lieu and f.code_ouvrage == typ and f.numero_ouvrage.isdigit()]
+        n = charte.longueur_numero(c)
         numero = max(existants, default=0) + 1
-        return {"numero": f"{numero:02d}" if numero <= 99 else "", "disponible": numero <= 99}
+        return {"numero": str(numero).zfill(n) if numero < 10 ** n else "", "disponible": numero < 10 ** n}
+
+    def _charte_cible(self, d=None):
+        """Charte qui s'applique à l'identification : celle de l'ouvrage ; pour un ouvrage en création, celle du
+        standard choisi. None : charte OGIAS (motifs et messages d'avant)."""
+        o = self.s.ouvrage
+        if o.standard:
+            return o.charte_client()
+        if self.creation_en_attente or o.statut == "Brouillon":
+            from genvar import standards
+            try:
+                return _charte_client(standards.trouver(str((d or {}).get("standard") or standards.IDENT_INITIAL)))
+            except ValueError:
+                return None
+        return None
 
     # ------------------------------------------------------------------ actions
     def nouveau(self, d):
@@ -1236,12 +1271,16 @@ class Application:
         communication = str(champs.get("communication", "")).strip()
         types = {x["code"]: x["libelle"] for x in liste["types_ouvrage"]}
         lieux = {x["code"] for x in liste["lieux"]}
-        if lieu and not charte.conforme(charte.LIEU, lieu):
-            raise RegleMetier("Sélectionnez un lieu avec un code de 4 caractères.")
-        if numero and not charte.conforme(charte.NUMERO_OUVRAGE, numero):
-            raise RegleMetier("Le numéro d’ouvrage doit être compris entre 01 et 99 (deux chiffres).")
-        if code and not charte.conforme(charte.CODE_OUVRAGE, code):
-            raise RegleMetier("Sélectionnez un type d'ouvrage (code de 2 lettres).")
+        c = self._charte_cible(d)                    # None : charte OGIAS, messages d'avant inchangés
+        if lieu and not charte.conforme(charte.motif(c, "lieu"), lieu):
+            raise RegleMetier("Sélectionnez un lieu avec un code de 4 caractères." if c is None else
+                              f"Lieu selon la charte du standard : {charte.consigne(c, 'lieu')}.")
+        if numero and not charte.conforme(charte.motif(c, "numero_ouvrage"), numero):
+            raise RegleMetier("Le numéro d’ouvrage doit être compris entre 01 et 99 (deux chiffres)." if c is None else
+                              f"Numéro d'ouvrage selon la charte du standard : {charte.consigne(c, 'numero_ouvrage')}.")
+        if code and not charte.conforme(charte.motif(c, "code_ouvrage"), code):
+            raise RegleMetier("Sélectionnez un type d'ouvrage (code de 2 lettres)." if c is None else
+                              f"Type d'ouvrage selon la charte du standard : {charte.consigne(c, 'code_ouvrage')}.")
         # Ne jamais rendre illisible un ouvrage historique dont une valeur a
         # disparu entre-temps du référentiel utilisateur.
         if lieu and lieu not in lieux and not (self.s.chemin and lieu == ancien.lieu):
@@ -1268,13 +1307,16 @@ class Application:
             raise RegleMetier("Le nouveau code changerait les repères des équipements : confirmation requise.")
         # Unicité stricte sur le code COMPLET. Les archives réservent le numéro.
         # Un ancien ouvrage à préfixe de 6 caractères reste inchangé (migration explicite).
+        # 19/11 : repère selon la charte ; un même lieu + type + numéro reste réservé quelle que soit la charte.
+        from types import SimpleNamespace
+        identifiant = (charte.prefixe(c, SimpleNamespace(lieu=lieu, code_ouvrage=code, numero_ouvrage=numero))
+                       if c is not None else lieu + code + numero)
         if action != "brouillon" and lieu and code:
-            identifiant = lieu + code + numero
             for fiche in projets.lister():
                 if fiche.chemin == (self.s.chemin or "") or fiche.erreur:
                     continue
-                if fiche.repere == identifiant:
-                    raise RegleMetier("Un ouvrage utilise déjà le code " + identifiant +
+                if fiche.repere == identifiant or (numero and (fiche.lieu, fiche.code_ouvrage, fiche.numero_ouvrage) == (lieu, code, numero)):
+                    raise RegleMetier("Un ouvrage utilise déjà le code " + (fiche.repere or identifiant) +
                                      ". Choisissez un autre numéro ou ouvrez l’ouvrage existant.")
         # Construire une copie : échec de validation => original inchangé.
         nouveau = copy.deepcopy(ancien)
@@ -1299,7 +1341,7 @@ class Application:
                         raise RegleMetier("Standard d'ingénierie introuvable ou archivé : choisissez-en un autre.")
                     standards.appliquer(self.s, choisi)
             if action == "creer" and conception:
-                cible = str(projets.nom_libre(lieu + code + numero, projets.repertoire()))
+                cible = str(projets.nom_libre(identifiant, projets.repertoire()))
             elif chemin_initial:
                 cible = chemin_initial
             else:
@@ -1321,12 +1363,16 @@ class Application:
                          "communication", "revision"):
             raise RegleMetier("Champ non modifiable.")
         valeur = str(d.get("valeur", "")).strip()
-        if champ == "lieu" and valeur and not charte.conforme(charte.LIEU_SAISIE, valeur):
-            raise RegleMetier("Le lieu fait 4 caractères (lettres ou chiffres), ex. ATMS.")
-        if champ == "code_ouvrage" and valeur and not charte.conforme(charte.CODE_OUVRAGE_SAISIE, valeur):
-            raise RegleMetier("Le code ouvrage fait 2 caractères, ex. RV.")
-        if champ == "numero_ouvrage" and valeur and not charte.conforme(charte.NUMERO_OUVRAGE, valeur):
-            raise RegleMetier("Numéro d’ouvrage invalide : 01 à 99.")
+        c = self._charte_cible()
+        if c is None:                                 # charte OGIAS : saisie d'avant, écart connu compris
+            motifs = {"lieu": charte.LIEU_SAISIE, "code_ouvrage": charte.CODE_OUVRAGE_SAISIE, "numero_ouvrage": charte.NUMERO_OUVRAGE}
+            messages = {"lieu": "Le lieu fait 4 caractères (lettres ou chiffres), ex. ATMS.",
+                        "code_ouvrage": "Le code ouvrage fait 2 caractères, ex. RV.", "numero_ouvrage": "Numéro d’ouvrage invalide : 01 à 99."}
+        else:
+            motifs = {k: charte.motif(c, k) for k in ("lieu", "code_ouvrage", "numero_ouvrage")}
+            messages = {k: f"Selon la charte de l'ouvrage : {charte.consigne(c, k)}." for k in motifs}
+        if champ in motifs and valeur and not charte.conforme(motifs[champ], valeur):
+            raise RegleMetier(messages[champ])
         self.s.definir(champ, valeur)
         self._sauver()
         return {}

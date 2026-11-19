@@ -42,6 +42,8 @@ CHOISISSABLES = ("charte", "adressage", "outils")
 BRIQUES_FIXES = {
     "referentiel": {"ident": "referentiel-atelier", "nom": "Référentiel publié de l'atelier", "source": "atelier"},
 }
+AVIS_CHARTE_CLIENT = ("Charte différente de la charte OGIAS : l'import d'un inventaire d'équipements (Excel) n'est "
+                      "disponible qu'avec la charte OGIAS, et les exports n'ont pas été qualifiés avec cette charte.")
 NOMS_BRIQUE = {"charte": "charte de nommage", "adressage": "plan d'adressage", "outils": "chaîne d'outils"}
 
 
@@ -178,9 +180,8 @@ def creer_brique(famille: str, nom: str, contenu: dict) -> tuple[dict, list[str]
     alertes: list[str] = []
     if famille == "charte":
         brique = {"nom": nom, **charte.controler(contenu)}
-        if not charte.applicable(brique):
-            alertes = ["Charte enregistrée. OGIAS ne fabrique pas encore les repères selon une charte différente de "
-                       "la charte OGIAS : un standard qui l'emploie ne peut pas encore servir à créer un ouvrage."]
+        if not charte.est_ogias(brique):
+            alertes = [AVIS_CHARTE_CLIENT]
     elif famille == "adressage":
         lues = controler_plages(contenu.get("plages"))
         alertes = alertes_plages(lues)
@@ -274,9 +275,6 @@ def appliquer(session, standard: dict) -> list[str]:
     aperçu). Tout ou rien. Les adresses déjà validées ne bougent jamais (règle du plan mémoire). Le référentiel métier
     et la charte n'ont qu'une brique : rien à copier. Renvoie les alertes non bloquantes."""
     b = standard["briques"]
-    if not charte.applicable(b.get("charte", charte.CHARTE_OGIAS)):
-        raise RegleMetier(f"Le standard « {standard['nom']} » emploie la charte « {b['charte'].get('nom', '')} » : OGIAS ne "
-                          "fabrique pas encore les repères selon une autre charte que la charte OGIAS. Rien n'a été modifié.")
     avant = copy.deepcopy(session.ouvrage)
     try:
         alertes = session.definir_plages({f: tuple(v) for f, v in b["adressage"]["plages"].items()})

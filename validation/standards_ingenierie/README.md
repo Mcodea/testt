@@ -72,29 +72,40 @@ une brique de la bibliothèque (« Nouvelle charte de nommage… »).
   - repère d'équipement de plus de 32 caractères.
 - **La Charte OGIAS** est décrite de la même façon. Elle reste celle du « Standard initial », et ses exemples sont
   identiques aux repères actuels.
-- **Limite affichée partout, en clair** (éditeur, bibliothèque, standard, création, application) : OGIAS ne
-  fabrique encore les repères que selon la structure de la charte OGIAS. Un standard dont la charte est différente
-  peut être enregistré, mais il est grisé à la création d'un ouvrage et refusé à l'application. Rien n'est fabriqué
-  autrement que ce que la charte annonce.
 
 Captures : `charte_editeur_clair.png`, `charte_editeur_sombre.png`.
 
-Étape suivante : fabriquer les repères selon la charte de l'ouvrage. Cela touche :
+## Repères fabriqués selon la charte de l'ouvrage (19/11)
 
-- le repère des équipements et le nom des variables et des E/S ;
-- la saisie de l'identification ;
-- la relecture des repères (projets existants, inventaire importé) ;
-- l'unicité des ouvrages ;
-- les exports.
+- **Le repère d'un ouvrage créé selon un standard client suit sa charte.** Cela vaut pour l'ouvrage, les
+  équipements et les noms des variables et des E/S. Exemple fictif : ouvrage `XTST_RV_EAU_02`, variable
+  `TS_RV_EAU_02_HV01_OUV`. Le lieu est retiré du nom quand l'option « lieu dans le nom » est décochée.
+- **La charte copiée dans l'ouvrage règle la saisie de l'identification** (lieu, type, numéro) : motifs, messages,
+  longueur et proposition du numéro, aperçu du code.
+  - En création, c'est la charte du standard choisi.
+  - Elle s'applique aux contrôles R-OUV-02, 03 et 04.
+- **Unicité.** Le code complet selon la charte est unique. En plus, un même lieu + type + numéro reste réservé
+  quelle que soit la charte (même ouvrage physique). Le nom du fichier est le code de l'ouvrage.
+- **Numérotation des équipements** : elle se fait par sous-ensemble si la charte place le sous-ensemble dans le
+  repère, sur tout l'ouvrage sinon (comme la charte OGIAS).
+- **Les listes de lieux et de types d'ouvrage** acceptent 1 à 8 lettres majuscules ou chiffres, pour servir à
+  toutes les chartes. La longueur exacte est contrôlée par la charte de l'ouvrage (charte OGIAS : 4 et 2,
+  inchangée). Décision assumée : l'essai `test_identification_listes` est mis à jour en conséquence.
+- **Garde-fous :**
+  - un standard d'une autre charte ne s'applique pas à un ouvrage déjà équipé, car tous ses repères changeraient ;
+  - l'import d'inventaire Excel est refusé avec une charte client (la lecture de ces repères n'est pas décrite) ;
+  - la longueur des noms reste contrôlée par R-NOM-01 ;
+  - les exports restent « non qualifiés ».
+- **Charte OGIAS et ouvrages antérieurs** : comportement strictement identique (essai
+  `test_charte_ogias_strictement_inchangee` et l'ensemble des essais existants).
 
-Des essais sur toute la chaîne seront nécessaires. Une charte autre que celle d'OGIAS restera signalée « exports
-non qualifiés » tant qu'un fichier de référence ne l'aura pas validée.
+Captures : `creation_charte_client.png`, `variables_charte_client.png`.
 
 Fichier : `standards_ingenierie.json` dans le dossier de données de l'atelier. Il est écrit de façon atomique ; s'il
 est illisible, il n'est jamais écrasé.
 
 Vérifications :
-- 775 essais du moteur, dont `tests/test_standards.py` (17 essais) ;
+- 777 essais du moteur, dont `tests/test_standards.py` (19 essais) ;
 - 109 essais navigateur, dont `test_standards_ingenierie_ecran_et_creation`,
   `test_standards_bibliotheque_et_application` et `test_charte_de_nommage_construite_dans_ogias` ;
 - ruff, mypy ;

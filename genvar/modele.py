@@ -208,7 +208,25 @@ class Ouvrage:
     deja_exporte: bool | None = False
 
     # ------------------------------------------------------------ repères
+    # Charte de nommage (19/11) : un ouvrage dont le standard copie une charte client fabrique ses repères selon elle ;
+    # sinon (charte OGIAS, ouvrage antérieur aux standards) le comportement d'avant est conservé à l'identique.
+    def charte_client(self):
+        from .charte import de_ouvrage
+        return de_ouvrage(self)
+
+    def se_dans_repere(self):
+        """Vrai si le sous-ensemble entre dans le repère (la numérotation des équipements est alors par sous-ensemble)."""
+        c = self.charte_client()
+        if c is not None:
+            from .charte import sous_ensemble_dans_repere
+            return sous_ensemble_dans_repere(c)
+        return not self.charte_12()
+
     def prefixe(self):
+        c = self.charte_client()
+        if c is not None:
+            from .charte import prefixe
+            return prefixe(c, self)
         return f"{self.lieu}{self.code_ouvrage}{self.numero_ouvrage}"
 
     def charte_12(self):
@@ -216,6 +234,10 @@ class Ouvrage:
         return self.format_repere == "12" and bool(self.numero_ouvrage)
 
     def repere(self, eq):
+        c = self.charte_client()
+        if c is not None:
+            from .charte import repere
+            return repere(c, self, eq)
         if self.charte_12():
             return f"{self.prefixe()}{eq.code_court()}"
         return f"{self.prefixe()}{eq.sous_ensemble}{eq.code_court()}"
@@ -224,6 +246,10 @@ class Ouvrage:
         """Repère tel qu'il figure dans le nom (avec ou sans le lieu, selon le paramètre)."""
         if self.lieu_dans_le_nom:
             return self.repere(eq)
+        c = self.charte_client()
+        if c is not None:
+            from .charte import repere
+            return repere(c, self, eq, avec_lieu=False)
         if self.charte_12():
             return f"{self.code_ouvrage}{self.numero_ouvrage}{eq.code_court()}"
         return f"{self.code_ouvrage}{self.numero_ouvrage}{eq.sous_ensemble}{eq.code_court()}"
@@ -483,7 +509,7 @@ def generer(ouvrage, catalogue):
         designation = catalogue.designation(eq.type)
         rep = ouvrage.repere(eq)
         rep_nom = ouvrage.repere_nom(eq)
-        court = eq.code_court() if ouvrage.charte_12() else f"{eq.sous_ensemble}{eq.type}{eq.numero}"
+        court = f"{eq.sous_ensemble}{eq.type}{eq.numero}" if ouvrage.se_dans_repere() else eq.code_court()
         catalogue_eq = catalogue_pour_equipement(ouvrage, catalogue, eq)
         retenus = signaux_retenus(catalogue_eq, eq)
         sources = {f"{x['famille']}_{x['code']}": x for x, _ in retenus if x["famille"] == "ES"}
@@ -925,12 +951,16 @@ def controler(ouvrage, catalogue, variables=None):
     alerte = lambda rep, msg, ident="", code="": anomalies.append(Anomalie("Alerte", rep, msg, ident, etape[0], code))
 
     # --- ouvrage
-    if not charte.conforme(charte.LIEU, ouvrage.lieu):
-        err("Ouvrage", "Le lieu doit faire 4 caractères (lettres majuscules ou chiffres), ex. ATMS.", "", "R-OUV-02")
-    if not charte.conforme(charte.CODE_OUVRAGE, ouvrage.code_ouvrage):
-        err("Ouvrage", "Le code de l'ouvrage doit faire 2 lettres majuscules, ex. RV.", "", "R-OUV-03")
-    if ouvrage.numero_ouvrage and not charte.conforme(charte.NUMERO_OUVRAGE, ouvrage.numero_ouvrage):
-        err("Ouvrage", "Numéro d’ouvrage invalide : 01 à 99.", "", "R-OUV-04")
+    c = ouvrage.charte_client()                      # None : charte OGIAS, messages et motifs d'avant inchangés
+    if not charte.conforme(charte.motif(c, "lieu"), ouvrage.lieu):
+        err("Ouvrage", "Le lieu doit faire 4 caractères (lettres majuscules ou chiffres), ex. ATMS." if c is None else
+            f"Lieu selon la charte de l'ouvrage : {charte.consigne(c, 'lieu')}.", "", "R-OUV-02")
+    if not charte.conforme(charte.motif(c, "code_ouvrage"), ouvrage.code_ouvrage):
+        err("Ouvrage", "Le code de l'ouvrage doit faire 2 lettres majuscules, ex. RV." if c is None else
+            f"Type d'ouvrage selon la charte de l'ouvrage : {charte.consigne(c, 'code_ouvrage')}.", "", "R-OUV-03")
+    if ouvrage.numero_ouvrage and not charte.conforme(charte.motif(c, "numero_ouvrage"), ouvrage.numero_ouvrage):
+        err("Ouvrage", "Numéro d’ouvrage invalide : 01 à 99." if c is None else
+            f"Numéro d'ouvrage selon la charte de l'ouvrage : {charte.consigne(c, 'numero_ouvrage')}.", "", "R-OUV-04")
     codes_se = [s.code for s in ouvrage.sous_ensembles]
     for s in ouvrage.sous_ensembles:
         if not charte.conforme(charte.SOUS_ENSEMBLE, s.code):

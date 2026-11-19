@@ -54,6 +54,10 @@ def _inventory(row: SourceRow, values: dict[str, str], session: Session,
     issues = _row_issue(row, values)
     rep = values.get("repere", "").upper()
     values = {**values, "repere": rep}
+    if o.charte_client() is not None:                 # 19/11 : repères d'une charte client non relus
+        from genvar.session import MESSAGE_INVENTAIRE_CHARTE
+        issues.append(_diag("CHARTE_CLIENT", MESSAGE_INVENTAIRE_CHARTE, Severity.ERROR, row))
+        return PreviewRow(row, values, RowAction.REJECT, tuple(issues))
     if not rep:
         issues.append(_diag("REPERE_ABSENT", "Ligne renseignée sans repère d'équipement.", Severity.ERROR, row))
         return PreviewRow(row, values, RowAction.REJECT, tuple(issues))

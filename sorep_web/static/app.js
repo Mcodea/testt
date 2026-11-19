@@ -864,7 +864,7 @@ function vueStandards() {
   const biblio = (f, titre, bouton) => `<div class="bloc std-biblio"><div class="bloc-tete"><h2>${titre}</h2><button type="button" data-nouvelle-brique="${f}">${bouton}</button></div>
     <table data-o-tableau="sans-selection" data-o-cle="briques-${f}"><thead><tr><th>Brique</th><th>Contenu</th><th>Standards</th></tr></thead><tbody>
     ${(d.bibliotheque[f] || []).map(b => `<tr><td><b>${esc(b.nom)}</b></td><td>${f === "charte"
-      ? `<span class="mono">${esc(b.exemple.equipement)}</span>${b.applicable ? "" : ' · <span class="std-evolue">repères pas encore fabriqués selon cette charte</span>'}`
+      ? `<span class="mono">${esc(b.exemple.equipement)}</span>${b.ogias ? "" : ' · <span class="aide">charte du client</span>'}`
       : f === "adressage"
       ? `<span class="mono">${Object.entries(b.plages).map(([x, [deb, fin]]) => `${esc(x)} ${deb}–${fin}`).join(" · ")}</span>${b.decalage_modbus ? ` · décalage ${esc(String(b.decalage_modbus))}` : ""}`
       : `Supervision ${esc(b.supervision || "aucune")} · IHM ${esc(b.ihm || "aucune")}`}</td><td class="num">${b.standards}</td></tr>`).join("")}</tbody></table></div>`;
@@ -879,7 +879,7 @@ function vueStandards() {
       <div class="boutons-ligne"><button type="button" id="std-reviser">Nouvelle version…</button>
       ${sel.statut === "actif" ? `<button type="button" id="std-archiver" ${actifs < 2 ? 'disabled title="Il faut garder au moins un standard actif"' : ""}>Archiver</button>` : `<button type="button" id="std-reactiver">Réactiver</button>`}</div></div>
      <p>${esc(sel.description || "")} <span class="aide">${sel.ouvrages} ouvrage(s) créé(s) selon ce standard.</span></p>
-     ${sel.utilisable ? "" : `<p class="std-evolue">Ce standard ne peut pas encore servir à créer un ouvrage : OGIAS ne fabrique pas encore les repères selon sa charte de nommage (étape suivante).</p>`}
+     ${sel.briques.charte?.ogias === false ? `<p class="std-evolue">Charte de nommage propre au client : l'import d'un inventaire d'équipements (Excel) n'est disponible qu'avec la charte OGIAS, et les exports n'ont pas été qualifiés avec cette charte.</p>` : ""}
      <div class="std-briques">${Object.entries(d.familles).map(([f, nom]) => `<section class="std-brique"><h3>${esc(nom)}</h3><p class="std-nom">${esc(sel.briques[f]?.nom || "—")}</p>${brique(f, sel.briques[f] || {})}</section>`).join("")}</div>
      ${(sel.historique || []).length ? `<div class="std-historique"><h3>Versions précédentes</h3><ul>${sel.historique.slice().reverse().map(h => `<li><span class="mono">v${esc(String(h.version))}</span> jusqu'au ${esc(h.jusqu_au)} : ${esc(Object.values(h.briques || {}).join(" · "))} <span class="aide">— ${esc(h.motif)}</span></li>`).join("")}</ul></div>` : ""}</div>` : ""}
    </div>
@@ -958,7 +958,7 @@ function modaleBrique(d, famille, agir) {
 function blocCharte(b) {
   return `<ul class="std-segments">${(b.description || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul>
     <p class="std-exemple">Exemple : <span class="mono">${esc(b.exemple?.ouvrage || "")}</span> · <span class="mono">${esc(b.exemple?.equipement || "")}</span></p>
-    ${b.applicable === false ? '<p class="std-evolue">Repères pas encore fabriqués selon cette charte.</p>' : ""}`;
+`;
 }
 function modaleCharte(d, agir) {
   const meta = d.charte_meta, chartes = d.bibliotheque.charte || [];
@@ -992,7 +992,7 @@ function modaleCharte(d, agir) {
     try { const r = await api("/api/standards/charte-apercu", {charte: etat});
       zoneApercu.innerHTML = r.erreur ? `<p class="std-erreur">${esc(r.erreur)}</p>`
         : `<p>Repère d'ouvrage : <span class="mono">${esc(r.exemple.ouvrage)}</span> · repère d'équipement : <span class="mono">${esc(r.exemple.equipement)}</span> <span class="aide">(${r.exemple.equipement.length} / ${meta.longueur_max} caractères, exemple fictif)</span></p>
-           ${r.applicable ? "<p class=\"aide\">Structure de la charte OGIAS : les repères sont fabriqués selon cette charte.</p>" : "<p class=\"std-evolue\">OGIAS ne fabrique pas encore les repères selon cette charte : elle peut être enregistrée et assemblée dans un standard, mais pas encore servir à créer un ouvrage.</p>"}`; }
+           ${r.ogias ? "<p class=\"aide\">Structure de la charte OGIAS.</p>" : `<p class="std-evolue">${esc(r.avis)}</p>`}`; }
     catch (e) { zoneApercu.textContent = e.message; } }, 150); };
   const rendreParties = () => {
     m.querySelector("#charte-parties").innerHTML = partie("ouvrage", "Repère de l'ouvrage", meta.segments_ouvrage) + partie("equipement", "Suite du repère pour un équipement", meta.segments_equipement);
@@ -1021,10 +1021,13 @@ async function choixStandard(c) {
   const s = c.querySelector("#standard-choix"); if (!s) return;
   let d; try { d = await api("/api/standards"); } catch (e) { s.innerHTML = `<option value="">${esc(e.message)}</option>`; return; }
   const actifs = d.standards.filter(x => x.statut === "actif");
-  const garde = E.standardCreation && actifs.some(x => x.ident === E.standardCreation && x.utilisable) ? E.standardCreation : actifs.find(x => x.utilisable)?.ident;
-  const opt = (x, choisi) => `<option value="${esc(x.ident)}" ${x.ident === choisi ? "selected" : ""} ${x.utilisable ? "" : "disabled"}>${esc(x.nom)} (v${esc(String(x.version))})${x.utilisable ? "" : " — charte pas encore appliquée"}</option>`;
-  s.innerHTML = actifs.map(x => opt(x, garde)).join("");
-  s.onchange = () => { E.standardCreation = s.value; };
+  const garde = E.standardCreation && actifs.some(x => x.ident === E.standardCreation) ? E.standardCreation : actifs[0]?.ident;
+  s.innerHTML = actifs.map(x => `<option value="${esc(x.ident)}" ${x.ident === garde ? "selected" : ""}>${esc(x.nom)} (v${esc(String(x.version))})</option>`).join("");
+  const premiere = !E.standardsListe;
+  E.standardsListe = actifs; E.standardCreation = garde;
+  // La charte du standard choisi règle la saisie du lieu, du type et du numéro, et l'aperçu du repère (19/11).
+  s.onchange = () => { E.standardCreation = s.value; if (E.ficheDraft) E.ficheDraft.numero_ouvrage = ""; detailOuvrage(c); };
+  if (premiere && charteCourante().charte) detailOuvrage(c);
 }
 /* Appliquer un standard à un ouvrage existant (19/11) : seulement à la demande, après aperçu de ce qui change. */
 async function modaleAppliquerStandard(c, preselection) {
@@ -1032,7 +1035,7 @@ async function modaleAppliquerStandard(c, preselection) {
   const actifs = d.standards.filter(x => x.statut === "actif");
   const m = ouvrirModale(`<div class="boite-tete"><h2>Appliquer un standard d'ingénierie</h2>
     <p>Le plan mémoire, le décalage Modbus, la supervision et l'IHM de l'ouvrage prennent les valeurs du standard. L'identification, l'automate, les équipements et les adresses déjà validées ne changent pas.</p></div>
-    <div class="boite-corps std-formulaire"><label for="appliquer-standard">Standard</label><select id="appliquer-standard">${actifs.map(x => `<option value="${esc(x.ident)}" ${x.ident === preselection && x.utilisable ? "selected" : ""} ${x.utilisable ? "" : "disabled"}>${esc(x.nom)} (v${esc(String(x.version))})${x.utilisable ? "" : " — charte pas encore appliquée"}</option>`).join("")}</select>
+    <div class="boite-corps std-formulaire"><label for="appliquer-standard">Standard</label><select id="appliquer-standard">${actifs.map(x => `<option value="${esc(x.ident)}" ${x.ident === preselection ? "selected" : ""}>${esc(x.nom)} (v${esc(String(x.version))})</option>`).join("")}</select>
      <div id="appliquer-apercu" class="std-apercu" aria-live="polite"></div></div>
     <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="appliquer-ok">Appliquer</button></div>`);
   const sel = m.querySelector("#appliquer-standard"), zone = m.querySelector("#appliquer-apercu");
@@ -1122,9 +1125,26 @@ function selectListe(id, label, valeur, options, vide = "— Non défini —") {
   return `<label for="${id}">${esc(label)}</label><div class="select-avec-aide"><select id="${id}" data-choix="${id}">
     <option value="">${esc(vide)}</option>${choix}${ancien}</select></div>`;
 }
+/* Charte de nommage qui s'applique à la fiche (19/11) : celle de l'ouvrage ; en création, celle du standard choisi.
+   charte null : charte OGIAS (motifs, messages et aperçu d'avant). */
+function charteCourante() {
+  const o = E.ouvrage || {};
+  if (o.en_conception && E.standardsListe) {
+    const s = E.standardsListe.find(x => x.ident === E.standardCreation) || E.standardsListe[0];
+    if (s) { const ch = s.briques.charte; return {charte: ch && ch.ogias === false ? ch : null, motifs: s.motifs, nom: ch?.nom || ""}; }
+  }
+  return {charte: o.charte_client || null, motifs: o.charte_motifs, nom: o.charte_client?.nom || ""};
+}
+const selonMotif = (motif, valeur) => new RegExp(`^(?:${motif})$`).test(valeur || "");
+function repereSelon(ch, lieu, code, numero, avecEquipement) {
+  const v = s => ({lieu, type_ouvrage: code, numero_ouvrage: numero, texte: s.valeur, sous_ensemble: "00", equipement: "PM01"})[s.type];
+  return [...ch.ouvrage, ...(avecEquipement ? ch.equipement : [])].map(v).filter(Boolean).join(ch.separateur || "");
+}
 function detailOuvrage(c) {
   const o = E.ouvrage, i = E.ficheDraft || o.identification, l = E.listes || {lieux:[], types_ouvrage:[], automates:[], protocoles:[]};
-  const okLieu = /^[A-Z0-9]{4}$/.test(i.lieu), okCode = /^[A-Z]{2}$/.test(i.code_ouvrage);
+  const cc = charteCourante(), nChiffres = cc.motifs.longueur_numero;
+  const okLieu = selonMotif(cc.motifs.lieu.motif, i.lieu), okCode = selonMotif(cc.motifs.code_ouvrage.motif, i.code_ouvrage);
+  const placeNumero = cc.charte ? `${nChiffres} chiffre(s)` : "01 à 99";
   const actuelNumero = i.numero_ouvrage || "";
   const parDomaine = {};
   o.equipements.forEach(e => parDomaine[e.domaine || "Non classé"] = (parDomaine[e.domaine || "Non classé"] || 0) + 1);
@@ -1143,7 +1163,7 @@ function detailOuvrage(c) {
      <a id="ref-sauvegarde" href="/api/export?quoi=sauvegarde_adoption" download>Télécharger la sauvegarde du projet</a>
      ${o.referentiel.adoption_annulable ? `<button id="ref-annuler-adoption">Annuler l'adoption</button>` : ""}
      ${o.referentiel.sauvegarde_annulation_adoption ? `<a href="/api/export?quoi=sauvegarde_annulation_adoption" download>Télécharger l'état avant annulation</a>` : ""}</div>` : ""}
-   ${!o.en_conception && (!okLieu || !okCode) ? `<div class="avert" id="fiche-identification-avert">Pour commencer : sélectionnez un lieu (4 caractères) et un type d'ouvrage (code à 2 lettres). Vous pouvez enrichir ces listes avec « Gérer les listes ».</div>` : ""}
+   ${!o.en_conception && (!okLieu || !okCode) ? `<div class="avert" id="fiche-identification-avert">Pour commencer : sélectionnez un lieu (${cc.charte ? esc(cc.motifs.lieu.consigne) : "4 caractères"}) et un type d'ouvrage (${cc.charte ? esc(cc.motifs.code_ouvrage.consigne) : "code à 2 lettres"}). Vous pouvez enrichir ces listes avec « Gérer les listes ».</div>` : ""}
    ${o.en_conception ? `<div class="bloc">` : `<details class="bloc fiche-ouvrage" id="fiche-ouvrage" ${ficheOuverte ? "open" : ""}>`}${o.en_conception ? `<div class="bloc-tete">` : `<summary class="bloc-tete" title="Afficher ou replier la fiche d'identification">`}<h2>Identification de l'ouvrage</h2><span class="aide">${esc(i.mode === "Existant" ? "Projet existant" : "Projet neuf")}</span>${o.en_conception ? "" : `<span class="fiche-resume"><b class="mono">${esc(o.prefixe || "")}</b> · ${esc(i.libelle || "sans libellé")} · source ${esc(i.automate || "non renseignée")} · révision ${esc(i.revision || "—")}</span>`}<div class="droite"><button id="gerer-listes" type="button">${V31.icon("settings",14)} Gérer les listes…</button></div>${o.en_conception ? `</div>` : `</summary>`}
      ${o.en_conception ? `<div class="creation-identite">
        <div class="creation-projet">${esc(i.mode === "Existant" ? "Projet existant — conservation des adresses" : "Projet neuf — génération et adressage")}</div>
@@ -1151,7 +1171,7 @@ function detailOuvrage(c) {
         <div class="creation-champ">${selectListe("lieu", "Lieu *", i.lieu, l.lieux, "— Sélectionner un lieu —")}</div>
         <div class="creation-champ"><label for="type_ouvrage">Type d'ouvrage *</label><select id="type_ouvrage"><option value="">— Sélectionner un type —</option>${l.types_ouvrage.map(t => `<option value="${esc(t.code)}" ${t.code === i.code_ouvrage ? "selected" : ""}>${esc(t.libelle)} (${esc(t.code)})</option>`).join("")}${ancienType}</select></div>
         <div class="creation-champ">${champ("libelle", "Libellé de l'ouvrage *", i.libelle, 'placeholder="Désignation de l’ouvrage"')}</div>
-        <div class="creation-champ"><label for="numero_ouvrage">Numéro d'ouvrage *</label><div class="numero-ouvrage-choix"><input id="numero_ouvrage" data-champ="numero_ouvrage" value="${esc(E.ficheDraft?.numero_ouvrage ?? actuelNumero)}" maxlength="2" inputmode="numeric" placeholder="01 à 99" title="Proposé automatiquement et modifiable"><button type="button" id="proposer-numero">Proposer</button></div></div>
+        <div class="creation-champ"><label for="numero_ouvrage">Numéro d'ouvrage *</label><div class="numero-ouvrage-choix"><input id="numero_ouvrage" data-champ="numero_ouvrage" value="${esc(E.ficheDraft?.numero_ouvrage ?? actuelNumero)}" maxlength="${nChiffres}" inputmode="numeric" placeholder="${placeNumero}" title="Proposé automatiquement et modifiable"><button type="button" id="proposer-numero">Proposer</button></div></div>
         <div class="creation-champ"><label for="code-ouvrage-affiche">Code généré</label><div class="code-ouvrage-affiche" id="code-ouvrage-affiche" aria-live="polite"></div><input id="code_ouvrage" type="hidden" value="${esc(i.code_ouvrage)}"></div>
         <div class="creation-champ">${champ("localisation", "Localisation précise", i.localisation, 'placeholder="Adresse, site ou précision géographique"')}</div>
        </div>
@@ -1168,7 +1188,7 @@ function detailOuvrage(c) {
        ${selectListe("lieu", "Lieu", i.lieu, l.lieux, "— Sélectionner un lieu —")}
        <label for="type_ouvrage">Type d'ouvrage</label><select id="type_ouvrage"><option value="">— Sélectionner un type —</option>${l.types_ouvrage.map(t => `<option value="${esc(t.code)}" ${t.code === i.code_ouvrage ? "selected" : ""}>${esc(t.libelle)} (${esc(t.code)})</option>`).join("")}${ancienType}</select>
        ${champ("libelle", "Libellé de l’ouvrage", i.libelle, 'placeholder="Désignation de l’ouvrage"')}
-       <label for="numero_ouvrage">Numéro d’ouvrage</label><div class="numero-ouvrage-choix"><input id="numero_ouvrage" data-champ="numero_ouvrage" value="${esc(E.ficheDraft?.numero_ouvrage ?? actuelNumero)}" maxlength="2" inputmode="numeric" placeholder="01 à 99" title="Proposé automatiquement et modifiable"><button type="button" id="proposer-numero">Proposer</button></div>
+       <label for="numero_ouvrage">Numéro d’ouvrage</label><div class="numero-ouvrage-choix"><input id="numero_ouvrage" data-champ="numero_ouvrage" value="${esc(E.ficheDraft?.numero_ouvrage ?? actuelNumero)}" maxlength="${nChiffres}" inputmode="numeric" placeholder="${placeNumero}" title="Proposé automatiquement et modifiable"><button type="button" id="proposer-numero">Proposer</button></div>
        <label for="code-ouvrage-affiche">Code généré</label><div class="code-ouvrage-affiche" id="code-ouvrage-affiche" aria-live="polite"></div>
        <input id="code_ouvrage" type="hidden" value="${esc(i.code_ouvrage)}">
        ${champ("localisation", "Localisation précise", i.localisation, 'placeholder="Adresse, site ou précision géographique"')}
@@ -1176,7 +1196,7 @@ function detailOuvrage(c) {
        <label for="communication-choix">Communication</label><button class="selection-multiple" id="communication-choix" data-valeur="${esc(i.communication || "")}" type="button">${esc(i.communication || "— Choisir les protocoles —")} <span aria-hidden="true">▾</span></button>
        ${champ("revision", "Révision", i.revision, 'maxlength="4" title="Règle documentaire à valider : non modifiée automatiquement"')}
 </div>`}
-     <p class="aide-champs">Code : lieu (4) + type (2) + numéro (2). Le numéro est proposé automatiquement et peut être modifié ; aucune modification n'est enregistrée sans confirmation.</p>
+     <p class="aide-champs">${cc.charte ? `Code selon la charte « ${esc(cc.nom)} » du standard choisi : lieu (${esc(cc.motifs.lieu.consigne)}), type (${esc(cc.motifs.code_ouvrage.consigne)}), numéro (${esc(cc.motifs.numero_ouvrage.consigne)}).` : "Code : lieu (4) + type (2) + numéro (2)."} Le numéro est proposé automatiquement et peut être modifié ; aucune modification n'est enregistrée sans confirmation.</p>
      <div id="fiche-erreur" class="erreur-form" role="alert"></div>
      <div class="fiche-actions">
        <span id="fiche-etat" class="etat-fiche">${o.creation_en_attente ? "Non enregistré — complétez puis confirmez" : (o.en_conception ? "Brouillon enregistré" : "Fiche enregistrée")}</span>
@@ -1221,13 +1241,13 @@ function detailOuvrage(c) {
     if (o.creation_en_attente) E.ficheDirty = true;
     c.querySelector("#fiche-etat").textContent = E.ficheDirty ? "Modifications non enregistrées" : (o.en_conception ? "Brouillon enregistré" : "Fiche enregistrée");
     const avertissement = c.querySelector("#fiche-identification-avert");
-    if (avertissement) avertissement.style.display = /^[A-Z0-9]{4}$/.test(E.ficheDraft.lieu) && /^[A-Z]{2}$/.test(E.ficheDraft.code_ouvrage) ? "none" : "";
+    if (avertissement) avertissement.style.display = selonMotif(cc.motifs.lieu.motif, E.ficheDraft.lieu) && selonMotif(cc.motifs.code_ouvrage.motif, E.ficheDraft.code_ouvrage) ? "none" : "";
     const bouton = c.querySelector("#fiche-modifier"); if (bouton) bouton.disabled = !E.ficheDirty;
     const code = E.ficheDraft.code_ouvrage || "??", lieu = E.ficheDraft.lieu || "????", numero = E.ficheDraft.numero_ouvrage || "--";
-    const numValide = /^(0[1-9]|[1-9][0-9])$/.test(numero);
-    const complet = /^[A-Z0-9]{4}$/.test(lieu) && /^[A-Z]{2}$/.test(code) && numValide;
+    const numValide = selonMotif(cc.motifs.numero_ouvrage.motif, numero);
+    const complet = selonMotif(cc.motifs.lieu.motif, lieu) && selonMotif(cc.motifs.code_ouvrage.motif, code) && numValide;
     const codeAffiche = c.querySelector("#code-ouvrage-affiche");
-    codeAffiche.textContent = complet ? lieu + code + numero : "Choisissez le lieu, le type et le numéro";
+    codeAffiche.textContent = complet ? (cc.charte ? repereSelon(cc.charte, lieu, code, numero, false) : lieu + code + numero) : "Choisissez le lieu, le type et le numéro";
     codeAffiche.classList.toggle("en-attente", !complet);
     const apercuRepere = c.querySelector(".repere-live"); if (apercuRepere) apercuRepere.innerHTML = texteRepere(lieu, code, numero, true, true);
   }
@@ -1238,13 +1258,14 @@ function detailOuvrage(c) {
     const lieu = c.querySelector("#lieu").value;
     const type = c.querySelector("#code_ouvrage").value;
     const inp = c.querySelector("#numero_ouvrage");
-    if (!/^[A-Z0-9]{4}$/.test(lieu) || !/^[A-Z]{2}$/.test(type) || (!force && inp.value)) return;
+    if (!selonMotif(cc.motifs.lieu.motif, lieu) || !selonMotif(cc.motifs.code_ouvrage.motif, type) || (!force && inp.value)) return;
     const attendu = lieu + type;
     try {
-      const r = await api("/api/numero-ouvrage?lieu=" + encodeURIComponent(lieu) + "&type=" + encodeURIComponent(type));
+      const r = await api("/api/numero-ouvrage?lieu=" + encodeURIComponent(lieu) + "&type=" + encodeURIComponent(type)
+        + (o.en_conception && E.standardCreation ? "&standard=" + encodeURIComponent(E.standardCreation) : ""));
       if (c.querySelector("#lieu").value + c.querySelector("#code_ouvrage").value !== attendu) return;
       if (r.numero && (force || !inp.value)) { inp.value = r.numero; miseAJour(); }
-      else if (!r.disponible) toast("Tous les numéros de 01 à 99 sont déjà attribués pour ce lieu et ce type.", true);
+      else if (!r.disponible) toast(cc.charte ? "Plus aucun numéro libre pour ce lieu et ce type." : "Tous les numéros de 01 à 99 sont déjà attribués pour ce lieu et ce type.", true);
     } catch(e) { toast(e.message, true); }
   }
   c.querySelector("#proposer-numero").onclick = () => suggererNumero(true);
@@ -1297,7 +1318,8 @@ function detailOuvrage(c) {
       if (action === "creer" && e.message.includes("utilise déjà le code")) {
         try {
           const accueil = await api("/api/accueil");
-          const repere = donnees.lieu + donnees.code_ouvrage + donnees.numero_ouvrage;
+          const ccr = charteCourante();
+          const repere = ccr.charte ? repereSelon(ccr.charte, donnees.lieu, donnees.code_ouvrage, donnees.numero_ouvrage, false) : donnees.lieu + donnees.code_ouvrage + donnees.numero_ouvrage;
           const existant = (accueil.ouvrages || []).find(x => x.repere === repere &&
             x.statut !== "Brouillon" && !x.erreur);
           if (existant) {
@@ -1782,6 +1804,8 @@ const CATEGORIES_SOURCES = ["Automate", "Télégestion", "E/S déportées", "Aut
 const categorieSource = v => (E.listes?.categories_sources || {})[v] || "Autres";
 // Explication du repère d'équipement selon le format de l'ouvrage (charte du 9 novembre : 12 caractères).
 function texteRepere(lieu, code, numero, okLieu, okCode) {
+  const cc = charteCourante();
+  if (cc.charte) return `Repère selon la charte « ${esc(cc.nom)} » : <span class="mono">${esc(repereSelon(cc.charte, lieu, code, numero, false))}</span> — repère d'un équipement, exemple : <span class="mono">${esc(repereSelon(cc.charte, lieu, code, numero, true))}</span>`;
   const charte = (E.ouvrage || {}).format_repere === "12";
   const se = charte ? "" : ` + <b>SE</b> sous-ensemble (2)`;
   const exemple = (/^[A-Z0-9]{4}$/.test(lieu) ? lieu : "XXXX") + (/^[A-Z]{2}$/.test(code) ? code : "YY") + (/^\d{2}$/.test(numero) ? numero : "01") + (charte ? "" : "11") + "HV01";
@@ -1798,7 +1822,7 @@ function modaleListes(groupe = "lieux", edition = "") {
       ${tab.map(x => { const v = codeLibelle ? x.code : x; return `<tr><td class="mono">${esc(v)}</td>${codeLibelle ? `<td>${esc(x.libelle)}</td>` : ""}${groupe === "lieux" ? `<td>${esc(x.regie || "Autre")}</td>` : ""}${groupe === "automates" ? `<td>${esc(categorieSource(v))}</td>` : ""}<td><button data-edit-ref="${esc(v)}">Modifier</button> <button class="danger" data-sup-ref="${esc(v)}">Retirer</button></td></tr>`; }).join("")}</tbody></table>` : `<div class="vide-bloc">Liste vide : ajoutez la première valeur.</div>`}</div>
     <h3>${enEdition ? "Modifier une valeur" : "Ajouter une valeur"}</h3><div class="champs">
       ${groupe === "lieux" ? `<label for="ref-libelle">Commune</label><input id="ref-libelle" value="${esc(enEdition ? enEdition.libelle : "")}" maxlength="100" placeholder="ex. Athis-Mons">` : ""}
-      <label for="ref-code">${codeLibelle ? "Code" : "Valeur"}</label><div class="code-lieu"><input id="ref-code" value="${esc(old)}" ${groupe === "lieux" ? 'maxlength="4" style="text-transform:uppercase" placeholder="4 lettres"' : groupe === "types_ouvrage" ? 'maxlength="2" style="text-transform:uppercase"' : 'maxlength="100"'}>${groupe === "lieux" ? '<span class="aide" id="ref-prop">Le code est proposé par la charte à partir du nom de la commune.</span>' : ""}</div>
+      <label for="ref-code">${codeLibelle ? "Code" : "Valeur"}</label><div class="code-lieu"><input id="ref-code" value="${esc(old)}" ${groupe === "lieux" ? 'maxlength="8" style="text-transform:uppercase" placeholder="4 lettres (charte OGIAS)"' : groupe === "types_ouvrage" ? 'maxlength="8" style="text-transform:uppercase" placeholder="2 lettres (charte OGIAS)"' : 'maxlength="100"'}>${groupe === "lieux" ? '<span class="aide" id="ref-prop">Le code est proposé par la charte à partir du nom de la commune.</span>' : ""}</div>
       ${groupe === "automates" ? `<label for="ref-regie">Catégorie</label><select id="ref-regie">${CATEGORIES_SOURCES.map(c => `<option ${categorieSource(old) === c ? "selected" : ""}>${c}</option>`).join("")}</select>` : ""}
       ${groupe === "types_ouvrage" ? `<label for="ref-libelle">Libellé</label><input id="ref-libelle" value="${esc(enEdition ? enEdition.libelle : "")}" maxlength="100">` : ""}
       ${groupe === "lieux" ? `<label>Régie</label><select id="ref-regie"><option value="ESB" ${(enEdition?.regie || "AUTRE").toUpperCase() === "ESB" ? "selected" : ""}>ESB</option><option value="RESO" ${(enEdition?.regie || "AUTRE").toUpperCase() === "RESO" ? "selected" : ""}>RESO</option><option value="AUTRE" ${(enEdition?.regie || "AUTRE").toUpperCase() === "AUTRE" ? "selected" : ""}>Autre</option></select>` : ""}
