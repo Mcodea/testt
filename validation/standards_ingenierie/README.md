@@ -93,7 +93,6 @@ Captures : `charte_editeur_clair.png`, `charte_editeur_sombre.png`.
   inchangée). Décision assumée : l'essai `test_identification_listes` est mis à jour en conséquence.
 - **Garde-fous :**
   - un standard d'une autre charte ne s'applique pas à un ouvrage déjà équipé, car tous ses repères changeraient ;
-  - l'import d'inventaire Excel est refusé avec une charte client (la lecture de ces repères n'est pas décrite) ;
   - la longueur des noms reste contrôlée par R-NOM-01 ;
   - les exports restent « non qualifiés ».
 - **Charte OGIAS et ouvrages antérieurs** : comportement strictement identique (essai
@@ -101,11 +100,29 @@ Captures : `charte_editeur_clair.png`, `charte_editeur_sombre.png`.
 
 Captures : `creation_charte_client.png`, `variables_charte_client.png`.
 
+## Import d'inventaire selon la charte du client (19/11)
+
+L'import d'un inventaire (Excel ou CSV) relit chaque repère selon la charte de l'ouvrage, dans les deux chemins
+d'import (aperçu puis validation explicite).
+
+- **Lecture du repère.** Il doit commencer par le repère de l'ouvrage (sinon « autre ouvrage », refusé). Vient
+  ensuite la partie équipement, segment par segment :
+  - avec un séparateur, par découpage ;
+  - sans séparateur, par longueur : sous-ensemble 2, texte fixe sa longueur, type et numéro d'équipement 4 (motif
+    du référentiel métier).
+- **Sous-ensemble.** S'il est absent de la charte, l'équipement va dans « 00 », comme pour la charte OGIAS à
+  12 caractères.
+- **Repère hors charte** (segment manquant, texte fixe différent, longueur) : la ligne est refusée avec son motif,
+  sans recodage automatique.
+- **Charte OGIAS** : lecture d'avant inchangée (12 ou 14 caractères, formats historiques).
+- **Limite.** La reprise d'un programme existant (identification des variables par leur nom, mode Existant) lit
+  toujours les noms à la manière d'OGIAS.
+
 Fichier : `standards_ingenierie.json` dans le dossier de données de l'atelier. Il est écrit de façon atomique ; s'il
 est illisible, il n'est jamais écrasé.
 
 Vérifications :
-- 777 essais du moteur, dont `tests/test_standards.py` (19 essais) ;
+- 779 essais du moteur, dont `tests/test_standards.py` (21 essais) ;
 - 109 essais navigateur, dont `test_standards_ingenierie_ecran_et_creation`,
   `test_standards_bibliotheque_et_application` et `test_charte_de_nommage_construite_dans_ogias` ;
 - ruff, mypy ;

@@ -105,6 +105,8 @@ def analyser(feuilles, session):
         from collections import Counter
         c = Counter(decouper_repere(g(r, "repere").upper(), charte)[0] for r in lignes if RE_REPERE.match(g(r, "repere").upper()))
         prefixe = c.most_common(1)[0][0] if c else ""
+    from . import charte as chartes
+    c = o.charte_client()                         # 19/11 : repères relus selon la charte du client
     vus, resultat = set(), []
     for r in lignes:
         rep = g(r, "repere").upper()
@@ -112,20 +114,28 @@ def analyser(feuilles, session):
             continue
         vus.add(rep)
         l = LigneInventaire(rep, g(r, "libelle"))
-        if not RE_REPERE.match(rep):
+        if c is not None:
+            lu = chartes.decouper(c, o, rep)
+            if isinstance(lu, str):
+                l.etat, l.motif = ("refusé" if lu.startswith("autre ouvrage") else "à coder"), lu
+                resultat.append(l)
+                continue
+            l.sous_ensemble, fin = lu
+        elif not RE_REPERE.match(rep):
             l.etat, l.motif = "à coder", "repère hors format (12 caractères, ou 14 pour un ouvrage numéroté avant le 9 novembre)"
             resultat.append(l)
             continue
-        if charte and len(rep) == 14:
+        elif charte and len(rep) == 14:
             l.etat, l.motif = "à coder", ("repère à 14 caractères (avec sous-ensemble) : la charte ESB/RESO "
                                           "en compte 12 ; à recoder, aucun renommage automatique")
             resultat.append(l)
             continue
-        pref, l.sous_ensemble, fin = decouper_repere(rep, charte)
-        if prefixe and pref != prefixe:
-            l.etat, l.motif = "refusé", f"autre ouvrage ({pref} au lieu de {prefixe})"
-            resultat.append(l)
-            continue
+        else:
+            pref, l.sous_ensemble, fin = decouper_repere(rep, charte)
+            if prefixe and pref != prefixe:
+                l.etat, l.motif = "refusé", f"autre ouvrage ({pref} au lieu de {prefixe})"
+                resultat.append(l)
+                continue
         fourni = code_type(g(r, "type")) if g(r, "type") else ""
         typ, num = _type_depuis_repere(fin, [fourni] if fourni else connus)
         if fourni and typ is None:

@@ -452,7 +452,7 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.locator('.std-seg[data-partie="ouvrage"][data-i="3"] [data-bouger="-1"]').click()
         self.page.locator('#charte-separateur').select_option('_')
         self.page.wait_for_function("() => document.querySelector('#charte-apercu')?.innerText.includes('XTST_RV_EAU_01_PM01')")
-        self.assertIn('inventaire', self.page.locator('#charte-apercu').inner_text())
+        self.assertIn('exports', self.page.locator('#charte-apercu').inner_text())
         self.page.locator('#brique-ok').click()
         self.page.wait_for_function("t => document.querySelector('.std-bibliotheque')?.innerText.includes(t)", arg=f'Charte fictive {n}')
         b = next(x for x in self.api('/api/standards')['bibliotheque']['charte'] if x['nom'] == f'Charte fictive {n}')

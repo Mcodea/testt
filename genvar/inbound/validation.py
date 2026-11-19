@@ -48,30 +48,13 @@ def _row_issue(row: SourceRow, values: dict[str, str]) -> list[Diagnostic]:
     return issues
 
 
-def _inventory(row: SourceRow, values: dict[str, str], session: Session,
-               seen: dict[str, SourceRow]) -> PreviewRow:
-    o = session.ouvrage
-    issues = _row_issue(row, values)
-    rep = values.get("repere", "").upper()
-    values = {**values, "repere": rep}
-    if o.charte_client() is not None:                 # 19/11 : repères d'une charte client non relus
-        from genvar.session import MESSAGE_INVENTAIRE_CHARTE
-        issues.append(_diag("CHARTE_CLIENT", MESSAGE_INVENTAIRE_CHARTE, Severity.ERROR, row))
-        return PreviewRow(row, values, RowAction.REJECT, tuple(issues))
-    if not rep:
-        issues.append(_diag("REPERE_ABSENT", "Ligne renseignée sans repère d'équipement.", Severity.ERROR, row))
-        return PreviewRow(row, values, RowAction.REJECT, tuple(issues))
-    if rep in seen:
-        first = seen[rep]
-        issues.append(_diag("REPERE_REPETE", f"Repère répété : déjà déclaré ligne {first.line} ({first.sheet}).",
-                            Severity.ERROR, row))
-    else:
-        seen[rep] = row
+def _ogias(row: SourceRow, rep: str, o, issues: list) -> tuple:
+    """Repère à la charte OGIAS (formats historiques) : (sous-ensemble, fin) ; (None, None) si rejet immédiat."""
     charte = o.format_repere == "12"
     if not inventaire.RE_REPERE.fullmatch(rep):
         issues.append(_diag("REPERE_FORMAT", "Repère invalide : 12 ou 14 caractères alphanumériques attendus.",
                             Severity.ERROR, row))
-        return PreviewRow(row, values, RowAction.REJECT, tuple(issues))
+        return None, None
     if charte and len(rep) != 12:
         issues.append(_diag("CHARTE_12", "La charte de cet ouvrage requiert 12 caractères ; aucun recodage automatique.",
                             Severity.ERROR, row))
@@ -82,6 +65,38 @@ def _inventory(row: SourceRow, values: dict[str, str], session: Session,
     elif prefix != o.prefixe():
         issues.append(_diag("AUTRE_OUVRAGE", f"Préfixe {prefix} différent de {o.prefixe()} : refus.",
                             Severity.ERROR, row))
+    return se, end
+
+
+def _inventory(row: SourceRow, values: dict[str, str], session: Session,
+               seen: dict[str, SourceRow]) -> PreviewRow:
+    o = session.ouvrage
+    issues = _row_issue(row, values)
+    rep = values.get("repere", "").upper()
+    values = {**values, "repere": rep}
+    if not rep:
+        issues.append(_diag("REPERE_ABSENT", "Ligne renseignée sans repère d'équipement.", Severity.ERROR, row))
+        return PreviewRow(row, values, RowAction.REJECT, tuple(issues))
+    if rep in seen:
+        first = seen[rep]
+        issues.append(_diag("REPERE_REPETE", f"Repère répété : déjà déclaré ligne {first.line} ({first.sheet}).",
+                            Severity.ERROR, row))
+    else:
+        seen[rep] = row
+    c = o.charte_client()
+    if c is not None:                                 # 19/11 : repère relu selon la charte du client
+        from genvar import charte as chartes
+        lu = chartes.decouper(c, o, rep)
+        if isinstance(lu, str):
+            code = ("AUTRE_OUVRAGE" if lu.startswith("autre ouvrage") else
+                    "OUVRAGE_NON_IDENTIFIE" if lu.startswith("ouvrage non identifié") else "REPERE_FORMAT")
+            issues.append(_diag(code, lu[0].upper() + lu[1:] + ".", Severity.ERROR, row))
+            return PreviewRow(row, values, RowAction.REJECT, tuple(issues))
+        se, end = lu
+    else:
+        se, end = _ogias(row, rep, o, issues)
+        if se is None:
+            return PreviewRow(row, values, RowAction.REJECT, tuple(issues))
     known = set(session.modeles["types"]) | {t["code"] for t in session.catalogue.types}
     supplied = code_type(values.get("type", ""))
     typ, num = inventaire._type_depuis_repere(end, [supplied] if supplied else known)

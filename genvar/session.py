@@ -34,9 +34,6 @@ RE_ADRESSE_PHYSIQUE = re.compile(r"^%(I|Q|IW|QW)[\d.]+$")
 RESERVE_MINIMALE = 0.20      # réserve de voies par carte en dessous de laquelle on ne descend pas
 
 
-MESSAGE_INVENTAIRE_CHARTE = ("Import d'inventaire : disponible seulement avec la charte de nommage OGIAS ; cet ouvrage suit la charte de son client (lecture des repères non décrite).")
-
-
 class RegleMetier(Exception):
     """Opération refusée par une règle de l'outil ; le message s'affiche tel quel."""
 
@@ -1032,14 +1029,10 @@ class Session:
 
     def apercu_inventaire(self, chemin):
         from . import tableur, inventaire
-        if self.ouvrage.charte_client() is not None:
-            raise RegleMetier(MESSAGE_INVENTAIRE_CHARTE)
         return inventaire.analyser(tableur.lire_classeur(chemin), self)
 
     def appliquer_inventaire(self, lignes):
         from . import inventaire
-        if self.ouvrage.charte_client() is not None:
-            raise RegleMetier(MESSAGE_INVENTAIRE_CHARTE)
         with self._operation_lourde("inventaire"):
             return inventaire.appliquer(lignes, self)
 

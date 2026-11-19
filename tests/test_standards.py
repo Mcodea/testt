@@ -199,7 +199,7 @@ class TestChartesReglables(AvecDossier):
 
     def ouvrage_client(self):
         b, alertes = standards.creer_brique("charte", "Charte client fictif", self.CLIENT)
-        self.assertTrue(alertes and "inventaire" in alertes[0])
+        self.assertTrue(alertes and "exports" in alertes[0])
         s = standards.creer_standard("Client fictif", "", {"charte": b["ident"], "adressage": "adressage-defaut",
                                                          "outils": "outils-topkapi"})
         session = Session(Catalogue.charger(chemins.fichier_catalogue_origine()))
@@ -249,6 +249,40 @@ class TestChartesReglables(AvecDossier):
             s.ajouter_equipement(Equipement("00", "PM", "01"))
         self.assertEqual([sans.ouvrage.repere(e) for e in sans.ouvrage.equipements],
                          [avec.ouvrage.repere(e) for e in avec.ouvrage.equipements])
+
+
+    def test_import_inventaire_selon_la_charte(self):
+        """19/11 : les repères d'un inventaire sont relus selon la charte du client (aperçu, puis création)."""
+        import csv
+        from genvar.inbound import InputKind, RowAction, preview_import, stage_import
+        s = self.ouvrage_client()                                  # EAU_RVR_007, sous-ensemble dans le repère
+        fichier = os.path.join(self.dossier.name, "inventaire.csv")
+        with open(fichier, "w", newline="", encoding="utf-8") as fh:
+            w = csv.writer(fh, delimiter=";")
+            w.writerow(["Repère", "Désignation", "Type", "Modèle"])
+            w.writerows([["EAU_RVR_007_11_HV01", "Vanne fictive", "HV", ""],
+                         ["EAU_RVR_008_11_HV01", "Autre ouvrage", "HV", ""],
+                         ["EAU_RVR_007_HV01", "Hors charte", "HV", ""]])
+        apercu = preview_import(fichier, InputKind.INVENTORY, s)
+        actions = [r.action for r in apercu.rows]
+        self.assertEqual(actions, [RowAction.CREATE, RowAction.REJECT, RowAction.REJECT])
+        self.assertEqual({d.code for d in apercu.errors}, {"AUTRE_OUVRAGE", "REPERE_FORMAT"})
+        bon = os.path.join(self.dossier.name, "inventaire_bon.csv")
+        with open(bon, "w", newline="", encoding="utf-8") as fh:
+            w = csv.writer(fh, delimiter=";")
+            w.writerow(["Repère", "Désignation", "Type", "Modèle"])
+            w.writerows([["EAU_RVR_007_11_HV01", "Vanne fictive", "HV", ""], ["EAU_RVR_007_00_PM02", "Pompe fictive", "", ""]])
+        staged = stage_import(preview_import(bon, InputKind.INVENTORY, s), s, confirmed=True)
+        o = staged.session.ouvrage
+        self.assertEqual(sorted(o.repere(e) for e in o.equipements), ["EAU_RVR_007_00_PM02", "EAU_RVR_007_11_HV01"])
+
+    def test_analyse_inventaire_ancien_chemin(self):
+        from genvar import inventaire
+        s = self.ouvrage_client()
+        lignes = inventaire.analyser({"Feuil1": [["Repère", "Désignation"], ["EAU_RVR_007_11_HV01", "Vanne"],
+                                                 ["XTSTRV01HV01", "Charte OGIAS"]]}, s)
+        self.assertEqual([(x.etat, x.sous_ensemble, x.type, x.numero) for x in lignes][0], ("à créer", "11", "HV", "01"))
+        self.assertEqual(lignes[1].etat, "refusé")
 
 
 if __name__ == "__main__":

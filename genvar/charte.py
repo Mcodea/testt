@@ -232,3 +232,45 @@ def decrire(c) -> list[str]:
         return f"{nom} : {s['longueur']} {CARACTERES[s['caracteres']][1]}"
     return [*(texte(s) for s in c["ouvrage"]), *(texte(s) for s in c["equipement"]),
             f"séparateur : {SEPARATEURS[c.get('separateur', '')]}"]
+
+
+def decouper(c, ouvrage, rep: str):
+    """Relire un repère d'équipement selon la charte (import d'inventaire, 19/11).
+
+    Renvoie (sous-ensemble, fin type+numéro sur 4 positions) ou un texte expliquant le refus. Le repère doit
+    commencer par le repère de l'ouvrage. Sans séparateur, les segments sont lus par leur longueur : sous-ensemble 2,
+    texte fixe sa longueur, code et numéro d'équipement 4 (motif du référentiel métier). Sous-ensemble absent de la
+    charte : « 00 », simple regroupement, comme pour la charte OGIAS à 12 caractères."""
+    sep = c.get("separateur", "")
+    debut = prefixe(c, ouvrage)
+    if not ouvrage.code_ouvrage or not ouvrage.numero_ouvrage:
+        return "ouvrage non identifié : renseignez le lieu, le type et le numéro avant l'import"
+    if not rep.startswith(debut + sep):
+        return f"autre ouvrage (le repère ne commence pas par {debut + sep})"
+    reste, segments = rep[len(debut + sep):], c["equipement"]
+    if sep:
+        morceaux = reste.split(sep)
+        if len(morceaux) != len(segments):
+            return f"repère hors charte : {len(segments)} segment(s) attendu(s) après {debut}"
+    else:
+        morceaux = []
+        for i, s in enumerate(segments):
+            n = (2 if s["type"] == "sous_ensemble" else len(s.get("valeur", "")) if s["type"] == "texte"
+                 else (len(reste) if i == len(segments) - 1 else 4))
+            morceaux.append(reste[:n])
+            reste = reste[n:]
+        if reste:
+            return "repère hors charte : caractères en trop"
+    se, fin = "00", ""
+    for s, m in zip(segments, morceaux):
+        if s["type"] == "texte" and m != s["valeur"]:
+            return f"repère hors charte : « {s['valeur']} » attendu"
+        if s["type"] == "sous_ensemble":
+            if not conforme(SOUS_ENSEMBLE, m):
+                return "repère hors charte : sous-ensemble de 2 caractères attendu"
+            se = m
+        if s["type"] == "equipement":
+            if not re.fullmatch(r"[A-Z0-9]{4}", m):
+                return "repère hors charte : type et numéro d'équipement sur 4 caractères attendus"
+            fin = m
+    return se, fin

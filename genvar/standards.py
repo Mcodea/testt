@@ -42,8 +42,8 @@ CHOISISSABLES = ("charte", "adressage", "outils")
 BRIQUES_FIXES = {
     "referentiel": {"ident": "referentiel-atelier", "nom": "Référentiel publié de l'atelier", "source": "atelier"},
 }
-AVIS_CHARTE_CLIENT = ("Charte différente de la charte OGIAS : l'import d'un inventaire d'équipements (Excel) n'est "
-                      "disponible qu'avec la charte OGIAS, et les exports n'ont pas été qualifiés avec cette charte.")
+AVIS_CHARTE_CLIENT = ("Charte différente de la charte OGIAS : les exports n'ont pas été qualifiés avec cette charte "
+                      "(aucun fichier de référence du client).")
 NOMS_BRIQUE = {"charte": "charte de nommage", "adressage": "plan d'adressage", "outils": "chaîne d'outils"}
 
 

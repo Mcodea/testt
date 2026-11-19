@@ -879,7 +879,7 @@ function vueStandards() {
       <div class="boutons-ligne"><button type="button" id="std-reviser">Nouvelle version…</button>
       ${sel.statut === "actif" ? `<button type="button" id="std-archiver" ${actifs < 2 ? 'disabled title="Il faut garder au moins un standard actif"' : ""}>Archiver</button>` : `<button type="button" id="std-reactiver">Réactiver</button>`}</div></div>
      <p>${esc(sel.description || "")} <span class="aide">${sel.ouvrages} ouvrage(s) créé(s) selon ce standard.</span></p>
-     ${sel.briques.charte?.ogias === false ? `<p class="std-evolue">Charte de nommage propre au client : l'import d'un inventaire d'équipements (Excel) n'est disponible qu'avec la charte OGIAS, et les exports n'ont pas été qualifiés avec cette charte.</p>` : ""}
+     ${sel.briques.charte?.ogias === false ? `<p class="std-evolue">Charte de nommage propre au client : les exports n'ont pas été qualifiés avec cette charte (aucun fichier de référence du client).</p>` : ""}
      <div class="std-briques">${Object.entries(d.familles).map(([f, nom]) => `<section class="std-brique"><h3>${esc(nom)}</h3><p class="std-nom">${esc(sel.briques[f]?.nom || "—")}</p>${brique(f, sel.briques[f] || {})}</section>`).join("")}</div>
      ${(sel.historique || []).length ? `<div class="std-historique"><h3>Versions précédentes</h3><ul>${sel.historique.slice().reverse().map(h => `<li><span class="mono">v${esc(String(h.version))}</span> jusqu'au ${esc(h.jusqu_au)} : ${esc(Object.values(h.briques || {}).join(" · "))} <span class="aide">— ${esc(h.motif)}</span></li>`).join("")}</ul></div>` : ""}</div>` : ""}
    </div>
