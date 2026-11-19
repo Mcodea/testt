@@ -705,6 +705,7 @@ function vueRecette() {
      <div class="rc-jauge" role="meter" aria-label="Livrables prêts" aria-valuemin="0" aria-valuemax="${toutes.length}" aria-valuenow="${prets}">
        <span class="rc-jauge-barre"><i style="width:${part}%"></i></span><b>${prets}</b><span>/ ${toutes.length} prêts</span></div>
      <div class="rc-hero-actions"><button class="prim" id="r-dossier" title="Zip : sommaire imprimable en PDF, équipements, E/S, cartes, variables et formats cibles">Dossier de recette complet (zip)</button>
+       <button id="r-groupe" title="Un zip rangé par destination : formats automate et supervision, documents, cahiers d'essais, vos modèles, avec le journal de ce qui a été produit ou refusé">Tous les livrables (zip)</button>
        <button id="r-actualiser">Actualiser les contrôles</button></div>
    </header>
    <div class="rc-groupes">${LIVRABLES.map(g => `<section class="rc-groupe" data-groupe="${g.groupe}"><div class="rc-groupe-tete"><span class="rc-icone">${V31.icon(g.icone, 16)}</span>
@@ -735,6 +736,7 @@ function vueRecette() {
   blocModelesRecette();
   blocEssaisRecette();
   $("#r-actualiser").onclick = async () => { E.detailEtape = await api('/api/recette'); rendre(); };
+  $("#r-groupe").onclick = modaleGenerationGroupee;
   $("#r-dossier").onclick = () => confirmer("Constituer le dossier de recette ?", "Archive zip des livrables à partir des exports existants, avec un sommaire imprimable en PDF (empreintes, pièces non produites et leur motif, points restant à traiter). Exports non qualifiés : à vérifier dans les logiciels cibles.", "Télécharger le dossier", () => telecharger("dossier_recette"));
   document.querySelectorAll("[data-et]").forEach(x => x.onclick = () => { E.filtreRecette = x.dataset.et; vueRecette(); });
   document.querySelectorAll("[data-rc-vue]").forEach(x => x.onclick = () => { E.rcVue = x.dataset.rcVue; if (E.rcVue === "regles") E.filtreRegle = ""; vueRecette(); });
@@ -746,9 +748,34 @@ function vueRecette() {
   });
   rubanRecette();
 }
+/* Génération groupée (lot 6, 19/11) : un zip rangé par destination, chaque pièce produite par l'export unitaire
+   (mêmes contrôles, mêmes refus), journal des pièces produites et non produites avec leur motif. */
+const FAMILLES_GROUPE = [
+  ["automate", "Automate", "E/S et table de télétransmission au format Control Expert"],
+  ["sofrel", "Télégestion SOFREL", "Format non décrit dans OGIAS : seulement signalé au journal"],
+  ["supervision", "Supervision / IHM", "Table TOPKAPI ; Vijeo signalé comme non disponible"],
+  ["documents", "Documents d'études", "E/S, télétransmission, variables, cartes, nomenclature, liste des équipements"],
+  ["essais", "Cahiers d'essais", "FAT et SAT, résultats déjà reportés compris"],
+  ["modeles", "Vos modèles", "Chaque modèle de la bibliothèque, rempli pour cet ouvrage"]];
+function modaleGenerationGroupee() {
+  const m = ouvrirModale(`<div class="boite-tete"><h2>Générer tous les livrables</h2>
+    <p>Un zip rangé par destination, avec un journal (00_journal.html, imprimable en PDF) : chaque pièce produite avec son empreinte, chaque pièce non produite avec son motif. Les contrôles sont ceux des exports unitaires : rien n'est assoupli.</p></div>
+    <div class="boite-corps"><fieldset class="gg-familles"><legend>Destinations à inclure</legend>
+    ${FAMILLES_GROUPE.map(([k, t, d]) => `<label class="gg-famille"><input type="checkbox" value="${k}" checked><span><b>${esc(t)}</b><small>${esc(d)}</small></span></label>`).join("")}
+    </fieldset><p class="gg-note">Exports Control Expert, TOPKAPI et modèles non qualifiés : à importer et vérifier dans les logiciels cibles.</p>
+    <div class="erreur-form" id="m-err"></div></div>
+    <div class="boite-pied"><button data-fermer>Annuler</button><button class="prim" id="m-ok">Générer le zip</button></div>`);
+  m.querySelector("#m-ok").onclick = async () => {
+    const choix = [...m.querySelectorAll(".gg-familles input:checked")].map(x => x.value);
+    if (!choix.length) { m.querySelector("#m-err").textContent = "Choisissez au moins une destination."; return; }
+    fermerModale();
+    await telecharger("generation_groupee&familles=" + encodeURIComponent(choix.join(",")));
+  };
+}
 function rubanRecette() {
   const id = x => document.getElementById(x);
   Coque.ruban([{nom: "Livraison", commandes: [{el: id("r-dossier"), icone: "dossier", grand: true, libelle: "Dossier de recette"},
+    {el: id("r-groupe"), icone: "importer", grand: true, libelle: "Tous les livrables"},
     {el: id("r-actualiser"), icone: "valider", grand: true, libelle: "Actualiser les contrôles"}]}]);
   document.querySelectorAll("#vue .rc-hero-actions").forEach(x => { if (!x.querySelector("button")) x.remove(); });
 }
@@ -3520,6 +3547,8 @@ async function telecharger(quoi) {
   const url = URL.createObjectURL(await r.blob());
   const a = document.createElement("a"); a.href = url; a.download = nom; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
+  const bilan = (r.headers.get("X-OGIAS-Bilan") || "").split(";");
+  if (bilan.length === 2) return toast(`Fichier ${nom} téléchargé : ${bilan[0]} pièce(s) produite(s), ${bilan[1]} non produite(s) — motifs dans 00_journal.html.`);
   toast(`Fichier ${nom} téléchargé.`);
 }
 function modaleES(p, niveau = "contenu") {

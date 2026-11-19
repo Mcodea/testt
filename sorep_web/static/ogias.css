@@ -839,3 +839,12 @@ html[data-theme] .import-obsoletes .aide { margin: 0 0 var(--o-e-2); }
 html[data-theme] .ad-plages-titre { margin: var(--o-e-3) 0 var(--o-e-1); font-size: var(--o-t-m); }
 html[data-theme] table.ad-plages { width: auto; margin: var(--o-e-1) 0 var(--o-e-2); }
 html[data-theme] table.ad-plages input { width: 8em; }
+
+/* Génération groupée des livrables (lot 6, 19/11) */
+html[data-theme] .gg-familles { border: 1px solid var(--o-ligne); border-radius: var(--o-r-m); padding: var(--o-e-2) var(--o-e-3); margin: 0; display: grid; gap: var(--o-e-1); }
+html[data-theme] .gg-familles legend { padding: 0 var(--o-e-1); font-size: var(--o-t-s); color: var(--o-texte-2); }
+html[data-theme] .gg-famille { display: flex; align-items: flex-start; gap: var(--o-e-2); text-align: left; color: var(--o-texte); cursor: pointer; padding: var(--o-e-1) 0; }
+html[data-theme] .gg-famille input { margin-top: 3px; }
+html[data-theme] .gg-famille span { display: flex; flex-direction: column; gap: 2px; }
+html[data-theme] .gg-famille small { font-size: var(--o-t-xs); color: var(--o-texte-2); }
+html[data-theme] .gg-note { margin: var(--o-e-2) 0 0; font-size: var(--o-t-s); color: var(--o-texte-2); }

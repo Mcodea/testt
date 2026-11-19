@@ -69,6 +69,7 @@ class Application:
         self.ouvert = False
         self.creation_en_attente = False  # session provisoire non enregistrée
         self._inbound_pending = None  # aperçu éphémère, lié à la session courante
+        self.dernier_bilan_groupe = None  # génération groupée (lot 6) : produits / non produits, pour l'en-tête
 
     # ------------------------------------------------------------------ outils
     def _sauver(self):
@@ -649,6 +650,21 @@ class Application:
             nom = f"{base}_dossier_recette.zip"
             self.s.dossier_recette(os.path.join(dossier, nom))
             self._sauver()
+            with open(os.path.join(dossier, nom), "rb") as f:
+                return nom, f.read()
+        if quoi == "generation_groupee":          # lot 6 (19/11) : tous les livrables, rangés, avec journal
+            from genvar import generation_groupee as gg
+            deja = self.s.ouvrage.deja_exporte
+            unitaire = tempfile.mkdtemp(prefix="sorep_groupe_", dir=dossier)
+            nom = f"{base}_livrables.zip"
+            try:
+                self.dernier_bilan_groupe = gg.archive(
+                    self.s, os.path.join(dossier, nom), lambda x: self._exporter_ouvrage(x, unitaire, base),
+                    q.get("familles"), erreurs_attendues=(RegleMetier, ValueError, OSError))["bilan"]
+            except gg.GenerationRefusee as exc:
+                raise RegleMetier(str(exc)) from None
+            if self.s.ouvrage.deja_exporte is True and deja is not True:
+                self._sauver()
             with open(os.path.join(dossier, nom), "rb") as f:
                 return nom, f.read()
         deja = self.s.ouvrage.deja_exporte
@@ -2119,7 +2135,9 @@ def fabriquer_gestionnaire(app):
             if u.path == "/api/export":
                 try:
                     with VERROU:
+                        app.dernier_bilan_groupe = None
                         nom, corps = app.exporter({k: v[0] for k, v in parse_qs(u.query).items()})
+                        bilan = app.dernier_bilan_groupe
                 except (RegleMetier, ValueError) as ex:
                     return self._json(400, {"erreur": str(ex)})
                 except Exception:                               # noqa: BLE001
@@ -2133,6 +2151,8 @@ def fabriquer_gestionnaire(app):
                                                   ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
                                  .get(ext, "application/octet-stream") if not app_quoi_modele(u.query) else "application/octet-stream")
                 self.send_header("Content-Disposition", f'attachment; filename="{nom}"')
+                if bilan:
+                    self.send_header("X-OGIAS-Bilan", f"{bilan['produits']};{bilan['non_produits']}")
                 self.send_header("Content-Length", str(len(corps)))
                 self.end_headers()
                 self.wfile.write(corps)

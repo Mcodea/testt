@@ -665,3 +665,35 @@ class TestCoqueBureau(ServeurNavigateur):
         self.assertEqual(self.page.locator('input[data-g-champ="modele"], select[data-g-champ="type"]').count(), 0)
         with self.assertRaisesRegex(RuntimeError, 'non modifiable'):
             self.api('/api/grille/appliquer', {'idents': [premier['ident']], 'champ': 'modele', 'valeur': 'X'})
+
+    def test_generation_groupee(self):
+        """19/11, lot 6 : un zip rangé par destination, journal des pièces produites et non produites avec motif ;
+        les destinations décochées ne sont pas produites."""
+        import csv
+        import io
+        import zipfile
+        self.ouvrir('#/recette')
+        bouton = self.page.locator('#o-ruban [aria-label="Livraison"] #r-groupe')
+        bouton.wait_for()
+        bouton.click()
+        boite = self.page.locator('.boite')
+        self.assertEqual(boite.locator('.gg-familles input:checked').count(), 6)
+        boite.locator('.gg-familles input[value="automate"]').uncheck()
+        try:
+            with self.page.expect_download(timeout=15000) as telechargement:
+                boite.locator('#m-ok').click()
+        except Exception:
+            self.fail(self.page.locator('#toasts').inner_text())
+        self.assertTrue(telechargement.value.suggested_filename.endswith('_livrables.zip'))
+        z = zipfile.ZipFile(telechargement.value.path())
+        journal = list(csv.DictReader(io.StringIO(z.read('00_journal.csv').decode('utf-8-sig')), delimiter=';'))
+        self.assertNotIn('Automate (Control Expert)', {j['Destination'] for j in journal})
+        self.assertFalse(any(n.startswith('01_Automate/') for n in z.namelist()))
+        for j in journal:
+            self.assertTrue(j['Fichier'] in z.namelist() if j['État'] == 'produit' else j['Motif ou remarque'])
+        self.page.wait_for_function("() => document.querySelector('#toasts')?.innerText.includes('non produite')")
+        # Aucune destination : refus dans la boîte, rien n'est téléchargé
+        bouton.click()
+        self.page.locator('.boite .gg-familles input').evaluate_all("l => l.forEach(x => x.checked = false)")
+        self.page.locator('.boite #m-ok').click()
+        self.assertIn('au moins une destination', self.page.locator('.boite #m-err').inner_text())
