@@ -1155,9 +1155,9 @@ function brancherAttributsAtelier() {
 function blocModelesLivrables(d) {
   if (!d) return "";
   return `<div class="bloc std-modeles"><div class="bloc-tete"><h2>Modèles de livrables</h2>
-    <div class="boutons-ligne"><button type="button" class="prim" id="ml-importer">Importer un modèle…</button><button type="button" id="ml-variables">Variables disponibles</button>
+    <div class="boutons-ligne"><button type="button" class="prim" id="ml-assistant" title="Partir d'un fichier exporté de votre outil pour un équipement : OGIAS y reconnaît ses valeurs et propose le modèle">Créer depuis un export…</button><button type="button" id="ml-importer">Importer un modèle…</button><button type="button" id="ml-variables">Variables disponibles</button>
     ${d.modeles.some(m => m.nom.startsWith("Exemple - ")) ? "" : '<button type="button" class="lien" id="ml-exemple">Ajouter l\'exemple CSV</button>'}</div></div>
-    <p class="aide">Prenez un fichier produit par votre outil (import de supervision, table d'automate, CSV…), remplacez les valeurs par des variables <span class="mono">&lt;#NOM#&gt;</span> et des blocs répétés, puis importez-le : OGIAS le remplit pour chaque ouvrage, dans Recette et livrables.</p>
+    <p class="aide">Le plus simple : <b>Créer depuis un export</b>. Exportez de votre outil (supervision, automate…) le fichier d'un seul équipement déjà décrit dans l'ouvrage ouvert, par exemple une pompe : OGIAS y reconnaît le repère, les variables, les adresses et les libellés, et propose le modèle qui le reproduit pour toutes les pompes. Vous pouvez aussi écrire le modèle vous-même (variables <span class="mono">&lt;#NOM#&gt;</span>) et l'importer.</p>
     ${d.modeles.length ? `<table data-o-tableau="sans-selection" data-o-cle="modeles-livrables"><thead><tr><th>Modèle</th><th>Fichier d'origine</th><th>Encodage</th><th>Variables</th><th>État</th></tr></thead><tbody>
       ${d.modeles.map(m => `<tr class="cliquable" data-ml="${esc(m.ident)}" tabindex="0"><td><b>${esc(m.nom)}</b></td><td class="mono">${esc(m.fichier_origine || "—")}</td><td>${esc(m.encodage)}</td><td class="num">${m.variables.length}</td>
         <td>${m.erreurs.length ? `<span class="badge b-err">${m.erreurs.length} à corriger</span>` : '<span class="badge b-ok">Prêt</span>'}</td></tr>`).join("")}</tbody></table>`
@@ -1169,10 +1169,11 @@ function brancherModelesLivrables() {
   if ($("#ml-exemple")) $("#ml-exemple").onclick = () => action({action: "exemple"}, "Exemple ajouté : générez-le dans Recette et livrables.");
   if ($("#ml-variables")) $("#ml-variables").onclick = () => {
     const d = E.modelesLivrables;
-    ouvrirModale(`<div class="boite-tete"><h2>Variables disponibles</h2><p>Écrivez-les sous la forme <span class="mono">&lt;#NOM#&gt;</span>. Les blocs se répètent : <span class="mono">&lt;#DEBUT_EQUIPEMENTS#&gt; … &lt;#FIN_EQUIPEMENTS#&gt;</span>, <span class="mono">VARIABLES</span> (filtre : ${d.blocs.VARIABLES.join(", ")}, ex. <span class="mono">DEBUT_VARIABLES_TS</span>) et <span class="mono">ES</span> (filtre : ${d.blocs.ES.join(", ")}). Un bloc VARIABLES ou ES placé dans EQUIPEMENTS ne parcourt que l'équipement. Une balise de bloc seule sur sa ligne n'ajoute pas de ligne.</p></div>
+    ouvrirModale(`<div class="boite-tete"><h2>Variables disponibles</h2><p>Écrivez-les sous la forme <span class="mono">&lt;#NOM#&gt;</span>. Les blocs se répètent : <span class="mono">&lt;#DEBUT_EQUIPEMENTS#&gt; … &lt;#FIN_EQUIPEMENTS#&gt;</span> (filtre : type d'équipement, ex. <span class="mono">DEBUT_EQUIPEMENTS_PM</span>), <span class="mono">VARIABLES</span> (filtre : ${d.blocs.VARIABLES.join(", ")}, ex. <span class="mono">DEBUT_VARIABLES_TS</span>) et <span class="mono">ES</span> (filtre : ${d.blocs.ES.join(", ")}). Un bloc VARIABLES ou ES placé dans EQUIPEMENTS ne parcourt que l'équipement. Une balise de bloc seule sur sa ligne n'ajoute pas de ligne.</p></div>
       <div class="boite-corps ml-variables">${d.variables.map(g => `<h3>${esc(g.groupe)}</h3><table><tbody>${g.liste.map(v => `<tr><td class="mono">&lt;#${esc(v.nom)}#&gt;</td><td>${esc(v.description)}</td></tr>`).join("")}</tbody></table>`).join("")}</div>
       <div class="boite-pied"><button type="button" data-fermer>Fermer</button></div>`, true);
   };
+  if ($("#ml-assistant")) $("#ml-assistant").onclick = () => modaleAssistantModele(recharger);
   if ($("#ml-importer")) $("#ml-importer").onclick = () => {
     const d = E.modelesLivrables;
     const m = ouvrirModale(`<div class="boite-tete"><h2>Importer un modèle de livrable</h2><p>Fichier texte de votre outil (CSV, TXT, XML, SCL…, 2 Mo au plus) où les valeurs sont remplacées par des variables. L'encodage (UTF-8 ou Windows) est conservé à la génération.</p></div>
@@ -1201,6 +1202,63 @@ function brancherModelesLivrables() {
       m.querySelector("#ml-supprimer").onclick = () => confirmer("Supprimer ce modèle ?", `« ${md.nom} » sera retiré de la bibliothèque. Les livrables déjà téléchargés ne changent pas.`, "Supprimer",
         () => action({action: "supprimer", ident: md.ident}, "Modèle supprimé."));
     }; });
+}
+/* Lot 7 (19/11) : assistant « créer un modèle depuis un export ». Le fichier d'UN équipement de référence est analysé
+   côté serveur ; chaque substitution proposée peut être refusée (nouvelle analyse) ; l'enregistrement n'est possible
+   que si le modèle, rempli pour l'équipement de référence, n'est pas en erreur. */
+function modaleAssistantModele(recharger) {
+  const d = E.modelesLivrables;
+  if (!d.ouvert || !d.equipements.length) return toast("Ouvrez d'abord un ouvrage qui contient l'équipement de référence (ex. la pompe dont vous avez l'export).", true);
+  const m = ouvrirModale(`<div class="boite-tete"><h2>Créer un modèle depuis un export</h2>
+    <p>Exportez de votre outil le fichier d'<b>un seul équipement</b> déjà décrit dans cet ouvrage. OGIAS reconnaît ses valeurs (repère, variables, adresses, libellés) et propose un modèle qui produira le même fichier pour chaque équipement du même type. Rien n'est enregistré avant votre accord.</p></div>
+    <div class="boite-corps std-formulaire">
+     <label for="as-fichier">Fichier exporté (texte : CSV, TXT, XML…)</label><input type="file" id="as-fichier">
+     <label for="as-eq">Équipement de référence (celui de l'export)</label><select id="as-eq">${d.equipements.map(e => `<option value="${esc(e.ident)}">${esc(e.repere)} — ${esc(e.libelle)}</option>`).join("")}</select>
+     <label for="as-echap">Échappement des valeurs</label><select id="as-echap"><option value="">Détecter (XML si le fichier commence par une balise)</option>${Object.entries(d.echappements).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("")}</select>
+     <div class="boutons-ligne"><button type="button" id="as-analyser">Analyser l'export</button></div>
+     <div id="as-resultat" class="as-resultat" aria-live="polite"></div></div>
+    <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="as-ok" disabled>Enregistrer le modèle</button></div>`, true);
+  let source = null, refus = [], dernier = null;
+  const corps = extra => ({action: "assistant", fichier: source.nom, contenu: source.contenu, ident_eq: m.querySelector("#as-eq").value,
+                           echappement: m.querySelector("#as-echap").value, refus, ...extra});
+  const zone = m.querySelector("#as-resultat");
+  const ETATS = {identique: ["b-ok", "Reproduit à l'identique"], ordre: ["b-al", "Même contenu, autre ordre"], complete: ["b-al", "Reproduit, avec des lignes en plus"],
+                 different: ["b-err", "Différences à examiner"], erreur: ["b-err", "Modèle en erreur"]};
+  const afficher = r => {
+    dernier = r;
+    const [cl, lib] = ETATS[r.verification.etat] || ["b-al", r.verification.etat];
+    const liste = (titre, l) => l.length ? `<h4>${titre}</h4><pre class="ml-apercu">${esc(l.join("\n"))}</pre>` : "";
+    zone.innerHTML = `<div class="as-verif"><span class="badge ${cl}">${esc(lib)}</span> ${esc(r.verification.message)}</div>
+      ${liste("Lignes d'origine non reproduites", r.verification.manquantes)}${liste("Lignes produites en plus ou différentes", r.verification.en_plus)}
+      <p class="aide">Repère de référence <b class="mono">${esc(r.equipement)}</b> · ${r.lignes.entete} ligne(s) d'en-tête, ${r.lignes.corps} répétée(s) pour chaque ${esc(r.type)}, ${r.lignes.pied} de pied · blocs : ${esc(r.blocs.join(", ") || "aucun")} · échappement ${esc(r.echappement)} · ${esc(r.encodage)}</p>
+      ${r.alertes.length ? `<div class="avert"><ul>${r.alertes.map(a => `<li>${esc(a)}</li>`).join("")}</ul></div>` : ""}
+      <h3>Valeurs reconnues</h3><p class="aide">Décochez une valeur qui doit rester écrite telle quelle : le modèle est recalculé.</p>
+      <table class="as-props"><thead><tr><th></th><th>Variable</th><th>Signification</th><th class="num">Remplacements</th><th>Exemples trouvés</th></tr></thead><tbody>
+      ${r.propositions.map(p => `<tr${p.refusee ? ' class="refusee"' : ""}><td><input type="checkbox" data-as-var="${esc(p.variable)}" ${p.refusee ? "" : "checked"} aria-label="Remplacer par ${esc(p.variable)}"></td>
+        <td class="mono">&lt;#${esc(p.variable)}#&gt;</td><td>${esc(p.description || "—")}</td><td class="num">${p.refusee ? "—" : p.occurrences}</td><td class="mono">${esc(p.exemples.join(" · ") || "laissé tel quel")}</td></tr>`).join("")}</tbody></table>
+      <h3>Modèle proposé</h3><pre class="ml-apercu">${esc(r.gabarit)}</pre>
+      <label for="as-nom">Nom du modèle</label><input id="as-nom" maxlength="60" value="${esc(m.querySelector("#as-nom")?.value || "")}" placeholder="Ex. Pompe – supervision client B">`;
+    m.querySelector("#as-ok").disabled = r.verification.etat === "erreur";
+    zone.querySelectorAll("[data-as-var]").forEach(c => c.onchange = () => {
+      const v = c.dataset.asVar; refus = c.checked ? refus.filter(x => x !== v) : [...refus, v]; analyser();
+    });
+  };
+  const analyser = async () => {
+    const f = m.querySelector("#as-fichier");
+    if (!source) { if (!f.files.length) return toast("Choisissez le fichier exporté.", true); source = await lireFichier(f); }
+    try { afficher(await api("/api/modeles-livrables/action", corps())); }
+    catch (e) { dernier = null; m.querySelector("#as-ok").disabled = true; zone.innerHTML = `<div class="avert">${esc(e.message)}</div>`; }
+  };
+  m.querySelector("#as-fichier").onchange = () => { source = null; refus = []; };
+  m.querySelector("#as-eq").onchange = m.querySelector("#as-echap").onchange = () => { if (source) analyser(); };
+  m.querySelector("#as-analyser").onclick = analyser;
+  m.querySelector("#as-ok").onclick = async () => {
+    if (!dernier) return;
+    try {
+      const r = await api("/api/modeles-livrables/action", corps({action: "assistant_enregistrer", nom: m.querySelector("#as-nom").value}));
+      fermerModale(); recharger(r, `Modèle « ${r.modele.nom} » enregistré : générez-le dans Recette et livrables.`);
+    } catch (e) { toast(e.message, true); }
+  };
 }
 function modaleStandard(d, sel, agir) {
   const choix = (f, nom) => `<label for="std-${f}">${esc(nom)}</label><select id="std-${f}">${(d.bibliotheque[f] || []).map(b =>

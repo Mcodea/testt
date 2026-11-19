@@ -848,3 +848,13 @@ html[data-theme] .gg-famille input { margin-top: 3px; }
 html[data-theme] .gg-famille span { display: flex; flex-direction: column; gap: 2px; }
 html[data-theme] .gg-famille small { font-size: var(--o-t-xs); color: var(--o-texte-2); }
 html[data-theme] .gg-note { margin: var(--o-e-2) 0 0; font-size: var(--o-t-s); color: var(--o-texte-2); }
+
+/* Assistant « créer un modèle depuis un export » (lot 7, 19/11) */
+html[data-theme] .as-resultat:empty { display: none; }
+html[data-theme] .as-resultat { grid-column: 1 / -1; display: grid; gap: var(--o-e-2); text-align: left; }
+html[data-theme] .as-resultat h3, html[data-theme] .as-resultat h4 { margin: var(--o-e-2) 0 0; }
+html[data-theme] .as-verif { display: flex; gap: var(--o-e-2); align-items: baseline; flex-wrap: wrap; padding: var(--o-e-2); border: 1px solid var(--o-ligne); border-radius: var(--o-r-m); background: var(--o-surface-2); }
+html[data-theme] .as-props { width: 100%; border-collapse: collapse; }
+html[data-theme] .as-props td, html[data-theme] .as-props th { padding: var(--o-e-1) var(--o-e-2); border-bottom: 1px solid var(--o-ligne); text-align: left; font-size: var(--o-t-s); }
+html[data-theme] .as-props tr.refusee td { color: var(--o-texte-2); }
+html[data-theme] .as-props td.num, html[data-theme] .as-props th.num { text-align: right; }

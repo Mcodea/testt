@@ -11,7 +11,7 @@ Syntaxe
 - Bloc répété : `<#DEBUT_EQUIPEMENTS#>…<#FIN_EQUIPEMENTS#>`, `<#DEBUT_VARIABLES#>…<#FIN_VARIABLES#>`,
   `<#DEBUT_ES#>…<#FIN_ES#>`. Un bloc VARIABLES ou ES placé dans un bloc EQUIPEMENTS ne parcourt que l'équipement.
   Filtre facultatif : `DEBUT_VARIABLES_TS` (famille TS, TC, TM, TR, RTR, CP), `DEBUT_ES_ET` (ET, ST, EA, SA) ;
-  le FIN reprend le même nom.
+  `DEBUT_EQUIPEMENTS_PM` (type d'équipement, lettres et chiffres) ; le FIN reprend le même nom.
 - Une balise de bloc seule sur sa ligne consomme la ligne entière : le modèle reste lisible sans lignes vides en trop.
 - Une variable inconnue, ou utilisée hors de sa portée, est signalée à l'analyse et bloque la génération.
 
@@ -64,6 +64,7 @@ VARIABLES_ES = {
 }
 COMPTEUR = {"N": "Rang dans le bloc en cours (1, 2, 3…)"}
 BLOCS = ("EQUIPEMENTS", "VARIABLES", "ES")
+RE_TYPE_FILTRE = re.compile(r"[A-Z][A-Z0-9]{0,3}")     # DEBUT_EQUIPEMENTS_PM : seulement les équipements de type PM
 
 RE_BALISE = re.compile(r"<#([A-Z][A-Z0-9_]*)#>")
 RE_LIGNE_BLOC = re.compile(r"(?m)^[ \t]*(<#(?:DEBUT|FIN)_[A-Z0-9_]+#>)[ \t]*\r?\n")
@@ -87,7 +88,8 @@ def _bloc_et_filtre(nom: str) -> tuple[str, str] | None:
             return b, ""
         if nom.startswith(b + "_"):
             f = nom[len(b) + 1:]
-            if (b == "VARIABLES" and f in FAMILLES_FILTRE) or (b == "ES" and f in POINTS_FILTRE):
+            if (b == "VARIABLES" and f in FAMILLES_FILTRE) or (b == "ES" and f in POINTS_FILTRE) \
+                    or (b == "EQUIPEMENTS" and RE_TYPE_FILTRE.fullmatch(f)):
                 return b, f
     return None
 
@@ -213,13 +215,14 @@ def valeurs_es(p) -> dict:
             "ES_RACCORDEMENT": p.raccordement, "ES_VARIABLE": p.variable}
 
 
-def remplir(texte: str, session, echappement: str = "aucun") -> str:
-    """Texte du livrable. Lève ModeleRefuse si le modèle contient une erreur (variable inconnue, bloc mal fermé)."""
+def remplir(texte: str, session, echappement: str = "aucun", seulement=None) -> str:
+    """Texte du livrable. Lève ModeleRefuse si le modèle contient une erreur (variable inconnue, bloc mal fermé).
+    `seulement` (identifiants d'équipement) restreint le remplissage : vérification d'un modèle sur un équipement."""
     arbre, erreurs, _ = analyser(texte)
     if erreurs:
         raise ModeleRefuse("Modèle à corriger : " + " ".join(erreurs[:5]))
     o = session.ouvrage
-    eqs = sorted(o.equipements, key=o.repere)
+    eqs = sorted((e for e in o.equipements if seulement is None or e.ident in seulement), key=o.repere)
     par_ident = {e.ident: e for e in eqs}
     rang = {e.ident: i for i, e in enumerate(eqs)}
     variables = sorted(session.variables(), key=lambda v: (rang.get(v.ident_eq, 0), v.nom))
@@ -235,7 +238,8 @@ def remplir(texte: str, session, echappement: str = "aucun") -> str:
                 sortie.append(esc(str(ctx.get(x[1], ""))))
             else:
                 if x.nom == "EQUIPEMENTS":
-                    elements = [(e, {**ctx, **valeurs_equipement(session, e)}, e) for e in eqs]
+                    elements = [(e, {**ctx, **valeurs_equipement(session, e)}, e) for e in eqs
+                                if not x.filtre or e.type == x.filtre]
                 elif x.nom == "VARIABLES":
                     elements = [(v, {**ctx, **valeurs_equipement(session, par_ident[v.ident_eq]), **valeurs_variable(session, v)},
                                  eq_courant) for v in variables
@@ -318,7 +322,10 @@ def texte(ident: str) -> str:
         return decoder(fh.read())[0]
 
 
-def importer(nom: str, nom_fichier: str, octets: bytes, echappement: str = "aucun", description: str = "") -> dict:
+def importer(nom: str, nom_fichier: str, octets: bytes, echappement: str = "aucun", description: str = "",
+             encodage_force: str | None = None) -> dict:
+    """`encodage_force` : encodage du fichier d'origine quand le modèle a été construit par l'assistant (un modèle
+    devenu purement ASCII après substitution ne permet plus de le reconnaître)."""
     nom = " ".join(str(nom or "").split())
     if not 3 <= len(nom) <= 60:
         raise ModeleRefuse("Nom du modèle : 3 à 60 caractères.")
@@ -330,6 +337,10 @@ def importer(nom: str, nom_fichier: str, octets: bytes, echappement: str = "aucu
     if echappement not in ECHAPPEMENTS:
         raise ModeleRefuse("Échappement inconnu.")
     contenu, encodage = decoder(octets)
+    if encodage_force is not None:
+        if encodage_force not in ENCODAGES:
+            raise ModeleRefuse("Encodage inconnu.")
+        contenu, encodage = octets.decode(encodage_force), encodage_force
     if "<#" not in contenu:
         raise ModeleRefuse("Aucune variable <#…#> dans ce fichier : placez d'abord les variables à la place des valeurs.")
     extension = os.path.splitext(os.path.basename(nom_fichier or ""))[1].lstrip(".").lower()

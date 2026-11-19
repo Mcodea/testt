@@ -697,3 +697,32 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.locator('.boite .gg-familles input').evaluate_all("l => l.forEach(x => x.checked = false)")
         self.page.locator('.boite #m-ok').click()
         self.assertIn('au moins une destination', self.page.locator('.boite #m-err').inner_text())
+
+    def test_assistant_modele_depuis_export(self):
+        """19/11, lot 7 : un export FICTIF d'un équipement devient un modèle ; une valeur décochée reste écrite ;
+        le contrôle de reproduction est affiché ; le modèle rejoint la bibliothèque prêt à générer."""
+        import tempfile
+        ouvrage = self.api('/api/ouvrage')
+        eq = ouvrage['equipements'][0]
+        noms = [v['nom'] for v in self.api('/api/variables')['lignes'] if v['repere'].endswith(eq['pcf'][-4:])][:3]
+        self.assertTrue(noms)
+        export = Path(tempfile.mkdtemp()) / 'export_fictif_vanne.csv'
+        export.write_text('Nom;Objet;Type\n' + ''.join(f'{n};{eq["pcf"]};BOOL\n' for n in noms), encoding='utf-8')
+        self.ouvrir('#/standards')
+        self.page.locator('#ml-assistant').click()
+        boite = self.page.locator('.boite')
+        boite.locator('#as-fichier').set_input_files(str(export))
+        boite.locator('#as-analyser').click()
+        boite.locator('.as-verif').wait_for()
+        self.assertIn('<#DEBUT_EQUIPEMENTS_HV#>', boite.locator('.ml-apercu').last.inner_text())
+        self.assertIn('<#NOM#>;<#REPERE#>', boite.locator('.ml-apercu').last.inner_text())
+        boite.locator('[data-as-var="REPERE"]').uncheck()
+        self.page.wait_for_function("() => document.querySelector('.as-props tr.refusee')")
+        self.assertIn(f'<#NOM#>;{eq["pcf"]};', boite.locator('.ml-apercu').last.inner_text())
+        boite.locator('[data-as-var="REPERE"]').check()
+        self.page.wait_for_function("() => !document.querySelector('.as-props tr.refusee')")
+        boite.locator('#as-nom').fill(f'Vanne - export fictif {self.numero}')
+        boite.locator('#as-ok').click()
+        self.page.wait_for_function("t => document.querySelector('.std-modeles')?.innerText.includes(t)", arg=f'Vanne - export fictif {self.numero}')
+        ligne = self.page.locator('[data-ml]', has_text=f'Vanne - export fictif {self.numero}')
+        self.assertIn('Prêt', ligne.inner_text())

@@ -1185,11 +1185,53 @@ class Application:
         return {"modeles": [ml.resume(m) for m in ml.lister()],
                 "variables": [{"groupe": g, "liste": [{"nom": k, "description": v} for k, v in d.items()]} for g, d in groupes],
                 "blocs": {"EQUIPEMENTS": "", "VARIABLES": list(ml.FAMILLES_FILTRE), "ES": list(ml.POINTS_FILTRE)},
-                "echappements": ml.ECHAPPEMENTS, "ouvert": self.ouvert}
+                "echappements": ml.ECHAPPEMENTS, "ouvert": self.ouvert,
+                # assistant (lot 7) : équipements de l'ouvrage ouvert, candidats « équipement de référence »
+                "equipements": ([{"ident": e.ident, "repere": self.s.ouvrage.repere(e), "type": e.type,
+                                  "libelle": e.libelle or self.s.designation_type(e.type)}
+                                 for e in sorted(self.s.ouvrage.equipements, key=self.s.ouvrage.repere)]
+                                if self.ouvert else [])}
 
     def modeles_livrables_texte(self, q):
         from genvar import modeles_livrables as ml
         return {"texte": ml.texte(str(q.get("ident") or ""))[:200_000]}
+
+    def _assistant_modele(self, d, enregistrer):
+        """Lot 7 (19/11) : modèle proposé à partir de l'export d'UN équipement de l'ouvrage ouvert ; enregistré dans la
+        bibliothèque seulement sur demande et si le contrôle de reproduction n'est pas en erreur."""
+        from genvar import assistant_modele as am, modeles_livrables as ml
+        if not self.ouvert:
+            raise RegleMetier("Ouvrez l'ouvrage qui contient l'équipement de référence.")
+        try:
+            octets = base64.b64decode(str(d.get("contenu") or ""), validate=True)
+        except (ValueError, binascii.Error):
+            raise RegleMetier("Contenu du fichier invalide.") from None
+        if not octets or len(octets) > ml.TAILLE_MAX:
+            raise RegleMetier("Fichier vide ou trop volumineux (2 Mo au plus).")
+        texte, encodage = ml.decoder(octets)
+        echappement = str(d.get("echappement") or "") or None
+        if echappement is not None and echappement not in ml.ECHAPPEMENTS:
+            raise RegleMetier("Échappement inconnu.")
+        try:
+            r = am.construire(texte, self.s, str(d.get("ident_eq") or ""), [str(x) for x in d.get("refus") or []],
+                              echappement)
+        except am.AssistantRefuse as exc:
+            raise RegleMetier(str(exc)) from None
+        r["encodage"] = encodage
+        if not enregistrer:
+            return r
+        if r["verification"]["etat"] == "erreur":
+            raise RegleMetier(r["verification"]["message"])
+        try:
+            corps = r["gabarit"].encode(encodage)
+        except UnicodeEncodeError:
+            raise RegleMetier(f"Le modèle ne peut pas s'écrire en {encodage}.") from None
+        description = (str(d.get("description") or "").strip()
+                       or f"Créé par l'assistant depuis {str(d.get('fichier') or 'un export')[:80]} "
+                          f"(équipement de référence {r['equipement']}).")
+        m = ml.importer(str(d.get("nom") or ""), str(d.get("fichier") or ""), corps, r["echappement"], description,
+                        encodage_force=encodage)
+        return {"modele": ml.resume(m), **self.modeles_livrables_web({})}
 
     def modeles_livrables_action(self, d):
         """Importer un modèle (fichier de l'outil avec variables), ajouter l'exemple neutre, supprimer. Aucun ouvrage
@@ -1204,6 +1246,8 @@ class Application:
                     raise RegleMetier("Contenu du fichier invalide.") from None
                 m = ml.importer(str(d.get("nom") or ""), str(d.get("fichier") or ""), octets,
                                 str(d.get("echappement") or "aucun"), str(d.get("description") or ""))
+            elif action in ("assistant", "assistant_enregistrer"):
+                return self._assistant_modele(d, action == "assistant_enregistrer")
             elif action == "exemple":
                 m = ml.ajouter_exemple()
             elif action == "supprimer":
