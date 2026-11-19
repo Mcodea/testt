@@ -25,6 +25,7 @@ from .modele import (Ouvrage, Equipement, SousEnsemble, UniteFonctionnelle, Sign
                      plan_adresses, appliquer_plan, signaux_retenus, registre_modbus)
 from .export_xsy import exporter_xsy
 from .export_xlsx import exporter_table
+from . import charte
 
 RE_ADRESSE_ECHANGE = re.compile(r"^%MW\d+(\.\d{1,2})?$")
 RE_ADRESSE_PHYSIQUE = re.compile(r"^%(I|Q|IW|QW)[\d.]+$")
@@ -448,7 +449,7 @@ class Session:
     # ================================================================== sous-ensembles
     def _verifier_se(self, code, ancien=None):
         code = (code or "").strip().upper()
-        if not re.match(r"^[A-Z0-9]{2}$", code):
+        if not charte.conforme(charte.SOUS_ENSEMBLE, code):
             raise RegleMetier("Le code d'un sous-ensemble fait 2 caractères (lettres majuscules ou chiffres).")
         if code != ancien and any(s.code == code for s in self.ouvrage.sous_ensembles):
             raise RegleMetier(f"Le sous-ensemble {code} existe déjà.")

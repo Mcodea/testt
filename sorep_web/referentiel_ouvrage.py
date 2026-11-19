@@ -6,13 +6,13 @@ Les valeurs existantes des anciens ouvrages ne sont jamais modifiées par la ges
 """
 import json
 import os
-import re
 import tempfile
 from copy import deepcopy
 from typing import Any
 
 from genvar import chemins
 from genvar.session import RegleMetier
+from genvar import charte
 
 # Registre initial des lieux : les 15 communes ESB / RESO, codes obtenus par la règle de la
 # charte de codification (genvar/codification.py), validés le 9 novembre 2026 ; CACH = exception.
@@ -209,12 +209,12 @@ def _valider(groupe, code, libelle=""):
     code = str(code or "").strip().upper() if groupe in ("lieux", "types_ouvrage") else str(code or "").strip()
     libelle = str(libelle or "").strip()
     if groupe == "lieux":
-        if not re.fullmatch(r"[A-Z0-9]{4}", code):
+        if not charte.conforme(charte.LIEU, code):
             raise RegleMetier("Un code de lieu doit contenir 4 caractères alphanumériques.")
         if not libelle or len(libelle) > 100:
             raise RegleMetier("Le lieu doit avoir un libellé de 1 à 100 caractères.")
     elif groupe == "types_ouvrage":
-        if not re.fullmatch(r"[A-Z]{2}", code):
+        if not charte.conforme(charte.CODE_OUVRAGE, code):
             raise RegleMetier("Un code d'ouvrage doit contenir exactement 2 lettres majuscules.")
         if not libelle or len(libelle) > 100:
             raise RegleMetier("Le type d'ouvrage doit avoir un libellé de 1 à 100 caractères.")

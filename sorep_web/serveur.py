@@ -13,7 +13,6 @@ from collections import Counter
 from typing import Any
 import mimetypes
 import os
-import re
 import socket
 import tempfile
 import shutil
@@ -30,6 +29,7 @@ from genvar.modele import Equipement
 from genvar.session import Session, RegleMetier
 from genvar.inbound import InputKind, InboundError, preview_import, stage_import
 from sorep_web import referentiel_ouvrage as ref_ident
+from genvar import charte
 
 STATIQUE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 VERROU = threading.Lock()
@@ -243,7 +243,7 @@ class Application:
             valeur = ", ".join(dict.fromkeys(choix))
         else:
             raise RegleMetier("Ce champ n'est pas géré par une liste.")
-        if champ == "numero_ouvrage" and valeur and not re.fullmatch(r"(?:0[1-9]|[1-9][0-9])", valeur):
+        if champ == "numero_ouvrage" and valeur and not charte.conforme(charte.NUMERO_OUVRAGE, valeur):
             raise RegleMetier("Numéro d’ouvrage invalide : 01 à 99.")
         self.s.definir(champ, valeur)
         self._sauver()
@@ -1069,7 +1069,7 @@ class Application:
         """
         lieu = str(q.get("lieu", "")).strip().upper()
         typ = str(q.get("type", "")).strip().upper()
-        if not re.fullmatch(r"[A-Z0-9]{4}", lieu) or not re.fullmatch(r"[A-Z]{2}", typ):
+        if not charte.conforme(charte.LIEU, lieu) or not charte.conforme(charte.CODE_OUVRAGE, typ):
             return {"numero": "", "disponible": False}
         existants = []
         for fiche in projets.lister():
@@ -1148,11 +1148,11 @@ class Application:
         communication = str(champs.get("communication", "")).strip()
         types = {x["code"]: x["libelle"] for x in liste["types_ouvrage"]}
         lieux = {x["code"] for x in liste["lieux"]}
-        if lieu and not re.fullmatch(r"[A-Z0-9]{4}", lieu):
+        if lieu and not charte.conforme(charte.LIEU, lieu):
             raise RegleMetier("Sélectionnez un lieu avec un code de 4 caractères.")
-        if numero and not re.fullmatch(r"(?:0[1-9]|[1-9][0-9])", numero):
+        if numero and not charte.conforme(charte.NUMERO_OUVRAGE, numero):
             raise RegleMetier("Le numéro d’ouvrage doit être compris entre 01 et 99 (deux chiffres).")
-        if code and not re.fullmatch(r"[A-Z]{2}", code):
+        if code and not charte.conforme(charte.CODE_OUVRAGE, code):
             raise RegleMetier("Sélectionnez un type d'ouvrage (code de 2 lettres).")
         # Ne jamais rendre illisible un ouvrage historique dont une valeur a
         # disparu entre-temps du référentiel utilisateur.
@@ -1169,7 +1169,7 @@ class Application:
             raise RegleMetier("Un protocole est absent du référentiel.")
         if len(libelle) > 150 or len(localisation) > 250:
             raise RegleMetier("Libellé ou localisation trop long.")
-        if not re.fullmatch(r"[A-Z0-9]{1,4}", revision):
+        if not charte.conforme(charte.REVISION, revision):
             raise RegleMetier("Révision invalide : 1 à 4 caractères (lettres/chiffres).")
         if action == "creer" and (not lieu or not code or not numero or not libelle):
             raise RegleMetier("Pour créer l'ouvrage, renseignez le lieu, le type d'ouvrage et le libellé.")
@@ -1226,11 +1226,11 @@ class Application:
                          "communication", "revision"):
             raise RegleMetier("Champ non modifiable.")
         valeur = str(d.get("valeur", "")).strip()
-        if champ == "lieu" and valeur and not re.fullmatch(r"[A-Za-z0-9]{4}", valeur):
+        if champ == "lieu" and valeur and not charte.conforme(charte.LIEU_SAISIE, valeur):
             raise RegleMetier("Le lieu fait 4 caractères (lettres ou chiffres), ex. ATMS.")
-        if champ == "code_ouvrage" and valeur and not re.fullmatch(r"[A-Za-z0-9]{2}", valeur):
+        if champ == "code_ouvrage" and valeur and not charte.conforme(charte.CODE_OUVRAGE_SAISIE, valeur):
             raise RegleMetier("Le code ouvrage fait 2 caractères, ex. RV.")
-        if champ == "numero_ouvrage" and valeur and not re.fullmatch(r"(?:0[1-9]|[1-9][0-9])", valeur):
+        if champ == "numero_ouvrage" and valeur and not charte.conforme(charte.NUMERO_OUVRAGE, valeur):
             raise RegleMetier("Numéro d’ouvrage invalide : 01 à 99.")
         self.s.definir(champ, valeur)
         self._sauver()
@@ -1255,7 +1255,7 @@ class Application:
         se = (d.get("se") or "").strip().upper()
         if not se and self.s.ouvrage.format_repere == "12":
             se = "00"                                   # charte ESB/RESO : le sous-ensemble n'entre pas dans le repère
-        if not re.fullmatch(r"[A-Z0-9]{2}", se):
+        if not charte.conforme(charte.SOUS_ENSEMBLE, se):
             raise RegleMetier("Sous-ensemble : 2 caractères (ex. 11, E0, P1).")
         if se not in {x.code for x in self.s.ouvrage.sous_ensembles}:
             self.s.ajouter_sous_ensemble(se, "")

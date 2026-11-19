@@ -26,6 +26,7 @@ from datetime import datetime, timezone
 from .catalogue import anomalies_interne, est_interne, sens_incoherent
 from .regles import texte as texte_regle
 from dataclasses import dataclass, field, asdict
+from . import charte
 
 # Zones d'adresses de la table d'échange (mots %MW de départ) : valeurs par défaut,
 # modifiables dans l'onglet Paramètres de chaque ouvrage.
@@ -921,15 +922,15 @@ def controler(ouvrage, catalogue, variables=None):
     alerte = lambda rep, msg, ident="", code="": anomalies.append(Anomalie("Alerte", rep, msg, ident, etape[0], code))
 
     # --- ouvrage
-    if not re.match(r"^[A-Z0-9]{4}$", ouvrage.lieu or ""):
+    if not charte.conforme(charte.LIEU, ouvrage.lieu):
         err("Ouvrage", "Le lieu doit faire 4 caractères (lettres majuscules ou chiffres), ex. ATMS.", "", "R-OUV-02")
-    if not re.match(r"^[A-Z]{2}$", ouvrage.code_ouvrage or ""):
+    if not charte.conforme(charte.CODE_OUVRAGE, ouvrage.code_ouvrage):
         err("Ouvrage", "Le code de l'ouvrage doit faire 2 lettres majuscules, ex. RV.", "", "R-OUV-03")
-    if ouvrage.numero_ouvrage and not re.fullmatch(r"(?:0[1-9]|[1-9][0-9])", ouvrage.numero_ouvrage):
+    if ouvrage.numero_ouvrage and not charte.conforme(charte.NUMERO_OUVRAGE, ouvrage.numero_ouvrage):
         err("Ouvrage", "Numéro d’ouvrage invalide : 01 à 99.", "", "R-OUV-04")
     codes_se = [s.code for s in ouvrage.sous_ensembles]
     for s in ouvrage.sous_ensembles:
-        if not re.match(r"^[A-Z0-9]{2}$", s.code):
+        if not charte.conforme(charte.SOUS_ENSEMBLE, s.code):
             err("Ouvrage", f"Sous-ensemble « {s.code} » : 2 caractères (lettres majuscules ou chiffres).", "", "R-OUV-05")
         if codes_se.count(s.code) > 1:
             err("Ouvrage", f"Sous-ensemble {s.code} déclaré plusieurs fois.", "", "R-OUV-06")
