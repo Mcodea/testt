@@ -471,9 +471,17 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.locator('#lieu').select_option('XTST')
         self.page.locator('#type_ouvrage').select_option('RV')
         num = f'{10 + n:02d}'          # plage propre à cet essai (fiches d'essai : 40+ et 70+)
+        self.page.wait_for_load_state('networkidle')     # proposition de numéro en cours : attendre sa réponse
         self.page.locator('#numero_ouvrage').fill(num)
         self.page.locator('#numero_ouvrage').dispatch_event('input')
-        self.page.wait_for_function("t => document.querySelector('#code-ouvrage-affiche')?.textContent === t", arg=f'XTST_RV_EAU_{num}')
+        try:
+            self.page.wait_for_function("t => document.querySelector('#code-ouvrage-affiche')?.textContent === t",
+                                        arg=f'XTST_RV_EAU_{num}', timeout=10000)
+        except Exception:
+            etat = self.page.evaluate("() => ({code: document.querySelector('#code-ouvrage-affiche')?.textContent, "
+                                      "std: document.querySelector('#standard-choix')?.value, lieu: document.querySelector('#lieu')?.value, "
+                                      "type: document.querySelector('#code_ouvrage')?.value, num: document.querySelector('#numero_ouvrage')?.value})")
+            self.fail(f'Code affiché inattendu : {etat}')
         self.api('/api/fiche-ouvrage', {'action': 'creer', 'standard': r['ident'], 'identification': {
             'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': num,
             'libelle': 'Ouvrage fictif charte client', 'automate': 'Sch - M340', 'revision': 'A'}})
