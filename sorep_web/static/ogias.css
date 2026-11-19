@@ -723,3 +723,8 @@ html[data-theme] .outils-regles { margin-top: var(--o-e-2); font-size: var(--o-t
 html[data-theme] .outils-regles ul { margin: var(--o-e-1) 0 0; padding-left: var(--o-e-5); }
 html[data-theme] .outils-regles p { margin: var(--o-e-1) 0 0; color: var(--o-texte-2); }
 @media (max-width: 1200px) { html[data-theme] .outils-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Plan mémoire %MW par famille (18/11) */
+html[data-theme] .ad-plages-titre { margin: var(--o-e-3) 0 var(--o-e-1); font-size: var(--o-t-m); }
+html[data-theme] table.ad-plages { width: auto; margin: var(--o-e-1) 0 var(--o-e-2); }
+html[data-theme] table.ad-plages input { width: 8em; }

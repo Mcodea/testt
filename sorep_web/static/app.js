@@ -329,6 +329,14 @@ function vueAdressage() {
      ${s4w ? `<div class="avert">SOFREL S4W : l'identification des points et des adresses dans S4W-Tools n'est pas connue. Aucun %MW ni registre Schneider n'est proposé.</div>` : `
      <p class="aide">Les adresses de télétransmission (%MW lus par la supervision) reprennent l'adresse automate, décalée du nombre saisi ici (0 par défaut). Les E/S physiques ne sont jamais décalées.</p>
      <label class="case">Décalage Modbus des adresses de télétransmission <input id="ad-dec" type="number" step="1" inputmode="numeric" value="${esc(String(d.decalage || 0))}" style="width:8em"></label>
+     ${d.mode === "Neuf" && d.plages ? `<h3 class="ad-plages-titre">Plan mémoire %MW par famille</h3>
+     <p class="aide">Convention du maître d'ouvrage. Les adresses déjà validées ne bougent pas ; les nouvelles propositions suivent ces plages.</p>
+     <table class="ad-plages"><thead><tr><th>Famille</th><th>Premier mot</th><th>Dernier mot</th><th>Par défaut</th></tr></thead><tbody>
+     ${Object.entries(d.plages).map(([f, [deb, fin]]) => `<tr><td><b>${esc(f)}</b></td>
+       <td><input class="mono" data-plage-debut="${esc(f)}" type="number" min="0" max="65535" step="1" value="${deb}" aria-label="Premier mot %MW de la famille ${esc(f)}"></td>
+       <td><input class="mono" data-plage-fin="${esc(f)}" type="number" min="0" max="65535" step="1" value="${fin}" aria-label="Dernier mot %MW de la famille ${esc(f)}"></td>
+       <td class="mono">%MW${d.plages_defaut[f][0]} à %MW${d.plages_defaut[f][1]}</td></tr>`).join("")}</tbody></table>
+     <div class="boutons-ligne"><button id="ad-plages">Enregistrer les plages</button><button class="lien" id="ad-plages-defaut">Reprendre les plages par défaut</button></div>` : ""}
      ${d.mode === "Existant" ? `<label class="case"><input type="checkbox" id="ad-dispo" ${d.disponibilite_verifiee ? "checked" : ""}> L'import couvre toute la mémoire utilisée (disponibilité vérifiée)</label>` : ""}`}
      ${d.journal.length ? `<p class="aide">Dernières applications : ${d.journal.slice(-3).reverse().map(j => `${esc(j.le)} (${esc(j.par || "?")}) : ${j.physique || 0} voie(s), ${j.automate || 0} adresse(s)`).join(" · ")}</p>` : ""}</div>
    </div></section>`;
@@ -348,6 +356,13 @@ function vueAdressage() {
   $("#ad-res").onclick = () => act({action: "reserver", niveau: $("#ad-rn").value, cible: $("#ad-rc").value, motif: $("#ad-rm").value}, "Réservation enregistrée.");
   // Retours du 18/11 : plus de convention à déclarer ; décalage saisi par l'utilisateur (entier, 0 par défaut).
   if($("#ad-dec")) $("#ad-dec").onchange = ev => act({action: "protocole", declare: true, decalage: ev.target.value}, "Décalage enregistré.");
+  // 18/11 : plan mémoire modifiable (convention du maître d'ouvrage), contrôlé par le moteur avant écriture
+  const lirePlages = () => Object.fromEntries(Object.keys(d.plages || {}).map(f => [f,
+    [document.querySelector(`[data-plage-debut="${f}"]`).value, document.querySelector(`[data-plage-fin="${f}"]`).value]]));
+  const enregistrerPlages = async plages => { try { const r = await api("/api/adressage/action", {action: "plages", plages});
+      toast(r.alertes?.length ? r.alertes.join(" ") : "Plan mémoire enregistré.", !!r.alertes?.length); await recharge(); } catch (e) { toast(e.message, true); } };
+  if ($("#ad-plages")) $("#ad-plages").onclick = () => enregistrerPlages(lirePlages());
+  if ($("#ad-plages-defaut")) $("#ad-plages-defaut").onclick = () => confirmer("Reprendre les plages par défaut ?", "Les adresses déjà validées ne bougent pas.", "Reprendre", () => enregistrerPlages(d.plages_defaut));
   if ($("#ad-dispo")) $("#ad-dispo").onchange = ev => act({action: "disponibilite", verifiee: ev.target.checked}, "Disponibilité enregistrée.");
   piedEtape();
 }
@@ -833,10 +848,26 @@ async function blocOutils(c) {
     <div class="outil">${choix("outil-supervision", "Supervision", t.supervision, t.supervisions, "— Aucune —")}</div>
     <div class="outil">${choix("outil-ihm", "IHM", t.ihm, t.ihms, "— Aucune —")}</div>
    </div>
+   <div class="boutons-ligne outils-actions"><button type="button" id="outils-reprendre">Reprendre les réglages d'un autre ouvrage…</button><button type="button" class="lien" id="outils-plages">Plan mémoire %MW (Adressage)</button></div>
    <div class="outils-regles"><b>Règles propres aux outils choisis</b>${t.contraintes.length ? `<ul>${t.contraintes.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "<p>Aucune : les outils choisis ne sont pas décrits dans OGIAS, aucune contrainte n'est supposée.</p>"}</div>`;
   const enregistrer = async corps => { try { await api("/api/outils/action", corps); toast("Outils de l'ouvrage enregistrés."); blocOutils(c); } catch (e) { toast(e.message, true); blocOutils(c); } };
   zone.querySelector("#outil-supervision").onchange = ev => enregistrer({supervision: ev.target.value});
   zone.querySelector("#outil-ihm").onchange = ev => enregistrer({ihm: ev.target.value});
+  zone.querySelector("#outils-plages").onclick = () => naviguer("#/adressage");
+  zone.querySelector("#outils-reprendre").onclick = async () => {
+    let s; try { s = await api("/api/reglages/sources"); } catch (e) { return toast(e.message, true); }
+    if (!s.ouvrages.length) return toast("Aucun autre ouvrage enregistré.", true);
+    const m = ouvrirModale(`<div class="boite-tete"><h2>Reprendre les réglages d'un autre ouvrage</h2>
+      <p>Repris : supervision, IHM, plan mémoire %MW et décalage Modbus. L'automate et la communication ne sont repris que s'ils ne sont pas encore renseignés ici. Les équipements et les adresses ne sont jamais copiés.</p></div>
+      <div class="boite-corps"><label for="reprendre-source">Ouvrage source</label><select id="reprendre-source">${s.ouvrages.map(x => `<option value="${esc(x.chemin)}">${esc(x.repere)} · ${esc(x.libelle)}${x.automate && x.automate !== "—" ? ` · ${esc(x.automate)}` : ""}</option>`).join("")}</select></div>
+      <div class="boite-pied"><button type="button" id="reprendre-annuler">Annuler</button><button type="button" class="prim" id="reprendre-ok">Reprendre</button></div>`);
+    m.querySelector("#reprendre-annuler").onclick = fermerModale;
+    m.querySelector("#reprendre-ok").onclick = async () => {
+      try { const r = await api("/api/reglages/reprendre", {chemin: m.querySelector("#reprendre-source").value}); fermerModale();
+        toast("Repris : " + r.repris.join(", ") + "." + (r.alertes.length ? " " + r.alertes.join(" ") : ""), !!r.alertes.length);
+        await recharger(); } catch (e) { toast(e.message, true); }
+    };
+  };
 }
 async function contenuDetail() {
   const c = $("#contenu"), s = E.sel;

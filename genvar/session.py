@@ -1800,6 +1800,70 @@ class Session:
             raise RegleMetier("Réservation introuvable.")
         self._change(devalider=False)
 
+    def definir_plages(self, plages):
+        """Plan mémoire de l'ouvrage : {famille: (premier mot, dernier mot)}, convention du maître d'ouvrage (18/11).
+
+        Contrôlé avant toute écriture (rien n'est modifié si une plage est refusée) : entiers, 0 ≤ début ≤ fin ≤ 65535,
+        aucune famille en recouvrement. Les adresses déjà attribuées ou validées ne bougent JAMAIS : une adresse validée
+        hors de sa nouvelle plage est signalée par R-VAR-06 ; les propositions suivent la nouvelle plage au prochain
+        calcul. Renvoie les alertes non bloquantes (miroir TR / RTR impossible si la plage RTR est plus courte)."""
+        from .modele import ORDRE_ZONES
+        lues = {}
+        for f in ORDRE_ZONES:
+            if f not in plages:
+                raise RegleMetier(f"Plage {f} manquante.")
+            try:
+                debut, fin = (int(str(x).strip()) for x in plages[f])
+            except (TypeError, ValueError):
+                raise RegleMetier(f"Plage {f} : début et fin en nombres entiers (mots %MW).") from None
+            if not 0 <= debut <= fin <= 65535:
+                raise RegleMetier(f"Plage {f} : %MW{debut} à %MW{fin} invalide (0 ≤ début ≤ fin ≤ 65535).")
+            lues[f] = (debut, fin)
+        ordre = sorted(lues.items(), key=lambda x: x[1][0])
+        for (fa, (_, fin_a)), (fb, (debut_b, _)) in zip(ordre, ordre[1:]):
+            if debut_b <= fin_a:
+                raise RegleMetier(f"Plages {fa} et {fb} en recouvrement (%MW{debut_b} à %MW{fin_a}).")
+        self.ouvrage.zones = {f: d for f, (d, _) in lues.items()}
+        self.ouvrage.zones_fin = {f: x for f, (_, x) in lues.items()}
+        self._change(devalider=False)          # aucune validation retirée : les adresses validées restent
+        alertes = []
+        if lues["RTR"][1] - lues["RTR"][0] < lues["TR"][1] - lues["TR"][0]:
+            alertes.append("La plage RTR est plus courte que la plage TR : certains retours ne pourront pas être placés en "
+                           "miroir de leur téléréglage.")
+        return alertes
+
+    def reprendre_reglages(self, source):
+        """Reprendre les outils et conventions d'un autre ouvrage (même maître d'ouvrage, 18/11).
+
+        `source` : un Ouvrage (lu depuis son fichier). Sont repris : supervision, IHM, plan mémoire %MW (contrôlé comme
+        une saisie), décalage Modbus. L'automate et la communication ne sont repris que s'ils sont encore vides ici :
+        changer l'automate d'un ouvrage déjà équipé changerait sa configuration matérielle. Rien d'autre n'est copié
+        (identification, équipements, adresses). Renvoie la liste de ce qui a été repris, et les alertes."""
+        from .modele import ORDRE_ZONES, zone
+        avant = copy.deepcopy(self.ouvrage)
+        repris, alertes = [], []
+        try:
+            alertes = self.definir_plages({f: zone(source, f) for f in ORDRE_ZONES})
+            repris.append("plan mémoire %MW")
+            self.declarer_protocole(True, int(getattr(source, "decalage_modbus", 0) or 0))
+            repris.append(f"décalage Modbus ({int(getattr(source, 'decalage_modbus', 0) or 0)})")
+            for champ, nom in (("supervision", "supervision"), ("ihm", "IHM")):
+                setattr(self.ouvrage, champ, getattr(source, champ, "") or "")
+                repris.append(f"{nom} ({getattr(self.ouvrage, champ) or 'aucune'})")
+            for champ, nom in (("automate", "automate"), ("communication", "communication")):
+                valeur = getattr(source, champ, "") or ""
+                if valeur and not getattr(self.ouvrage, champ):
+                    setattr(self.ouvrage, champ, valeur)
+                    repris.append(f"{nom} ({valeur})")
+                elif valeur and getattr(self.ouvrage, champ) != valeur:
+                    alertes.append(f"{nom.capitalize()} conservé ({getattr(self.ouvrage, champ)}) : celui de l'autre ouvrage "
+                                   f"({valeur}) n'est pas repris sur un ouvrage déjà renseigné.")
+        except Exception:
+            self.ouvrage = avant                       # tout ou rien
+            raise
+        self._change(devalider=False)
+        return {"repris": repris, "alertes": alertes}
+
     def declarer_protocole(self, declare, decalage=0):
         """Décalage des adresses de télétransmission, saisi par l'utilisateur (entier, 0 par défaut). Il ne touche
         jamais l'adresse automate. `declare` est conservé pour les fichiers et appels existants (retour du 18/11)."""

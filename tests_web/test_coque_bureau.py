@@ -335,3 +335,41 @@ class TestCoqueBureau(ServeurNavigateur):
         with self.assertRaises(Exception):
             self.api('/api/outils/action', {'supervision': 'Outil inventé'})
         self.assertEqual(self.api('/api/outils')['supervision'], '')
+
+    def test_plan_memoire_et_reprise_des_reglages(self):
+        """18/11 : plan mémoire %MW modifiable dans Adressage ; refus d'un recouvrement sans rien écrire ; reprise des
+        réglages d'un autre ouvrage depuis le bloc Outils d'ingénierie."""
+        self.ouvrir('#/adressage')
+        self.page.locator('[data-plage-debut="TS"]').wait_for()
+        self.page.locator('[data-plage-fin="TS"]').fill('2100')                  # recouvre TC : refusé
+        self.page.locator('#ad-plages').click()
+        self.page.wait_for_function("() => document.querySelector('#toasts')?.innerText.includes('recouvrement')")
+        self.assertEqual(self.api('/api/adressage')['plages']['TS'], [1000, 1999])
+        self.page.locator('[data-plage-debut="TS"]').fill('5000')
+        self.page.locator('[data-plage-fin="TS"]').fill('5999')
+        self.page.locator('#ad-plages').click()
+        self.page.wait_for_function("() => document.querySelector('[data-plage-debut=\"TS\"]')?.value === '5000'")
+        self.assertEqual(self.api('/api/adressage')['plages']['TS'], [5000, 5999])
+        # Reprise : un second ouvrage fictif enregistré sert de source (supervision « aucune », TS %MW8000-8999)
+        cible = self.api('/api/ouvrage')['chemin']
+        self.api('/api/nouveau', {'mode': 'Neuf'})
+        self.api('/api/fiche-ouvrage', {'action': 'creer', 'identification': {
+            'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': f'{40 + self.numero:02d}',
+            'libelle': 'Source fictive des réglages', 'automate': 'Sch - M340', 'revision': 'A'}})
+        self.api('/api/outils/action', {'supervision': ''})
+        plages = self.api('/api/adressage')['plages_defaut'] | {'TS': [8000, 8999]}
+        self.api('/api/adressage/action', {'action': 'plages', 'plages': plages})
+        source = self.api('/api/ouvrage')['chemin']
+        self.api('/api/ouvrir', {'chemin': cible})
+        sources = self.api('/api/reglages/sources')['ouvrages']
+        self.assertNotIn(cible, [x['chemin'] for x in sources])
+        self.assertIn(source, [x['chemin'] for x in sources])
+        self.ouvrir('#/inventaire')
+        self.page.locator('#outils-reprendre').click()
+        self.page.locator('#reprendre-source').select_option(source)
+        self.page.locator('#reprendre-ok').click()
+        self.page.wait_for_function("() => document.querySelector('#toasts')?.innerText.includes('Repris')")
+        self.assertEqual(self.api('/api/ouvrage')['chemin'], cible)
+        self.assertEqual(self.api('/api/ouvrage')['identification']['libelle'], 'Coque de bureau fictive')
+        self.assertEqual(self.api('/api/adressage')['plages']['TS'], [8000, 8999])
+        self.assertEqual(self.api('/api/outils')['supervision'], '')

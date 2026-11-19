@@ -65,3 +65,61 @@ class TestReglesSelonLesOutils(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestConventions(unittest.TestCase):
+    """18/11 : plan mémoire %MW modifiable par ouvrage, et reprise des réglages d'un autre ouvrage."""
+
+    def test_plages_controlees_avant_ecriture(self):
+        from genvar.modele import PLAN_DEFAUT, zone
+        from genvar.session import RegleMetier
+        s = nouvelle()
+        avant = (dict(s.ouvrage.zones), dict(s.ouvrage.zones_fin))
+        for mauvais in ({**PLAN_DEFAUT, "TS": (1000, 2100)},           # recouvre TC (2000)
+                        {**PLAN_DEFAUT, "TM": ("x", 3499)}, {**PLAN_DEFAUT, "CP": (3999, 3500)},
+                        {**PLAN_DEFAUT, "RTR": (4000, 70000)}, {k: v for k, v in PLAN_DEFAUT.items() if k != "CP"}):
+            with self.subTest(plages=mauvais), self.assertRaises(RegleMetier):
+                s.definir_plages(mauvais)
+            self.assertEqual((s.ouvrage.zones, s.ouvrage.zones_fin), avant)        # rien d'écrit
+        nouvelles = {**PLAN_DEFAUT, "TS": (5000, 5999)}
+        self.assertEqual(s.definir_plages(nouvelles), [])
+        self.assertEqual(zone(s.ouvrage, "TS"), (5000, 5999))
+        self.assertTrue(s.definir_plages({**PLAN_DEFAUT, "RTR": (4000, 4099)}))   # RTR plus courte : alerte
+
+    def test_les_propositions_suivent_les_plages_et_les_validees_ne_bougent_pas(self):
+        from genvar.modele import PLAN_DEFAUT, _mot
+        s = nouvelle()
+        e = s.ajouter_equipement(Equipement("00", "PM", "01"))
+        s.decider_propositions(e.ident, "retenir")
+        s.definir_plages({**PLAN_DEFAUT, "TS": (6000, 6999)})
+        ts = [a for a in s.plan_adressage().affectations if a.niveau == "automate" and a.cle.startswith("TS")]
+        self.assertTrue(ts)
+        self.assertTrue(all(6000 <= _mot(a.proposee)[0] <= 6999 for a in ts if a.proposee))
+
+    def test_reprendre_les_reglages_d_un_autre_ouvrage(self):
+        from genvar.modele import PLAN_DEFAUT, zone
+        source = nouvelle("Sch - M580").ouvrage
+        source.supervision, source.ihm, source.decalage_modbus = "Autre supervision", "Vijeo Designer", 1
+        source.zones = {f: d for f, (d, _) in PLAN_DEFAUT.items()} | {"TS": 7000}
+        source.zones_fin = {f: x for f, (_, x) in PLAN_DEFAUT.items()} | {"TS": 7999}
+        source.communication = "Modbus TCP/IP"
+        cible = nouvelle("Sch - M340")
+        r = cible.reprendre_reglages(source)
+        o = cible.ouvrage
+        self.assertEqual((o.supervision, o.ihm, o.decalage_modbus), ("Autre supervision", "Vijeo Designer", 1))
+        self.assertEqual(zone(o, "TS"), (7000, 7999))
+        self.assertEqual(o.automate, "Sch - M340")                    # déjà renseigné : conservé, alerte
+        self.assertTrue(any("conservé" in a for a in r["alertes"]))
+        self.assertEqual(o.communication, "Modbus TCP/IP")             # vide ici : repris
+        self.assertEqual(o.lieu, "XTST")                               # l'identification n'est jamais copiée
+
+    def test_reprise_tout_ou_rien(self):
+        from genvar.session import RegleMetier
+        source = nouvelle().ouvrage
+        source.zones = dict(source.zones) | {"TS": 2100}               # plan source incohérent (recouvrement)
+        cible = nouvelle()
+        avant = (cible.ouvrage.supervision, dict(cible.ouvrage.zones))
+        cible.ouvrage.supervision = "TOPKAPI"
+        with self.assertRaises(RegleMetier):
+            cible.reprendre_reglages(source)
+        self.assertEqual((cible.ouvrage.supervision, dict(cible.ouvrage.zones)), avant)

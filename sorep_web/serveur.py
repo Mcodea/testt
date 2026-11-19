@@ -846,6 +846,8 @@ class Application:
             raise RegleMetier("Ouvrez d'abord un ouvrage.")
         o = self.s.ouvrage
         plan = self.s.plan_adressage().dict()
+        from genvar.modele import ORDRE_ZONES, PLAN_DEFAUT, zone
+        plan.update(plages={f: zone(o, f) for f in ORDRE_ZONES}, plages_defaut=PLAN_DEFAUT)
         plan.update(mode=o.mode, automate=o.automate, reservations=o.reservations,
                     protocole_declare=o.protocole_declare, decalage=o.decalage_modbus,
                     disponibilite_verifiee=o.disponibilite_verifiee, journal=o.journal_adressage[-10:])
@@ -867,6 +869,8 @@ class Application:
         elif a == "disponibilite":
             self.s.declarer_disponibilite(bool(d.get("verifiee")))
             r = {}
+        elif a == "plages":                                 # 18/11 : plan mémoire, convention du maître d'ouvrage
+            r = {"alertes": self.s.definir_plages(d.get("plages") or {})}
         elif a == "valider":
             r = {"n": self.s.valider_affectations(d.get("niveau", ""), [(x["ident_eq"], x["cle"]) for x in d.get("paires", [])])}
         else:
@@ -936,6 +940,25 @@ class Application:
         self.s.modifie = True
         self._sauver()
         return self.outils_web({})
+
+    def reglages_sources(self, _):
+        """Ouvrages enregistrés dont on peut reprendre les outils et conventions (hors ouvrage ouvert, illisibles exclus)."""
+        if not self.ouvert:
+            raise RegleMetier("Ouvrez d'abord un ouvrage.")
+        return {"ouvrages": [{"chemin": f.chemin, "repere": f.repere, "libelle": f.libelle, "automate": f.automate}
+                             for f in projets.lister() if not f.erreur and f.chemin != (self.s.chemin or "")]}
+
+    def reprendre_reglages(self, d):
+        if not self.ouvert:
+            raise RegleMetier("Ouvrez d'abord un ouvrage.")
+        chemin = str(d.get("chemin") or "")
+        autorises = {f.chemin for f in projets.lister() if not f.erreur}
+        if chemin not in autorises or chemin == (self.s.chemin or ""):
+            raise RegleMetier("Choisissez un autre ouvrage enregistré.")
+        from genvar.modele import Ouvrage
+        r = self.s.reprendre_reglages(Ouvrage.ouvrir(chemin))
+        self._sauver()
+        return r
 
     def regles_web(self, _):
         """Catalogue des règles de cohérence nommées (lecture seule, sans ouvrage ouvert)."""
@@ -1668,14 +1691,14 @@ ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle":
               "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre",
               "/api/es": "es", "/api/numero-ouvrage": "numero_ouvrage_suggere",
               "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page",
-              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web",
+              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/reglages/sources": "reglages_sources",
               "/api/referentiel/synchronisation": "synchronisation_referentiel", "/api/ouvrage/copies": "copies_ouvrage",
               "/api/referentiel/impact": "rapport_impact", "/api/referentiel/propagation": "apercu_propagation",
               "/api/referentiel/apercu-modele": "apercu_modele"}
 ROUTES_POST = {"/api/nouveau": "nouveau", "/api/ouvrir": "ouvrir", "/api/fermer": "fermer",
                "/api/supprimer_ouvrage": "supprimer_ouvrage", "/api/definir": "definir",
                "/api/fiche-ouvrage": "fiche_ouvrage",
-               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action",
+               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/reglages/reprendre": "reprendre_reglages",
                "/api/identification/type": "identifier_type",
                "/api/identification/selection": "identifier_selection", "/api/uf": "uf",
                "/api/equipement/ajouter": "ajouter_equipement", "/api/equipement/modifier": "modifier_equipement",
