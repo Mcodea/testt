@@ -470,17 +470,18 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.locator('#standard-choix').select_option(r['ident'])
         self.page.locator('#lieu').select_option('XTST')
         self.page.locator('#type_ouvrage').select_option('RV')
-        self.page.locator('#numero_ouvrage').fill(f'{50 + n:02d}')
+        num = f'{10 + n:02d}'          # plage propre à cet essai (fiches d'essai : 40+ et 70+)
+        self.page.locator('#numero_ouvrage').fill(num)
         self.page.locator('#numero_ouvrage').dispatch_event('input')
-        self.page.wait_for_function("t => document.querySelector('#code-ouvrage-affiche')?.textContent === t", arg=f'XTST_RV_EAU_{50 + n:02d}')
+        self.page.wait_for_function("t => document.querySelector('#code-ouvrage-affiche')?.textContent === t", arg=f'XTST_RV_EAU_{num}')
         self.api('/api/fiche-ouvrage', {'action': 'creer', 'standard': r['ident'], 'identification': {
-            'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': f'{50 + n:02d}',
+            'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': num,
             'libelle': 'Ouvrage fictif charte client', 'automate': 'Sch - M340', 'revision': 'A'}})
-        self.assertTrue(Path(self.api('/api/ouvrage')['chemin']).stem.startswith(f'XTST_RV_EAU_{50 + n:02d}'))
+        self.assertTrue(Path(self.api('/api/ouvrage')['chemin']).stem.startswith(f'XTST_RV_EAU_{num}'))
         ident = self.api('/api/equipement/ajouter', {'type': 'HV', 'numero': '01', 'se': '00'})['ident']
         self.api('/api/equipement/proposition', {'ident_eq': ident, 'decision': 'retenir'})
         noms = [v['nom'] for v in self.api('/api/variables')['lignes'] if v.get('ident_eq') == ident]
-        self.assertTrue(noms and all(f'RV_EAU_{50 + n:02d}_HV01' in x for x in noms), noms[:3])
+        self.assertTrue(noms and all(f'RV_EAU_{num}_HV01' in x for x in noms), noms[:3])
         with self.assertRaisesRegex(RuntimeError, 'autre charte'):
             self.api('/api/standards/appliquer', {'ident': 'standard-initial', 'confirme': True})
 
@@ -521,3 +522,38 @@ class TestCoqueBureau(ServeurNavigateur):
         eqs = {e['pcf']: e for e in self.api('/api/ouvrage')['equipements']}
         self.assertEqual(set(eqs), {prefixe + 'HV01', prefixe + 'HV03'})
         self.assertEqual(eqs[prefixe + 'HV01']['libelle'], 'Vanne fictive modifiée')
+
+    def test_modeles_de_livrables(self):
+        """19/11, lot 1 : modèle à variables ajouté à la bibliothèque, état de ses variables, génération pour
+        l'ouvrage dans Recette et livrables ; un modèle à corriger n'est jamais généré."""
+        import tempfile
+        self.ouvrir('#/standards')
+        if self.page.locator('#ml-exemple').count():
+            self.page.locator('#ml-exemple').click()
+            self.page.wait_for_function("() => document.querySelector('.std-modeles')?.innerText.includes('Exemple - liste des variables')")
+        fautif = Path(tempfile.mkdtemp()) / f'modele_fictif_{self.numero}.txt'
+        fautif.write_text('<#OUVRAGE#>;<#VARIABLE_FICTIVE#>\n', encoding='utf-8')
+        self.page.locator('#ml-importer').click()
+        self.page.locator('#ml-nom').fill(f'Modèle fictif à corriger {self.numero}')
+        self.page.locator('#ml-fichier').set_input_files(str(fautif))
+        self.page.locator('#ml-ok').click()
+        self.page.wait_for_function("t => document.querySelector('.std-modeles')?.innerText.includes(t)", arg=f'Modèle fictif à corriger {self.numero}')
+        ligne = self.page.locator('[data-ml]', has_text=f'Modèle fictif à corriger {self.numero}')
+        self.assertIn('à corriger', ligne.inner_text())
+        ligne.click()
+        self.page.wait_for_function("() => document.querySelector('.ml-apercu')?.textContent.includes('VARIABLE_FICTIVE')")
+        self.assertIn("variable inconnue d'OGIAS", self.page.locator('.boite').inner_text())
+        self.page.locator('.boite [data-fermer]').last.click()
+        # Recette : l'exemple se génère pour l'ouvrage ; le modèle fautif est désactivé avec sa raison
+        self.ouvrir('#/recette')
+        self.page.wait_for_function("() => document.querySelectorAll('[data-modele-livrable]').length >= 2")
+        fautif_btn = self.page.locator('#rc-modeles tr', has_text=f'Modèle fictif à corriger {self.numero}').locator('[data-modele-livrable]')
+        self.assertTrue(fautif_btn.is_disabled())
+        with self.page.expect_download() as telechargement:
+            self.page.locator('#rc-modeles tr', has_text='Exemple - liste des variables').locator('[data-modele-livrable]').click()
+        chemin = Path(tempfile.mkdtemp()) / telechargement.value.suggested_filename
+        telechargement.value.save_as(chemin)
+        lignes = chemin.read_text(encoding='utf-8').splitlines()
+        self.assertEqual(lignes[0], 'Repère;Variable;Famille;Type;Adresse automate;Registre Modbus;Libellé')
+        rep = self.api('/api/ouvrage')['identification']
+        self.assertTrue(len(lignes) > 1 and all(x.startswith(rep['lieu'] + rep['code_ouvrage']) for x in lignes[1:]))

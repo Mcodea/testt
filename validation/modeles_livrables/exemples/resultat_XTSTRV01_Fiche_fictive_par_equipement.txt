@@ -1,0 +1,218 @@
+Fiche fictive de l'ouvrage XTSTRV01 - Réservoir fictif de démonstration d'interface (19/11/2026)
+Format propre à OGIAS, celui d'aucun outil : il montre les blocs imbriqués et les filtres.
+
+1. XTSTRV01HV03 - Vanne manuelle 
+   Télésignalisations :
+   - TS_RV01HV03_DISC  HV03 — Discordance de position
+   - TS_RV01HV03_FER  HV03 — Fermée
+   - TS_RV01HV03_INT  HV03 — Position intermédiaire
+   - TS_RV01HV03_OUV  HV03 — Ouverte
+   Entrées TOR :
+   - ET_RV01HV03_FDC_FER %I0.2.1
+   - ET_RV01HV03_FDC_OUV %I0.2.0
+
+2. XTSTRV01HV06 - Vanne manuelle 
+   Télésignalisations :
+   - TS_RV01HV06_DISC  HV06 — Discordance de position
+   - TS_RV01HV06_FER  HV06 — Fermée
+   - TS_RV01HV06_INT  HV06 — Position intermédiaire
+   - TS_RV01HV06_OUV  HV06 — Ouverte
+   Entrées TOR :
+   - ET_RV01HV06_FDC_FER %I0.2.3
+   - ET_RV01HV06_FDC_OUV %I0.2.2
+
+3. XTSTRV01HV09 - Vanne manuelle 
+   Télésignalisations :
+   - TS_RV01HV09_DISC  HV09 — Discordance de position
+   - TS_RV01HV09_FER  HV09 — Fermée
+   - TS_RV01HV09_INT  HV09 — Position intermédiaire
+   - TS_RV01HV09_OUV  HV09 — Ouverte
+   Entrées TOR :
+   - ET_RV01HV09_FDC_FER %I0.2.5
+   - ET_RV01HV09_FDC_OUV %I0.2.4
+
+4. XTSTRV01HV12 - Vanne manuelle 
+   Télésignalisations :
+   - TS_RV01HV12_DISC  HV12 — Discordance de position
+   - TS_RV01HV12_FER  HV12 — Fermée
+   - TS_RV01HV12_INT  HV12 — Position intermédiaire
+   - TS_RV01HV12_OUV  HV12 — Ouverte
+   Entrées TOR :
+   - ET_RV01HV12_FDC_FER %I0.2.7
+   - ET_RV01HV12_FDC_OUV %I0.2.6
+
+5. XTSTRV01HV15 - Vanne manuelle 
+   Télésignalisations :
+   - TS_RV01HV15_DISC  HV15 — Discordance de position
+   - TS_RV01HV15_FER  HV15 — Fermée
+   - TS_RV01HV15_INT  HV15 — Position intermédiaire
+   - TS_RV01HV15_OUV  HV15 — Ouverte
+   Entrées TOR :
+   - ET_RV01HV15_FDC_FER %I0.2.9
+   - ET_RV01HV15_FDC_OUV %I0.2.8
+
+6. XTSTRV01MV02 - Vanne motorisée 
+   Télésignalisations :
+   - TS_RV01MV02_AUTO  MV02 — Mode automatique
+   - TS_RV01MV02_DEF  MV02 — Défaut actionneur
+   - TS_RV01MV02_DISC  MV02 — Discordance de position
+   - TS_RV01MV02_DISPO  MV02 — Disponible
+   - TS_RV01MV02_FER  MV02 — Fermée
+   - TS_RV01MV02_HS  MV02 — Hors service
+   - TS_RV01MV02_INT  MV02 — Position intermédiaire
+   - TS_RV01MV02_LOC  MV02 — Mode local
+   - TS_RV01MV02_MANU  MV02 — Mode manuel
+   - TS_RV01MV02_OUV  MV02 — Ouverte
+   Entrées TOR :
+   - ET_RV01MV02_DEF %I0.2.12
+   - ET_RV01MV02_FER %I0.2.11
+   - ET_RV01MV02_LOC %I0.2.13
+   - ET_RV01MV02_OUV %I0.2.10
+
+7. XTSTRV01MV05 - Vanne motorisée 
+   Télésignalisations :
+   - TS_RV01MV05_AUTO  MV05 — Mode automatique
+   - TS_RV01MV05_DEF  MV05 — Défaut actionneur
+   - TS_RV01MV05_DISC  MV05 — Discordance de position
+   - TS_RV01MV05_DISPO  MV05 — Disponible
+   - TS_RV01MV05_FER  MV05 — Fermée
+   - TS_RV01MV05_HS  MV05 — Hors service
+   - TS_RV01MV05_INT  MV05 — Position intermédiaire
+   - TS_RV01MV05_LOC  MV05 — Mode local
+   - TS_RV01MV05_MANU  MV05 — Mode manuel
+   - TS_RV01MV05_OUV  MV05 — Ouverte
+   Entrées TOR :
+   - ET_RV01MV05_DEF %I0.2.16
+   - ET_RV01MV05_FER %I0.2.15
+   - ET_RV01MV05_LOC %I0.2.17
+   - ET_RV01MV05_OUV %I0.2.14
+
+8. XTSTRV01MV08 - Vanne motorisée 
+   Télésignalisations :
+   - TS_RV01MV08_AUTO  MV08 — Mode automatique
+   - TS_RV01MV08_DEF  MV08 — Défaut actionneur
+   - TS_RV01MV08_DISC  MV08 — Discordance de position
+   - TS_RV01MV08_DISPO  MV08 — Disponible
+   - TS_RV01MV08_FER  MV08 — Fermée
+   - TS_RV01MV08_HS  MV08 — Hors service
+   - TS_RV01MV08_INT  MV08 — Position intermédiaire
+   - TS_RV01MV08_LOC  MV08 — Mode local
+   - TS_RV01MV08_MANU  MV08 — Mode manuel
+   - TS_RV01MV08_OUV  MV08 — Ouverte
+   Entrées TOR :
+   - ET_RV01MV08_DEF %I0.2.20
+   - ET_RV01MV08_FER %I0.2.19
+   - ET_RV01MV08_LOC %I0.2.21
+   - ET_RV01MV08_OUV %I0.2.18
+
+9. XTSTRV01MV11 - Vanne motorisée 
+   Télésignalisations :
+   - TS_RV01MV11_AUTO  MV11 — Mode automatique
+   - TS_RV01MV11_DEF  MV11 — Défaut actionneur
+   - TS_RV01MV11_DISC  MV11 — Discordance de position
+   - TS_RV01MV11_DISPO  MV11 — Disponible
+   - TS_RV01MV11_FER  MV11 — Fermée
+   - TS_RV01MV11_HS  MV11 — Hors service
+   - TS_RV01MV11_INT  MV11 — Position intermédiaire
+   - TS_RV01MV11_LOC  MV11 — Mode local
+   - TS_RV01MV11_MANU  MV11 — Mode manuel
+   - TS_RV01MV11_OUV  MV11 — Ouverte
+   Entrées TOR :
+   - ET_RV01MV11_DEF %I0.2.24
+   - ET_RV01MV11_FER %I0.2.23
+   - ET_RV01MV11_LOC %I0.2.25
+   - ET_RV01MV11_OUV %I0.2.22
+
+10. XTSTRV01MV14 - Vanne motorisée 
+   Télésignalisations :
+   - TS_RV01MV14_AUTO  MV14 — Mode automatique
+   - TS_RV01MV14_DEF  MV14 — Défaut actionneur
+   - TS_RV01MV14_DISC  MV14 — Discordance de position
+   - TS_RV01MV14_DISPO  MV14 — Disponible
+   - TS_RV01MV14_FER  MV14 — Fermée
+   - TS_RV01MV14_HS  MV14 — Hors service
+   - TS_RV01MV14_INT  MV14 — Position intermédiaire
+   - TS_RV01MV14_LOC  MV14 — Mode local
+   - TS_RV01MV14_MANU  MV14 — Mode manuel
+   - TS_RV01MV14_OUV  MV14 — Ouverte
+   Entrées TOR :
+   - ET_RV01MV14_DEF %I0.2.28
+   - ET_RV01MV14_FER %I0.2.27
+   - ET_RV01MV14_LOC %I0.2.29
+   - ET_RV01MV14_OUV %I0.2.26
+
+11. XTSTRV01PM01 - Groupe de pompage 
+   Télésignalisations :
+   - TS_RV01PM01_AUTO  PM01 — Mode automatique
+   - TS_RV01PM01_DEF  PM01 — Défaut général
+   - TS_RV01PM01_DEFTH  PM01 — Défaut thermique
+   - TS_RV01PM01_DISPO  PM01 — Disponible
+   - TS_RV01PM01_HS  PM01 — Hors service
+   - TS_RV01PM01_LOC  PM01 — Mode local
+   - TS_RV01PM01_MA  PM01 — En marche
+   - TS_RV01PM01_MANU  PM01 — Mode manuel
+   Entrées TOR :
+   - ET_RV01PM01_DEFTH %I0.2.31
+   - ET_RV01PM01_LOC %I0.2.32
+   - ET_RV01PM01_MA %I0.2.30
+
+12. XTSTRV01PM04 - Groupe de pompage 
+   Télésignalisations :
+   - TS_RV01PM04_AUTO  PM04 — Mode automatique
+   - TS_RV01PM04_DEF  PM04 — Défaut général
+   - TS_RV01PM04_DEFTH  PM04 — Défaut thermique
+   - TS_RV01PM04_DISPO  PM04 — Disponible
+   - TS_RV01PM04_HS  PM04 — Hors service
+   - TS_RV01PM04_LOC  PM04 — Mode local
+   - TS_RV01PM04_MA  PM04 — En marche
+   - TS_RV01PM04_MANU  PM04 — Mode manuel
+   Entrées TOR :
+   - ET_RV01PM04_DEFTH %I0.2.34
+   - ET_RV01PM04_LOC %I0.2.35
+   - ET_RV01PM04_MA %I0.2.33
+
+13. XTSTRV01PM07 - Groupe de pompage 
+   Télésignalisations :
+   - TS_RV01PM07_AUTO  PM07 — Mode automatique
+   - TS_RV01PM07_DEF  PM07 — Défaut général
+   - TS_RV01PM07_DEFTH  PM07 — Défaut thermique
+   - TS_RV01PM07_DISPO  PM07 — Disponible
+   - TS_RV01PM07_HS  PM07 — Hors service
+   - TS_RV01PM07_LOC  PM07 — Mode local
+   - TS_RV01PM07_MA  PM07 — En marche
+   - TS_RV01PM07_MANU  PM07 — Mode manuel
+   Entrées TOR :
+   - ET_RV01PM07_DEFTH %I0.2.37
+   - ET_RV01PM07_LOC %I0.2.38
+   - ET_RV01PM07_MA %I0.2.36
+
+14. XTSTRV01PM10 - Groupe de pompage 
+   Télésignalisations :
+   - TS_RV01PM10_AUTO  PM10 — Mode automatique
+   - TS_RV01PM10_DEF  PM10 — Défaut général
+   - TS_RV01PM10_DEFTH  PM10 — Défaut thermique
+   - TS_RV01PM10_DISPO  PM10 — Disponible
+   - TS_RV01PM10_HS  PM10 — Hors service
+   - TS_RV01PM10_LOC  PM10 — Mode local
+   - TS_RV01PM10_MA  PM10 — En marche
+   - TS_RV01PM10_MANU  PM10 — Mode manuel
+   Entrées TOR :
+   - ET_RV01PM10_DEFTH %I0.2.40
+   - ET_RV01PM10_LOC %I0.2.41
+   - ET_RV01PM10_MA %I0.2.39
+
+15. XTSTRV01PM13 - Groupe de pompage 
+   Télésignalisations :
+   - TS_RV01PM13_AUTO  PM13 — Mode automatique
+   - TS_RV01PM13_DEF  PM13 — Défaut général
+   - TS_RV01PM13_DEFTH  PM13 — Défaut thermique
+   - TS_RV01PM13_DISPO  PM13 — Disponible
+   - TS_RV01PM13_HS  PM13 — Hors service
+   - TS_RV01PM13_LOC  PM13 — Mode local
+   - TS_RV01PM13_MA  PM13 — En marche
+   - TS_RV01PM13_MANU  PM13 — Mode manuel
+   Entrées TOR :
+   - ET_RV01PM13_DEFTH %I0.2.43
+   - ET_RV01PM13_LOC %I0.2.44
+   - ET_RV01PM13_MA %I0.2.42
+

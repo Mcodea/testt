@@ -126,6 +126,7 @@ async function _standards(j) {
   if (perime(j)) return;
   E.vue = "standards";
   E.standards = await api("/api/standards");
+  E.modelesLivrables = await api("/api/modeles-livrables");
   if (perime(j)) return;
   rendre();
 }
@@ -591,6 +592,22 @@ const LIVRABLES = [
     {titre: "Table des variables", texte: "Toutes les variables, leurs adresses et leurs anomalies ; projet existant : table de correspondance avec l'existant.", formats: [["XLSX", "variables"]]},
     {titre: "Cartes d'E/S", texte: "Un onglet par carte, une ligne par voie, voies libres en réserve ; colonne de validation à remplir à la recette.", formats: [["XLSX", "cartes"]]},
     {titre: "Nomenclature", texte: "Configuration matérielle : références, quantités et rôles, à confirmer à la commande.", formats: [["XLSX", "nomenclature"]]}]}];
+/* Livrables à partir des modèles de l'utilisateur (lot 1, 19/11) : chaque modèle de la bibliothèque, rempli pour
+   l'ouvrage ouvert. Un modèle à corriger est montré avec sa raison, jamais généré. */
+async function blocModelesRecette() {
+  const zone = $("#rc-modeles"); if (!zone) return;
+  let d; try { d = await api("/api/modeles-livrables"); } catch (e) { zone.querySelector(".vide-bloc").textContent = e.message; return; }
+  if (!document.body.contains(zone)) return;
+  const corps = zone.querySelector(".vide-bloc, .rc-table"); if (!corps) return;
+  corps.outerHTML = d.modeles.length ? `<table class="rc-table"><colgroup><col class="rc-c-livrable"><col class="rc-c-formats"><col class="rc-c-etat"><col><col class="rc-c-actions"></colgroup><thead class="o-masque"><tr><th>Livrable</th><th>Format</th><th>État</th><th>Remarque</th><th>Téléchargement</th></tr></thead><tbody>
+    ${d.modeles.map(m => { const ok = !m.erreurs.length; return `<tr class="rc-carte ${ok ? "pret" : "bloque"}"><td class="rc-livrable"><h3>${esc(m.nom)}</h3><p class="rc-texte">${esc(m.description || `Modèle importé de ${m.fichier_origine || "votre outil"}`)}</p></td>
+      <td class="rc-formats"><span class="rc-format">${esc(m.extension.toUpperCase())}</span></td>
+      <td><span class="rc-etat ${ok ? "pret" : "bloque"}">${ok ? "Conforme au modèle" : "Modèle à corriger"}</span></td>
+      <td>${ok ? "" : `<p class="rc-motif">${esc(m.erreurs[0])}</p>`}</td>
+      <td class="rc-carte-pied"><button class="${ok ? "prim" : ""}" data-modele-livrable="${esc(m.ident)}" ${ok ? "" : "disabled"}>Générer ${esc(m.extension.toUpperCase())} <span aria-hidden="true">↓</span></button></td></tr>`; }).join("")}</tbody></table>`
+    : `<div class="vide-bloc">Aucun modèle pour l'instant. Déposez un fichier de votre outil avec ses variables dans <a href="#/standards">Standards d'ingénierie › Modèles de livrables</a>.</div>`;
+  zone.querySelectorAll("[data-modele-livrable]").forEach(b => b.onclick = () => telecharger("modele_livrable&ident=" + encodeURIComponent(b.dataset.modeleLivrable)));
+}
 function vueRecette() {
   Coque.ruban(null);   // lot 5e : boutons du rendu précédent retirés du ruban
   const d = E.detailEtape, f = E.filtreRecette || "", L = d.livrables || {};
@@ -639,7 +656,10 @@ function vueRecette() {
    <div class="rc-groupes">${LIVRABLES.map(g => `<section class="rc-groupe" data-groupe="${g.groupe}"><div class="rc-groupe-tete"><span class="rc-icone">${V31.icon(g.icone, 16)}</span>
        <h2>${g.titre}</h2><p>${g.sous}</p></div>
      <table class="rc-table"><colgroup><col class="rc-c-livrable"><col class="rc-c-formats"><col class="rc-c-etat"><col><col class="rc-c-actions"></colgroup><thead class="o-masque"><tr><th>Livrable</th><th>Formats</th><th>État</th><th>Remarque</th><th>Téléchargement</th></tr></thead>
-       <tbody>${g.cartes.map(carte).join("")}</tbody></table></section>`).join("")}</div>
+       <tbody>${g.cartes.map(carte).join("")}</tbody></table></section>`).join("")}
+     <section class="rc-groupe" data-groupe="modeles" id="rc-modeles"><div class="rc-groupe-tete"><span class="rc-icone">${V31.icon("clipboard", 16)}</span>
+       <h2>Vos modèles</h2><p>Fichiers de vos outils remplis par OGIAS · conformes au modèle fourni, à essayer dans l'outil cible</p></div>
+       <div class="vide-bloc">Chargement…</div></section></div>
    <details class="rc-controles" ${d.erreurs ? "open" : ""}><summary><h2>Contrôles consolidés</h2>
      <span class="rc-compte">${d.erreurs ? `<span class="badge b-err">${d.erreurs} erreur(s)</span>` : '<span class="badge b-ok">aucune erreur</span>'} ${d.alertes ? `<span class="badge b-al">${d.alertes} alerte(s)</span>` : ""}</span>
      <span class="aide">chaque constat se corrige à l'endroit indiqué</span></summary>
@@ -657,6 +677,7 @@ function vueRecette() {
    ${d.tronque ? '<div class="avert">Affichage limité aux 500 premiers contrôles.</div>' : ''}</details>
    <p class="rc-note">Statut industriel : NON QUALIFIÉ. Une recette sans erreur ne vaut pas validation des fichiers dans Control Expert, SOFREL, TOPKAPI ou Vijeo : chaque import reste à essayer dans le logiciel cible.</p></section>`;
   document.querySelectorAll("[data-export]").forEach(b => b.onclick = () => telecharger(b.dataset.export));
+  blocModelesRecette();
   $("#r-actualiser").onclick = async () => { E.detailEtape = await api('/api/recette'); rendre(); };
   $("#r-dossier").onclick = () => confirmer("Constituer le dossier de recette ?", "Archive zip des livrables à partir des exports existants, avec un sommaire imprimable en PDF (empreintes, pièces non produites et leur motif, points restant à traiter). Exports non qualifiés : à vérifier dans les logiciels cibles.", "Télécharger le dossier", () => telecharger("dossier_recette"));
   document.querySelectorAll("[data-et]").forEach(x => x.onclick = () => { E.filtreRecette = x.dataset.et; vueRecette(); });
@@ -890,7 +911,8 @@ function vueStandards() {
     ${biblio("charte", "Chartes de nommage", "Nouvelle charte de nommage…")}
     ${biblio("adressage", "Plans d'adressage", "Nouveau plan d'adressage…")}
     ${biblio("outils", "Chaînes d'outils", "Nouvelle chaîne d'outils…")}
-   </div></section>`;
+   </div>
+   ${blocModelesLivrables(E.modelesLivrables)}</section>`;
   document.querySelectorAll("[data-std]").forEach(r => { r.onclick = () => { E.standardSel = r.dataset.std; vueStandards(); };
     r.onkeydown = ev => { if (ev.key === "Enter") r.click(); }; });
   const agir = async (corps, message) => {
@@ -904,6 +926,59 @@ function vueStandards() {
     `« ${sel.nom} » archivé : il n'est plus proposé à la création. Les ouvrages créés selon ce standard ne changent pas.`);
   if ($("#std-reactiver")) $("#std-reactiver").onclick = () => agir({action: "statut", ident: sel.ident, statut: "actif"}, `« ${sel.nom} » réactivé.`);
   document.querySelectorAll("[data-nouvelle-brique]").forEach(b => b.onclick = () => modaleBrique(d, b.dataset.nouvelleBrique, agir));
+  brancherModelesLivrables();
+}
+/* Modèles de livrables (lot 1, 19/11) : fichiers tirés des outils du client, avec des variables <#…#> qu'OGIAS
+   remplit. Le format vient du fichier fourni ; OGIAS n'en invente aucun. */
+function blocModelesLivrables(d) {
+  if (!d) return "";
+  return `<div class="bloc std-modeles"><div class="bloc-tete"><h2>Modèles de livrables</h2>
+    <div class="boutons-ligne"><button type="button" class="prim" id="ml-importer">Importer un modèle…</button><button type="button" id="ml-variables">Variables disponibles</button>
+    ${d.modeles.some(m => m.nom.startsWith("Exemple - ")) ? "" : '<button type="button" class="lien" id="ml-exemple">Ajouter l\'exemple CSV</button>'}</div></div>
+    <p class="aide">Prenez un fichier produit par votre outil (import de supervision, table d'automate, CSV…), remplacez les valeurs par des variables <span class="mono">&lt;#NOM#&gt;</span> et des blocs répétés, puis importez-le : OGIAS le remplit pour chaque ouvrage, dans Recette et livrables.</p>
+    ${d.modeles.length ? `<table data-o-tableau="sans-selection" data-o-cle="modeles-livrables"><thead><tr><th>Modèle</th><th>Fichier d'origine</th><th>Encodage</th><th>Variables</th><th>État</th></tr></thead><tbody>
+      ${d.modeles.map(m => `<tr class="cliquable" data-ml="${esc(m.ident)}" tabindex="0"><td><b>${esc(m.nom)}</b></td><td class="mono">${esc(m.fichier_origine || "—")}</td><td>${esc(m.encodage)}</td><td class="num">${m.variables.length}</td>
+        <td>${m.erreurs.length ? `<span class="badge b-err">${m.erreurs.length} à corriger</span>` : '<span class="badge b-ok">Prêt</span>'}</td></tr>`).join("")}</tbody></table>`
+      : '<div class="vide-bloc">Aucun modèle. Importez un fichier de votre outil, ou ajoutez l\'exemple CSV pour essayer le principe.</div>'}</div>`;
+}
+function brancherModelesLivrables() {
+  const recharger = async (r, message) => { E.modelesLivrables = r; toast(message); vueStandards(); };
+  const action = async (corps, message) => { try { const r = await api("/api/modeles-livrables/action", corps); fermerModale(); await recharger(r, message); } catch (e) { toast(e.message, true); } };
+  if ($("#ml-exemple")) $("#ml-exemple").onclick = () => action({action: "exemple"}, "Exemple ajouté : générez-le dans Recette et livrables.");
+  if ($("#ml-variables")) $("#ml-variables").onclick = () => {
+    const d = E.modelesLivrables;
+    ouvrirModale(`<div class="boite-tete"><h2>Variables disponibles</h2><p>Écrivez-les sous la forme <span class="mono">&lt;#NOM#&gt;</span>. Les blocs se répètent : <span class="mono">&lt;#DEBUT_EQUIPEMENTS#&gt; … &lt;#FIN_EQUIPEMENTS#&gt;</span>, <span class="mono">VARIABLES</span> (filtre : ${d.blocs.VARIABLES.join(", ")}, ex. <span class="mono">DEBUT_VARIABLES_TS</span>) et <span class="mono">ES</span> (filtre : ${d.blocs.ES.join(", ")}). Un bloc VARIABLES ou ES placé dans EQUIPEMENTS ne parcourt que l'équipement. Une balise de bloc seule sur sa ligne n'ajoute pas de ligne.</p></div>
+      <div class="boite-corps ml-variables">${d.variables.map(g => `<h3>${esc(g.groupe)}</h3><table><tbody>${g.liste.map(v => `<tr><td class="mono">&lt;#${esc(v.nom)}#&gt;</td><td>${esc(v.description)}</td></tr>`).join("")}</tbody></table>`).join("")}</div>
+      <div class="boite-pied"><button type="button" data-fermer>Fermer</button></div>`, true);
+  };
+  if ($("#ml-importer")) $("#ml-importer").onclick = () => {
+    const d = E.modelesLivrables;
+    const m = ouvrirModale(`<div class="boite-tete"><h2>Importer un modèle de livrable</h2><p>Fichier texte de votre outil (CSV, TXT, XML, SCL…, 2 Mo au plus) où les valeurs sont remplacées par des variables. L'encodage (UTF-8 ou Windows) est conservé à la génération.</p></div>
+      <div class="boite-corps std-formulaire"><label for="ml-nom">Nom du modèle</label><input id="ml-nom" maxlength="60" placeholder="Ex. Import variables supervision client B">
+       <label for="ml-fichier">Fichier modèle</label><input type="file" id="ml-fichier">
+       <label for="ml-echappement">Échappement des valeurs</label><select id="ml-echappement">${Object.entries(d.echappements).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("")}</select>
+       <label for="ml-description">Description (facultative)</label><input id="ml-description" maxlength="300"></div>
+      <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="ml-ok">Importer</button></div>`);
+    m.querySelector("#ml-ok").onclick = async () => {
+      const f = m.querySelector("#ml-fichier");
+      if (!f.files.length) return toast("Choisissez le fichier modèle.", true);
+      const source = await lireFichier(f);
+      action({action: "importer", nom: m.querySelector("#ml-nom").value, fichier: source.nom, contenu: source.contenu,
+              echappement: m.querySelector("#ml-echappement").value, description: m.querySelector("#ml-description").value}, "Modèle importé.");
+    };
+  };
+  document.querySelectorAll("[data-ml]").forEach(r => { r.onkeydown = ev => { if (ev.key === "Enter") r.click(); };
+    r.onclick = async () => {
+      const md = E.modelesLivrables.modeles.find(x => x.ident === r.dataset.ml); if (!md) return;
+      let t = ""; try { t = (await api("/api/modeles-livrables/texte?ident=" + encodeURIComponent(md.ident))).texte; } catch (e) { t = e.message; }
+      const m = ouvrirModale(`<div class="boite-tete"><h2>${esc(md.nom)}</h2><p>${esc(md.description || "")} Importé le ${esc(md.importe_le)} · ${esc(md.fichier_origine || "")} · ${esc(md.encodage)} · échappement ${esc(md.echappement)}</p></div>
+        <div class="boite-corps">${md.erreurs.length ? `<div class="avert"><b>À corriger avant de générer :</b><ul>${md.erreurs.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+         <h3>Variables du modèle</h3><table><thead><tr><th>Variable</th><th>Portée</th><th>Emplois</th><th>Signification</th></tr></thead><tbody>${md.variables.map(v => `<tr><td class="mono">&lt;#${esc(v.nom)}#&gt;</td><td>${v.connue ? esc(v.portee) : `<span class="badge b-err">${esc(v.portee)}</span>`}</td><td class="num">${v.nombre}</td><td>${esc(v.description || "—")}</td></tr>`).join("")}</tbody></table>
+         <h3>Contenu du fichier</h3><pre class="ml-apercu">${esc(t)}</pre></div>
+        <div class="boite-pied"><button type="button" class="danger gauche" id="ml-supprimer">Supprimer le modèle</button><button type="button" data-fermer>Fermer</button></div>`, true);
+      m.querySelector("#ml-supprimer").onclick = () => confirmer("Supprimer ce modèle ?", `« ${md.nom} » sera retiré de la bibliothèque. Les livrables déjà téléchargés ne changent pas.`, "Supprimer",
+        () => action({action: "supprimer", ident: md.ident}, "Modèle supprimé."));
+    }; });
 }
 function modaleStandard(d, sel, agir) {
   const choix = (f, nom) => `<label for="std-${f}">${esc(nom)}</label><select id="std-${f}">${(d.bibliotheque[f] || []).map(b =>

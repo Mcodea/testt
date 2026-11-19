@@ -1,0 +1,15 @@
+Fiche fictive de l'ouvrage <#OUVRAGE#> - <#LIBELLE_OUVRAGE#> (<#DATE#>)
+Format propre à OGIAS, celui d'aucun outil : il montre les blocs imbriqués et les filtres.
+
+<#DEBUT_EQUIPEMENTS#>
+<#N#>. <#REPERE#> - <#EQ_DESIGNATION#> <#EQ_LIBELLE#>
+   Télésignalisations :
+<#DEBUT_VARIABLES_TS#>
+   - <#NOM#> <#ADRESSE#> <#LIBELLE#>
+<#FIN_VARIABLES_TS#>
+   Entrées TOR :
+<#DEBUT_ES_ET#>
+   - <#ES_NOM#> <#ES_ADRESSE#>
+<#FIN_ES_ET#>
+
+<#FIN_EQUIPEMENTS#>

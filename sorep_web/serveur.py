@@ -619,6 +619,14 @@ class Application:
             # Le chemin provient seulement de l'adoption courante, jamais d'un paramètre HTTP.
             with open(fichier, "rb") as f:
                 return "OGIAS_" + quoi + ".json", f.read()
+        if quoi == "modele_livrable":             # lot 1 (19/11) : modèle à variables rempli pour l'ouvrage ouvert
+            if not self.ouvert or self.creation_en_attente:
+                raise RegleMetier("Ouvrez d'abord un ouvrage.")
+            from genvar import modeles_livrables as ml
+            try:
+                return ml.generer(str(q.get("ident") or ""), self.s)
+            except ml.ModeleRefuse as exc:
+                raise RegleMetier(str(exc)) from None
         dossier = tempfile.mkdtemp(prefix="sorep_export_")
         if quoi == "referentiel":                 # indépendant de l'ouvrage ouvert
             from datetime import datetime
@@ -1008,6 +1016,46 @@ class Application:
         else:
             raise RegleMetier("Action inconnue.")
         return {**self.standards_web({}), "ident": d.get("ident", ""), "alertes": alertes}
+
+    def modeles_livrables_web(self, _):
+        """Bibliothèque des modèles de livrables (lot 1, 19/11) : chaque modèle et l'état de ses variables, plus la
+        liste des variables et des blocs qu'OGIAS sait remplir (aide à la rédaction d'un modèle)."""
+        from genvar import modeles_livrables as ml
+        groupes = [("Ouvrage (partout)", ml.VARIABLES_OUVRAGE), ("Équipement (dans un bloc)", ml.VARIABLES_EQUIPEMENT),
+                   ("Variable (bloc VARIABLES)", ml.VARIABLES_VARIABLE), ("E/S (bloc ES)", ml.VARIABLES_ES),
+                   ("Compteur (dans un bloc)", ml.COMPTEUR)]
+        return {"modeles": [ml.resume(m) for m in ml.lister()],
+                "variables": [{"groupe": g, "liste": [{"nom": k, "description": v} for k, v in d.items()]} for g, d in groupes],
+                "blocs": {"EQUIPEMENTS": "", "VARIABLES": list(ml.FAMILLES_FILTRE), "ES": list(ml.POINTS_FILTRE)},
+                "echappements": ml.ECHAPPEMENTS, "ouvert": self.ouvert}
+
+    def modeles_livrables_texte(self, q):
+        from genvar import modeles_livrables as ml
+        return {"texte": ml.texte(str(q.get("ident") or ""))[:200_000]}
+
+    def modeles_livrables_action(self, d):
+        """Importer un modèle (fichier de l'outil avec variables), ajouter l'exemple neutre, supprimer. Aucun ouvrage
+        n'est modifié par ces actions."""
+        from genvar import modeles_livrables as ml
+        action = d.get("action")
+        try:
+            if action == "importer":
+                try:
+                    octets = base64.b64decode(str(d.get("contenu") or ""), validate=True)
+                except (ValueError, binascii.Error):
+                    raise RegleMetier("Contenu du fichier invalide.") from None
+                m = ml.importer(str(d.get("nom") or ""), str(d.get("fichier") or ""), octets,
+                                str(d.get("echappement") or "aucun"), str(d.get("description") or ""))
+            elif action == "exemple":
+                m = ml.ajouter_exemple()
+            elif action == "supprimer":
+                ml.supprimer(str(d.get("ident") or ""))
+                m = {"ident": ""}
+            else:
+                raise RegleMetier("Action inconnue.")
+        except ml.ModeleRefuse as exc:
+            raise RegleMetier(str(exc)) from None
+        return {**self.modeles_livrables_web({}), "ident": m["ident"]}
 
     def apercu_charte(self, d):
         """Aperçu d'une charte en cours de saisie : repères fictifs, ou le motif du refus. Rien n'est écrit."""
@@ -1843,14 +1891,14 @@ ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle":
               "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre",
               "/api/es": "es", "/api/numero-ouvrage": "numero_ouvrage_suggere",
               "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page",
-              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/reglages/sources": "reglages_sources",
+              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
               "/api/referentiel/synchronisation": "synchronisation_referentiel", "/api/ouvrage/copies": "copies_ouvrage",
               "/api/referentiel/impact": "rapport_impact", "/api/referentiel/propagation": "apercu_propagation",
               "/api/referentiel/apercu-modele": "apercu_modele"}
 ROUTES_POST = {"/api/nouveau": "nouveau", "/api/ouvrir": "ouvrir", "/api/fermer": "fermer",
                "/api/supprimer_ouvrage": "supprimer_ouvrage", "/api/definir": "definir",
                "/api/fiche-ouvrage": "fiche_ouvrage",
-               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/standards/appliquer": "appliquer_standard", "/api/standards/charte-apercu": "apercu_charte", "/api/reglages/reprendre": "reprendre_reglages",
+               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/modeles-livrables/action": "modeles_livrables_action", "/api/standards/appliquer": "appliquer_standard", "/api/standards/charte-apercu": "apercu_charte", "/api/reglages/reprendre": "reprendre_reglages",
                "/api/identification/type": "identifier_type",
                "/api/identification/selection": "identifier_selection", "/api/uf": "uf",
                "/api/equipement/ajouter": "ajouter_equipement", "/api/equipement/modifier": "modifier_equipement",
@@ -1869,6 +1917,10 @@ ROUTES_POST = {"/api/nouveau": "nouveau", "/api/ouvrir": "ouvrir", "/api/fermer"
 
 
 TAILLE_MAX_REQUETE = 50 * 1024 * 1024      # imports d'Excel ou de PDF compris (base64)
+
+
+def app_quoi_modele(requete: str) -> bool:
+    return parse_qs(requete).get("quoi", [""])[0] == "modele_livrable"
 
 
 def fabriquer_gestionnaire(app):
@@ -1932,10 +1984,12 @@ def fabriquer_gestionnaire(app):
                     journal(traceback.format_exc())
                     return self._json(500, {"erreur": "Erreur inattendue : le détail est enregistré dans journal.log."})
                 self.send_response(200)
-                self.send_header("Content-Type", "application/xml" if nom.lower().endswith(".xsy")
-                                 else "text/plain; charset=utf-8" if nom.lower().endswith(".txt")
-                                 else "application/json; charset=utf-8" if nom.lower().endswith(".json")
-                                 else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                ext = os.path.splitext(nom.lower())[1]
+                # Livrable d'un modèle (19/11) : extension libre et encodage du modèle → octets bruts, sans charset supposé.
+                self.send_header("Content-Type", {".xsy": "application/xml", ".txt": "text/plain; charset=utf-8",
+                                                  ".json": "application/json; charset=utf-8", ".zip": "application/zip",
+                                                  ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
+                                 .get(ext, "application/octet-stream") if not app_quoi_modele(u.query) else "application/octet-stream")
                 self.send_header("Content-Disposition", f'attachment; filename="{nom}"')
                 self.send_header("Content-Length", str(len(corps)))
                 self.end_headers()

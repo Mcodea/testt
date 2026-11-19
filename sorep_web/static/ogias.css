@@ -769,6 +769,13 @@ html[data-theme] .creation-standard small { display: block; color: var(--o-texte
 @media (max-width: 1200px) { html[data-theme] .std-grille, html[data-theme] .std-briques, html[data-theme] .std-bibliotheque { grid-template-columns: minmax(0, 1fr); }
   html[data-theme] .std-brique:nth-child(even) { border-left: 0; } html[data-theme] .std-brique:nth-child(2) { border-top: 1px solid var(--o-ligne); } }
 
+/* Modèles de livrables à variables (19/11) */
+html[data-theme] .std-modeles { margin-top: var(--o-e-4); }
+html[data-theme] .std-modeles > .aide { margin: 0 0 var(--o-e-2); max-width: 110ch; }
+html[data-theme] .ml-variables h3 { margin: var(--o-e-3) 0 var(--o-e-1); font-size: var(--o-t-m); }
+html[data-theme] .ml-variables td.mono { white-space: nowrap; width: 1%; padding-right: var(--o-e-4); }
+html[data-theme] pre.ml-apercu { max-height: 280px; overflow: auto; margin: 0; padding: var(--o-e-2); border: 1px solid var(--o-ligne); border-radius: var(--o-r-m); background: var(--o-surface-2); font-size: var(--o-t-s); white-space: pre; }
+
 /* Aller-retour Excel (19/11) : équipements absents du fichier, gardés sauf choix explicite */
 html[data-theme] .import-obsoletes { margin-top: var(--o-e-3); }
 html[data-theme] .import-obsoletes h3 { margin: 0 0 var(--o-e-1); font-size: var(--o-t-m); }
