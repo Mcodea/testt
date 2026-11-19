@@ -373,3 +373,30 @@ class TestCoqueBureau(ServeurNavigateur):
         self.assertEqual(self.api('/api/ouvrage')['identification']['libelle'], 'Coque de bureau fictive')
         self.assertEqual(self.api('/api/adressage')['plages']['TS'], [8000, 8999])
         self.assertEqual(self.api('/api/outils')['supervision'], '')
+
+    def test_standards_ingenierie_ecran_et_creation(self):
+        """19/11 : écran « Standards d'ingénierie » (explorateur), choix du standard à la création, mention « créé
+        selon… » et écarts dans le bloc Outils d'ingénierie de l'ouvrage."""
+        self.assertEqual(self.api('/api/outils')['standard']['ident'], 'standard-initial')
+        self.ouvrir('#/dashboard')
+        self.page.locator('#o-explorateur a[href="#/standards"]').click()
+        self.titre("Standards d’ingénierie")
+        self.page.locator('[data-std="standard-initial"]').wait_for()
+        texte = self.page.locator('.std-detail').inner_text()
+        for attendu in ('Référentiel métier', 'Charte de nommage', "Plan d'adressage", "Chaîne d'outils", 'TOPKAPI', '%MW1000'):
+            self.assertIn(attendu, texte)
+        self.assertGreaterEqual(int(self.page.locator('[data-std="standard-initial"] td.num').inner_text()), 1)
+        # Création d'un ouvrage : le standard actif est proposé et envoyé
+        self.api('/api/nouveau', {'mode': 'Neuf'})
+        self.ouvrir('#/inventaire')
+        self.page.wait_for_function("() => document.querySelector('#standard-choix')?.value === 'standard-initial'")
+        with self.assertRaisesRegex(RuntimeError, 'Standard d.ingénierie introuvable'):
+            self.api('/api/fiche-ouvrage', {'action': 'creer', 'standard': 'client-inexistant', 'identification': {
+                'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': f'{20 + self.numero:02d}',
+                'libelle': 'Standard inconnu', 'automate': 'Sch - M340', 'revision': 'A'}})
+        # Bloc Outils de l'ouvrage existant : mention du standard puis écart local signalé
+        self.api('/api/ouvrir', {'chemin': str(self.projet)})
+        self.api('/api/outils/action', {'ihm': 'Vijeo Designer'})
+        self.page.reload(wait_until='networkidle')                      # même adresse : rechargement explicite
+        self.page.wait_for_function("() => document.querySelector('.outils-standard')?.innerText.includes('Standard initial')")
+        self.assertIn('IHM : Vijeo Designer', self.page.locator('.outils-standard').inner_text())

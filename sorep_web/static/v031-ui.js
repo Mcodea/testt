@@ -71,7 +71,7 @@ const V31 = (() => {
   // Écran courant exposé au CSS (attribut propre à cette couche : les anciennes règles data-view restent inactives).
   document.body.dataset.ecran=E.vue||'';
   barreEtat(E,ETAPES,etatEtape,vueEtape,has);
-  const titles={accueil:'Mes ouvrages',dashboard:'Tableau de bord de l’ouvrage',ouvrage:creation?'Créer un ouvrage':'Équipements',es:'Liste des E/S',materiel:'Matériel',variables:'Variables',supervision:'Variables',adressage:'Variables',recette:'Recette',referentiel:'Référentiel métier'};
+  const titles={accueil:'Mes ouvrages',dashboard:'Tableau de bord de l’ouvrage',ouvrage:creation?'Créer un ouvrage':'Équipements',es:'Liste des E/S',materiel:'Matériel',variables:'Variables',supervision:'Variables',adressage:'Variables',recette:'Recette',referentiel:'Référentiel métier',standards:'Standards d’ingénierie'};
   Coque.render(E,ETAPES,etatEtape,vueEtape);
   const title=titles[E.vue]||'OGIAS';const h1=document.getElementById('v31-title');if(h1)h1.textContent=title;
   const current=document.getElementById('v31-current');current.hidden=!has;

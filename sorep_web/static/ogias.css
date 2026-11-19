@@ -724,6 +724,28 @@ html[data-theme] .outils-regles ul { margin: var(--o-e-1) 0 0; padding-left: var
 html[data-theme] .outils-regles p { margin: var(--o-e-1) 0 0; color: var(--o-texte-2); }
 @media (max-width: 1200px) { html[data-theme] .outils-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
+/* Standards d'ingénierie (19/11) : liste des standards, briques du standard choisi, mention sur l'ouvrage */
+html[data-theme] .std-intro p { margin: 0 0 var(--o-e-3); max-width: 100ch; color: var(--o-texte-2); }
+html[data-theme] .std-grille { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(0, 2fr); gap: var(--o-e-4); align-items: start; }
+html[data-theme] .std-liste td.num { text-align: right; font-variant-numeric: tabular-nums; }
+html[data-theme] .std-briques { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid var(--o-ligne); border-radius: var(--o-r-m); }
+html[data-theme] .std-brique { padding: var(--o-e-3); border-top: 1px solid var(--o-ligne); min-width: 0; }
+html[data-theme] .std-brique:nth-child(-n+2) { border-top: 0; }
+html[data-theme] .std-brique:nth-child(even) { border-left: 1px solid var(--o-ligne); }
+html[data-theme] .std-brique h3 { margin: 0; font-size: var(--o-t-s); color: var(--o-texte-2); font-weight: 600; }
+html[data-theme] .std-brique .std-nom { margin: 2px 0 var(--o-e-2); font-weight: 600; }
+html[data-theme] .std-brique p { margin: 0; font-size: var(--o-t-s); }
+html[data-theme] table.std-plages { width: auto; }
+html[data-theme] table.std-plages th { text-align: left; padding-right: var(--o-e-3); }
+html[data-theme] .std-dl { display: grid; grid-template-columns: auto 1fr; gap: 2px var(--o-e-3); margin: 0; font-size: var(--o-t-s); }
+html[data-theme] .std-dl dt { color: var(--o-texte-2); }
+html[data-theme] .std-dl dd { margin: 0; }
+html[data-theme] .outils-standard { margin: var(--o-e-2) 0 0; font-size: var(--o-t-s); color: var(--o-texte-2); }
+html[data-theme] .std-evolue { color: var(--o-alerte); font-weight: 600; }
+html[data-theme] .creation-standard small { display: block; color: var(--o-texte-2); font-size: var(--o-t-xs); }
+@media (max-width: 1200px) { html[data-theme] .std-grille, html[data-theme] .std-briques { grid-template-columns: minmax(0, 1fr); }
+  html[data-theme] .std-brique:nth-child(even) { border-left: 0; } html[data-theme] .std-brique:nth-child(2) { border-top: 1px solid var(--o-ligne); } }
+
 /* Plan mémoire %MW par famille (18/11) */
 html[data-theme] .ad-plages-titre { margin: var(--o-e-3) 0 var(--o-e-1); font-size: var(--o-t-m); }
 html[data-theme] table.ad-plages { width: auto; margin: var(--o-e-1) 0 var(--o-e-2); }

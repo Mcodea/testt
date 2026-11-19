@@ -916,12 +916,25 @@ class Application:
                     "Aucun import S4W-Tools ou TOPKAPI n'est qualifié."}
 
     def outils_web(self, _):
-        """Outils d'ingénierie de l'ouvrage et contraintes qui en découlent (18/11)."""
+        """Outils d'ingénierie de l'ouvrage, contraintes qui en découlent (18/11), standard d'origine et écarts (19/11)."""
         if not self.ouvert:
             raise RegleMetier("Ouvrez d'abord un ouvrage.")
+        from genvar import standards
         from genvar.outils import resume
         listes = ref_ident.lire()
-        return {**resume(self.s.ouvrage), "supervisions": listes["supervisions"], "ihms": listes["ihm"]}
+        ref = self.s.ouvrage.standard or {}
+        actuel = standards.trouver(ref.get("ident", "")) if ref else None
+        return {**resume(self.s.ouvrage), "supervisions": listes["supervisions"], "ihms": listes["ihm"],
+                "standard": {k: ref.get(k) for k in ("ident", "nom", "version", "applique_le")} if ref else None,
+                "standard_ecarts": standards.ecarts(self.s.ouvrage),
+                "standard_a_evolue": bool(actuel and actuel.get("version") != ref.get("version"))}
+
+    def standards_web(self, _):
+        """Standards d'ingénierie de l'atelier (lecture seule à l'étape 1) et nombre d'ouvrages qui les utilisent."""
+        from genvar import standards
+        compte = standards.utilisation()
+        return {"standards": [{**s, "ouvrages": compte.get(s["ident"], 0)} for s in standards.lire()],
+                "familles": standards.FAMILLES, "anterieurs": compte.get("", 0)}
 
     def outils_action(self, d):
         """Choisir la supervision et l'IHM de l'ouvrage, parmi les listes du référentiel (« » : aucune)."""
@@ -1203,6 +1216,13 @@ class Application:
                 self.s.definir("statut", "Brouillon")
             elif action == "creer":
                 self.s.definir("statut", "En cours")
+                if conception and not nouveau.standard:          # jamais sur un ouvrage déjà créé
+                    # 19/11 : réglages du standard d'ingénierie choisi, copiés une fois pour toutes à la création
+                    from genvar import standards
+                    choisi = standards.trouver(str(d.get("standard") or standards.IDENT_INITIAL))
+                    if choisi is None or choisi.get("statut") != "actif":
+                        raise RegleMetier("Standard d'ingénierie introuvable ou archivé : choisissez-en un autre.")
+                    standards.appliquer(self.s, choisi)
             if action == "creer" and conception:
                 cible = str(projets.nom_libre(lieu + code + numero, projets.repertoire()))
             elif chemin_initial:
@@ -1691,7 +1711,7 @@ ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle":
               "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre",
               "/api/es": "es", "/api/numero-ouvrage": "numero_ouvrage_suggere",
               "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page",
-              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/reglages/sources": "reglages_sources",
+              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/reglages/sources": "reglages_sources",
               "/api/referentiel/synchronisation": "synchronisation_referentiel", "/api/ouvrage/copies": "copies_ouvrage",
               "/api/referentiel/impact": "rapport_impact", "/api/referentiel/propagation": "apercu_propagation",
               "/api/referentiel/apercu-modele": "apercu_modele"}

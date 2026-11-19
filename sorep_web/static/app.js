@@ -121,6 +121,14 @@ async function _aVenir(etape, j) {
   E.detailEtape = detail; E.v31Tele = tele; E.vue = etape; rendre();
 }
 async function rechargerES() { E.es = await api("/api/es"); E.ouvrage = await api("/api/ouvrage"); rendre(); }
+async function _standards(j) {
+  E.ouvrage = await api("/api/ouvrage");
+  if (perime(j)) return;
+  E.vue = "standards";
+  E.standards = await api("/api/standards");
+  if (perime(j)) return;
+  rendre();
+}
 async function _referentiel(j) {
   E.ouvrage = await api("/api/ouvrage");
   if (perime(j)) return;
@@ -137,7 +145,7 @@ async function chargerReferentiel() {
 }
 /* Navigation par adresse (#/…) : chaque écran a son adresse, le bouton « Retour » du navigateur fonctionne,
    et la barre du haut donne accès à tous les écrans depuis n'importe où. */
-const ROUTES = {"#/ouvrages": _accueil, "#/dashboard": _dashboard, "#/inventaire": _ouvrage, "#/es": _es, "#/materiel": _materiel, "#/referentiel": _referentiel,
+const ROUTES = {"#/ouvrages": _accueil, "#/dashboard": _dashboard, "#/inventaire": _ouvrage, "#/es": _es, "#/materiel": _materiel, "#/referentiel": _referentiel, "#/standards": _standards,
                 "#/variables": j => _aVenir("variables", j), "#/supervision": j => _aVenir("supervision", j), "#/adressage": j => _aVenir("adressage", j), "#/recette": j => _aVenir("recette", j),
                 "#/controles": j => _aVenir("recette", j), "#/exports": j => _aVenir("recette", j)};
 async function naviguer(route) {
@@ -246,6 +254,7 @@ function rendre() {
   if (E.vue === "accueil") return vueAccueilV31();
   if (E.vue === "dashboard") return vueDashboardV31();
   if (E.vue === "referentiel") return vueReferentiel();
+  if (E.vue === "standards") return vueStandards();
   if (E.vue === "es") return vueES();
   if (E.vue === "materiel") return vueMateriel();
   if (E.vue === "variables") return vueVariablesV31();
@@ -832,9 +841,47 @@ async function contenu() {
   if (E.vue === "ouvrage" && !E.ouvrage?.en_conception && document.getElementById("b-eq")) rubanEquipements();
   Coque.majFil();
 }
+/* Standards d'ingénierie (19/11) : un standard par client = assemblage de briques (référentiel métier, charte,
+   plan d'adressage, chaîne d'outils). Choisi à la création de l'ouvrage, copié dans l'ouvrage. Étape 1 : un seul
+   standard (le « Standard initial »), consultation seulement ; création et bibliothèques de briques à l'étape 2. */
+function vueStandards() {
+  Coque.ruban(null);
+  const d = E.standards || {standards: [], familles: {}};
+  const sel = d.standards.find(s => s.ident === E.standardSel) || d.standards[0];
+  if (sel) E.standardSel = sel.ident;
+  const brique = (f, b) => {
+    if (f === "adressage") return `<table class="std-plages"><tbody>${Object.entries(b.plages).map(([fam, [deb, fin]]) =>
+      `<tr><th>${esc(fam)}</th><td class="mono">%MW${deb} à %MW${fin}</td></tr>`).join("")}<tr><th>Décalage</th><td class="mono">${esc(String(b.decalage_modbus || 0))}</td></tr></tbody></table>`;
+    if (f === "outils") return `<dl class="std-dl"><dt>Supervision</dt><dd>${esc(b.supervision || "aucune")}</dd><dt>IHM</dt><dd>${esc(b.ihm || "aucune")}</dd>
+      <dt>Automate</dt><dd>choisi pour chaque ouvrage (il dépend du site)</dd></dl>`;
+    if (f === "referentiel") return `<p>Le référentiel métier publié de l'atelier, copié dans l'ouvrage à sa création. <a href="#/referentiel">Ouvrir le référentiel métier</a></p>`;
+    return `<p>Lieu sur 4 caractères, type d'ouvrage sur 2 lettres, numéro de 01 à 99 (ex. XTST RV 01).</p>`;
+  };
+  $("#vue").innerHTML = `<section class="contenu standards">
+   <div class="std-intro"><p>Un standard d'ingénierie réunit les réglages d'un client : référentiel métier, charte de nommage, plan d'adressage et chaîne d'outils. On le choisit à la création d'un ouvrage ; l'ouvrage en garde une copie, qui ne change pas si le standard évolue ensuite.</p></div>
+   <div class="std-grille">
+    <div class="bloc std-liste"><div class="bloc-tete"><h2>Standards</h2><span class="aide">${d.standards.length} standard${d.standards.length > 1 ? "s" : ""}</span></div>
+     <table data-o-tableau="sans-selection" data-o-cle="standards"><thead><tr><th>Standard</th><th>Version</th><th>État</th><th>Ouvrages</th></tr></thead><tbody>
+     ${d.standards.map(s => `<tr class="cliquable ${s.ident === E.standardSel ? "o-ligne-active" : ""}" data-std="${esc(s.ident)}" tabindex="0"><td><b>${esc(s.nom)}</b></td><td class="mono">v${esc(String(s.version))}</td><td>${esc(s.statut)}</td><td class="num">${s.ouvrages}</td></tr>`).join("")}</tbody></table>
+     ${d.anterieurs ? `<p class="aide">${d.anterieurs} ouvrage(s) créé(s) avant les standards : leurs réglages ne changent pas.</p>` : ""}</div>
+    ${sel ? `<div class="bloc std-detail"><div class="bloc-tete"><h2>${esc(sel.nom)} <span class="mono">v${esc(String(sel.version))}</span></h2><span class="aide">${sel.ouvrages} ouvrage(s)</span></div>
+     <p>${esc(sel.description || "")}</p>
+     <div class="std-briques">${Object.entries(d.familles).map(([f, nom]) => `<section class="std-brique"><h3>${esc(nom)}</h3><p class="std-nom">${esc(sel.briques[f]?.nom || "—")}</p>${brique(f, sel.briques[f] || {})}</section>`).join("")}</div></div>` : ""}
+   </div></section>`;
+  document.querySelectorAll("[data-std]").forEach(r => { r.onclick = () => { E.standardSel = r.dataset.std; vueStandards(); };
+    r.onkeydown = ev => { if (ev.key === "Enter") r.click(); }; });
+}
 /* Outils d'ingénierie de l'ouvrage (18/11 : un logiciel universel) : l'utilisateur choisit les outils réellement
    utilisés ; OGIAS affiche les règles qui en découlent. La source d'acquisition et la communication restent saisies
    dans la fiche d'identification ; la supervision et l'IHM se choisissent ici, dans les listes du référentiel. */
+async function choixStandard(c) {
+  const s = c.querySelector("#standard-choix"); if (!s) return;
+  let d; try { d = await api("/api/standards"); } catch (e) { s.innerHTML = `<option value="">${esc(e.message)}</option>`; return; }
+  const actifs = d.standards.filter(x => x.statut === "actif");
+  const garde = E.standardCreation && actifs.some(x => x.ident === E.standardCreation) ? E.standardCreation : actifs[0]?.ident;
+  s.innerHTML = actifs.map(x => `<option value="${esc(x.ident)}" ${x.ident === garde ? "selected" : ""}>${esc(x.nom)} (v${esc(String(x.version))})</option>`).join("");
+  s.onchange = () => { E.standardCreation = s.value; };
+}
 async function blocOutils(c) {
   const zone = c.querySelector("#bloc-outils"); if (!zone) return;
   let t; try { t = await api("/api/outils"); } catch (e) { zone.querySelector(".vide-bloc").textContent = e.message; return; }
@@ -848,6 +895,7 @@ async function blocOutils(c) {
     <div class="outil">${choix("outil-supervision", "Supervision", t.supervision, t.supervisions, "— Aucune —")}</div>
     <div class="outil">${choix("outil-ihm", "IHM", t.ihm, t.ihms, "— Aucune —")}</div>
    </div>
+   <p class="outils-standard">${t.standard ? `Créé selon le standard <a href="#/standards"><b>${esc(t.standard.nom)}</b> v${esc(String(t.standard.version))}</a> le ${esc(t.standard.applique_le)}${t.standard_a_evolue ? ' · <span class="std-evolue">le standard a évolué depuis</span>' : ""}${t.standard_ecarts.length ? ` · ${t.standard_ecarts.length} réglage(s) modifié(s) sur cet ouvrage : ${t.standard_ecarts.map(esc).join(" ; ")}` : ""}` : "Ouvrage créé avant les standards d'ingénierie : ses réglages sont ceux affichés ici."}</p>
    <div class="boutons-ligne outils-actions"><button type="button" id="outils-reprendre">Reprendre les réglages d'un autre ouvrage…</button><button type="button" class="lien" id="outils-plages">Plan mémoire %MW (Adressage)</button></div>
    <div class="outils-regles"><b>Règles propres aux outils choisis</b>${t.contraintes.length ? `<ul>${t.contraintes.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "<p>Aucune : les outils choisis ne sont pas décrits dans OGIAS, aucune contrainte n'est supposée.</p>"}</div>`;
   const enregistrer = async corps => { try { await api("/api/outils/action", corps); toast("Outils de l'ouvrage enregistrés."); blocOutils(c); } catch (e) { toast(e.message, true); blocOutils(c); } };
@@ -942,6 +990,8 @@ function detailOuvrage(c) {
           <div class="creation-champ">${champ("revision", "Révision", i.revision, 'maxlength="4" title="Règle documentaire conservée"')}</div>
         </div>
        </details>
+       <div class="creation-champ creation-standard"><label for="standard-choix">Standard d'ingénierie</label><select id="standard-choix"><option value="">Chargement…</option></select>
+         <small>Réglages du client copiés dans l'ouvrage à sa création. <a href="#/standards">Voir les standards</a></small></div>
       </div>` : `<div class="formulaire formulaire-ouvrage">
        ${selectListe("lieu", "Lieu", i.lieu, l.lieux, "— Sélectionner un lieu —")}
        <label for="type_ouvrage">Type d'ouvrage</label><select id="type_ouvrage"><option value="">— Sélectionner un type —</option>${l.types_ouvrage.map(t => `<option value="${esc(t.code)}" ${t.code === i.code_ouvrage ? "selected" : ""}>${esc(t.libelle)} (${esc(t.code)})</option>`).join("")}${ancienType}</select>
@@ -1038,6 +1088,7 @@ function detailOuvrage(c) {
   miseAJour();
   c.querySelector("#gerer-listes").onclick = ev => { ev.preventDefault(); E.ficheDraft = recueillir(); modaleListes("lieux"); };
   if (!o.en_conception) blocOutils(c);
+  else choixStandard(c);
   c.querySelector("#fiche-ouvrage")?.addEventListener("toggle", ev => { E.ficheOuverte = ev.target.open; });
   c.querySelector("#communication-choix").onchange = miseAJour;
   c.querySelector("#communication-choix").onclick = ev => deroulantCommunications(ev.currentTarget, () => { E.ficheDraft = recueillir(); });
@@ -1060,7 +1111,7 @@ function detailOuvrage(c) {
     const boutons = [...c.querySelectorAll(".fiche-actions button")];
     boutons.forEach(b => b.disabled = true);
     try {
-      await api("/api/fiche-ouvrage", {action, identification: donnees, confirmer_changement});
+      await api("/api/fiche-ouvrage", {action, identification: donnees, confirmer_changement, standard: c.querySelector("#standard-choix")?.value || ""});
       E.ficheDraft = null; E.ficheDirty = false;
       E.sel = {nature: "ouvrage", valeur: ""};
       await recharger();
