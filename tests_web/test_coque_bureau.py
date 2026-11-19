@@ -565,3 +565,41 @@ class TestCoqueBureau(ServeurNavigateur):
         self.assertEqual(lignes[0], 'Repère;Variable;Famille;Type;Adresse automate;Registre Modbus;Libellé')
         rep = self.api('/api/ouvrage')['identification']
         self.assertTrue(len(lignes) > 1 and all(x.startswith(rep['lieu'] + rep['code_ouvrage']) for x in lignes[1:]))
+
+    def test_cahiers_d_essais(self):
+        """19/11, lot 3 : cahier SAT édité, rempli, reporté avec aperçu ; avancement visible dans Recette."""
+        import tempfile
+        from genvar import tableur
+        from genvar.export_xlsx import ecrire_xlsx
+        self.ouvrir('#/recette')
+        self.page.locator('[data-essai="SAT"]').wait_for()
+        with self.page.expect_download() as telechargement:
+            self.page.locator('[data-essai-cahier="SAT"]').click()
+        chemin = Path(tempfile.mkdtemp()) / telechargement.value.suggested_filename
+        telechargement.value.save_as(chemin)
+        feuilles = tableur.lire_classeur(chemin)
+        sortie = []
+        for nom, lignes in feuilles.items():
+            lignes = [list(map(str, x)) for x in lignes]
+            if nom != 'Sommaire':
+                lignes[1][8] = 'Conforme'
+                if len(lignes) > 2:
+                    lignes[2][8], lignes[2][9] = 'NOK', 'Libellé fictif inversé'
+            sortie.append((nom, lignes[0], lignes[1:], [20] * len(lignes[0])))
+        ecrire_xlsx(chemin, sortie)
+        avant = self.api('/api/essais')['SAT']['compte']
+        self.page.locator('[data-essai-reporter="SAT"]').click()
+        self.page.locator('#essai-fichier').set_input_files(str(chemin))
+        try:
+            self.page.wait_for_function("() => document.querySelector('#essai-ok')?.textContent.startsWith('Confirmer : reporter')", timeout=8000)
+        except Exception:
+            self.fail(self.page.locator('#essai-apercu').inner_text())
+        self.assertEqual(self.api('/api/essais')['SAT']['compte'], avant)          # aperçu : rien d'écrit
+        self.page.locator('#essai-ok').click()
+        try:
+            self.page.wait_for_function("() => document.querySelector('#toasts')?.innerText.includes('reporté')", timeout=8000)
+        except Exception:
+            self.fail(self.page.locator('.boite').inner_text() if self.page.locator('.boite').count() else self.page.locator('#toasts').inner_text())
+        compte = self.api('/api/essais')['SAT']['compte']
+        self.assertEqual((compte['Conforme'], compte['Non conforme']), (1, 1))
+        self.page.wait_for_function("() => document.querySelector('[data-essai=\"SAT\"]')?.innerText.includes('Libellé fictif inversé')")

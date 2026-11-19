@@ -594,6 +594,49 @@ const LIVRABLES = [
     {titre: "Nomenclature", texte: "Configuration matérielle : références, quantités et rôles, à confirmer à la commande.", formats: [["XLSX", "nomenclature"]]}]}];
 /* Livrables à partir des modèles de l'utilisateur (lot 1, 19/11) : chaque modèle de la bibliothèque, rempli pour
    l'ouvrage ouvert. Un modèle à corriger est montré avec sa raison, jamais généré. */
+/* Cahiers d'essais FAT / SAT (lot 3, 19/11) : édition du cahier, report des résultats saisis (aperçu puis
+   confirmation), avancement. Un résultat n'est jamais déduit par OGIAS ; une adresse changée depuis l'essai
+   remet le point « à refaire ». */
+async function blocEssaisRecette() {
+  const zone = $("#rc-essais"); if (!zone) return;
+  let d; try { d = await api("/api/essais"); } catch (e) { zone.innerHTML = `<div class="vide-bloc">${esc(e.message)}</div>`; return; }
+  if (!document.body.contains(zone)) return;
+  const carte = (n, e) => { const c = e.compte, faits = c.Conforme + c["Non conforme"] + c["Sans objet"];
+    return `<div class="rc-essai" data-essai="${n}"><div class="rc-essai-tete"><h3>Cahier ${n}</h3><span class="aide">${esc(e.titre.split(" : ")[1] || "")}</span></div>
+      <div class="rc-jauge" role="meter" aria-label="Points essayés ${n}" aria-valuemin="0" aria-valuemax="${e.total}" aria-valuenow="${faits}"><span class="rc-jauge-barre"><i style="width:${e.total ? Math.round(faits / e.total * 100) : 0}%"></i></span><b>${faits}</b><span>/ ${e.total} essayés</span></div>
+      <p class="rc-essai-compte"><span class="badge b-ok">${c.Conforme} conforme(s)</span> <span class="badge ${c["Non conforme"] ? "b-err" : "b-n"}">${c["Non conforme"]} non conforme(s)</span> <span class="badge b-n">${c["Sans objet"]} sans objet</span> <span class="badge b-n">${c["à faire"]} à faire</span>${c["à refaire"] ? ` <span class="badge b-al">${c["à refaire"]} à refaire</span>` : ""}</p>
+      ${e.a_voir.length ? `<ul class="rc-essai-liste">${e.a_voir.slice(0, 8).map(x => `<li><span class="mono">${esc(x.nom)}</span> · ${esc(x.etat)}${x.remarque ? ` — ${esc(x.remarque)}` : ""}${x.visa ? ` <span class="aide">(${esc(x.visa)}${x.date ? `, ${esc(x.date)}` : ""})</span>` : ""}</li>`).join("")}${e.a_voir.length > 8 ? `<li class="aide">… et ${e.a_voir.length - 8} autre(s), dans le cahier.</li>` : ""}</ul>` : ""}
+      <div class="boutons-ligne"><button type="button" class="prim" data-essai-cahier="${n}" ${e.total ? "" : "disabled title=\"Aucun point à essayer\""}>Éditer le cahier ${n} (xlsx)</button><button type="button" data-essai-reporter="${n}" ${e.total ? "" : "disabled"}>Reporter un cahier rempli…</button></div></div>`; };
+  zone.innerHTML = `<div class="rc-groupe-tete"><span class="rc-icone">${V31.icon("clipboard", 16)}</span><h2>Essais FAT / SAT</h2><p>Cahier par équipement, un point par ligne ; les résultats saisis reviennent ici. OGIAS ne déduit aucun résultat.</p></div>
+    <div class="rc-essais-grille">${carte("FAT", d.FAT)}${carte("SAT", d.SAT)}</div>`;
+  zone.querySelectorAll("[data-essai-cahier]").forEach(b => b.onclick = () => telecharger("essais_" + b.dataset.essaiCahier.toLowerCase()));
+  zone.querySelectorAll("[data-essai-reporter]").forEach(b => b.onclick = () => modaleReporterEssais(b.dataset.essaiReporter));
+}
+function modaleReporterEssais(nature) {
+  const m = ouvrirModale(`<div class="boite-tete"><h2>Reporter le cahier ${nature} rempli</h2><p>OGIAS lit la colonne Résultat de chaque feuille et montre ce qui changera. Rien n'est enregistré avant « Confirmer » ; une cellule vide ne change rien.</p></div>
+    <div class="boite-corps std-formulaire"><label for="essai-fichier">Cahier rempli (.xlsx)</label><input type="file" id="essai-fichier" accept=".xlsx,.xlsm,.ods">
+     <div id="essai-apercu" aria-live="polite"></div></div>
+    <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="essai-ok" disabled>Confirmer</button></div>`, true);
+  let source = null;
+  const zone = m.querySelector("#essai-apercu"), ok = m.querySelector("#essai-ok");
+  m.querySelector("#essai-fichier").onchange = async ev => {
+    ok.disabled = true; zone.textContent = "Lecture du cahier…";
+    try { source = await lireFichier(ev.target);
+      const r = await api("/api/essais/reporter", {nature, nom: source.nom, contenu: source.contenu});
+      zone.innerHTML = `<p>${r.resultats.length} résultat(s) nouveau(x) ou modifié(s) · ${r.inchanges} inchangé(s) · ${r.vides} ligne(s) sans résultat.</p>
+        ${r.erreurs.length ? `<div class="avert"><b>À corriger dans le fichier avant de reporter :</b><ul>${r.erreurs.slice(0, 12).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+        ${r.resultats.length ? `<table><thead><tr><th>Point</th><th>Avant</th><th>Reporté</th><th>Remarque</th></tr></thead><tbody>${r.resultats.slice(0, 200).map(x => `<tr><td class="mono">${esc(x.nom)}</td><td>${esc(x.avant || "—")}</td><td><span class="badge ${x.resultat === "Conforme" ? "b-ok" : x.resultat === "Non conforme" ? "b-err" : "b-n"}">${esc(x.resultat)}</span></td><td>${esc(x.remarque || "")}</td></tr>`).join("")}</tbody></table>` : ""}`;
+      ok.disabled = !!r.erreurs.length || !r.resultats.length;
+      ok.textContent = r.resultats.length ? `Confirmer : reporter ${r.resultats.length} résultat(s)` : "Rien à reporter";
+    } catch (e) { zone.textContent = e.message; }
+  };
+  ok.onclick = async () => {
+    ok.disabled = true;
+    try { const r = await api("/api/essais/reporter", {nature, nom: source.nom, contenu: source.contenu, confirme: true});
+      fermerModale(); toast(`${r.reportes} résultat(s) reporté(s) dans le cahier ${nature}. Copie de sécurité faite avant.`); blocEssaisRecette();
+    } catch (e) { zone.insertAdjacentHTML("afterbegin", `<p class="std-erreur">${esc(e.message)}</p>`); }
+  };
+}
 async function blocModelesRecette() {
   const zone = $("#rc-modeles"); if (!zone) return;
   let d; try { d = await api("/api/modeles-livrables"); } catch (e) { zone.querySelector(".vide-bloc").textContent = e.message; return; }
@@ -660,6 +703,7 @@ function vueRecette() {
      <section class="rc-groupe" data-groupe="modeles" id="rc-modeles"><div class="rc-groupe-tete"><span class="rc-icone">${V31.icon("clipboard", 16)}</span>
        <h2>Vos modèles</h2><p>Fichiers de vos outils remplis par OGIAS · conformes au modèle fourni, à essayer dans l'outil cible</p></div>
        <div class="vide-bloc">Chargement…</div></section></div>
+   <section class="rc-essais" id="rc-essais" aria-label="Cahiers d'essais"><div class="vide-bloc">Chargement des essais…</div></section>
    <details class="rc-controles" ${d.erreurs ? "open" : ""}><summary><h2>Contrôles consolidés</h2>
      <span class="rc-compte">${d.erreurs ? `<span class="badge b-err">${d.erreurs} erreur(s)</span>` : '<span class="badge b-ok">aucune erreur</span>'} ${d.alertes ? `<span class="badge b-al">${d.alertes} alerte(s)</span>` : ""}</span>
      <span class="aide">chaque constat se corrige à l'endroit indiqué</span></summary>
@@ -678,6 +722,7 @@ function vueRecette() {
    <p class="rc-note">Statut industriel : NON QUALIFIÉ. Une recette sans erreur ne vaut pas validation des fichiers dans Control Expert, SOFREL, TOPKAPI ou Vijeo : chaque import reste à essayer dans le logiciel cible.</p></section>`;
   document.querySelectorAll("[data-export]").forEach(b => b.onclick = () => telecharger(b.dataset.export));
   blocModelesRecette();
+  blocEssaisRecette();
   $("#r-actualiser").onclick = async () => { E.detailEtape = await api('/api/recette'); rendre(); };
   $("#r-dossier").onclick = () => confirmer("Constituer le dossier de recette ?", "Archive zip des livrables à partir des exports existants, avec un sommaire imprimable en PDF (empreintes, pièces non produites et leur motif, points restant à traiter). Exports non qualifiés : à vérifier dans les logiciels cibles.", "Télécharger le dossier", () => telecharger("dossier_recette"));
   document.querySelectorAll("[data-et]").forEach(x => x.onclick = () => { E.filtreRecette = x.dataset.et; vueRecette(); });

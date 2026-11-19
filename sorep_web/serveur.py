@@ -649,6 +649,16 @@ class Application:
         return nom, octets
 
     def _exporter_ouvrage(self, quoi, dossier, base):
+        if quoi in ("essais_fat", "essais_sat"):         # cahiers d'essais (lot 3, 19/11)
+            from genvar import essais
+            nature = quoi[-3:].upper()
+            nom = f"{base}_cahier_essais_{nature}.xlsx"
+            try:
+                essais.exporter(os.path.join(dossier, nom), self.s, nature)
+            except essais.EssaiRefuse as exc:
+                raise RegleMetier(str(exc)) from None
+            with open(os.path.join(dossier, nom), "rb") as f:
+                return nom, f.read()
         if quoi == "equipements":                     # aller-retour Excel (19/11)
             if not self.s.ouvrage.equipements:
                 raise RegleMetier("Aucun équipement à exporter.")
@@ -1016,6 +1026,58 @@ class Application:
         else:
             raise RegleMetier("Action inconnue.")
         return {**self.standards_web({}), "ident": d.get("ident", ""), "alertes": alertes}
+
+    def essais_web(self, _):
+        """Avancement des cahiers d'essais FAT et SAT (lot 3, 19/11) : résultats reportés, jamais déduits."""
+        if not self.ouvert or self.creation_en_attente:
+            raise RegleMetier("Ouvrez d'abord un ouvrage.")
+        from genvar import essais
+        return {n: essais.etat(self.s, n) for n in essais.NATURES}
+
+    def essais_reporter(self, d):
+        """Reporter un cahier rempli. Sans « confirme » : aperçu seulement (rien n'est écrit). Avec : copie de sécurité,
+        enregistrement des résultats lus, sauvegarde. Un cahier avec des erreurs n'est pas reporté."""
+        if not self.ouvert or self.creation_en_attente:
+            raise RegleMetier("Ouvrez d'abord un ouvrage.")
+        from genvar import essais, tableur
+        nature = str(d.get("nature") or "")
+        if nature not in essais.NATURES:
+            raise RegleMetier("Nature d'essai inconnue (FAT ou SAT).")
+        if os.path.splitext(str(d.get("nom") or ""))[1].lower() not in (".xlsx", ".xlsm", ".ods"):
+            raise RegleMetier("Cahier attendu au format Excel (.xlsx) ou OpenDocument (.ods).")
+        try:
+            octets = base64.b64decode(str(d.get("contenu") or ""), validate=True)
+        except (ValueError, binascii.Error):
+            raise RegleMetier("Contenu du fichier invalide.") from None
+        if not octets or len(octets) > 15 * 1024 * 1024:
+            raise RegleMetier("Fichier vide ou trop volumineux (15 Mo au plus).")
+        dossier = tempfile.mkdtemp(prefix="ogias_essais_")
+        try:
+            chemin = os.path.join(dossier, "cahier" + os.path.splitext(str(d["nom"]))[1].lower())
+            with open(chemin, "wb") as fh:
+                fh.write(octets)
+            try:
+                lu = essais.lire(tableur.lire_classeur(chemin), self.s, nature)
+            except essais.EssaiRefuse as exc:
+                raise RegleMetier(str(exc)) from None
+            except Exception as exc:                          # noqa: BLE001 — classeur illisible
+                raise RegleMetier(f"Cahier illisible : {exc}") from None
+        finally:
+            shutil.rmtree(dossier, ignore_errors=True)
+        apercu = {"nature": nature, "inchanges": lu["inchanges"], "vides": lu["vides"], "erreurs": lu["erreurs"],
+                  "resultats": sorted(({"nom": r["nom"], "avant": r["avant"], "resultat": r["resultat"], "remarque": r["remarque"]}
+                                       for r in lu["resultats"].values()),
+                                      key=lambda x: (x["resultat"] != "Non conforme", x["nom"]))}   # non-conformités d'abord
+        if d.get("confirme") is not True:
+            return apercu
+        if lu["erreurs"]:
+            raise RegleMetier(f"Cahier non reporté : {len(lu['erreurs'])} erreur(s) à corriger dans le fichier.")
+        if not lu["resultats"]:
+            raise RegleMetier("Aucun résultat nouveau à reporter.")
+        self.s.creer_copie("essais")
+        n = essais.reporter(self.s, nature, lu["resultats"])
+        self._sauver()
+        return {**apercu, "reportes": n, "etat": essais.etat(self.s, nature)}
 
     def modeles_livrables_web(self, _):
         """Bibliothèque des modèles de livrables (lot 1, 19/11) : chaque modèle et l'état de ses variables, plus la
@@ -1891,14 +1953,14 @@ ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle":
               "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre",
               "/api/es": "es", "/api/numero-ouvrage": "numero_ouvrage_suggere",
               "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page",
-              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
+              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
               "/api/referentiel/synchronisation": "synchronisation_referentiel", "/api/ouvrage/copies": "copies_ouvrage",
               "/api/referentiel/impact": "rapport_impact", "/api/referentiel/propagation": "apercu_propagation",
               "/api/referentiel/apercu-modele": "apercu_modele"}
 ROUTES_POST = {"/api/nouveau": "nouveau", "/api/ouvrir": "ouvrir", "/api/fermer": "fermer",
                "/api/supprimer_ouvrage": "supprimer_ouvrage", "/api/definir": "definir",
                "/api/fiche-ouvrage": "fiche_ouvrage",
-               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/modeles-livrables/action": "modeles_livrables_action", "/api/standards/appliquer": "appliquer_standard", "/api/standards/charte-apercu": "apercu_charte", "/api/reglages/reprendre": "reprendre_reglages",
+               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/essais/reporter": "essais_reporter", "/api/modeles-livrables/action": "modeles_livrables_action", "/api/standards/appliquer": "appliquer_standard", "/api/standards/charte-apercu": "apercu_charte", "/api/reglages/reprendre": "reprendre_reglages",
                "/api/identification/type": "identifier_type",
                "/api/identification/selection": "identifier_selection", "/api/uf": "uf",
                "/api/equipement/ajouter": "ajouter_equipement", "/api/equipement/modifier": "modifier_equipement",

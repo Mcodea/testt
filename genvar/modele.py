@@ -184,6 +184,9 @@ class Ouvrage:
     # Standard d'ingénierie choisi à la création (19/11) : référence et réglages copiés ; vide pour un ouvrage créé
     # avant les standards. Jamais mis à jour automatiquement quand le standard évolue.
     standard: dict = field(default_factory=dict)
+    # Cahiers d'essais (19/11, lot 3) : {"FAT"|"SAT": {clé du point: {resultat, remarque, date, visa, adresse}}}.
+    # Résultats reportés depuis le cahier rempli ; jamais déduits par OGIAS.
+    essais: dict = field(default_factory=dict)
     table_tt: list = field(default_factory=list)        # LigneTT : table de télétransmission (projet existant)
     existantes: list = field(default_factory=list)     # VariableExistante (mode existant)
     entrees_physiques_importees: list = field(default_factory=list)  # Sources E/S documentaires, sans modification automate
