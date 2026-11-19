@@ -8,6 +8,7 @@ import unittest
 from unittest import mock
 
 from genvar import standards
+from genvar.session import RegleMetier
 from genvar.modele import ORDRE_ZONES, PLAN_DEFAUT, Ouvrage, zone
 from tests.test_coherence import nouvelle
 
@@ -51,7 +52,8 @@ class TestApplication(AvecDossier):
     def test_standard_initial_reproduit_le_comportement_d_avant(self):
         s = nouvelle()
         avant = (dict((f, zone(s.ouvrage, f)) for f in ORDRE_ZONES), s.ouvrage.decalage_modbus, s.ouvrage.supervision, s.ouvrage.ihm)
-        ref = standards.appliquer(s, standards.trouver(standards.IDENT_INITIAL))
+        self.assertEqual(standards.appliquer(s, standards.trouver(standards.IDENT_INITIAL)), [])
+        ref = s.ouvrage.standard
         apres = (dict((f, zone(s.ouvrage, f)) for f in ORDRE_ZONES), s.ouvrage.decalage_modbus, s.ouvrage.supervision, s.ouvrage.ihm)
         self.assertEqual(avant, apres)
         self.assertEqual((ref["ident"], ref["version"]), (standards.IDENT_INITIAL, 1))
@@ -85,6 +87,71 @@ class TestApplication(AvecDossier):
     def test_ouvrage_anterieur_sans_standard(self):
         self.assertEqual(Ouvrage.depuis_dict({"lieu": "XTST"}).standard, {})
         self.assertEqual(standards.ecarts(Ouvrage()), [])
+
+
+
+class TestBibliothequeEtVersions(AvecDossier):
+    def plages(self, **modif):
+        return {f: list(PLAN_DEFAUT[f]) for f in ORDRE_ZONES} | modif
+
+    def test_bibliotheque_initiale(self):
+        b = standards.bibliotheque()
+        self.assertEqual([x["ident"] for x in b["adressage"]], ["adressage-defaut"])
+        self.assertEqual([x["ident"] for x in b["outils"]], ["outils-topkapi"])
+        self.assertEqual(standards.emplois_briques(), {"adressage:adressage-defaut": 1, "outils:outils-topkapi": 1})
+
+    def test_fichier_de_l_etape_1_repris_sans_perte(self):
+        initial = standards.standard_initial()
+        for f in ("adressage", "outils", "referentiel", "charte"):
+            initial["briques"][f].pop("ident")
+        os.makedirs(os.path.dirname(standards.chemin()), exist_ok=True)
+        with open(standards.chemin(), "w", encoding="utf-8") as fh:
+            json.dump({"version": 1, "standards": [initial]}, fh)
+        self.assertEqual([x["ident"] for x in standards.bibliotheque()["adressage"]], ["adressage-defaut"])
+        self.assertEqual(standards.lire()[0]["briques"]["charte"]["ident"], "charte-ogias")
+
+    def test_brique_controlee_comme_une_saisie(self):
+        with self.assertRaisesRegex(RegleMetier, "recouvrement"):
+            standards.creer_brique("adressage", "Plan client B", {"plages": self.plages(TS=[2000, 2100])})
+        with self.assertRaisesRegex(RegleMetier, "Décalage"):
+            standards.creer_brique("adressage", "Plan client B", {"plages": self.plages(), "decalage_modbus": "x"})
+        with self.assertRaisesRegex(RegleMetier, "déjà le nom"):
+            standards.creer_brique("adressage", "plan mémoire PAR DÉFAUT", {"plages": self.plages()})
+        b, alertes = standards.creer_brique("adressage", "Plan client B", {"plages": self.plages(TS=[5000, 5999]), "decalage_modbus": -1})
+        self.assertEqual((b["ident"], b["plages"]["TS"], b["decalage_modbus"], alertes), ("plan-client-b", [5000, 5999], -1, []))
+        self.assertEqual(len(standards.bibliotheque()["adressage"]), 2)
+
+    def test_standard_partage_des_briques_et_versions(self):
+        standards.creer_brique("outils", "Sans supervision", {"supervision": "", "ihm": "Vijeo Designer"})
+        s = standards.creer_standard("Client B", "Standard fictif", {"adressage": "adressage-defaut", "outils": "sans-supervision"})
+        self.assertEqual((s["ident"], s["version"], s["briques"]["outils"]["ihm"]), ("client-b", 1, "Vijeo Designer"))
+        self.assertEqual(standards.emplois_briques()["adressage:adressage-defaut"], 2)       # brique partagée
+        with self.assertRaisesRegex(RegleMetier, "brique"):
+            standards.creer_standard("Client C", "", {"adressage": "inexistante", "outils": "outils-topkapi"})
+        with self.assertRaisesRegex(RegleMetier, "motif"):
+            standards.reviser_standard("client-b", {"adressage": "adressage-defaut", "outils": "outils-topkapi"}, None, "")
+        with self.assertRaisesRegex(RegleMetier, "Aucun changement"):
+            standards.reviser_standard("client-b", {"adressage": "adressage-defaut", "outils": "sans-supervision"}, None, "essai")
+        r = standards.reviser_standard("client-b", {"adressage": "adressage-defaut", "outils": "outils-topkapi"}, None, "TOPKAPI retenu")
+        self.assertEqual((r["version"], r["historique"][0]["version"], r["historique"][0]["briques"]["outils"]), (2, 1, "Sans supervision"))
+
+    def test_archivage(self):
+        with self.assertRaisesRegex(RegleMetier, "au moins un standard actif"):
+            standards.changer_statut(standards.IDENT_INITIAL, "archivé")
+        standards.creer_standard("Client B", "", {"adressage": "adressage-defaut", "outils": "outils-topkapi"})
+        self.assertEqual(standards.changer_statut(standards.IDENT_INITIAL, "archivé")["statut"], "archivé")
+
+    def test_application_a_un_ouvrage_existant(self):
+        """Sur demande : réglages remplacés, adresses validées inchangées, référence mise à jour."""
+        s = nouvelle()
+        standards.appliquer(s, standards.trouver(standards.IDENT_INITIAL))
+        standards.creer_brique("adressage", "Plan client B", {"plages": self.plages(TS=[5000, 5999])})
+        b = standards.creer_standard("Client B", "", {"adressage": "plan-client-b", "outils": "outils-topkapi"})
+        apercu = standards.ecarts(s.ouvrage, b["briques"])
+        self.assertEqual(apercu, ["Plage TS : %MW1000 à %MW1999 (standard : %MW5000 à %MW5999)"])
+        standards.appliquer(s, b)
+        self.assertEqual(zone(s.ouvrage, "TS"), (5000, 5999))
+        self.assertEqual((s.ouvrage.standard["ident"], standards.ecarts(s.ouvrage)), ("client-b", []))
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# Standards d'ingénierie (étape 1)
+# Standards d'ingénierie (étapes 1 et 2)
 
 Décision du 19/11/2026. À la création d'un ouvrage, on choisit le standard d'ingénierie du client. Pour éviter la
 multiplication des profils, un standard n'est pas un bloc monolithique : c'est un **assemblage nommé de briques**,
@@ -24,17 +24,44 @@ Règles validées :
 - le choix du standard dans le formulaire de création. Un standard inconnu ou archivé est refusé sans rien écrire.
   Les ouvrages créés avant les standards sont comptés à part et restent tels quels.
 
-Étapes suivantes :
-- **Étape 2.** Bibliothèques de plans d'adressage et de chaînes d'outils, pour créer un deuxième standard. Le bouton
-  « Appliquer un standard » remplacera « Reprendre les réglages d'un autre ouvrage ».
-- **Étape 3.** Bibliothèque de chartes de nommage, à partir d'une charte réelle d'un autre client fournie en exemple.
+## Étape 2 : bibliothèques, deuxième standard, application à un ouvrage
+
+- **Bibliothèque de briques**, en bas de l'écran.
+  - Deux familles : plans d'adressage (plages %MW par famille et décalage Modbus) et chaînes d'outils (supervision,
+    IHM, prises dans les listes du référentiel).
+  - Chaque brique est contrôlée comme une saisie sur un ouvrage : entiers, bornes, aucun recouvrement, nom unique.
+  - Une brique ne se modifie pas : pour changer, on en crée une autre (« Partir de » préremplit les valeurs). Rien
+    ne change donc en silence.
+  - La colonne « Standards » compte les standards qui emploient chaque brique.
+- **Nouveau standard** : un nom, une description et une brique par famille. Plusieurs standards peuvent partager
+  une brique.
+- **Nouvelle version** d'un standard : le motif est obligatoire et la version précédente reste dans l'historique.
+  - Les ouvrages déjà créés ne changent pas.
+  - Leur bloc « Outils d'ingénierie » signale « le standard a évolué depuis ».
+  - Le bouton de ce bloc devient alors « Appliquer la version N du standard… ».
+- **Archiver ou réactiver** : un standard archivé n'est plus proposé à la création. Le dernier standard actif ne
+  peut pas être archivé.
+- **Appliquer un standard** à un ouvrage existant, depuis le bloc « Outils d'ingénierie », seulement à la demande.
+  - Un aperçu de ce qui changera s'affiche d'abord, et rien n'est écrit avant la confirmation.
+  - Changent : plan mémoire, décalage, supervision, IHM et référence au standard.
+  - Ne changent jamais : identification, automate, équipements, adresses validées. Les propositions d'adresses
+    suivent le nouveau plan.
+- « Reprendre les réglages d'un autre ouvrage » est conservé (aucune fonction retirée).
+- Ancien fichier de l'étape 1 : relu sans perte, ses briques forment la bibliothèque.
+
+Captures (données fictives) : `standards_clair.png`, `standards_sombre.png`, `nouvelle_brique.png`,
+`appliquer_standard.png`, `ouvrage_cree_selon.png`.
+
+Étape suivante : bibliothèque de chartes de nommage, à partir d'une charte réelle d'un autre client fournie en
+exemple.
 
 Fichier : `standards_ingenierie.json` dans le dossier de données de l'atelier. Il est écrit de façon atomique ; s'il
 est illisible, il n'est jamais écrasé.
 
 Vérifications :
-- 765 essais du moteur, dont `tests/test_standards.py` ;
-- 107 essais navigateur, dont `test_standards_ingenierie_ecran_et_creation` ;
+- 771 essais du moteur, dont `tests/test_standards.py` (13 essais) ;
+- 108 essais navigateur, dont `test_standards_ingenierie_ecran_et_creation` et
+  `test_standards_bibliotheque_et_application` ;
 - ruff, mypy ;
 - audit des données : 0 détection ;
 - accessibilité, nouvel écran compris : 0 écart ;

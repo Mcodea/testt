@@ -400,3 +400,39 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.reload(wait_until='networkidle')                      # même adresse : rechargement explicite
         self.page.wait_for_function("() => document.querySelector('.outils-standard')?.innerText.includes('Standard initial')")
         self.assertIn('IHM : Vijeo Designer', self.page.locator('.outils-standard').inner_text())
+
+    def test_standards_bibliotheque_et_application(self):
+        """19/11, étape 2 : nouvelle brique et nouveau standard depuis l'écran, puis application à un ouvrage existant
+        après aperçu (rien n'est écrit avant la confirmation)."""
+        n = self.numero
+        self.ouvrir('#/standards')
+        self.page.locator('[data-nouvelle-brique="adressage"]').click()
+        self.page.locator('#brique-nom').fill(f'Plan fictif {n}')
+        self.page.locator('[data-brique-debut="TS"]').fill('5000')
+        self.page.locator('[data-brique-fin="TS"]').fill('5999')
+        self.page.locator('#brique-ok').click()
+        self.page.wait_for_function("t => document.querySelector('.std-bibliotheque')?.innerText.includes(t)", arg=f'Plan fictif {n}')
+        self.page.locator('#std-nouveau').click()
+        self.page.locator('#std-nom').fill(f'Client fictif {n}')
+        plan = next(b['ident'] for b in self.api('/api/standards')['bibliotheque']['adressage'] if b['nom'] == f'Plan fictif {n}')
+        self.page.locator('#std-adressage').select_option(plan)
+        self.page.locator('#std-ok').click()
+        self.page.wait_for_function("t => document.querySelector('.std-detail h2')?.innerText.includes(t)", arg=f'Client fictif {n}')
+        ident = next(s['ident'] for s in self.api('/api/standards')['standards'] if s['nom'] == f'Client fictif {n}')
+        # Application à l'ouvrage ouvert : aperçu d'abord, rien d'écrit
+        self.ouvrir('#/inventaire')
+        self.page.locator('#outils-appliquer-standard').click()
+        self.page.locator('#appliquer-standard').select_option(ident)
+        self.page.wait_for_function("() => document.querySelector('#appliquer-apercu')?.innerText.includes('%MW5000')")
+        self.assertEqual(self.api('/api/adressage')['plages']['TS'], [1000, 1999])
+        self.page.locator('#appliquer-ok').click()
+        self.page.wait_for_function("() => document.querySelector('#toasts')?.innerText.includes('appliqué')")
+        self.assertEqual(self.api('/api/adressage')['plages']['TS'], [5000, 5999])
+        self.assertEqual(self.api('/api/outils')['standard']['ident'], ident)
+        # Nouvelle version du standard : l'ouvrage n'est pas modifié, l'évolution est signalée
+        self.api('/api/standards/action', {'action': 'reviser', 'ident': ident, 'motif': 'Essai fictif',
+                                           'choix': {'adressage': 'adressage-defaut', 'outils': 'outils-topkapi'}})
+        self.assertEqual(self.api('/api/adressage')['plages']['TS'], [5000, 5999])
+        self.page.reload(wait_until='networkidle')
+        self.page.wait_for_function("() => document.querySelector('#outils-appliquer-standard')?.innerText.includes('version 2')")
+        self.assertIn('a évolué', self.page.locator('.outils-standard').inner_text())

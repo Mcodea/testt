@@ -38,6 +38,47 @@ class RegleMetier(Exception):
     """Opération refusée par une règle de l'outil ; le message s'affiche tel quel."""
 
 
+def controler_plages(plages) -> dict:
+    """Plan mémoire {famille: (premier mot, dernier mot)} contrôlé : entiers, 0 ≤ début ≤ fin ≤ 65535, toutes les
+    familles présentes, aucun recouvrement. Lève RegleMetier ; sert à l'ouvrage et aux plans d'adressage (19/11)."""
+    from .modele import ORDRE_ZONES
+    if not isinstance(plages, dict):
+        raise RegleMetier("Plan mémoire attendu : une plage par famille.")
+    lues = {}
+    for f in ORDRE_ZONES:
+        if f not in plages:
+            raise RegleMetier(f"Plage {f} manquante.")
+        try:
+            debut, fin = (int(str(x).strip()) for x in plages[f])
+        except (TypeError, ValueError):
+            raise RegleMetier(f"Plage {f} : début et fin en nombres entiers (mots %MW).") from None
+        if not 0 <= debut <= fin <= 65535:
+            raise RegleMetier(f"Plage {f} : %MW{debut} à %MW{fin} invalide (0 ≤ début ≤ fin ≤ 65535).")
+        lues[f] = (debut, fin)
+    ordre = sorted(lues.items(), key=lambda x: x[1][0])
+    for (fa, (_, fin_a)), (fb, (debut_b, _)) in zip(ordre, ordre[1:]):
+        if debut_b <= fin_a:
+            raise RegleMetier(f"Plages {fa} et {fb} en recouvrement (%MW{debut_b} à %MW{fin_a}).")
+    return lues
+
+
+def alertes_plages(lues) -> list[str]:
+    if lues["RTR"][1] - lues["RTR"][0] < lues["TR"][1] - lues["TR"][0]:
+        return ["La plage RTR est plus courte que la plage TR : certains retours ne pourront pas être placés en "
+                "miroir de leur téléréglage."]
+    return []
+
+
+def controler_decalage(decalage) -> int:
+    try:
+        decalage = int(decalage)
+    except (TypeError, ValueError):
+        raise RegleMetier("Décalage : un nombre entier (0 par défaut).") from None
+    if abs(decalage) > 65535:
+        raise RegleMetier("Décalage : entre -65535 et 65535.")
+    return decalage
+
+
 @dataclass
 class RecapExport:
     variables: int
@@ -1808,30 +1849,11 @@ class Session:
         aucune famille en recouvrement. Les adresses déjà attribuées ou validées ne bougent JAMAIS : une adresse validée
         hors de sa nouvelle plage est signalée par R-VAR-06 ; les propositions suivent la nouvelle plage au prochain
         calcul. Renvoie les alertes non bloquantes (miroir TR / RTR impossible si la plage RTR est plus courte)."""
-        from .modele import ORDRE_ZONES
-        lues = {}
-        for f in ORDRE_ZONES:
-            if f not in plages:
-                raise RegleMetier(f"Plage {f} manquante.")
-            try:
-                debut, fin = (int(str(x).strip()) for x in plages[f])
-            except (TypeError, ValueError):
-                raise RegleMetier(f"Plage {f} : début et fin en nombres entiers (mots %MW).") from None
-            if not 0 <= debut <= fin <= 65535:
-                raise RegleMetier(f"Plage {f} : %MW{debut} à %MW{fin} invalide (0 ≤ début ≤ fin ≤ 65535).")
-            lues[f] = (debut, fin)
-        ordre = sorted(lues.items(), key=lambda x: x[1][0])
-        for (fa, (_, fin_a)), (fb, (debut_b, _)) in zip(ordre, ordre[1:]):
-            if debut_b <= fin_a:
-                raise RegleMetier(f"Plages {fa} et {fb} en recouvrement (%MW{debut_b} à %MW{fin_a}).")
+        lues = controler_plages(plages)
         self.ouvrage.zones = {f: d for f, (d, _) in lues.items()}
         self.ouvrage.zones_fin = {f: x for f, (_, x) in lues.items()}
         self._change(devalider=False)          # aucune validation retirée : les adresses validées restent
-        alertes = []
-        if lues["RTR"][1] - lues["RTR"][0] < lues["TR"][1] - lues["TR"][0]:
-            alertes.append("La plage RTR est plus courte que la plage TR : certains retours ne pourront pas être placés en "
-                           "miroir de leur téléréglage.")
-        return alertes
+        return alertes_plages(lues)
 
     def reprendre_reglages(self, source):
         """Reprendre les outils et conventions d'un autre ouvrage (même maître d'ouvrage, 18/11).
@@ -1868,12 +1890,7 @@ class Session:
     def declarer_protocole(self, declare, decalage=0):
         """Décalage des adresses de télétransmission, saisi par l'utilisateur (entier, 0 par défaut). Il ne touche
         jamais l'adresse automate. `declare` est conservé pour les fichiers et appels existants (retour du 18/11)."""
-        try:
-            decalage = int(decalage)
-        except (TypeError, ValueError):
-            raise RegleMetier("Décalage : un nombre entier (0 par défaut).") from None
-        if abs(decalage) > 65535:
-            raise RegleMetier("Décalage : entre -65535 et 65535.")
+        decalage = controler_decalage(decalage)
         self.ouvrage.protocole_declare, self.ouvrage.decalage_modbus = bool(declare), int(decalage)
         self._change(devalider=False)
 

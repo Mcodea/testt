@@ -927,14 +927,64 @@ class Application:
         return {**resume(self.s.ouvrage), "supervisions": listes["supervisions"], "ihms": listes["ihm"],
                 "standard": {k: ref.get(k) for k in ("ident", "nom", "version", "applique_le")} if ref else None,
                 "standard_ecarts": standards.ecarts(self.s.ouvrage),
-                "standard_a_evolue": bool(actuel and actuel.get("version") != ref.get("version"))}
+                "standard_a_evolue": bool(actuel and actuel.get("version") != ref.get("version")),
+                "standard_version_actuelle": actuel.get("version") if actuel else None}
 
     def standards_web(self, _):
-        """Standards d'ingénierie de l'atelier (lecture seule à l'étape 1) et nombre d'ouvrages qui les utilisent."""
+        """Standards d'ingénierie de l'atelier, nombre d'ouvrages qui les utilisent, bibliothèque de briques (19/11)."""
         from genvar import standards
-        compte = standards.utilisation()
+        from genvar.modele import ORDRE_ZONES, PLAN_DEFAUT
+        compte, emplois = standards.utilisation(), standards.emplois_briques()
+        listes = ref_ident.lire()
         return {"standards": [{**s, "ouvrages": compte.get(s["ident"], 0)} for s in standards.lire()],
-                "familles": standards.FAMILLES, "anterieurs": compte.get("", 0)}
+                "familles": standards.FAMILLES, "choisissables": list(standards.CHOISISSABLES),
+                "anterieurs": compte.get("", 0),
+                "bibliotheque": {f: [{**b, "standards": emplois.get(f"{f}:{b['ident']}", 0)} for b in liste]
+                                 for f, liste in standards.bibliotheque().items()},
+                "supervisions": listes["supervisions"], "ihms": listes["ihm"],
+                "plages_defaut": {f: list(PLAN_DEFAUT[f]) for f in ORDRE_ZONES}}
+
+    def standards_action(self, d):
+        """Bibliothèque et standards (étape 2) : créer une brique, créer un standard, nouvelle version, archiver.
+        Aucun ouvrage n'est modifié par ces actions."""
+        from genvar import standards
+        action = d.get("action")
+        alertes: list[str] = []
+        if action == "brique":
+            famille, contenu = str(d.get("famille") or ""), d.get("contenu") or {}
+            if famille == "outils":
+                listes = ref_ident.lire()
+                for champ, liste, nom in (("supervision", "supervisions", "Supervision"), ("ihm", "ihm", "IHM")):
+                    valeur = str(contenu.get(champ) or "").strip()
+                    if valeur and valeur not in listes[liste]:
+                        raise RegleMetier(f"{nom} absente du référentiel : ajoutez-la d'abord par « Gérer les listes ».")
+            _, alertes = standards.creer_brique(famille, str(d.get("nom") or ""), contenu)
+        elif action == "creer":
+            d["ident"] = standards.creer_standard(str(d.get("nom") or ""), str(d.get("description") or ""), d.get("choix") or {})["ident"]
+        elif action == "reviser":
+            standards.reviser_standard(str(d.get("ident") or ""), d.get("choix") or {}, d.get("description"), str(d.get("motif") or ""))
+        elif action == "statut":
+            standards.changer_statut(str(d.get("ident") or ""), str(d.get("statut") or ""))
+        else:
+            raise RegleMetier("Action inconnue.")
+        return {**self.standards_web({}), "ident": d.get("ident", ""), "alertes": alertes}
+
+    def appliquer_standard(self, d):
+        """Appliquer un standard (ou la nouvelle version du sien) à l'ouvrage ouvert, sur demande explicite (19/11).
+        Sans « confirme » : aperçu seulement, rien n'est écrit. Les adresses validées ne bougent jamais."""
+        if not self.ouvert:
+            raise RegleMetier("Ouvrez d'abord un ouvrage.")
+        from genvar import standards
+        choisi = standards.trouver(str(d.get("ident") or ""))
+        if choisi is None or choisi.get("statut") != "actif":
+            raise RegleMetier("Standard d'ingénierie introuvable ou archivé : choisissez-en un autre.")
+        changements = standards.ecarts(self.s.ouvrage, choisi["briques"])
+        if d.get("confirme") is not True:
+            return {"apercu": changements, "nom": choisi["nom"], "version": choisi["version"]}
+        alertes = standards.appliquer(self.s, choisi)
+        self.s.modifie = True
+        self._sauver()
+        return {"applique": changements, "alertes": alertes, "nom": choisi["nom"], "version": choisi["version"]}
 
     def outils_action(self, d):
         """Choisir la supervision et l'IHM de l'ouvrage, parmi les listes du référentiel (« » : aucune)."""
@@ -1718,7 +1768,7 @@ ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle":
 ROUTES_POST = {"/api/nouveau": "nouveau", "/api/ouvrir": "ouvrir", "/api/fermer": "fermer",
                "/api/supprimer_ouvrage": "supprimer_ouvrage", "/api/definir": "definir",
                "/api/fiche-ouvrage": "fiche_ouvrage",
-               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/reglages/reprendre": "reprendre_reglages",
+               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/standards/appliquer": "appliquer_standard", "/api/reglages/reprendre": "reprendre_reglages",
                "/api/identification/type": "identifier_type",
                "/api/identification/selection": "identifier_selection", "/api/uf": "uf",
                "/api/equipement/ajouter": "ajouter_equipement", "/api/equipement/modifier": "modifier_equipement",

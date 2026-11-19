@@ -842,38 +842,111 @@ async function contenu() {
   Coque.majFil();
 }
 /* Standards d'ingénierie (19/11) : un standard par client = assemblage de briques (référentiel métier, charte,
-   plan d'adressage, chaîne d'outils). Choisi à la création de l'ouvrage, copié dans l'ouvrage. Étape 1 : un seul
-   standard (le « Standard initial »), consultation seulement ; création et bibliothèques de briques à l'étape 2. */
+   plan d'adressage, chaîne d'outils). Choisi à la création de l'ouvrage, copié dans l'ouvrage. Étape 2 : bibliothèques
+   de plans d'adressage et de chaînes d'outils, création d'un standard, nouvelle version (motif), archivage. Aucune de
+   ces actions ne modifie un ouvrage ; une brique ne se modifie pas (on en crée une autre). */
 function vueStandards() {
   Coque.ruban(null);
-  const d = E.standards || {standards: [], familles: {}};
+  const d = E.standards || {standards: [], familles: {}, bibliotheque: {}, choisissables: []};
   const sel = d.standards.find(s => s.ident === E.standardSel) || d.standards[0];
   if (sel) E.standardSel = sel.ident;
-  const brique = (f, b) => {
-    if (f === "adressage") return `<table class="std-plages"><tbody>${Object.entries(b.plages).map(([fam, [deb, fin]]) =>
+  const plagesTable = b => `<table class="std-plages"><tbody>${Object.entries(b.plages || {}).map(([fam, [deb, fin]]) =>
       `<tr><th>${esc(fam)}</th><td class="mono">%MW${deb} à %MW${fin}</td></tr>`).join("")}<tr><th>Décalage</th><td class="mono">${esc(String(b.decalage_modbus || 0))}</td></tr></tbody></table>`;
+  const brique = (f, b) => {
+    if (f === "adressage") return plagesTable(b);
     if (f === "outils") return `<dl class="std-dl"><dt>Supervision</dt><dd>${esc(b.supervision || "aucune")}</dd><dt>IHM</dt><dd>${esc(b.ihm || "aucune")}</dd>
       <dt>Automate</dt><dd>choisi pour chaque ouvrage (il dépend du site)</dd></dl>`;
     if (f === "referentiel") return `<p>Le référentiel métier publié de l'atelier, copié dans l'ouvrage à sa création. <a href="#/referentiel">Ouvrir le référentiel métier</a></p>`;
     return `<p>Lieu sur 4 caractères, type d'ouvrage sur 2 lettres, numéro de 01 à 99 (ex. XTST RV 01).</p>`;
   };
+  const actifs = d.standards.filter(s => s.statut === "actif").length;
+  const biblio = (f, titre, bouton) => `<div class="bloc std-biblio"><div class="bloc-tete"><h2>${titre}</h2><button type="button" data-nouvelle-brique="${f}">${bouton}</button></div>
+    <table data-o-tableau="sans-selection" data-o-cle="briques-${f}"><thead><tr><th>Brique</th><th>Contenu</th><th>Standards</th></tr></thead><tbody>
+    ${(d.bibliotheque[f] || []).map(b => `<tr><td><b>${esc(b.nom)}</b></td><td>${f === "adressage"
+      ? `<span class="mono">${Object.entries(b.plages).map(([x, [deb, fin]]) => `${esc(x)} ${deb}–${fin}`).join(" · ")}</span>${b.decalage_modbus ? ` · décalage ${esc(String(b.decalage_modbus))}` : ""}`
+      : `Supervision ${esc(b.supervision || "aucune")} · IHM ${esc(b.ihm || "aucune")}`}</td><td class="num">${b.standards}</td></tr>`).join("")}</tbody></table></div>`;
   $("#vue").innerHTML = `<section class="contenu standards">
-   <div class="std-intro"><p>Un standard d'ingénierie réunit les réglages d'un client : référentiel métier, charte de nommage, plan d'adressage et chaîne d'outils. On le choisit à la création d'un ouvrage ; l'ouvrage en garde une copie, qui ne change pas si le standard évolue ensuite.</p></div>
+   <div class="std-intro"><p>Un standard d'ingénierie réunit les réglages d'un client : référentiel métier, charte de nommage, plan d'adressage et chaîne d'outils. On le choisit à la création d'un ouvrage ; l'ouvrage en garde une copie, qui ne change pas si le standard évolue ensuite. Plusieurs standards peuvent partager une même brique.</p></div>
    <div class="std-grille">
-    <div class="bloc std-liste"><div class="bloc-tete"><h2>Standards</h2><span class="aide">${d.standards.length} standard${d.standards.length > 1 ? "s" : ""}</span></div>
+    <div class="bloc std-liste"><div class="bloc-tete"><h2>Standards</h2><button type="button" class="prim" id="std-nouveau">Nouveau standard…</button></div>
      <table data-o-tableau="sans-selection" data-o-cle="standards"><thead><tr><th>Standard</th><th>Version</th><th>État</th><th>Ouvrages</th></tr></thead><tbody>
      ${d.standards.map(s => `<tr class="cliquable ${s.ident === E.standardSel ? "o-ligne-active" : ""}" data-std="${esc(s.ident)}" tabindex="0"><td><b>${esc(s.nom)}</b></td><td class="mono">v${esc(String(s.version))}</td><td>${esc(s.statut)}</td><td class="num">${s.ouvrages}</td></tr>`).join("")}</tbody></table>
      ${d.anterieurs ? `<p class="aide">${d.anterieurs} ouvrage(s) créé(s) avant les standards : leurs réglages ne changent pas.</p>` : ""}</div>
-    ${sel ? `<div class="bloc std-detail"><div class="bloc-tete"><h2>${esc(sel.nom)} <span class="mono">v${esc(String(sel.version))}</span></h2><span class="aide">${sel.ouvrages} ouvrage(s)</span></div>
-     <p>${esc(sel.description || "")}</p>
-     <div class="std-briques">${Object.entries(d.familles).map(([f, nom]) => `<section class="std-brique"><h3>${esc(nom)}</h3><p class="std-nom">${esc(sel.briques[f]?.nom || "—")}</p>${brique(f, sel.briques[f] || {})}</section>`).join("")}</div></div>` : ""}
+    ${sel ? `<div class="bloc std-detail"><div class="bloc-tete"><h2>${esc(sel.nom)} <span class="mono">v${esc(String(sel.version))}</span>${sel.statut !== "actif" ? ` <span class="std-archive">${esc(sel.statut)}</span>` : ""}</h2>
+      <div class="boutons-ligne"><button type="button" id="std-reviser">Nouvelle version…</button>
+      ${sel.statut === "actif" ? `<button type="button" id="std-archiver" ${actifs < 2 ? 'disabled title="Il faut garder au moins un standard actif"' : ""}>Archiver</button>` : `<button type="button" id="std-reactiver">Réactiver</button>`}</div></div>
+     <p>${esc(sel.description || "")} <span class="aide">${sel.ouvrages} ouvrage(s) créé(s) selon ce standard.</span></p>
+     <div class="std-briques">${Object.entries(d.familles).map(([f, nom]) => `<section class="std-brique"><h3>${esc(nom)}</h3><p class="std-nom">${esc(sel.briques[f]?.nom || "—")}</p>${brique(f, sel.briques[f] || {})}</section>`).join("")}</div>
+     ${(sel.historique || []).length ? `<div class="std-historique"><h3>Versions précédentes</h3><ul>${sel.historique.slice().reverse().map(h => `<li><span class="mono">v${esc(String(h.version))}</span> jusqu'au ${esc(h.jusqu_au)} : ${esc(Object.values(h.briques || {}).join(" · "))} <span class="aide">— ${esc(h.motif)}</span></li>`).join("")}</ul></div>` : ""}</div>` : ""}
+   </div>
+   <div class="std-grille std-bibliotheque">
+    ${biblio("adressage", "Plans d'adressage", "Nouveau plan d'adressage…")}
+    ${biblio("outils", "Chaînes d'outils", "Nouvelle chaîne d'outils…")}
    </div></section>`;
   document.querySelectorAll("[data-std]").forEach(r => { r.onclick = () => { E.standardSel = r.dataset.std; vueStandards(); };
     r.onkeydown = ev => { if (ev.key === "Enter") r.click(); }; });
+  const agir = async (corps, message) => {
+    try { const r = await api("/api/standards/action", corps); E.standards = r; if (r.ident) E.standardSel = r.ident;
+      fermerModale(); toast(message + (r.alertes?.length ? " " + r.alertes.join(" ") : ""), !!r.alertes?.length); vueStandards(); return true; }
+    catch (e) { toast(e.message, true); return false; }
+  };
+  $("#std-nouveau").onclick = () => modaleStandard(d, null, agir);
+  if ($("#std-reviser")) $("#std-reviser").onclick = () => modaleStandard(d, sel, agir);
+  if ($("#std-archiver")) $("#std-archiver").onclick = () => agir({action: "statut", ident: sel.ident, statut: "archivé"},
+    `« ${sel.nom} » archivé : il n'est plus proposé à la création. Les ouvrages créés selon ce standard ne changent pas.`);
+  if ($("#std-reactiver")) $("#std-reactiver").onclick = () => agir({action: "statut", ident: sel.ident, statut: "actif"}, `« ${sel.nom} » réactivé.`);
+  document.querySelectorAll("[data-nouvelle-brique]").forEach(b => b.onclick = () => modaleBrique(d, b.dataset.nouvelleBrique, agir));
 }
-/* Outils d'ingénierie de l'ouvrage (18/11 : un logiciel universel) : l'utilisateur choisit les outils réellement
-   utilisés ; OGIAS affiche les règles qui en découlent. La source d'acquisition et la communication restent saisies
-   dans la fiche d'identification ; la supervision et l'IHM se choisissent ici, dans les listes du référentiel. */
+function modaleStandard(d, sel, agir) {
+  const choix = (f, nom) => `<label for="std-${f}">${esc(nom)}</label><select id="std-${f}">${(d.bibliotheque[f] || []).map(b =>
+    `<option value="${esc(b.ident)}" ${sel && sel.briques[f]?.ident === b.ident ? "selected" : ""}>${esc(b.nom)}</option>`).join("")}</select>`;
+  const m = ouvrirModale(`<div class="boite-tete"><h2>${sel ? `Nouvelle version de « ${esc(sel.nom)} »` : "Nouveau standard d'ingénierie"}</h2>
+    <p>${sel ? `La version ${esc(String(sel.version + 1))} remplace la version ${esc(String(sel.version))} pour les prochains ouvrages. Les ouvrages déjà créés gardent leurs réglages ; OGIAS leur signale l'évolution.`
+      : "Choisissez une brique par famille. Le référentiel métier et la charte de nommage n'ont qu'une brique pour l'instant."}</p></div>
+    <div class="boite-corps std-formulaire">
+     ${sel ? "" : `<label for="std-nom">Nom du standard</label><input id="std-nom" maxlength="60" placeholder="Ex. Client B">`}
+     <label for="std-description">Description</label><input id="std-description" maxlength="400" value="${esc(sel?.description || "")}">
+     ${choix("adressage", "Plan d'adressage")}${choix("outils", "Chaîne d'outils")}
+     ${sel ? `<label for="std-motif">Motif de la nouvelle version</label><input id="std-motif" maxlength="200">` : ""}
+    </div>
+    <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="std-ok">${sel ? "Créer la version" : "Créer le standard"}</button></div>`);
+  m.querySelector("#std-ok").onclick = () => {
+    const corps = {choix: {adressage: m.querySelector("#std-adressage").value, outils: m.querySelector("#std-outils").value},
+                   description: m.querySelector("#std-description").value};
+    if (sel) agir({...corps, action: "reviser", ident: sel.ident, motif: m.querySelector("#std-motif").value}, `« ${sel.nom} » : version ${sel.version + 1} créée.`);
+    else agir({...corps, action: "creer", nom: m.querySelector("#std-nom").value}, "Standard créé.");
+  };
+}
+function modaleBrique(d, famille, agir) {
+  const corps = famille === "adressage"
+    ? `<label for="brique-nom">Nom du plan d'adressage</label><input id="brique-nom" maxlength="60">
+       <label for="brique-depart">Partir de</label><select id="brique-depart">${(d.bibliotheque.adressage || []).map(b => `<option value="${esc(b.ident)}">${esc(b.nom)}</option>`).join("")}</select>
+       <table class="ad-plages"><thead><tr><th>Famille</th><th>Premier mot</th><th>Dernier mot</th></tr></thead><tbody>
+       ${Object.keys(d.plages_defaut).map(f => `<tr><th>${esc(f)}</th><td><input data-brique-debut="${esc(f)}" inputmode="numeric" aria-label="Premier mot ${esc(f)}"></td><td><input data-brique-fin="${esc(f)}" inputmode="numeric" aria-label="Dernier mot ${esc(f)}"></td></tr>`).join("")}</tbody></table>
+       <label for="brique-decalage">Décalage Modbus des adresses de télétransmission</label><input id="brique-decalage" inputmode="numeric" value="0">`
+    : `<label for="brique-nom">Nom de la chaîne d'outils</label><input id="brique-nom" maxlength="60">
+       <label for="brique-supervision">Supervision</label><select id="brique-supervision"><option value="">— Aucune —</option>${d.supervisions.map(x => `<option>${esc(x)}</option>`).join("")}</select>
+       <label for="brique-ihm">IHM</label><select id="brique-ihm"><option value="">— Aucune —</option>${d.ihms.map(x => `<option>${esc(x)}</option>`).join("")}</select>
+       <p class="aide">Une supervision ou une IHM absente de ces listes s'ajoute d'abord par « Gérer les listes ».</p>`;
+  const m = ouvrirModale(`<div class="boite-tete"><h2>${famille === "adressage" ? "Nouveau plan d'adressage" : "Nouvelle chaîne d'outils"}</h2>
+    <p>La brique rejoint la bibliothèque ; elle ne se modifie plus ensuite (pour changer, on en crée une autre). Aucun ouvrage n'est touché.</p></div>
+    <div class="boite-corps std-formulaire">${corps}</div>
+    <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="brique-ok">Ajouter à la bibliothèque</button></div>`);
+  if (famille === "adressage") {
+    const remplir = () => { const b = d.bibliotheque.adressage.find(x => x.ident === m.querySelector("#brique-depart").value) || {plages: d.plages_defaut, decalage_modbus: 0};
+      Object.entries(b.plages).forEach(([f, [deb, fin]]) => { m.querySelector(`[data-brique-debut="${f}"]`).value = deb; m.querySelector(`[data-brique-fin="${f}"]`).value = fin; });
+      m.querySelector("#brique-decalage").value = b.decalage_modbus || 0; };
+    m.querySelector("#brique-depart").onchange = remplir; remplir();
+  }
+  m.querySelector("#brique-ok").onclick = () => {
+    const nom = m.querySelector("#brique-nom").value;
+    const contenu = famille === "adressage"
+      ? {plages: Object.fromEntries(Object.keys(d.plages_defaut).map(f => [f, [m.querySelector(`[data-brique-debut="${f}"]`).value, m.querySelector(`[data-brique-fin="${f}"]`).value]])),
+         decalage_modbus: m.querySelector("#brique-decalage").value}
+      : {supervision: m.querySelector("#brique-supervision").value, ihm: m.querySelector("#brique-ihm").value};
+    agir({action: "brique", famille, nom, contenu}, `« ${nom.trim()} » ajouté à la bibliothèque.`);
+  };
+}
 async function choixStandard(c) {
   const s = c.querySelector("#standard-choix"); if (!s) return;
   let d; try { d = await api("/api/standards"); } catch (e) { s.innerHTML = `<option value="">${esc(e.message)}</option>`; return; }
@@ -882,6 +955,33 @@ async function choixStandard(c) {
   s.innerHTML = actifs.map(x => `<option value="${esc(x.ident)}" ${x.ident === garde ? "selected" : ""}>${esc(x.nom)} (v${esc(String(x.version))})</option>`).join("");
   s.onchange = () => { E.standardCreation = s.value; };
 }
+/* Appliquer un standard à un ouvrage existant (19/11) : seulement à la demande, après aperçu de ce qui change. */
+async function modaleAppliquerStandard(c, preselection) {
+  let d; try { d = await api("/api/standards"); } catch (e) { return toast(e.message, true); }
+  const actifs = d.standards.filter(x => x.statut === "actif");
+  const m = ouvrirModale(`<div class="boite-tete"><h2>Appliquer un standard d'ingénierie</h2>
+    <p>Le plan mémoire, le décalage Modbus, la supervision et l'IHM de l'ouvrage prennent les valeurs du standard. L'identification, l'automate, les équipements et les adresses déjà validées ne changent pas.</p></div>
+    <div class="boite-corps std-formulaire"><label for="appliquer-standard">Standard</label><select id="appliquer-standard">${actifs.map(x => `<option value="${esc(x.ident)}" ${x.ident === preselection ? "selected" : ""}>${esc(x.nom)} (v${esc(String(x.version))})</option>`).join("")}</select>
+     <div id="appliquer-apercu" class="std-apercu" aria-live="polite"></div></div>
+    <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="appliquer-ok">Appliquer</button></div>`);
+  const sel = m.querySelector("#appliquer-standard"), zone = m.querySelector("#appliquer-apercu");
+  const apercu = async () => {
+    zone.textContent = "…";
+    try { const r = await api("/api/standards/appliquer", {ident: sel.value});
+      zone.innerHTML = r.apercu.length ? `<b>Ce qui changera sur l'ouvrage :</b><ul>${r.apercu.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`
+        : "<p>Aucun réglage ne change : seule la référence au standard est mise à jour.</p>"; }
+    catch (e) { zone.textContent = e.message; }
+  };
+  sel.onchange = apercu; apercu();
+  m.querySelector("#appliquer-ok").onclick = async () => {
+    try { const r = await api("/api/standards/appliquer", {ident: sel.value, confirme: true}); fermerModale();
+      toast(`Standard « ${r.nom} » v${r.version} appliqué` + (r.applique.length ? ` : ${r.applique.length} réglage(s) modifié(s).` : ".") + (r.alertes.length ? " " + r.alertes.join(" ") : ""), !!r.alertes.length);
+      await recharger(); } catch (e) { toast(e.message, true); }
+  };
+}
+/* Outils d'ingénierie de l'ouvrage (18/11 : un logiciel universel) : l'utilisateur choisit les outils réellement
+   utilisés ; OGIAS affiche les règles qui en découlent. La source d'acquisition et la communication restent saisies
+   dans la fiche d'identification ; la supervision et l'IHM se choisissent ici, dans les listes du référentiel. */
 async function blocOutils(c) {
   const zone = c.querySelector("#bloc-outils"); if (!zone) return;
   let t; try { t = await api("/api/outils"); } catch (e) { zone.querySelector(".vide-bloc").textContent = e.message; return; }
@@ -896,12 +996,13 @@ async function blocOutils(c) {
     <div class="outil">${choix("outil-ihm", "IHM", t.ihm, t.ihms, "— Aucune —")}</div>
    </div>
    <p class="outils-standard">${t.standard ? `Créé selon le standard <a href="#/standards"><b>${esc(t.standard.nom)}</b> v${esc(String(t.standard.version))}</a> le ${esc(t.standard.applique_le)}${t.standard_a_evolue ? ' · <span class="std-evolue">le standard a évolué depuis</span>' : ""}${t.standard_ecarts.length ? ` · ${t.standard_ecarts.length} réglage(s) modifié(s) sur cet ouvrage : ${t.standard_ecarts.map(esc).join(" ; ")}` : ""}` : "Ouvrage créé avant les standards d'ingénierie : ses réglages sont ceux affichés ici."}</p>
-   <div class="boutons-ligne outils-actions"><button type="button" id="outils-reprendre">Reprendre les réglages d'un autre ouvrage…</button><button type="button" class="lien" id="outils-plages">Plan mémoire %MW (Adressage)</button></div>
+   <div class="boutons-ligne outils-actions"><button type="button" id="outils-appliquer-standard">${t.standard_a_evolue ? `Appliquer la version ${esc(String(t.standard_version_actuelle))} du standard…` : "Appliquer un standard…"}</button><button type="button" id="outils-reprendre">Reprendre les réglages d'un autre ouvrage…</button><button type="button" class="lien" id="outils-plages">Plan mémoire %MW (Adressage)</button></div>
    <div class="outils-regles"><b>Règles propres aux outils choisis</b>${t.contraintes.length ? `<ul>${t.contraintes.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "<p>Aucune : les outils choisis ne sont pas décrits dans OGIAS, aucune contrainte n'est supposée.</p>"}</div>`;
   const enregistrer = async corps => { try { await api("/api/outils/action", corps); toast("Outils de l'ouvrage enregistrés."); blocOutils(c); } catch (e) { toast(e.message, true); blocOutils(c); } };
   zone.querySelector("#outil-supervision").onchange = ev => enregistrer({supervision: ev.target.value});
   zone.querySelector("#outil-ihm").onchange = ev => enregistrer({ihm: ev.target.value});
   zone.querySelector("#outils-plages").onclick = () => naviguer("#/adressage");
+  zone.querySelector("#outils-appliquer-standard").onclick = () => modaleAppliquerStandard(c, t.standard?.ident);
   zone.querySelector("#outils-reprendre").onclick = async () => {
     let s; try { s = await api("/api/reglages/sources"); } catch (e) { return toast(e.message, true); }
     if (!s.ouvrages.length) return toast("Aucun autre ouvrage enregistré.", true);
