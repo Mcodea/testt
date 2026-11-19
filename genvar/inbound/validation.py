@@ -136,6 +136,85 @@ def _inventory(row: SourceRow, values: dict[str, str], session: Session,
     return PreviewRow(row, values, action, tuple(issues))
 
 
+def _adresses_validees(eq) -> bool:
+    """Vrai si l'équipement porte une adresse d'échange ou une E/S validée : protégé contre l'import."""
+    return bool(eq.validees) or any(isinstance(m, dict) and m.get("validee") for m in (eq.es_meta or {}).values())
+
+
+CHAMPS_ALLER_RETOUR = (("libelle", "libelle", "Désignation"), ("modele", "modele", "Modèle"),
+                       ("uf", "uf", "UF"), ("local", "local", "Local"))
+
+
+def _sync(row: SourceRow, values: dict[str, str], session: Session,
+          seen: dict[str, SourceRow]) -> PreviewRow:
+    """Aller-retour (19/11) : la ligne est lue comme un inventaire, puis comparée à l'équipement existant.
+
+    Cellule vide ou colonne absente : valeur conservée (jamais d'effacement implicite). Le repère est la clé ; il
+    ne se modifie pas par fichier (l'identifiant OGIAS sert à le détecter). Un changement de modèle est refusé sur
+    un équipement dont des adresses sont validées (elles ne bougent jamais par import)."""
+    base = _inventory(row, values, session, seen)
+    if base.action != RowAction.ALREADY_EXISTS:
+        ident = str(values.get("ident", "")).strip()
+        connu = next((e for e in session.ouvrage.equipements if e.ident == ident), None) if ident else None
+        if connu is not None:
+            issue = _diag("REPERE_MODIFIE", f"Le repère de l'équipement {session.ouvrage.repere(connu)} a été modifié dans "
+                          "le fichier : renommez-le dans OGIAS (les noms et adresses en dépendent).", Severity.ERROR, row)
+            return PreviewRow(row, base.values, RowAction.REJECT, (*base.diagnostics, issue))
+        return base
+    o = session.ouvrage
+    vals = dict(base.values)
+    eq = next(e for e in o.equipements if o.repere(e) == vals["repere"])
+    issues = [d for d in base.diagnostics if d.code not in ("LIBELLE_DIFFERENT", "MODELE_INCONNU", "MODELE_A_CHOISIR")]
+    ident = str(vals.get("ident", "")).strip()
+    if ident and ident != eq.ident:
+        issues.append(_diag("IDENTIFIANT_DIFFERENT", "L'identifiant OGIAS ne correspond pas à ce repère : ligne copiée "
+                            "d'un autre équipement ? Corrigez le fichier.", Severity.ERROR, row))
+    changements = []
+    for cle, attribut, nom in CHAMPS_ALLER_RETOUR:
+        nouveau = str(vals.get(cle, "")).strip()
+        if not nouveau or nouveau == (getattr(eq, attribut) or ""):
+            continue
+        if cle == "modele":
+            t = session.modeles["types"].get(eq.type, {})
+            if nouveau not in t.get("modeles", []):
+                issues.append(_diag("MODELE_INCONNU", f"Modèle « {nouveau} » absent du type {eq.type} dans le référentiel.",
+                                    Severity.ERROR, row))
+                continue
+            if _adresses_validees(eq):
+                issues.append(_diag("MODELE_ADRESSES_VALIDEES", "Changement de modèle refusé : l'équipement a des adresses "
+                                    "validées (elles ne bougent jamais par import). Changez le modèle dans OGIAS.",
+                                    Severity.ERROR, row))
+                continue
+        if cle == "uf" and nouveau not in {u.code for u in o.unites}:
+            issues.append(_diag("UF_INCONNUE", f"Unité fonctionnelle « {nouveau} » absente de l'ouvrage : créez-la d'abord.",
+                                Severity.ERROR, row))
+            continue
+        changements.append((attribut, nom, getattr(eq, attribut) or "", nouveau))
+    vals["ident_eq"] = eq.ident
+    vals["changements"] = " ; ".join(f"{nom} : « {avant} » → « {apres} »" for _, nom, avant, apres in changements)
+    vals["_modifs"] = json.dumps({a: apres for a, _, _, apres in changements}, ensure_ascii=False, sort_keys=True)
+    if any(i.severity == Severity.ERROR for i in issues):
+        action = RowAction.REJECT
+    else:
+        action = RowAction.UPDATE if changements else RowAction.ALREADY_EXISTS
+    return PreviewRow(row, vals, action, tuple(issues))
+
+
+def _obsoletes(session: Session, rows: list[PreviewRow]) -> tuple:
+    """Équipements de l'ouvrage absents du fichier : gardés par défaut ; protégés si des adresses sont validées."""
+    o = session.ouvrage
+    presents = {str(r.values.get("repere", "")).upper() for r in rows if r.action != RowAction.EMPTY}
+    sortie = []
+    for e in o.equipements:
+        rep = o.repere(e)
+        if rep in presents:
+            continue
+        protege = _adresses_validees(e)
+        sortie.append({"ident": e.ident, "repere": rep, "libelle": e.libelle, "protege": protege,
+                       "motif": "adresses validées : suppression impossible par import" if protege else ""})
+    return tuple(sorted(sortie, key=lambda x: x["repere"]))
+
+
 def _variable(row: SourceRow, values: dict[str, str], session: Session,
               seen: dict[str, SourceRow]) -> PreviewRow:
     issues = _row_issue(row, values)
@@ -215,7 +294,7 @@ def preview_import(path: str | Path, kind: InputKind | str, session: Session,
     table, header_index, mapping = choose_table(source, kind, sheet)
     rows: list[PreviewRow] = []
     seen: dict[str, SourceRow] = {}
-    validator = {InputKind.INVENTORY: _inventory,
+    validator = {InputKind.INVENTORY: _inventory, InputKind.EQUIPMENT_SYNC: _sync,
                  InputKind.PLC_VARIABLES: _variable,
                  InputKind.PHYSICAL_IO: _io}[kind]
     for raw in table.rows[header_index + 1:]:
@@ -241,5 +320,6 @@ def preview_import(path: str | Path, kind: InputKind | str, session: Session,
     if not rows or not any(r.action != RowAction.EMPTY for r in rows):
         global_issues.append(Diagnostic("AUCUNE_DONNEE", "Aucune donnée importable.", Severity.ERROR,
                                         table.name, 0))
+    obsoletes = _obsoletes(session, rows) if kind == InputKind.EQUIPMENT_SYNC else ()
     return ImportPreview(kind, source.path, source.digest, session_digest(session),
-                         table.name, tuple(rows), tuple(global_issues))
+                         table.name, tuple(rows), tuple(global_issues), obsoletes=obsoletes)

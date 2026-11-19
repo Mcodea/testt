@@ -483,3 +483,41 @@ class TestCoqueBureau(ServeurNavigateur):
         self.assertTrue(noms and all(f'RV_EAU_{50 + n:02d}_HV01' in x for x in noms), noms[:3])
         with self.assertRaisesRegex(RuntimeError, 'autre charte'):
             self.api('/api/standards/appliquer', {'ident': 'standard-initial', 'confirme': True})
+
+    def test_aller_retour_excel_des_equipements(self):
+        """19/11 : export de la liste, modification dans « Excel », réimport comparé : modifié, nouveau, absent du
+        fichier gardé ou supprimé sur choix ; rien n'est écrit avant la confirmation."""
+        import tempfile
+        from genvar import tableur
+        from genvar.export_xlsx import ecrire_xlsx
+        self.api('/api/equipement/ajouter', {'type': 'HV', 'numero': '02', 'se': '00', 'libelle': 'Vanne fictive 2'})
+        self.ouvrir('#/inventaire')
+        with self.page.expect_download() as telechargement:
+            self.page.locator('#o-ruban #b-export-eq').click()
+        dossier = Path(tempfile.mkdtemp())
+        chemin = dossier / telechargement.value.suggested_filename
+        telechargement.value.save_as(chemin)
+        feuille = tableur.lire_classeur(chemin)['Équipements']
+        lignes = [list(map(str, x)) for x in feuille[1:]]
+        rep = self.api('/api/ouvrage')['identification']
+        prefixe = rep['lieu'] + rep['code_ouvrage'] + rep['numero_ouvrage']
+        hv1 = next(x for x in lignes if x[0] == prefixe + 'HV01')
+        hv1[1] = 'Vanne fictive modifiée'
+        lignes = [x for x in lignes if x[0] != prefixe + 'HV02']
+        lignes.append([prefixe + 'HV03', 'Vanne fictive ajoutée', 'HV', '', '', '', ''])
+        ecrire_xlsx(chemin, [('Équipements', feuille[0], lignes, [20] * len(feuille[0]))])
+        avant = self.api('/api/ouvrage')['equipements']
+        self.page.locator('#o-ruban #b-import').click()
+        self.assertEqual(self.page.locator('#i-nature').input_value(), 'equipements_aller_retour')
+        self.page.locator('#i-f').set_input_files(str(chemin))
+        self.page.wait_for_function("() => document.querySelector('#i-res')?.innerText.includes('À modifier')")
+        self.assertIn('Vanne fictive modifiée', self.page.locator('#i-res').inner_text())
+        self.assertEqual(self.api('/api/ouvrage')['equipements'], avant)          # aperçu : rien d'écrit
+        self.assertEqual(self.page.locator('#m-ok').inner_text(), 'Confirmer : 1 ajout(s), 1 modification(s)')
+        self.page.locator('[data-obsolete]').select_option('supprimer')
+        self.assertEqual(self.page.locator('#m-ok').inner_text(), 'Confirmer : 1 ajout(s), 1 modification(s), 1 suppression(s)')
+        self.page.locator('#m-ok').click()
+        self.page.wait_for_function("() => document.querySelector('#toasts')?.innerText.includes('Liste appliquée')")
+        eqs = {e['pcf']: e for e in self.api('/api/ouvrage')['equipements']}
+        self.assertEqual(set(eqs), {prefixe + 'HV01', prefixe + 'HV03'})
+        self.assertEqual(eqs[prefixe + 'HV01']['libelle'], 'Vanne fictive modifiée')

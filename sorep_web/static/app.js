@@ -721,13 +721,15 @@ function vueOuvrage() {
   $("#vue").innerHTML = `<aside><div class="aside-tete"><div class="aside-titre"><h2>Arborescence de l'ouvrage</h2><span class="aside-compte" title="Équipements de l'ouvrage">${E.ouvrage.equipements.length} éq.</span></div>
       ${E.ouvrage.en_conception ? `<p class="aide-champs">Validez d’abord la création de l’ouvrage avant d’ajouter des équipements.</p>` : `<label class="aside-recherche" title="Rechercher un repère, un libellé, un type">${V31.icon("search",14)}<input id="recherche" placeholder="Filtrer : repère, libellé, type…" aria-label="Rechercher un repère, un libellé, un type" value="${esc(E.recherche)}"></label>`}
       <div class="aside-btns" role="toolbar" aria-label="Commandes de l'arborescence" ${E.ouvrage.en_conception ? "hidden" : ""}><button class="prim" id="b-eq" title="Ajouter un équipement">+ Équipement</button><button id="b-uf" title="Ajouter une unité fonctionnelle">+ UF</button>
-      <button id="b-import" title="Importer une liste d'équipements">Importer…</button></div></div><div class="arbre" id="arbre"></div></aside>
+      <button id="b-import" title="Importer une liste d'équipements">Importer…</button>
+      <button id="b-export-eq" title="Exporter la liste des équipements vers Excel, pour la compléter puis la réimporter (aller-retour)">Exporter la liste</button></div></div><div class="arbre" id="arbre"></div></aside>
     <section class="contenu" id="contenu"></section>`;
   if (!E.ouvrage.en_conception) {
     $("#recherche").oninput = ev => { E.recherche = ev.target.value; arbre(); };
     $("#b-uf").onclick = () => modaleUF();
     $("#b-eq").onclick = () => choisirModele(ufSelectionnee());
-    $("#b-import").onclick = modaleImport;
+    $("#b-import").onclick = () => modaleImport(E.ouvrage.equipements.length ? "equipements_aller_retour" : "inventaire");
+    $("#b-export-eq").onclick = () => E.ouvrage.equipements.length ? telecharger("equipements") : toast("Aucun équipement à exporter.", true);
     rubanEquipements();
   }
   arbre(); contenu();
@@ -745,7 +747,8 @@ function rubanEquipements() {
   Coque.ruban([
     {nom: "Inventaire", commandes: [{el: id("b-eq"), icone: "plus", grand: true, libelle: "Nouvel équipement"},
       {el: id("b-uf"), icone: "groupe", libelle: "Unité fonctionnelle"},
-      {el: id("b-import"), icone: "importer", libelle: "Importer une liste"}]},
+      {el: id("b-import"), icone: "importer", libelle: "Importer une liste"},
+      {el: id("b-export-eq"), icone: "importer", libelle: "Exporter la liste"}]},
     {nom: "Équipement sélectionné", commandes: [{el: fiche("e-val"), icone: "valider", grand: true},
       {el: fiche("e-mod"), icone: "modifier", libelle: "Modifier"}, {el: fiche("e-dep"), icone: "ranger", libelle: "Ranger dans une UF"},
       {el: fiche("e-sup"), icone: "supprimer", libelle: "Supprimer", danger: true}]},
@@ -2012,7 +2015,8 @@ function modaleEquipement(eq, ufDefaut, depuisCatalogue) {
 }
 function modaleImport(natureInitiale = "inventaire") {
   const types = [
-    ["inventaire", "Inventaire des équipements"],
+    ["equipements_aller_retour", "Liste des équipements (aller-retour : comparer et mettre à jour)"],
+    ["inventaire", "Inventaire des équipements (ajouts seulement)"],
     ["variables_existantes", "Variables automate existantes"],
     ["liste_es_existante", "Liste d’E/S existante"]
   ];
@@ -2034,11 +2038,12 @@ function modaleImport(natureInitiale = "inventaire") {
   const dessinerLignes = lignes => lignes.map(r => {
     const id = r.donnees.repere || r.donnees.nom || "—";
     const msg = r.diagnostics.map(d => `${d.code} : ${d.message}`).join(" ; ");
-    const cls = {a_creer:"b-ok", deja_present:"b-n", refuse:"b-err", ligne_vide:"b-n"};
-    const labels = {a_creer:"À créer", deja_present:"Déjà présent", refuse:"Refusé", ligne_vide:"Vide"};
+    const cls = {a_creer:"b-ok", a_modifier:"b-al", deja_present:"b-n", refuse:"b-err", ligne_vide:"b-n"};
+    const labels = {a_creer:"À créer", a_modifier:"À modifier", deja_present: select.value === "equipements_aller_retour" ? "Inchangé" : "Déjà présent", refuse:"Refusé", ligne_vide:"Vide"};
+    const changement = r.action === "a_modifier" && r.donnees.changements ? r.donnees.changements : "";
     return `<tr><td>${r.ligne}</td><td class="mono">${esc(id)}</td>
       <td><span class="badge ${cls[r.action] || 'b-al'}">${labels[r.action] || esc(r.action)}</span></td>
-      <td>${esc(msg || "—")}</td></tr>`;
+      <td>${esc([changement, msg].filter(Boolean).join(" · ") || "—")}</td></tr>`;
   }).join("");
   let pageActive = 1;
   let pagesTotal = 1;
@@ -2075,7 +2080,12 @@ function modaleImport(natureInitiale = "inventaire") {
       pageActive = report.pagination.page;
       pagesTotal = report.pagination.pages;
       summary.textContent = `${stats.total} lignes · ${stats.erreurs} erreur(s) · ${stats.avertissements} avertissement(s)`;
-      output.innerHTML = `<div class="note">${esc(report.fichier.split(/[\\/]/).pop())} · Feuille : ${esc(report.feuille)} · ${stats.a_creer} à créer · ${stats.deja_present} inchangées · ${stats.refuse} refusées.</div>
+      const obsoletes = report.obsoletes || [];
+      const blocObsoletes = obsoletes.length ? `<div class="import-obsoletes"><h3>Absents du fichier (${obsoletes.length})</h3>
+        <p class="aide">Ces équipements de l'ouvrage ne figurent plus dans le fichier. Ils sont gardés, sauf si vous choisissez de les supprimer.</p>
+        <table><thead><tr><th>Repère</th><th>Désignation</th><th>Action</th></tr></thead><tbody>${obsoletes.map(o => `<tr><td class="mono">${esc(o.repere)}</td><td>${esc(o.libelle || "—")}</td>
+          <td>${o.protege ? `<span class="badge b-n" title="${esc(o.motif)}">Gardé · adresses validées</span>` : `<select data-obsolete="${esc(o.ident)}" aria-label="Action pour ${esc(o.repere)}"><option value="garder">Garder</option><option value="supprimer">Supprimer</option></select>`}</td></tr>`).join("")}</tbody></table></div>` : "";
+      output.innerHTML = `<div class="note">${esc(report.fichier.split(/[\\/]/).pop())} · Feuille : ${esc(report.feuille)} · ${stats.a_creer} à créer${stats.a_modifier ? ` · ${stats.a_modifier} à modifier` : ""} · ${stats.deja_present} inchangées · ${stats.refuse} refusées${obsoletes.length ? ` · ${obsoletes.length} absent(s) du fichier` : ""}.</div>
         ${report.diagnostics_globaux.map(d => `<div class="note">${esc(d.gravite)} : ${esc(d.message)}</div>`).join("")}
         <div style="max-height:340px;overflow:auto"><table><thead><tr><th>Ligne</th><th>Identifiant</th><th>État</th><th>Diagnostic</th></tr></thead>
         <tbody id="i-lignes">${dessinerLignes(report.lignes_affichees)}</tbody></table></div>
@@ -2083,24 +2093,34 @@ function modaleImport(natureInitiale = "inventaire") {
           <button type="button" id="i-prec">← Précédent</button>
           <span id="i-page-label" aria-live="polite">Page ${pageActive} / ${pagesTotal}</span>
           <button type="button" id="i-suiv">Suivant →</button></div>` : ""}
+        ${blocObsoletes}
         ${stats.erreurs ? '<div class="note" style="color:#ad3030">Import bloqué : corrigez les erreurs dans le fichier puis relancez l’analyse.</div>' : ""}`;
       if (pagesTotal > 1) {
         output.querySelector("#i-prec").onclick = () => changerPage(pageActive - 1);
         output.querySelector("#i-suiv").onclick = () => changerPage(pageActive + 1);
         etatPages();
       }
-      action.disabled = !report.integrable;
-      action.textContent = report.integrable ? `Confirmer ${stats.a_creer} ajout(s)` : "Import indisponible";
+      const libelleAction = () => {
+        const sup = output.querySelectorAll('[data-obsolete]').length ? [...output.querySelectorAll('[data-obsolete]')].filter(s => s.value === "supprimer").length : 0;
+        const parts = [stats.a_creer ? `${stats.a_creer} ajout(s)` : "", stats.a_modifier ? `${stats.a_modifier} modification(s)` : "", sup ? `${sup} suppression(s)` : ""].filter(Boolean);
+        action.disabled = !report.integrable || !parts.length;
+        action.textContent = !report.integrable ? "Import indisponible" : parts.length ? `Confirmer : ${parts.join(", ")}` : "Rien à appliquer";
+      };
+      output.querySelectorAll('[data-obsolete]').forEach(s => s.onchange = libelleAction);
+      libelleAction();
     } catch (e) { token = ""; output.innerHTML = ""; errors.textContent = e.message; }
   };
   action.onclick = async () => {
     if (!token) return;
     action.disabled = true;
     try {
-      const result = await api("/api/inbound/appliquer", {jeton:token, confirmer:true});
+      const suppressions = [...output.querySelectorAll('[data-obsolete]')].filter(s => s.value === "supprimer").map(s => s.dataset.obsolete);
+      const result = await api("/api/inbound/appliquer", {jeton:token, confirmer:true, suppressions});
       token = "";
       fermerModale();
-      toast(`${result.crees} donnée(s) intégrée(s).`);
+      toast(result.nature === "equipements_aller_retour"
+        ? `Liste appliquée : ${result.crees} ajout(s), ${result.modifies} modification(s), ${result.supprimes} suppression(s). Copie de sécurité faite avant l'import.`
+        : `${result.crees} donnée(s) intégrée(s).`);
       E.sel = {nature:"ouvrage", valeur:""};
       await recharger();
     } catch (e) { token = ""; errors.textContent = e.message + " Relancez l’analyse du fichier."; }

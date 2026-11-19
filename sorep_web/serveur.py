@@ -641,6 +641,14 @@ class Application:
         return nom, octets
 
     def _exporter_ouvrage(self, quoi, dossier, base):
+        if quoi == "equipements":                     # aller-retour Excel (19/11)
+            if not self.s.ouvrage.equipements:
+                raise RegleMetier("Aucun équipement à exporter.")
+            nom = f"{base}_equipements_aller_retour.xlsx"
+            from genvar.aller_retour import exporter as exporter_equipements
+            exporter_equipements(os.path.join(dossier, nom), self.s.ouvrage)
+            with open(os.path.join(dossier, nom), "rb") as f:
+                return nom, f.read()
         if quoi == "liste_es":
             nom = f"{base}_liste_ES.xlsx"
             self.s.exporter_liste_es(os.path.join(dossier, nom))
@@ -1805,8 +1813,11 @@ class Application:
             raise RegleMetier("Ouvrage non disponible pour l'import.")
         ticket, preview, directory = pending
         try:
-            staged = stage_import(preview, self.s, confirmed=True)
-            if not staged.created:
+            suppressions = d.get("suppressions") or []
+            if not isinstance(suppressions, list) or not all(isinstance(x, str) for x in suppressions):
+                raise RegleMetier("Liste de suppressions invalide.")
+            staged = stage_import(preview, self.s, confirmed=True, suppressions=suppressions)
+            if not (staged.created or staged.modified or staged.deleted):
                 raise RegleMetier("Aucune nouvelle donnée à intégrer.")
             original = self.s
             original.creer_copie("import")       # V1-7-03 : état d'avant l'import, restaurable
@@ -1818,8 +1829,8 @@ class Application:
             except Exception:
                 self.s = original
                 raise
-            return {"crees": staged.created, "inchanges": staged.unchanged,
-                    "nature": staged.kind.value}
+            return {"crees": staged.created, "inchanges": staged.unchanged, "modifies": staged.modified,
+                    "supprimes": staged.deleted, "nature": staged.kind.value}
         finally:
             self._clear_inbound()
 

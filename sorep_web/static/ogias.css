@@ -769,6 +769,11 @@ html[data-theme] .creation-standard small { display: block; color: var(--o-texte
 @media (max-width: 1200px) { html[data-theme] .std-grille, html[data-theme] .std-briques, html[data-theme] .std-bibliotheque { grid-template-columns: minmax(0, 1fr); }
   html[data-theme] .std-brique:nth-child(even) { border-left: 0; } html[data-theme] .std-brique:nth-child(2) { border-top: 1px solid var(--o-ligne); } }
 
+/* Aller-retour Excel (19/11) : équipements absents du fichier, gardés sauf choix explicite */
+html[data-theme] .import-obsoletes { margin-top: var(--o-e-3); }
+html[data-theme] .import-obsoletes h3 { margin: 0 0 var(--o-e-1); font-size: var(--o-t-m); }
+html[data-theme] .import-obsoletes .aide { margin: 0 0 var(--o-e-2); }
+
 /* Plan mémoire %MW par famille (18/11) */
 html[data-theme] .ad-plages-titre { margin: var(--o-e-3) 0 var(--o-e-1); font-size: var(--o-t-m); }
 html[data-theme] table.ad-plages { width: auto; margin: var(--o-e-1) 0 var(--o-e-2); }

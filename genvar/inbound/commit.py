@@ -48,7 +48,21 @@ def _apply_io(session: Session, rows: list[dict[str, str]]) -> int:
     return len(rows)
 
 
-def stage_import(preview: ImportPreview, session: Session, *, confirmed: bool = False) -> StagedImport:
+def _apply_updates(session: Session, rows: list[dict[str, str]]) -> int:
+    """Aller-retour : seuls les champs comparés changent (désignation, modèle, UF, local), par la voie habituelle
+    (contrôles de l'équipement ; un équipement modifié repasse « à valider »). Adresses et signaux conservés."""
+    import json
+    for row in rows:
+        base = next(e for e in session.ouvrage.equipements if e.ident == row["ident_eq"])
+        nouveau = copy.deepcopy(base)
+        for attribut, valeur in json.loads(row["_modifs"]).items():
+            setattr(nouveau, attribut, valeur[:32] if attribut == "libelle" else valeur)
+        session.remplacer_equipement(base.ident, nouveau)
+    return len(rows)
+
+
+def stage_import(preview: ImportPreview, session: Session, *, confirmed: bool = False,
+                 suppressions: tuple | list | set = ()) -> StagedImport:
     """Retourne une copie enrichie ; n'écrit et ne modifie JAMAIS `session`.
 
     Préconditions : confirmation explicite, aucune erreur, empreinte de projet
@@ -68,13 +82,25 @@ def stage_import(preview: ImportPreview, session: Session, *, confirmed: bool = 
     if fresh != preview:
         raise InboundError("Le fichier ou la prévisualisation a changé : refaire l'analyse.")
     to_create = [dict(row.values) for row in fresh.rows if row.action == RowAction.CREATE]
+    to_update = [dict(row.values) for row in fresh.rows if row.action == RowAction.UPDATE]
+    suppressions = set(suppressions or ())
+    supprimables = {o["ident"] for o in fresh.obsoletes if not o["protege"]}
+    if suppressions - supprimables:
+        raise InboundError("Suppression refusée : seuls les équipements obsolètes sans adresse validée peuvent être supprimés.")
     # Aucune modification en cas d'échec. Le caller choisit ensuite quoi faire
     # de la copie ; surtout ne PAS réutiliser automatiquement session.chemin.
     copy_session = copy.deepcopy(session)
     copy_session.chemin = None
     try:
+        modified = deleted = 0
         if fresh.kind == InputKind.INVENTORY:
             created = _apply_inventory(copy_session, to_create)
+        elif fresh.kind == InputKind.EQUIPMENT_SYNC:
+            created = _apply_inventory(copy_session, to_create)
+            modified = _apply_updates(copy_session, to_update)
+            for ident in sorted(suppressions):
+                copy_session.supprimer_equipement(ident)
+                deleted += 1
         elif fresh.kind == InputKind.PLC_VARIABLES:
             created = _apply_variables(copy_session, to_create)
         elif fresh.kind == InputKind.PHYSICAL_IO:
@@ -87,4 +113,4 @@ def stage_import(preview: ImportPreview, session: Session, *, confirmed: bool = 
         raise InboundError("Nombre de lignes intégrées incohérent : copie rejetée.")
     return StagedImport(copy_session, fresh.kind, created,
                         sum(row.action == RowAction.ALREADY_EXISTS for row in fresh.rows),
-                        fresh.source_digest)
+                        fresh.source_digest, modified, deleted)
