@@ -24,11 +24,28 @@ LISEZ_MOI = [
 ]
 
 
-def lignes(ouvrage) -> list[list[str]]:
-    return [[ouvrage.repere(e), e.libelle, e.type, e.modele, e.uf, e.local, e.ident]
+def attributs_colonnes(ouvrage) -> list[dict]:
+    """Attributs actifs de l'atelier qui concernent au moins un équipement de l'ouvrage (lot 4)."""
+    from . import attributs
+    try:
+        tous = attributs.lister(actifs_seulement=True)
+    except ValueError:
+        return []
+    types = {e.type for e in ouvrage.equipements}
+    return [a for a in tous if not a.get("types") or types & set(a["types"])]
+
+
+def lignes(ouvrage, colonnes=()) -> list[list[str]]:
+    return [[ouvrage.repere(e), e.libelle, e.type, e.modele, e.uf, e.local, e.ident,
+             *[(e.attributs or {}).get(a["code"], "") if (not a.get("types") or e.type in a["types"]) else "—"
+               for a in colonnes]]
             for e in sorted(ouvrage.equipements, key=ouvrage.repere)]
 
 
 def exporter(chemin, ouvrage) -> None:
-    ecrire_xlsx(chemin, [("Équipements", ENTETES, lignes(ouvrage), [22, 34, 10, 22, 10, 18, 22]),
-                         ("Lisez-moi", ["Aller-retour de la liste des équipements"], LISEZ_MOI, [110])])
+    colonnes = attributs_colonnes(ouvrage)
+    entetes = [*ENTETES, *[f"{a['nom']}{' (' + a['unite'] + ')' if a.get('unite') else ''} [{a['code']}]" for a in colonnes]]
+    lisez = [*LISEZ_MOI, *([["Colonnes d'attributs : « Nom [CODE] ». « — » = sans objet pour ce type. Valeurs contrôlées "
+                             "selon la définition de l'attribut (nombre, liste, Oui / Non)."]] if colonnes else [])]
+    ecrire_xlsx(chemin, [("Équipements", entetes, lignes(ouvrage, colonnes), [22, 34, 10, 22, 10, 18, 22, *[18] * len(colonnes)]),
+                         ("Lisez-moi", ["Aller-retour de la liste des équipements"], lisez, [110])])

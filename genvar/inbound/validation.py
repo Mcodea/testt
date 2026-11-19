@@ -190,6 +190,24 @@ def _sync(row: SourceRow, values: dict[str, str], session: Session,
                                 Severity.ERROR, row))
             continue
         changements.append((attribut, nom, getattr(eq, attribut) or "", nouveau))
+    # Attributs de l'atelier (lot 4) : contrôlés selon leur définition ; cellule vide = valeur conservée
+    from genvar import attributs
+    for cle in [k for k in vals if k.startswith("attr:")]:
+        code, brut = cle[5:], str(vals.get(cle, "")).strip()
+        if not brut or brut == "—":                    # « — » : sans objet pour ce type (écrit par l'export)
+            continue
+        a = attributs.trouver(code)
+        if a is None or a.get("archive") or (a.get("types") and eq.type not in a["types"]):
+            issues.append(_diag("ATTRIBUT_NON_APPLICABLE", f"Attribut {code} inconnu, archivé ou sans objet pour le type "
+                                f"{eq.type}.", Severity.ERROR, row))
+            continue
+        try:
+            v = attributs.valider(a, brut)
+        except attributs.AttributRefuse as exc:
+            issues.append(_diag("ATTRIBUT_INVALIDE", str(exc), Severity.ERROR, row))
+            continue
+        if v != (eq.attributs or {}).get(code, ""):
+            changements.append((cle, a["nom"], (eq.attributs or {}).get(code, ""), v))
     vals["ident_eq"] = eq.ident
     vals["changements"] = " ; ".join(f"{nom} : « {avant} » → « {apres} »" for _, nom, avant, apres in changements)
     vals["_modifs"] = json.dumps({a: apres for a, _, _, apres in changements}, ensure_ascii=False, sort_keys=True)

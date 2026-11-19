@@ -1112,6 +1112,29 @@ class Session:
         nouveau.numero = f"{libres[0]:02d}"
         return nouveau
 
+    def definir_attribut(self, ident_eq, code, valeur):
+        """Valeur d'un attribut de l'atelier sur un équipement (19/11, lot 4), contrôlée selon sa définition ; vide =
+        retirée. Donnée descriptive : ni adresse ni validation ne changent."""
+        from . import attributs
+        eq = self.ouvrage.equipement(ident_eq)
+        if eq is None:
+            raise RegleMetier("Équipement introuvable.")
+        a = attributs.trouver(code)
+        if a is None or a.get("archive"):
+            raise RegleMetier("Attribut inconnu ou archivé.")
+        if a.get("types") and eq.type not in a["types"]:
+            raise RegleMetier(f"L'attribut « {a['nom']} » ne concerne pas le type {eq.type}.")
+        try:
+            v = attributs.valider(a, valeur)
+        except attributs.AttributRefuse as exc:
+            raise RegleMetier(str(exc)) from None
+        if v:
+            eq.attributs[code] = v
+        else:
+            eq.attributs.pop(code, None)
+        self._change(devalider=False)
+        return v
+
     def supprimer_equipement(self, ident):
         self.ouvrage.equipements = [e for e in self.ouvrage.equipements if e.ident != ident]
         self._change()

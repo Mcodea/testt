@@ -87,6 +87,7 @@ class Equipement:
     lignes_modifiees: dict = field(default_factory=dict) # identifiant -> ligne modifiée
     valide: bool = False                               # équipement vérifié par l'automaticien (inventaire)
     local: str = ""                                    # lieu physique (local, armoire…)
+    attributs: dict = field(default_factory=dict)      # code d'attribut de l'atelier -> valeur (19/11, lot 4)
 
     def code_court(self):
         from .modeles import repere_fin
@@ -988,6 +989,15 @@ def controler(ouvrage, catalogue, variables=None):
             err(rep, "Le numéro doit faire 2 chiffres (01 à 99).", eq.ident, code="R-EQ-06")
         if rep in reperes:
             err(rep, "Repère utilisé par deux équipements.", eq.ident, code="R-EQ-07")
+        # Attributs de l'atelier (19/11, lot 4) : obligatoire sans valeur, valeur retirée de sa liste
+        from . import attributs as _attributs
+        try:
+            for at in _attributs.manquants(eq):
+                alerte(rep, f"Attribut obligatoire « {at['nom']} » sans valeur.", eq.ident, code="R-ATT-01")
+            for txt in _attributs.hors_liste(eq):
+                alerte(rep, f"Valeur hors liste : {txt}.", eq.ident, code="R-ATT-02")
+        except ValueError:
+            pass                                   # bibliothèque illisible : signalée dans son écran, pas ici
         reperes[rep] = True
         catalogue_eq = catalogue_pour_equipement(ouvrage, catalogue, eq)
         for opt in eq.options:

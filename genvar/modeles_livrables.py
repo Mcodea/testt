@@ -128,7 +128,7 @@ def analyser(texte: str) -> tuple[Bloc, list[str], list[dict]]:
         portees = [b.nom for b in pile[1:]]
         portee, connue = _portee(nom, portees)
         e = emplois.setdefault(nom, {"nom": nom, "portee": portee, "connue": connue, "nombre": 0,
-                                     "description": DESCRIPTIONS.get(nom, "")})
+                                     "description": DESCRIPTIONS.get(nom, "") or _description_attribut(nom)})
         e["nombre"] += 1
         if not connue:
             e["connue"] = False
@@ -144,11 +144,31 @@ def analyser(texte: str) -> tuple[Bloc, list[str], list[dict]]:
 DESCRIPTIONS = {**VARIABLES_OUVRAGE, **VARIABLES_EQUIPEMENT, **VARIABLES_VARIABLE, **VARIABLES_ES, **COMPTEUR}
 
 
+def _description_attribut(nom: str) -> str:
+    if not nom.startswith("ATTR_"):
+        return ""
+    from . import attributs
+    try:
+        a = attributs.trouver(nom[5:])
+    except ValueError:
+        return ""
+    return f"Attribut d'équipement : {a['nom']}" if a else ""
+
+
 def _portee(nom: str, ouverts: list[str]) -> tuple[str, bool]:
     if nom in VARIABLES_OUVRAGE:
         return "ouvrage", True
     if nom in COMPTEUR:
         return ("bloc", True) if ouverts else ("à utiliser dans un bloc", False)
+    if nom.startswith("ATTR_"):
+        from . import attributs
+        try:
+            connu = attributs.trouver(nom[5:]) is not None
+        except ValueError:
+            connu = False
+        if not connu:
+            return "attribut d'équipement inconnu de l'atelier", False
+        return ("équipement", True) if ouverts else ("à utiliser dans un bloc EQUIPEMENTS, VARIABLES ou ES", False)
     if nom in VARIABLES_EQUIPEMENT:
         return ("équipement", True) if ouverts else ("à utiliser dans un bloc EQUIPEMENTS, VARIABLES ou ES", False)
     if nom in VARIABLES_VARIABLE:
@@ -176,7 +196,8 @@ def valeurs_equipement(session, eq) -> dict:
     o = session.ouvrage
     return {"REPERE": o.repere(eq), "REPERE_NOM": o.repere_nom(eq), "EQ_TYPE": eq.type, "EQ_NUMERO": eq.numero,
             "EQ_LIBELLE": eq.libelle, "EQ_DESIGNATION": session.designation_type(eq.type),
-            "SOUS_ENSEMBLE": eq.sous_ensemble, "UF": eq.uf, "LOCAL": eq.local, "MODELE": eq.modele}
+            "SOUS_ENSEMBLE": eq.sous_ensemble, "UF": eq.uf, "LOCAL": eq.local, "MODELE": eq.modele,
+            **{f"ATTR_{k}": v for k, v in (getattr(eq, "attributs", None) or {}).items()}}
 
 
 def valeurs_variable(session, v) -> dict:

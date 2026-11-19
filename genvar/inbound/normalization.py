@@ -47,6 +47,16 @@ def columns(kind: InputKind, headers: tuple[str, ...]) -> dict[str, int]:
                 if name in result:
                     raise InboundError(f"Colonnes ambiguës : le champ « {name} » apparaît plusieurs fois.")
                 result[name] = idx
+    if kind == InputKind.EQUIPMENT_SYNC:
+        # Colonnes d'attributs de l'atelier (19/11, lot 4) : « Nom [CODE] », telles que l'export les écrit.
+        import re
+        for idx, cell in enumerate(headers):
+            m = re.search(r"\[([A-Z][A-Z0-9_]{0,19})\]\s*$", str(cell or ""))
+            if m:
+                cle = "attr:" + m.group(1)
+                if cle in result:
+                    raise InboundError(f"Colonnes ambiguës : l'attribut {m.group(1)} apparaît plusieurs fois.")
+                result[cle] = idx
     required = {InputKind.INVENTORY: {"repere"}, InputKind.EQUIPMENT_SYNC: {"repere"},
                 InputKind.PLC_VARIABLES: {"nom"},
                 InputKind.PHYSICAL_IO: {"nom", "equipement", "fonction"}}[kind]

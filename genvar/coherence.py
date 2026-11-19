@@ -65,6 +65,14 @@ REGLES: dict[str, Regle] = {r.code: r for r in [
     Regle("R-EQ-06", "Numéro d'équipement mal formé", _E, _EQ,
           "Le numéro entre dans le repère : un format différent casse la charte.",
           "Saisir 2 chiffres (01 à 99)."),
+    Regle("R-ATT-01", "Attribut obligatoire sans valeur", _A, _EQ,
+          "L'atelier a déclaré cet attribut obligatoire pour ce type d'équipement : les livrables qui l'emploient "
+          "seraient incomplets.",
+          "Renseigner l'attribut sur la fiche de l'équipement, ou par l'aller-retour Excel de la liste."),
+    Regle("R-ATT-02", "Valeur d'attribut hors liste", _A, _EQ,
+          "La valeur a été retirée de la liste de l'attribut après sa saisie : elle est conservée mais n'est plus "
+          "une valeur prévue.",
+          "Choisir une valeur de la liste sur la fiche de l'équipement, ou rétablir la valeur dans la définition."),
     Regle("R-EQ-07", "Repère en double", _E, _EQ,
           "Deux équipements de même repère produisent des noms de variables identiques.",
           "Renuméroter l'un des deux équipements."),

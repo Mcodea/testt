@@ -127,6 +127,7 @@ async function _standards(j) {
   E.vue = "standards";
   E.standards = await api("/api/standards");
   E.modelesLivrables = await api("/api/modeles-livrables");
+  E.attributsAtelier = await api("/api/attributs");
   if (perime(j)) return;
   rendre();
 }
@@ -957,7 +958,8 @@ function vueStandards() {
     ${biblio("adressage", "Plans d'adressage", "Nouveau plan d'adressage…")}
     ${biblio("outils", "Chaînes d'outils", "Nouvelle chaîne d'outils…")}
    </div>
-   ${blocModelesLivrables(E.modelesLivrables)}</section>`;
+   ${blocModelesLivrables(E.modelesLivrables)}
+   ${blocAttributsAtelier(E.attributsAtelier)}</section>`;
   document.querySelectorAll("[data-std]").forEach(r => { r.onclick = () => { E.standardSel = r.dataset.std; vueStandards(); };
     r.onkeydown = ev => { if (ev.key === "Enter") r.click(); }; });
   const agir = async (corps, message) => {
@@ -972,6 +974,52 @@ function vueStandards() {
   if ($("#std-reactiver")) $("#std-reactiver").onclick = () => agir({action: "statut", ident: sel.ident, statut: "actif"}, `« ${sel.nom} » réactivé.`);
   document.querySelectorAll("[data-nouvelle-brique]").forEach(b => b.onclick = () => modaleBrique(d, b.dataset.nouvelleBrique, agir));
   brancherModelesLivrables();
+  brancherAttributsAtelier();
+}
+/* Attributs d'équipement de l'atelier (lot 4, 19/11) : code et type figés à la création ; on archive, on ne
+   supprime pas (les valeurs restent sur les équipements). */
+function blocAttributsAtelier(d) {
+  if (!d) return "";
+  const types = d.types_attribut;
+  return `<div class="bloc std-attributs"><div class="bloc-tete"><h2>Attributs d'équipement</h2>
+    <div class="boutons-ligne"><button type="button" class="prim" id="at-nouveau">Nouvel attribut…</button></div></div>
+    <p class="aide">Des champs propres à votre façon de travailler (puissance, alimentation, marque…), par type d'équipement ou pour tous. Ils se saisissent sur la fiche de l'équipement ou par l'aller-retour Excel, et se reprennent dans les modèles de livrables (<span class="mono">&lt;#ATTR_CODE#&gt;</span>).</p>
+    ${d.attributs.length ? `<table data-o-tableau="sans-selection" data-o-cle="attributs-atelier"><thead><tr><th>Code</th><th>Nom</th><th>Type</th><th>Types d'équipement</th><th>Obligatoire</th><th>État</th></tr></thead><tbody>
+      ${d.attributs.map(a => `<tr class="cliquable" data-at="${esc(a.code)}" tabindex="0"><td class="mono">${esc(a.code)}</td><td><b>${esc(a.nom)}</b>${a.unite ? ` <span class="aide">(${esc(a.unite)})</span>` : ""}</td>
+        <td>${esc(types[a.type])}${a.type === "liste" ? ` <span class="aide">${esc(a.valeurs.join(" · "))}</span>` : ""}</td><td>${a.types.length ? esc(a.types.join(", ")) : "tous"}</td><td>${a.obligatoire ? "oui" : "—"}</td>
+        <td>${a.archive ? '<span class="badge b-n">archivé</span>' : '<span class="badge b-ok">actif</span>'}</td></tr>`).join("")}</tbody></table>`
+      : '<div class="vide-bloc">Aucun attribut pour l\'instant.</div>'}</div>`;
+}
+function brancherAttributsAtelier() {
+  const d = E.attributsAtelier; if (!d) return;
+  const envoyer = async (corps, message) => {
+    try { E.attributsAtelier = await api("/api/attributs/action", corps); fermerModale(); toast(message); vueStandards(); }
+    catch (err) { toast(err.message, true); }
+  };
+  const modale = a => {
+    const t = a?.type || "texte";
+    const m = ouvrirModale(`<div class="boite-tete"><h2>${a ? `Attribut ${esc(a.code)}` : "Nouvel attribut d'équipement"}</h2><p>${a ? "Le code et le type ne changent plus : les modèles et les fichiers les emploient." : "Le code et le type seront figés après la création."}</p></div>
+      <div class="boite-corps std-formulaire">
+       <label for="at-code">Code (variable <span class="mono">&lt;#ATTR_CODE#&gt;</span>)</label><input id="at-code" maxlength="20" value="${esc(a?.code || "")}" ${a ? "disabled" : ""} placeholder="Ex. PUISSANCE_KW" style="text-transform:uppercase">
+       <label for="at-nom">Nom</label><input id="at-nom" maxlength="60" value="${esc(a?.nom || "")}">
+       <label for="at-type">Type</label><select id="at-type" ${a ? "disabled" : ""}>${Object.entries(d.types_attribut).map(([k, l]) => `<option value="${k}" ${k === t ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+       <label for="at-valeurs">Valeurs de la liste (une par ligne)</label><textarea id="at-valeurs" rows="3">${esc((a?.valeurs || []).join("\n"))}</textarea>
+       <label for="at-unite">Unité (nombre)</label><input id="at-unite" maxlength="12" value="${esc(a?.unite || "")}">
+       <label for="at-types">Types d'équipement concernés (codes séparés par des virgules ; vide = tous)</label><input id="at-types" value="${esc((a?.types || []).join(", "))}" list="at-types-liste"><datalist id="at-types-liste">${d.types_equipement.map(x => `<option value="${esc(x)}">`).join("")}</datalist>
+       <label for="at-defaut">Valeur proposée à la saisie (facultative)</label><input id="at-defaut" value="${esc(a?.defaut || "")}">
+       <label class="case"><input type="checkbox" id="at-oblig" ${a?.obligatoire ? "checked" : ""}> Obligatoire (signalé par la règle R-ATT-01 s'il manque)</label>
+       <label for="at-description">Description</label><input id="at-description" maxlength="200" value="${esc(a?.description || "")}"></div>
+      <div class="boite-pied">${a ? `<button type="button" class="gauche" id="at-archiver">${a.archive ? "Réactiver" : "Archiver"}</button>` : ""}<button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="at-ok">${a ? "Enregistrer" : "Créer l'attribut"}</button></div>`);
+    const lire = () => ({code: m.querySelector("#at-code").value, nom: m.querySelector("#at-nom").value, type: m.querySelector("#at-type").value,
+      valeurs: m.querySelector("#at-valeurs").value.split("\n"), unite: m.querySelector("#at-unite").value,
+      types: m.querySelector("#at-types").value.split(",").map(x => x.trim()).filter(Boolean), defaut: m.querySelector("#at-defaut").value,
+      obligatoire: m.querySelector("#at-oblig").checked, description: m.querySelector("#at-description").value});
+    m.querySelector("#at-ok").onclick = () => a ? envoyer({action: "modifier", code: a.code, definition: lire()}, "Attribut enregistré.")
+      : envoyer({action: "creer", definition: lire()}, "Attribut créé.");
+    if (a) m.querySelector("#at-archiver").onclick = () => envoyer({action: a.archive ? "reactiver" : "archiver", code: a.code}, a.archive ? "Attribut réactivé." : "Attribut archivé : valeurs conservées.");
+  };
+  if ($("#at-nouveau")) $("#at-nouveau").onclick = () => modale(null);
+  document.querySelectorAll("[data-at]").forEach(r => { r.onclick = () => modale(d.attributs.find(x => x.code === r.dataset.at)); r.onkeydown = ev => { if (ev.key === "Enter") r.click(); }; });
 }
 /* Modèles de livrables (lot 1, 19/11) : fichiers tirés des outils du client, avec des variables <#…#> qu'OGIAS
    remplit. Le format vient du fichier fourni ; OGIAS n'en invente aucun. */
@@ -1525,6 +1573,32 @@ function detailGroupe() {
       async v => { await agir(api("/api/uf", {action: "renommer_communs", libelle: v})); recharger(); });
   }
 }
+/* Attributs de l'atelier sur la fiche d'un équipement (lot 4, 19/11) : saisie contrôlée, enregistrée à chaque
+   changement ; la valeur par défaut est proposée en exemple, jamais écrite d'office. */
+function blocAttributsEquipement(e) {
+  const liste = e.attributs || [];
+  if (!liste.length) return "";
+  const champ = a => {
+    const id = `attr-${a.code}`, v = a.valeur || "";
+    if (a.archive) return `<span class="mono">${esc(v)}</span> <span class="aide">attribut archivé</span>`;
+    if (a.type === "liste" || a.type === "oui_non") {
+      const valeurs = a.type === "oui_non" ? ["Oui", "Non"] : a.valeurs;
+      const hors = v && !valeurs.includes(v);
+      return `<select id="${id}" data-attribut="${esc(a.code)}" aria-label="${esc(a.nom)}"><option value="">—</option>${valeurs.map(x => `<option ${x === v ? "selected" : ""}>${esc(x)}</option>`).join("")}${hors ? `<option selected>${esc(v)}</option>` : ""}</select>${hors ? ' <span class="badge b-al">hors liste</span>' : ""}`;
+    }
+    return `<input id="${id}" data-attribut="${esc(a.code)}" value="${esc(v)}" ${a.type === "nombre" ? 'inputmode="decimal"' : ""} placeholder="${esc(a.defaut ? "ex. " + a.defaut : "")}" aria-label="${esc(a.nom)}">${a.unite ? ` <span class="aide">${esc(a.unite)}</span>` : ""}`;
+  };
+  return `<div class="bloc attributs-eq" id="attributs-eq"><div class="bloc-tete"><h2>Attributs</h2><span class="aide">champs déclarés par l'atelier pour ce type · variables <span class="mono">&lt;#ATTR_…#&gt;</span> des modèles de livrables</span></div>
+    <div class="attributs-grille">${liste.map(a => `<div class="attribut"><label for="attr-${esc(a.code)}">${esc(a.nom)}${a.obligatoire ? ' <span class="oblig" title="Obligatoire">*</span>' : ""}</label>
+      <span class="attribut-champ">${champ(a)}</span>${a.description ? `<small>${esc(a.description)}</small>` : ""}</div>`).join("")}</div></div>`;
+}
+function brancherAttributsEquipement(e) {
+  document.querySelectorAll("#attributs-eq [data-attribut]").forEach(ch => ch.onchange = async () => {
+    try { const r = await api("/api/equipement/attribut", {ident_eq: e.ident, code: ch.dataset.attribut, valeur: ch.value});
+      ch.value = r.valeur; toast("Attribut enregistré."); }
+    catch (err) { toast(err.message, true); ch.value = (e.attributs.find(x => x.code === ch.dataset.attribut) || {}).valeur || ""; }
+  });
+}
 function detailEquipement(e) {
   COMMANDES_SELECTION.forEach(x => document.querySelector(`#o-ruban #${x}`)?.remove());   // lot 5a, voir contenu()
   const c = $("#contenu"), o = E.ouvrage;
@@ -1545,7 +1619,9 @@ function detailEquipement(e) {
    ${!e.modele_a_jour ? `<div class="avert">Le modèle « ${esc(e.modele)} » a changé dans le référentiel depuis l'ajout de cet équipement. <button class="lien" id="e-act">Reprendre la nouvelle version</button></div>` : ""}
    ${(e.erreurs || []).length || (e.alertes || []).length ? `<details class="controles-eq" id="controles-eq" ${(e.erreurs || []).length ? "open" : ""}><summary>Contrôles de cet équipement :
      ${(e.erreurs || []).length ? `<span class="badge b-err">${(e.erreurs || []).length} erreur(s)</span>` : ""} ${(e.alertes || []).length ? `<span class="badge b-al">${(e.alertes || []).length} alerte(s)</span>` : ""}</summary>
-     <ul class="liste-controles">${(e.erreurs || []).map(m => `<li class="c-err">${esc(m)}</li>`).join("")}${(e.alertes || []).map(m => `<li class="c-al">${esc(m)}</li>`).join("")}</ul></details>` : ""}`;
+     <ul class="liste-controles">${(e.erreurs || []).map(m => `<li class="c-err">${esc(m)}</li>`).join("")}${(e.alertes || []).map(m => `<li class="c-al">${esc(m)}</li>`).join("")}</ul></details>` : ""}
+   ${blocAttributsEquipement(e)}`;
+  brancherAttributsEquipement(e);
   const blocLignes = `   <div class="bloc" id="lignes-supervision"><div class="bloc-tete"><h2>Lignes du modèle de supervision</h2><span class="aide">libellés et mnémoniques du modèle choisi · ${e.informations.length} ligne(s)${e.adapte ? " · adaptées pour cet équipement" : ""}</span>
      <div class="droite">${e.adapte ? '<button id="l-ret">Revenir au modèle</button>' : ""}<button class="danger" id="l-sup" disabled>Supprimer la sélection</button><button class="prim" id="l-add">+ Ajouter une ligne</button></div></div>
    ${e.informations.length ? `<div class="compteurs"><span class="chip ${E.filtreRole === "Toutes" ? "on" : ""}" data-r="Toutes">Toutes<b>${e.informations.length}</b></span>

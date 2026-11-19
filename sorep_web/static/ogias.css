@@ -769,6 +769,17 @@ html[data-theme] .creation-standard small { display: block; color: var(--o-texte
 @media (max-width: 1200px) { html[data-theme] .std-grille, html[data-theme] .std-briques, html[data-theme] .std-bibliotheque { grid-template-columns: minmax(0, 1fr); }
   html[data-theme] .std-brique:nth-child(even) { border-left: 0; } html[data-theme] .std-brique:nth-child(2) { border-top: 1px solid var(--o-ligne); } }
 
+/* Attributs d'équipement (19/11, lot 4) */
+html[data-theme] .std-attributs { margin-top: var(--o-e-4); }
+html[data-theme] .std-attributs > .aide { margin: 0 0 var(--o-e-2); max-width: 110ch; }
+html[data-theme] .attributs-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--o-e-3); }
+html[data-theme] .attribut { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+html[data-theme] .attribut label { font-size: var(--o-t-s); color: var(--o-texte-2); }
+html[data-theme] .attribut .oblig { color: var(--o-erreur); }
+html[data-theme] .attribut small { color: var(--o-texte-2); font-size: var(--o-t-xs); }
+html[data-theme] .attribut-champ { display: flex; align-items: center; gap: var(--o-e-1); }
+html[data-theme] .attribut-champ input, html[data-theme] .attribut-champ select { flex: 1; min-width: 0; }
+
 /* Cahiers d'essais FAT / SAT (19/11) */
 html[data-theme] .rc-essais { margin: var(--o-e-4) 0; }
 html[data-theme] .rc-essais .rc-groupe-tete { display: flex; align-items: baseline; gap: var(--o-e-2); margin-bottom: var(--o-e-2); }

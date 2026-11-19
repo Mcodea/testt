@@ -280,6 +280,15 @@ class Application:
         fiche["erreurs"] = [a.message for a in propres if a.niveau == "Erreur" and "non décidée" not in a.message]
         fiche["alertes"] = [a.message for a in propres if a.niveau == "Alerte"]
         fiche["a_decider"] = sum(1 for x in fiche["fonctionnelles"] if x["etat"] == "proposée")
+        from genvar import attributs as at        # attributs de l'atelier applicables (lot 4) et leurs valeurs
+        try:
+            applicables = at.applicables(e.type)
+        except ValueError:
+            applicables = []
+        codes = {a["code"] for a in applicables}
+        fiche["attributs"] = [{**a, "valeur": (e.attributs or {}).get(a["code"], "")} for a in applicables] + [
+            {"code": k, "nom": k, "type": "texte", "valeur": v, "archive": True} for k, v in (e.attributs or {}).items()
+            if k not in codes]
         fiche["options_es"] = [{"nom": o, "active": o in e.options}
                                 for o in self.s.options_equipement(e)]
         presents = {(p.ident_eq, p.cle): p for p in self.s.points()}
@@ -1027,6 +1036,33 @@ class Application:
             raise RegleMetier("Action inconnue.")
         return {**self.standards_web({}), "ident": d.get("ident", ""), "alertes": alertes}
 
+    def attributs_web(self, _):
+        """Attributs d'équipement de l'atelier (lot 4, 19/11) et types d'équipement connus."""
+        from genvar import attributs
+        types = sorted({t for t in self.s.modeles["types"]} | {t["code"] for t in self.s.catalogue.types})
+        return {"attributs": attributs.lister(), "types_attribut": attributs.TYPES, "types_equipement": types}
+
+    def attributs_action(self, d):
+        from genvar import attributs
+        action, code = d.get("action"), str(d.get("code") or "")
+        try:
+            if action == "creer":
+                attributs.creer(d.get("definition") or {})
+            elif action == "modifier":
+                attributs.modifier(code, d.get("definition") or {})
+            elif action in ("archiver", "reactiver"):
+                attributs.archiver(code, action == "archiver")
+            else:
+                raise RegleMetier("Action inconnue.")
+        except attributs.AttributRefuse as exc:
+            raise RegleMetier(str(exc)) from None
+        return self.attributs_web({})
+
+    def equipement_attribut(self, d):
+        v = self.s.definir_attribut(str(d.get("ident_eq") or ""), str(d.get("code") or ""), d.get("valeur", ""))
+        self._sauver()
+        return {"valeur": v}
+
     def essais_web(self, _):
         """Avancement des cahiers d'essais FAT et SAT (lot 3, 19/11) : résultats reportés, jamais déduits."""
         if not self.ouvert or self.creation_en_attente:
@@ -1086,6 +1122,13 @@ class Application:
         groupes = [("Ouvrage (partout)", ml.VARIABLES_OUVRAGE), ("Équipement (dans un bloc)", ml.VARIABLES_EQUIPEMENT),
                    ("Variable (bloc VARIABLES)", ml.VARIABLES_VARIABLE), ("E/S (bloc ES)", ml.VARIABLES_ES),
                    ("Compteur (dans un bloc)", ml.COMPTEUR)]
+        from genvar import attributs
+        try:
+            liste_attr = [{"nom": "ATTR_" + a["code"], "description": a["nom"]} for a in attributs.lister(actifs_seulement=True)]
+        except ValueError:
+            liste_attr = []
+        if liste_attr:
+            groupes.insert(2, ("Attributs d'équipement de l'atelier (dans un bloc)", {x["nom"]: x["description"] for x in liste_attr}))
         return {"modeles": [ml.resume(m) for m in ml.lister()],
                 "variables": [{"groupe": g, "liste": [{"nom": k, "description": v} for k, v in d.items()]} for g, d in groupes],
                 "blocs": {"EQUIPEMENTS": "", "VARIABLES": list(ml.FAMILLES_FILTRE), "ES": list(ml.POINTS_FILTRE)},
@@ -1953,14 +1996,14 @@ ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle":
               "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre",
               "/api/es": "es", "/api/numero-ouvrage": "numero_ouvrage_suggere",
               "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page",
-              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
+              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/attributs": "attributs_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
               "/api/referentiel/synchronisation": "synchronisation_referentiel", "/api/ouvrage/copies": "copies_ouvrage",
               "/api/referentiel/impact": "rapport_impact", "/api/referentiel/propagation": "apercu_propagation",
               "/api/referentiel/apercu-modele": "apercu_modele"}
 ROUTES_POST = {"/api/nouveau": "nouveau", "/api/ouvrir": "ouvrir", "/api/fermer": "fermer",
                "/api/supprimer_ouvrage": "supprimer_ouvrage", "/api/definir": "definir",
                "/api/fiche-ouvrage": "fiche_ouvrage",
-               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/essais/reporter": "essais_reporter", "/api/modeles-livrables/action": "modeles_livrables_action", "/api/standards/appliquer": "appliquer_standard", "/api/standards/charte-apercu": "apercu_charte", "/api/reglages/reprendre": "reprendre_reglages",
+               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/attributs/action": "attributs_action", "/api/equipement/attribut": "equipement_attribut", "/api/essais/reporter": "essais_reporter", "/api/modeles-livrables/action": "modeles_livrables_action", "/api/standards/appliquer": "appliquer_standard", "/api/standards/charte-apercu": "apercu_charte", "/api/reglages/reprendre": "reprendre_reglages",
                "/api/identification/type": "identifier_type",
                "/api/identification/selection": "identifier_selection", "/api/uf": "uf",
                "/api/equipement/ajouter": "ajouter_equipement", "/api/equipement/modifier": "modifier_equipement",

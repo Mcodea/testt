@@ -472,12 +472,16 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.locator('#type_ouvrage').select_option('RV')
         num = f'{10 + n:02d}'          # plage propre à cet essai (fiches d'essai : 40+ et 70+)
         self.page.wait_for_load_state('networkidle')     # proposition de numéro en cours : attendre sa réponse
-        self.page.locator('#numero_ouvrage').fill(num)
-        self.page.locator('#numero_ouvrage').dispatch_event('input')
-        try:
-            self.page.wait_for_function("t => document.querySelector('#code-ouvrage-affiche')?.textContent === t",
-                                        arg=f'XTST_RV_EAU_{num}', timeout=10000)
-        except Exception:
+        for _ in range(3):                                # un rafraîchissement de la fiche peut survenir pendant la saisie
+            self.page.locator('#numero_ouvrage').fill(num)
+            self.page.locator('#numero_ouvrage').dispatch_event('input')
+            try:
+                self.page.wait_for_function("t => document.querySelector('#code-ouvrage-affiche')?.textContent === t",
+                                            arg=f'XTST_RV_EAU_{num}', timeout=5000)
+                break
+            except Exception:
+                self.page.wait_for_load_state('networkidle')
+        else:
             etat = self.page.evaluate("() => ({code: document.querySelector('#code-ouvrage-affiche')?.textContent, "
                                       "std: document.querySelector('#standard-choix')?.value, lieu: document.querySelector('#lieu')?.value, "
                                       "type: document.querySelector('#code_ouvrage')?.value, num: document.querySelector('#numero_ouvrage')?.value})")
@@ -603,3 +607,31 @@ class TestCoqueBureau(ServeurNavigateur):
         compte = self.api('/api/essais')['SAT']['compte']
         self.assertEqual((compte['Conforme'], compte['Non conforme']), (1, 1))
         self.page.wait_for_function("() => document.querySelector('[data-essai=\"SAT\"]')?.innerText.includes('Libellé fictif inversé')")
+
+    def test_attributs_d_equipement(self):
+        """19/11, lot 4 : attribut créé dans la bibliothèque de l'atelier, saisi sur la fiche (contrôlé), signalé
+        tant qu'il manque (obligatoire)."""
+        code = f'MARQUE_T{self.numero}'
+        self.ouvrir('#/standards')
+        self.page.locator('#at-nouveau').click()
+        self.page.locator('#at-code').fill(code)
+        self.page.locator('#at-nom').fill(f'Marque fictive {self.numero}')
+        self.page.locator('#at-type').select_option('liste')
+        self.page.locator('#at-valeurs').fill('Marque A\nMarque B')
+        self.page.locator('#at-types').fill('HV')
+        self.page.locator('#at-oblig').check()
+        self.page.locator('#at-ok').click()
+        self.page.wait_for_function("c => document.querySelector('.std-attributs')?.innerText.includes(c)", arg=code)
+        ident = next(e['ident'] for e in self.api('/api/ouvrage')['equipements'] if e['type'] == 'HV')
+        self.assertTrue(any(f'Marque fictive {self.numero}' in m for m in self.api(f'/api/equipement?ident={ident}')['alertes']))
+        self.ouvrir('#/inventaire')
+        self.page.locator(f'.noeud[data-n="eq"][data-v="{ident}"]').first.click()
+        champ = self.page.locator(f'[data-attribut="{code}"]')
+        champ.wait_for()
+        champ.select_option('Marque B')
+        self.page.wait_for_function("() => document.querySelector('#toasts')?.innerText.includes('Attribut enregistré')")
+        fiche = self.api(f'/api/equipement?ident={ident}')
+        self.assertEqual(next(a['valeur'] for a in fiche['attributs'] if a['code'] == code), 'Marque B')
+        self.assertFalse(any(f'Marque fictive {self.numero}' in m for m in fiche['alertes']))
+        with self.assertRaisesRegex(RuntimeError, 'hors liste'):
+            self.api('/api/equipement/attribut', {'ident_eq': ident, 'code': code, 'valeur': 'Marque Z'})
