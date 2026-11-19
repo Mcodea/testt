@@ -932,15 +932,28 @@ class Application:
 
     def standards_web(self, _):
         """Standards d'ingénierie de l'atelier, nombre d'ouvrages qui les utilisent, bibliothèque de briques (19/11)."""
-        from genvar import standards
+        from genvar import charte, standards
         from genvar.modele import ORDRE_ZONES, PLAN_DEFAUT
         compte, emplois = standards.utilisation(), standards.emplois_briques()
         listes = ref_ident.lire()
-        return {"standards": [{**s, "ouvrages": compte.get(s["ident"], 0)} for s in standards.lire()],
+
+        def enrichir(f, b):
+            b = {**b, "standards": emplois.get(f"{f}:{b['ident']}", 0)}
+            if f == "charte":
+                b |= {"exemple": charte.exemple(b), "description": charte.decrire(b), "applicable": charte.applicable(b)}
+            return b
+        for s in (liste := standards.lire()):
+            if "charte" in s["briques"]:
+                s["briques"]["charte"] = enrichir("charte", s["briques"]["charte"])
+        return {"standards": [{**s, "ouvrages": compte.get(s["ident"], 0),
+                               "utilisable": charte.applicable(s["briques"].get("charte", charte.CHARTE_OGIAS))}
+                              for s in liste],
+                "charte_meta": {"segments_ouvrage": charte.SEGMENTS_OUVRAGE, "segments_equipement": charte.SEGMENTS_EQUIPEMENT,
+                                "caracteres": {k: v[1] for k, v in charte.CARACTERES.items()},
+                                "separateurs": charte.SEPARATEURS, "longueur_max": charte.LONGUEUR_MAX_REPERE},
                 "familles": standards.FAMILLES, "choisissables": list(standards.CHOISISSABLES),
                 "anterieurs": compte.get("", 0),
-                "bibliotheque": {f: [{**b, "standards": emplois.get(f"{f}:{b['ident']}", 0)} for b in liste]
-                                 for f, liste in standards.bibliotheque().items()},
+                "bibliotheque": {f: [enrichir(f, b) for b in liste] for f, liste in standards.bibliotheque().items()},
                 "supervisions": listes["supervisions"], "ihms": listes["ihm"],
                 "plages_defaut": {f: list(PLAN_DEFAUT[f]) for f in ORDRE_ZONES}}
 
@@ -969,6 +982,15 @@ class Application:
             raise RegleMetier("Action inconnue.")
         return {**self.standards_web({}), "ident": d.get("ident", ""), "alertes": alertes}
 
+    def apercu_charte(self, d):
+        """Aperçu d'une charte en cours de saisie : repères fictifs, ou le motif du refus. Rien n'est écrit."""
+        from genvar import charte
+        try:
+            c = charte.controler(d.get("charte"))
+        except RegleMetier as e:
+            return {"erreur": str(e)}
+        return {"exemple": charte.exemple(c), "description": charte.decrire(c), "applicable": charte.applicable(c)}
+
     def appliquer_standard(self, d):
         """Appliquer un standard (ou la nouvelle version du sien) à l'ouvrage ouvert, sur demande explicite (19/11).
         Sans « confirme » : aperçu seulement, rien n'est écrit. Les adresses validées ne bougent jamais."""
@@ -978,6 +1000,9 @@ class Application:
         choisi = standards.trouver(str(d.get("ident") or ""))
         if choisi is None or choisi.get("statut") != "actif":
             raise RegleMetier("Standard d'ingénierie introuvable ou archivé : choisissez-en un autre.")
+        from genvar import charte
+        if not charte.applicable(choisi["briques"].get("charte", charte.CHARTE_OGIAS)):
+            raise RegleMetier(f"« {choisi['nom']} » : OGIAS ne fabrique pas encore les repères selon sa charte de nommage.")
         changements = standards.ecarts(self.s.ouvrage, choisi["briques"])
         if d.get("confirme") is not True:
             return {"apercu": changements, "nom": choisi["nom"], "version": choisi["version"]}
@@ -1768,7 +1793,7 @@ ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle":
 ROUTES_POST = {"/api/nouveau": "nouveau", "/api/ouvrir": "ouvrir", "/api/fermer": "fermer",
                "/api/supprimer_ouvrage": "supprimer_ouvrage", "/api/definir": "definir",
                "/api/fiche-ouvrage": "fiche_ouvrage",
-               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/standards/appliquer": "appliquer_standard", "/api/reglages/reprendre": "reprendre_reglages",
+               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/standards/appliquer": "appliquer_standard", "/api/standards/charte-apercu": "apercu_charte", "/api/reglages/reprendre": "reprendre_reglages",
                "/api/identification/type": "identifier_type",
                "/api/identification/selection": "identifier_selection", "/api/uf": "uf",
                "/api/equipement/ajouter": "ajouter_equipement", "/api/equipement/modifier": "modifier_equipement",

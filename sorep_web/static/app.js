@@ -856,13 +856,16 @@ function vueStandards() {
     if (f === "adressage") return plagesTable(b);
     if (f === "outils") return `<dl class="std-dl"><dt>Supervision</dt><dd>${esc(b.supervision || "aucune")}</dd><dt>IHM</dt><dd>${esc(b.ihm || "aucune")}</dd>
       <dt>Automate</dt><dd>choisi pour chaque ouvrage (il dépend du site)</dd></dl>`;
+    if (f === "charte") return blocCharte(b);
     if (f === "referentiel") return `<p>Le référentiel métier publié de l'atelier, copié dans l'ouvrage à sa création. <a href="#/referentiel">Ouvrir le référentiel métier</a></p>`;
-    return `<p>Lieu sur 4 caractères, type d'ouvrage sur 2 lettres, numéro de 01 à 99 (ex. XTST RV 01).</p>`;
+    return "";
   };
   const actifs = d.standards.filter(s => s.statut === "actif").length;
   const biblio = (f, titre, bouton) => `<div class="bloc std-biblio"><div class="bloc-tete"><h2>${titre}</h2><button type="button" data-nouvelle-brique="${f}">${bouton}</button></div>
     <table data-o-tableau="sans-selection" data-o-cle="briques-${f}"><thead><tr><th>Brique</th><th>Contenu</th><th>Standards</th></tr></thead><tbody>
-    ${(d.bibliotheque[f] || []).map(b => `<tr><td><b>${esc(b.nom)}</b></td><td>${f === "adressage"
+    ${(d.bibliotheque[f] || []).map(b => `<tr><td><b>${esc(b.nom)}</b></td><td>${f === "charte"
+      ? `<span class="mono">${esc(b.exemple.equipement)}</span>${b.applicable ? "" : ' · <span class="std-evolue">repères pas encore fabriqués selon cette charte</span>'}`
+      : f === "adressage"
       ? `<span class="mono">${Object.entries(b.plages).map(([x, [deb, fin]]) => `${esc(x)} ${deb}–${fin}`).join(" · ")}</span>${b.decalage_modbus ? ` · décalage ${esc(String(b.decalage_modbus))}` : ""}`
       : `Supervision ${esc(b.supervision || "aucune")} · IHM ${esc(b.ihm || "aucune")}`}</td><td class="num">${b.standards}</td></tr>`).join("")}</tbody></table></div>`;
   $("#vue").innerHTML = `<section class="contenu standards">
@@ -876,10 +879,12 @@ function vueStandards() {
       <div class="boutons-ligne"><button type="button" id="std-reviser">Nouvelle version…</button>
       ${sel.statut === "actif" ? `<button type="button" id="std-archiver" ${actifs < 2 ? 'disabled title="Il faut garder au moins un standard actif"' : ""}>Archiver</button>` : `<button type="button" id="std-reactiver">Réactiver</button>`}</div></div>
      <p>${esc(sel.description || "")} <span class="aide">${sel.ouvrages} ouvrage(s) créé(s) selon ce standard.</span></p>
+     ${sel.utilisable ? "" : `<p class="std-evolue">Ce standard ne peut pas encore servir à créer un ouvrage : OGIAS ne fabrique pas encore les repères selon sa charte de nommage (étape suivante).</p>`}
      <div class="std-briques">${Object.entries(d.familles).map(([f, nom]) => `<section class="std-brique"><h3>${esc(nom)}</h3><p class="std-nom">${esc(sel.briques[f]?.nom || "—")}</p>${brique(f, sel.briques[f] || {})}</section>`).join("")}</div>
      ${(sel.historique || []).length ? `<div class="std-historique"><h3>Versions précédentes</h3><ul>${sel.historique.slice().reverse().map(h => `<li><span class="mono">v${esc(String(h.version))}</span> jusqu'au ${esc(h.jusqu_au)} : ${esc(Object.values(h.briques || {}).join(" · "))} <span class="aide">— ${esc(h.motif)}</span></li>`).join("")}</ul></div>` : ""}</div>` : ""}
    </div>
    <div class="std-grille std-bibliotheque">
+    ${biblio("charte", "Chartes de nommage", "Nouvelle charte de nommage…")}
     ${biblio("adressage", "Plans d'adressage", "Nouveau plan d'adressage…")}
     ${biblio("outils", "Chaînes d'outils", "Nouvelle chaîne d'outils…")}
    </div></section>`;
@@ -902,22 +907,23 @@ function modaleStandard(d, sel, agir) {
     `<option value="${esc(b.ident)}" ${sel && sel.briques[f]?.ident === b.ident ? "selected" : ""}>${esc(b.nom)}</option>`).join("")}</select>`;
   const m = ouvrirModale(`<div class="boite-tete"><h2>${sel ? `Nouvelle version de « ${esc(sel.nom)} »` : "Nouveau standard d'ingénierie"}</h2>
     <p>${sel ? `La version ${esc(String(sel.version + 1))} remplace la version ${esc(String(sel.version))} pour les prochains ouvrages. Les ouvrages déjà créés gardent leurs réglages ; OGIAS leur signale l'évolution.`
-      : "Choisissez une brique par famille. Le référentiel métier et la charte de nommage n'ont qu'une brique pour l'instant."}</p></div>
+      : "Choisissez une brique par famille. Le référentiel métier n'a qu'une brique : la bibliothèque publiée de l'atelier."}</p></div>
     <div class="boite-corps std-formulaire">
      ${sel ? "" : `<label for="std-nom">Nom du standard</label><input id="std-nom" maxlength="60" placeholder="Ex. Client B">`}
      <label for="std-description">Description</label><input id="std-description" maxlength="400" value="${esc(sel?.description || "")}">
-     ${choix("adressage", "Plan d'adressage")}${choix("outils", "Chaîne d'outils")}
+     ${choix("charte", "Charte de nommage")}${choix("adressage", "Plan d'adressage")}${choix("outils", "Chaîne d'outils")}
      ${sel ? `<label for="std-motif">Motif de la nouvelle version</label><input id="std-motif" maxlength="200">` : ""}
     </div>
     <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="std-ok">${sel ? "Créer la version" : "Créer le standard"}</button></div>`);
   m.querySelector("#std-ok").onclick = () => {
-    const corps = {choix: {adressage: m.querySelector("#std-adressage").value, outils: m.querySelector("#std-outils").value},
+    const corps = {choix: {charte: m.querySelector("#std-charte").value, adressage: m.querySelector("#std-adressage").value, outils: m.querySelector("#std-outils").value},
                    description: m.querySelector("#std-description").value};
     if (sel) agir({...corps, action: "reviser", ident: sel.ident, motif: m.querySelector("#std-motif").value}, `« ${sel.nom} » : version ${sel.version + 1} créée.`);
     else agir({...corps, action: "creer", nom: m.querySelector("#std-nom").value}, "Standard créé.");
   };
 }
 function modaleBrique(d, famille, agir) {
+  if (famille === "charte") return modaleCharte(d, agir);
   const corps = famille === "adressage"
     ? `<label for="brique-nom">Nom du plan d'adressage</label><input id="brique-nom" maxlength="60">
        <label for="brique-depart">Partir de</label><select id="brique-depart">${(d.bibliotheque.adressage || []).map(b => `<option value="${esc(b.ident)}">${esc(b.nom)}</option>`).join("")}</select>
@@ -947,12 +953,77 @@ function modaleBrique(d, famille, agir) {
     agir({action: "brique", famille, nom, contenu}, `« ${nom.trim()} » ajouté à la bibliothèque.`);
   };
 }
+/* Charte de nommage d'un client (19/11) : le repère est une suite de segments, dans l'ordre voulu. Aperçu fictif en
+   direct (XTST, RV, PM01) contrôlé par le serveur ; rien n'est écrit avant « Ajouter à la bibliothèque ». */
+function blocCharte(b) {
+  return `<ul class="std-segments">${(b.description || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+    <p class="std-exemple">Exemple : <span class="mono">${esc(b.exemple?.ouvrage || "")}</span> · <span class="mono">${esc(b.exemple?.equipement || "")}</span></p>
+    ${b.applicable === false ? '<p class="std-evolue">Repères pas encore fabriqués selon cette charte.</p>' : ""}`;
+}
+function modaleCharte(d, agir) {
+  const meta = d.charte_meta, chartes = d.bibliotheque.charte || [];
+  const copie = c => JSON.parse(JSON.stringify({ouvrage: c.ouvrage, equipement: c.equipement, separateur: c.separateur || ""}));
+  let etat = copie(chartes[0]);
+  const optionsCar = v => Object.entries(meta.caracteres).map(([k, l]) => `<option value="${k}" ${k === v ? "selected" : ""}>${esc(l)}</option>`).join("");
+  const ligne = (partie, s, i, n) => {
+    const noms = partie === "ouvrage" ? meta.segments_ouvrage : meta.segments_equipement;
+    const reglage = s.type === "texte" ? `<input data-champ="valeur" value="${esc(s.valeur || "")}" maxlength="8" aria-label="Texte fixe">`
+      : s.type === "equipement" ? `<span class="aide">motif du référentiel métier (ex. PM01)</span>`
+      : `<input data-champ="longueur" inputmode="numeric" value="${esc(String(s.longueur ?? ""))}" aria-label="Longueur ${esc(noms[s.type])}" class="std-court">
+         ${s.type === "numero_ouvrage" ? '<span class="aide">chiffres</span>' : `<select data-champ="caracteres" aria-label="Caractères ${esc(noms[s.type])}">${optionsCar(s.caracteres)}</select>`}`;
+    return `<li class="std-seg" data-partie="${partie}" data-i="${i}"><b>${esc(noms[s.type])}</b><span class="std-seg-reglage">${reglage}</span>
+      <span class="std-seg-actions"><button type="button" class="icone" data-bouger="-1" ${i ? "" : "disabled"} aria-label="Monter ${esc(noms[s.type])}">↑</button><button type="button" class="icone" data-bouger="1" ${i < n - 1 ? "" : "disabled"} aria-label="Descendre ${esc(noms[s.type])}">↓</button><button type="button" class="icone" data-retirer aria-label="Retirer ${esc(noms[s.type])}">✕</button></span></li>`;
+  };
+  const partie = (cle, titre, noms) => `<fieldset class="std-partie"><legend>${titre}</legend><ol>${etat[cle].map((s, i) => ligne(cle, s, i, etat[cle].length)).join("")}</ol>
+    <div class="boutons-ligne"><select data-ajout="${cle}" aria-label="Segment à ajouter (${titre})">${Object.entries(noms).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("")}</select><button type="button" data-ajouter="${cle}">Ajouter le segment</button></div></fieldset>`;
+  const m = ouvrirModale(`<div class="boite-tete"><h2>Nouvelle charte de nommage</h2>
+    <p>Décrivez le repère du client segment par segment, dans l'ordre. La charte rejoint la bibliothèque ; elle ne se modifie plus ensuite. Aucun ouvrage n'est touché.</p></div>
+    <div class="boite-corps std-formulaire std-charte">
+     <label for="brique-nom">Nom de la charte</label><input id="brique-nom" maxlength="60" placeholder="Ex. Charte client B">
+     <label for="charte-depart">Partir de</label><select id="charte-depart">${chartes.map(b => `<option value="${esc(b.ident)}">${esc(b.nom)}</option>`).join("")}</select>
+     <div id="charte-parties"></div>
+     <label for="charte-separateur">Séparateur entre les segments</label><select id="charte-separateur">${Object.entries(meta.separateurs).map(([k, l]) => `<option value="${esc(k)}">${esc(l)}</option>`).join("")}</select>
+     <div id="charte-apercu" class="std-apercu" aria-live="polite"></div>
+    </div>
+    <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="brique-ok">Ajouter à la bibliothèque</button></div>`, true);
+  const zoneApercu = m.querySelector("#charte-apercu");
+  let minuterie;
+  const apercu = () => { clearTimeout(minuterie); minuterie = setTimeout(async () => {
+    try { const r = await api("/api/standards/charte-apercu", {charte: etat});
+      zoneApercu.innerHTML = r.erreur ? `<p class="std-erreur">${esc(r.erreur)}</p>`
+        : `<p>Repère d'ouvrage : <span class="mono">${esc(r.exemple.ouvrage)}</span> · repère d'équipement : <span class="mono">${esc(r.exemple.equipement)}</span> <span class="aide">(${r.exemple.equipement.length} / ${meta.longueur_max} caractères, exemple fictif)</span></p>
+           ${r.applicable ? "<p class=\"aide\">Structure de la charte OGIAS : les repères sont fabriqués selon cette charte.</p>" : "<p class=\"std-evolue\">OGIAS ne fabrique pas encore les repères selon cette charte : elle peut être enregistrée et assemblée dans un standard, mais pas encore servir à créer un ouvrage.</p>"}`; }
+    catch (e) { zoneApercu.textContent = e.message; } }, 150); };
+  const rendreParties = () => {
+    m.querySelector("#charte-parties").innerHTML = partie("ouvrage", "Repère de l'ouvrage", meta.segments_ouvrage) + partie("equipement", "Suite du repère pour un équipement", meta.segments_equipement);
+    m.querySelector("#charte-separateur").value = etat.separateur;
+    m.querySelectorAll(".std-seg").forEach(li => {
+      const liste = etat[li.dataset.partie], i = +li.dataset.i;
+      li.querySelectorAll("[data-champ]").forEach(ch => ch.oninput = ch.onchange = () => { liste[i][ch.dataset.champ] = ch.value; apercu(); });
+      li.querySelectorAll("[data-bouger]").forEach(b => b.onclick = () => { const j = i + +b.dataset.bouger; [liste[i], liste[j]] = [liste[j], liste[i]]; rendreParties(); });
+      li.querySelector("[data-retirer]").onclick = () => { liste.splice(i, 1); rendreParties(); };
+    });
+    m.querySelectorAll("[data-ajouter]").forEach(b => b.onclick = () => {
+      const type = m.querySelector(`[data-ajout="${b.dataset.ajouter}"]`).value;
+      etat[b.dataset.ajouter].push(type === "texte" ? {type, valeur: ""} : type === "equipement" ? {type} : type === "numero_ouvrage" ? {type, longueur: 2} : {type, longueur: 2, caracteres: "lettres"});
+      rendreParties(); });
+    apercu();
+  };
+  m.querySelector("#charte-depart").onchange = ev => { etat = copie(chartes.find(b => b.ident === ev.target.value)); rendreParties(); };
+  m.querySelector("#charte-separateur").onchange = ev => { etat.separateur = ev.target.value; apercu(); };
+  rendreParties();
+  m.querySelector("#brique-ok").onclick = () => {
+    const nom = m.querySelector("#brique-nom").value;
+    agir({action: "brique", famille: "charte", nom, contenu: etat}, `« ${nom.trim()} » ajoutée à la bibliothèque.`);
+  };
+}
 async function choixStandard(c) {
   const s = c.querySelector("#standard-choix"); if (!s) return;
   let d; try { d = await api("/api/standards"); } catch (e) { s.innerHTML = `<option value="">${esc(e.message)}</option>`; return; }
   const actifs = d.standards.filter(x => x.statut === "actif");
-  const garde = E.standardCreation && actifs.some(x => x.ident === E.standardCreation) ? E.standardCreation : actifs[0]?.ident;
-  s.innerHTML = actifs.map(x => `<option value="${esc(x.ident)}" ${x.ident === garde ? "selected" : ""}>${esc(x.nom)} (v${esc(String(x.version))})</option>`).join("");
+  const garde = E.standardCreation && actifs.some(x => x.ident === E.standardCreation && x.utilisable) ? E.standardCreation : actifs.find(x => x.utilisable)?.ident;
+  const opt = (x, choisi) => `<option value="${esc(x.ident)}" ${x.ident === choisi ? "selected" : ""} ${x.utilisable ? "" : "disabled"}>${esc(x.nom)} (v${esc(String(x.version))})${x.utilisable ? "" : " — charte pas encore appliquée"}</option>`;
+  s.innerHTML = actifs.map(x => opt(x, garde)).join("");
   s.onchange = () => { E.standardCreation = s.value; };
 }
 /* Appliquer un standard à un ouvrage existant (19/11) : seulement à la demande, après aperçu de ce qui change. */
@@ -961,7 +1032,7 @@ async function modaleAppliquerStandard(c, preselection) {
   const actifs = d.standards.filter(x => x.statut === "actif");
   const m = ouvrirModale(`<div class="boite-tete"><h2>Appliquer un standard d'ingénierie</h2>
     <p>Le plan mémoire, le décalage Modbus, la supervision et l'IHM de l'ouvrage prennent les valeurs du standard. L'identification, l'automate, les équipements et les adresses déjà validées ne changent pas.</p></div>
-    <div class="boite-corps std-formulaire"><label for="appliquer-standard">Standard</label><select id="appliquer-standard">${actifs.map(x => `<option value="${esc(x.ident)}" ${x.ident === preselection ? "selected" : ""}>${esc(x.nom)} (v${esc(String(x.version))})</option>`).join("")}</select>
+    <div class="boite-corps std-formulaire"><label for="appliquer-standard">Standard</label><select id="appliquer-standard">${actifs.map(x => `<option value="${esc(x.ident)}" ${x.ident === preselection && x.utilisable ? "selected" : ""} ${x.utilisable ? "" : "disabled"}>${esc(x.nom)} (v${esc(String(x.version))})${x.utilisable ? "" : " — charte pas encore appliquée"}</option>`).join("")}</select>
      <div id="appliquer-apercu" class="std-apercu" aria-live="polite"></div></div>
     <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="appliquer-ok">Appliquer</button></div>`);
   const sel = m.querySelector("#appliquer-standard"), zone = m.querySelector("#appliquer-apercu");

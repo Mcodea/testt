@@ -436,3 +436,32 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.reload(wait_until='networkidle')
         self.page.wait_for_function("() => document.querySelector('#outils-appliquer-standard')?.innerText.includes('version 2')")
         self.assertIn('a évolué', self.page.locator('.outils-standard').inner_text())
+
+    def test_charte_de_nommage_construite_dans_ogias(self):
+        """19/11 : charte d'un client construite segment par segment, aperçu contrôlé en direct ; un standard qui
+        l'emploie n'est pas encore proposé à la création (repères pas encore fabriqués selon elle)."""
+        n = self.numero
+        self.ouvrir('#/standards')
+        self.page.locator('[data-nouvelle-brique="charte"]').click()
+        self.page.locator('#brique-nom').fill(f'Charte fictive {n}')
+        self.page.wait_for_function("() => document.querySelector('#charte-apercu')?.innerText.includes('XTSTRV01PM01')")
+        self.page.locator('[data-ajout="ouvrage"]').select_option('texte')
+        self.page.locator('[data-ajouter="ouvrage"]').click()
+        self.page.wait_for_function("() => document.querySelector('#charte-apercu')?.innerText.includes('Texte fixe')")
+        self.page.locator('.std-seg[data-partie="ouvrage"][data-i="3"] [data-champ="valeur"]').fill('EAU')
+        self.page.locator('.std-seg[data-partie="ouvrage"][data-i="3"] [data-bouger="-1"]').click()
+        self.page.locator('#charte-separateur').select_option('_')
+        self.page.wait_for_function("() => document.querySelector('#charte-apercu')?.innerText.includes('XTST_RV_EAU_01_PM01')")
+        self.assertIn('pas encore', self.page.locator('#charte-apercu').inner_text())
+        self.page.locator('#brique-ok').click()
+        self.page.wait_for_function("t => document.querySelector('.std-bibliotheque')?.innerText.includes(t)", arg=f'Charte fictive {n}')
+        b = next(x for x in self.api('/api/standards')['bibliotheque']['charte'] if x['nom'] == f'Charte fictive {n}')
+        self.assertEqual(b['exemple']['equipement'], 'XTST_RV_EAU_01_PM01')
+        r = self.api('/api/standards/action', {'action': 'creer', 'nom': f'Client charte {n}',
+                                               'choix': {'charte': b['ident'], 'adressage': 'adressage-defaut', 'outils': 'outils-topkapi'}})
+        self.assertFalse(next(s for s in r['standards'] if s['ident'] == r['ident'])['utilisable'])
+        with self.assertRaisesRegex(RuntimeError, 'pas encore'):
+            self.api('/api/standards/appliquer', {'ident': r['ident'], 'confirme': True})
+        self.api('/api/nouveau', {'mode': 'Neuf'})
+        self.ouvrir('#/inventaire')
+        self.page.wait_for_function("i => document.querySelector(`#standard-choix option[value='${i}']`)?.disabled === true", arg=r['ident'])

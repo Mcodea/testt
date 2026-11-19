@@ -2,12 +2,13 @@
 un ouvrage existant n'est jamais modifié quand le standard évolue, OGIAS signale l'écart. Ouvrages fictifs (XTST)."""
 from dataclasses import asdict
 import json
+import re
 import os
 import tempfile
 import unittest
 from unittest import mock
 
-from genvar import standards
+from genvar import charte, standards
 from genvar.session import RegleMetier
 from genvar.modele import ORDRE_ZONES, PLAN_DEFAUT, Ouvrage, zone
 from tests.test_coherence import nouvelle
@@ -98,7 +99,8 @@ class TestBibliothequeEtVersions(AvecDossier):
         b = standards.bibliotheque()
         self.assertEqual([x["ident"] for x in b["adressage"]], ["adressage-defaut"])
         self.assertEqual([x["ident"] for x in b["outils"]], ["outils-topkapi"])
-        self.assertEqual(standards.emplois_briques(), {"adressage:adressage-defaut": 1, "outils:outils-topkapi": 1})
+        self.assertEqual(standards.emplois_briques(), {"charte:charte-ogias": 1, "adressage:adressage-defaut": 1,
+                                                      "outils:outils-topkapi": 1})
 
     def test_fichier_de_l_etape_1_repris_sans_perte(self):
         initial = standards.standard_initial()
@@ -152,6 +154,56 @@ class TestBibliothequeEtVersions(AvecDossier):
         standards.appliquer(s, b)
         self.assertEqual(zone(s.ouvrage, "TS"), (5000, 5999))
         self.assertEqual((s.ouvrage.standard["ident"], standards.ecarts(s.ouvrage)), ("client-b", []))
+
+
+
+class TestChartesReglables(AvecDossier):
+    CLIENT = {"ouvrage": [{"type": "texte", "valeur": "EAU"}, {"type": "type_ouvrage", "longueur": 3, "caracteres": "lettres"},
+                          {"type": "numero_ouvrage", "longueur": 3}],
+              "equipement": [{"type": "sous_ensemble", "longueur": 2, "caracteres": "chiffres"}, {"type": "equipement"}],
+              "separateur": "_"}
+
+    def test_charte_ogias_inchangee(self):
+        self.assertEqual(charte.controler(charte.CHARTE_OGIAS), charte.CHARTE_OGIAS)
+        self.assertEqual(charte.exemple(charte.CHARTE_OGIAS), {"ouvrage": "XTSTRV01", "equipement": "XTSTRV01PM01"})
+        self.assertTrue(charte.applicable(charte.CHARTE_OGIAS))
+        self.assertEqual(charte.motif_champ(charte.CHARTE_OGIAS, "lieu"), "[A-Z0-9]{4}")
+        b = standards.bibliotheque()["charte"]
+        self.assertEqual([x["ident"] for x in b], ["charte-ogias"])
+
+    def test_charte_client_personnalisee(self):
+        c = charte.controler(self.CLIENT)
+        self.assertEqual(charte.exemple(c), {"ouvrage": "EAU_RVR_001", "equipement": "EAU_RVR_001_00_PM01"})
+        self.assertFalse(charte.applicable(c))
+        self.assertIsNone(charte.motif_champ(c, "lieu"))                     # pas de lieu dans cette charte
+        self.assertTrue(re.fullmatch(charte.motif_champ(c, "numero_ouvrage"), "007"))
+        self.assertFalse(re.fullmatch(charte.motif_champ(c, "numero_ouvrage"), "000"))
+
+    def test_charte_refusee(self):
+        cas = {"segment inconnu": {**self.CLIENT, "ouvrage": [{"type": "autre"}]},
+               "doublon": {**self.CLIENT, "ouvrage": [*self.CLIENT["ouvrage"], {"type": "numero_ouvrage", "longueur": 2}]},
+               "sans type ni numéro": {**self.CLIENT, "ouvrage": [{"type": "lieu", "longueur": 4, "caracteres": "lettres"}]},
+               "sans équipement": {**self.CLIENT, "equipement": [{"type": "texte", "valeur": "X"}]},
+               "texte invalide": {**self.CLIENT, "ouvrage": [{"type": "texte", "valeur": "é!"}, {"type": "numero_ouvrage", "longueur": 2}]},
+               "longueur": {**self.CLIENT, "ouvrage": [{"type": "numero_ouvrage", "longueur": 9}]},
+               "séparateur": {**self.CLIENT, "separateur": "/"},
+               "trop long": {**self.CLIENT, "ouvrage": [*({"type": "texte", "valeur": "ABCDEFGH"} for _ in range(4)),
+                                                        {"type": "numero_ouvrage", "longueur": 2}]}}
+        for nom, c in cas.items():
+            with self.subTest(nom), self.assertRaises(RegleMetier):
+                charte.controler(c)
+
+    def test_standard_avec_charte_client_ne_cree_pas_d_ouvrage(self):
+        """Tant que les repères ne sont pas fabriqués selon une autre charte : refus clair, rien n'est modifié."""
+        b, alertes = standards.creer_brique("charte", "Charte client fictif", self.CLIENT)
+        self.assertTrue(alertes and "pas encore" in alertes[0])
+        s = standards.creer_standard("Client fictif", "", {"charte": b["ident"], "adressage": "adressage-defaut",
+                                                         "outils": "outils-topkapi"})
+        session = nouvelle()
+        avant = asdict(session.ouvrage)
+        with self.assertRaisesRegex(RegleMetier, "pas encore"):
+            standards.appliquer(session, s)
+        self.assertEqual(asdict(session.ouvrage), avant)
 
 
 if __name__ == "__main__":

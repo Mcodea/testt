@@ -1,4 +1,4 @@
-# Standards d'ingénierie (étapes 1 et 2)
+# Standards d'ingénierie (étapes 1 et 2, chartes de nommage)
 
 Décision du 19/11/2026. À la création d'un ouvrage, on choisit le standard d'ingénierie du client. Pour éviter la
 multiplication des profils, un standard n'est pas un bloc monolithique : c'est un **assemblage nommé de briques**,
@@ -52,16 +52,51 @@ Règles validées :
 Captures (données fictives) : `standards_clair.png`, `standards_sombre.png`, `nouvelle_brique.png`,
 `appliquer_standard.png`, `ouvrage_cree_selon.png`.
 
-Étape suivante : bibliothèque de chartes de nommage, à partir d'une charte réelle d'un autre client fournie en
-exemple.
+## Chartes de nommage construites dans OGIAS (19/11)
+
+Décision du 19/11 : chaque client est différent. La charte se construit donc dans OGIAS, sans exemple fourni, comme
+une brique de la bibliothèque (« Nouvelle charte de nommage… »).
+
+- **Le repère est une suite de segments, dans l'ordre voulu.**
+  - Ouvrage : lieu, type d'ouvrage, numéro d'ouvrage, texte fixe. On règle la longueur, et les lettres et/ou
+    chiffres permis.
+  - Équipement : sous-ensemble éventuel, puis le code et le numéro d'équipement (motif du référentiel métier), et
+    un texte fixe si besoin.
+  - Un séparateur au choix : aucun, « _ », « - » ou « . ».
+- **Aperçu en direct** sur un exemple fictif (XTST, RV, PM01), contrôlé par le serveur, qui donne le motif de tout
+  refus :
+  - segment inconnu ou en double ;
+  - ni type ni numéro d'ouvrage ;
+  - pas de code d'équipement ;
+  - longueurs hors limites ;
+  - repère d'équipement de plus de 32 caractères.
+- **La Charte OGIAS** est décrite de la même façon. Elle reste celle du « Standard initial », et ses exemples sont
+  identiques aux repères actuels.
+- **Limite affichée partout, en clair** (éditeur, bibliothèque, standard, création, application) : OGIAS ne
+  fabrique encore les repères que selon la structure de la charte OGIAS. Un standard dont la charte est différente
+  peut être enregistré, mais il est grisé à la création d'un ouvrage et refusé à l'application. Rien n'est fabriqué
+  autrement que ce que la charte annonce.
+
+Captures : `charte_editeur_clair.png`, `charte_editeur_sombre.png`.
+
+Étape suivante : fabriquer les repères selon la charte de l'ouvrage. Cela touche :
+
+- le repère des équipements et le nom des variables et des E/S ;
+- la saisie de l'identification ;
+- la relecture des repères (projets existants, inventaire importé) ;
+- l'unicité des ouvrages ;
+- les exports.
+
+Des essais sur toute la chaîne seront nécessaires. Une charte autre que celle d'OGIAS restera signalée « exports
+non qualifiés » tant qu'un fichier de référence ne l'aura pas validée.
 
 Fichier : `standards_ingenierie.json` dans le dossier de données de l'atelier. Il est écrit de façon atomique ; s'il
 est illisible, il n'est jamais écrasé.
 
 Vérifications :
-- 771 essais du moteur, dont `tests/test_standards.py` (13 essais) ;
-- 108 essais navigateur, dont `test_standards_ingenierie_ecran_et_creation` et
-  `test_standards_bibliotheque_et_application` ;
+- 775 essais du moteur, dont `tests/test_standards.py` (17 essais) ;
+- 109 essais navigateur, dont `test_standards_ingenierie_ecran_et_creation`,
+  `test_standards_bibliotheque_et_application` et `test_charte_de_nommage_construite_dans_ogias` ;
 - ruff, mypy ;
 - audit des données : 0 détection ;
 - accessibilité, nouvel écran compris : 0 écart ;

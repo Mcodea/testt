@@ -26,7 +26,7 @@ import os
 import tempfile
 import time
 
-from . import chemins
+from . import charte, chemins
 from .modele import ORDRE_ZONES, PLAN_DEFAUT
 from .session import RegleMetier, alertes_plages, controler_decalage, controler_plages
 
@@ -36,16 +36,18 @@ STATUTS = ("actif", "archivé")
 
 FAMILLES = {"referentiel": "Référentiel métier", "charte": "Charte de nommage", "adressage": "Plan d'adressage",
             "outils": "Chaîne d'outils"}
-# Familles qui ont une bibliothèque de briques (étape 2). Référentiel métier et charte : une seule brique pour l'instant.
-CHOISISSABLES = ("adressage", "outils")
+# Familles qui ont une bibliothèque de briques (étape 2 ; chartes de nommage le 19/11). Référentiel métier : une seule
+# brique, la bibliothèque versionnée existante.
+CHOISISSABLES = ("charte", "adressage", "outils")
 BRIQUES_FIXES = {
     "referentiel": {"ident": "referentiel-atelier", "nom": "Référentiel publié de l'atelier", "source": "atelier"},
-    "charte": {"ident": "charte-ogias", "nom": "Charte OGIAS (lieu 4, type 2, numéro 2)", "source": "ogias"},
 }
+NOMS_BRIQUE = {"charte": "charte de nommage", "adressage": "plan d'adressage", "outils": "chaîne d'outils"}
 
 
 def _briques_initiales() -> dict:
     return {
+        "charte": {"ident": "charte-ogias", "nom": "Charte OGIAS (lieu 4, type 2, numéro 2)", **copy.deepcopy(charte.CHARTE_OGIAS)},
         "adressage": {"ident": "adressage-defaut", "nom": "Plan mémoire par défaut",
                       "plages": {f: list(PLAN_DEFAUT[f]) for f in ORDRE_ZONES}, "decalage_modbus": 0},
         "outils": {"ident": "outils-topkapi", "nom": "Supervision TOPKAPI", "supervision": "TOPKAPI", "ihm": ""},
@@ -86,7 +88,13 @@ def _charger() -> dict:
     if not isinstance(standards, list) or not standards:
         raise ValueError("Fichier des standards d'ingénierie illisible : aucun écrasement effectué.")
     # Fichier de l'étape 1 (sans bibliothèque) : les briques des standards forment la bibliothèque, sans rien perdre.
+    # Charte OGIAS décrite par son seul nom avant les chartes réglables : sa structure est complétée.
     biblio = donnees.get("bibliotheque") if isinstance(donnees.get("bibliotheque"), dict) else {}
+    for s in standards:
+        b = s.setdefault("briques", {}).setdefault("charte", {"nom": _briques_initiales()["charte"]["nom"]})
+        if "ouvrage" not in b and b.get("ident", "charte-ogias") == "charte-ogias":
+            b.pop("source", None)
+            b.update(ident="charte-ogias", **copy.deepcopy(charte.CHARTE_OGIAS))
     for fam in CHOISISSABLES:
         liste = biblio.setdefault(fam, [])
         for s in standards:
@@ -165,10 +173,15 @@ def creer_brique(famille: str, nom: str, contenu: dict) -> tuple[dict, list[str]
         raise RegleMetier("Famille de brique inconnue.")
     donnees = _charger()
     liste = donnees["bibliotheque"].setdefault(famille, [])
-    quoi = "plan d'adressage" if famille == "adressage" else "chaîne d'outils"
+    quoi = NOMS_BRIQUE[famille]
     nom = _nom(nom, liste, quoi)
     alertes: list[str] = []
-    if famille == "adressage":
+    if famille == "charte":
+        brique = {"nom": nom, **charte.controler(contenu)}
+        if not charte.applicable(brique):
+            alertes = ["Charte enregistrée. OGIAS ne fabrique pas encore les repères selon une charte différente de "
+                       "la charte OGIAS : un standard qui l'emploie ne peut pas encore servir à créer un ouvrage."]
+    elif famille == "adressage":
         lues = controler_plages(contenu.get("plages"))
         alertes = alertes_plages(lues)
         brique = {"nom": nom, "plages": {f: list(lues[f]) for f in ORDRE_ZONES},
@@ -185,7 +198,8 @@ def creer_brique(famille: str, nom: str, contenu: dict) -> tuple[dict, list[str]
 def _assembler(donnees: dict, choix: dict) -> dict:
     briques = copy.deepcopy(BRIQUES_FIXES)
     for fam in CHOISISSABLES:
-        b = next((x for x in donnees["bibliotheque"].get(fam, []) if x.get("ident") == (choix or {}).get(fam)), None)
+        voulu = (choix or {}).get(fam) or ("charte-ogias" if fam == "charte" else "")   # charte : fixe avant le 19/11
+        b = next((x for x in donnees["bibliotheque"].get(fam, []) if x.get("ident") == voulu), None)
         if b is None:
             raise RegleMetier(f"{FAMILLES[fam]} : choisissez une brique de la bibliothèque.")
         briques[fam] = {k: copy.deepcopy(v) for k, v in b.items() if k != "cree_le"}
@@ -260,6 +274,9 @@ def appliquer(session, standard: dict) -> list[str]:
     aperçu). Tout ou rien. Les adresses déjà validées ne bougent jamais (règle du plan mémoire). Le référentiel métier
     et la charte n'ont qu'une brique : rien à copier. Renvoie les alertes non bloquantes."""
     b = standard["briques"]
+    if not charte.applicable(b.get("charte", charte.CHARTE_OGIAS)):
+        raise RegleMetier(f"Le standard « {standard['nom']} » emploie la charte « {b['charte'].get('nom', '')} » : OGIAS ne "
+                          "fabrique pas encore les repères selon une autre charte que la charte OGIAS. Rien n'a été modifié.")
     avant = copy.deepcopy(session.ouvrage)
     try:
         alertes = session.definir_plages({f: tuple(v) for f, v in b["adressage"]["plages"].items()})

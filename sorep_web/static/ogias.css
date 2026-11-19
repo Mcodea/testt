@@ -742,7 +742,19 @@ html[data-theme] .std-dl dt { color: var(--o-texte-2); }
 html[data-theme] .std-dl dd { margin: 0; }
 html[data-theme] .outils-standard { margin: var(--o-e-2) 0 0; font-size: var(--o-t-s); color: var(--o-texte-2); }
 html[data-theme] .std-evolue { color: var(--o-alerte); font-weight: 600; }
-html[data-theme] .std-bibliotheque { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: var(--o-e-4); }
+html[data-theme] .std-bibliotheque { grid-template-columns: repeat(auto-fit, minmax(560px, 1fr)); margin-top: var(--o-e-4); }
+html[data-theme] .std-segments { margin: 0 0 var(--o-e-2); padding-left: var(--o-e-5); font-size: var(--o-t-s); }
+html[data-theme] .std-exemple { font-size: var(--o-t-s); }
+html[data-theme] .std-erreur { color: var(--o-erreur); font-weight: 600; margin: 0; }
+html[data-theme] .std-partie { border: 1px solid var(--o-ligne); border-radius: var(--o-r-m); margin: var(--o-e-3) 0 0; padding: var(--o-e-2) var(--o-e-3); }
+html[data-theme] .std-partie legend { font-size: var(--o-t-s); font-weight: 600; color: var(--o-texte-2); padding: 0 var(--o-e-1); }
+html[data-theme] .std-partie ol { list-style: none; margin: 0 0 var(--o-e-2); padding: 0; }
+html[data-theme] .std-seg { display: grid; grid-template-columns: 14em minmax(0, 1fr) auto; align-items: center; gap: var(--o-e-2); padding: var(--o-e-1) 0; border-bottom: 1px solid var(--o-ligne); }
+html[data-theme] .std-seg-reglage { display: flex; align-items: center; gap: var(--o-e-2); }
+html[data-theme] .std-seg-actions { display: flex; gap: var(--o-e-1); }
+html[data-theme] .std-seg-actions button { min-width: var(--o-h-champ); padding: 0; }
+html[data-theme] .std-charte input.std-court { width: 5em; }
+html[data-theme] .std-charte .boutons-ligne { display: flex; gap: var(--o-e-2); }
 html[data-theme] .std-biblio td.num { text-align: right; font-variant-numeric: tabular-nums; }
 html[data-theme] .std-biblio .mono { font-size: var(--o-t-xs); }
 html[data-theme] .std-archive { font-size: var(--o-t-xs); font-weight: 600; color: var(--o-texte-2); border: 1px solid var(--o-ligne-forte); border-radius: var(--o-r-m); padding: 0 var(--o-e-1); }
@@ -754,7 +766,7 @@ html[data-theme] .std-formulaire label { margin-top: var(--o-e-2); }
 html[data-theme] .std-apercu { margin-top: var(--o-e-3); font-size: var(--o-t-s); }
 html[data-theme] .std-apercu ul { margin: var(--o-e-1) 0 0; padding-left: var(--o-e-5); }
 html[data-theme] .creation-standard small { display: block; color: var(--o-texte-2); font-size: var(--o-t-xs); }
-@media (max-width: 1200px) { html[data-theme] .std-grille, html[data-theme] .std-briques { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1200px) { html[data-theme] .std-grille, html[data-theme] .std-briques, html[data-theme] .std-bibliotheque { grid-template-columns: minmax(0, 1fr); }
   html[data-theme] .std-brique:nth-child(even) { border-left: 0; } html[data-theme] .std-brique:nth-child(2) { border-top: 1px solid var(--o-ligne); } }
 
 /* Plan mémoire %MW par famille (18/11) */
