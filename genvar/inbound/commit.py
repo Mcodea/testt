@@ -49,15 +49,16 @@ def _apply_io(session: Session, rows: list[dict[str, str]]) -> int:
 
 
 def _apply_updates(session: Session, rows: list[dict[str, str]]) -> int:
-    """Aller-retour : seuls les champs comparés changent (désignation, modèle, UF, local), par la voie habituelle
-    (contrôles de l'équipement ; un équipement modifié repasse « à valider »). Adresses et signaux conservés."""
+    """Aller-retour : seuls les champs comparés changent (désignation, UF, local, attributs : voie de la grille
+    d'ingénierie ; modèle : remplacement complet, l'équipement repasse « à valider »). Adresses conservées."""
     import json
     for row in rows:
         base = next(e for e in session.ouvrage.equipements if e.ident == row["ident_eq"])
         modifs = json.loads(row["_modifs"])
-        for cle in [k for k in modifs if k.startswith("attr:")]:
-            # attribut de l'atelier (lot 4) : donnée descriptive, l'équipement ne repasse pas « à valider »
-            session.definir_attribut(base.ident, cle[5:], modifs.pop(cle))
+        for cle in [k for k in modifs if k.startswith("attr:") or k in ("libelle", "uf", "local")]:
+            # champs descriptifs et attributs (lots 4-5) : même voie que la grille d'ingénierie ; l'équipement ne
+            # repasse pas « à valider ». Seul un changement de modèle passe par le remplacement complet.
+            session.appliquer_en_masse([base.ident], cle, modifs.pop(cle))
         if not modifs:
             continue
         nouveau = copy.deepcopy(session.ouvrage.equipement(base.ident))

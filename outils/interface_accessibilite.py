@@ -19,7 +19,7 @@ from playwright.sync_api import sync_playwright
 
 ECRANS = [("ouvrages", "#/ouvrages"), ("tableau_de_bord", "#/dashboard"), ("equipements", "#/inventaire"),
           ("liste_es", "#/es"), ("materiel", "#/materiel"), ("variables", "#/variables"),
-          ("adressage", "#/adressage"), ("recette", "#/recette"), ("referentiel", "#/referentiel"), ("standards", "#/standards")]
+          ("adressage", "#/adressage"), ("recette", "#/recette"), ("referentiel", "#/referentiel"), ("standards", "#/standards"), ("grille", "#/grille")]
 
 AUDIT = r"""() => {
  // rgb(…)/rgba(…) en 0-255 ; color(srgb r g b / a) (issu de color-mix) en 0-1

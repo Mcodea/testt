@@ -77,7 +77,9 @@ function sansOuvrage(j) {
   history.replaceState(null, "", "#/ouvrages");
   return _accueil(j);
 }
-async function recharger() { E.ouvrage = await api("/api/ouvrage"); E.listes = await api("/api/listes-ouvrage"); rendre(); }
+async function recharger() { E.ouvrage = await api("/api/ouvrage"); E.listes = await api("/api/listes-ouvrage");
+  if (E.vue === "grille") E.grille = await api("/api/grille");                 // grille d'ingénierie (lot 5) après un import
+  rendre(); }
 async function _es(j) {
   E.ouvrage = await api("/api/ouvrage");
   if (!E.ouvrage.ouvert) return sansOuvrage(j);
@@ -121,6 +123,13 @@ async function _aVenir(etape, j) {
   E.detailEtape = detail; E.v31Tele = tele; E.vue = etape; rendre();
 }
 async function rechargerES() { E.es = await api("/api/es"); E.ouvrage = await api("/api/ouvrage"); rendre(); }
+async function _grille(j) {
+  E.ouvrage = await api("/api/ouvrage");
+  if (!E.ouvrage.ouvert) return _accueil(j);
+  E.grille = await api("/api/grille");
+  if (perime(j)) return;
+  E.vue = "grille"; rendre();
+}
 async function _standards(j) {
   E.ouvrage = await api("/api/ouvrage");
   if (perime(j)) return;
@@ -147,7 +156,7 @@ async function chargerReferentiel() {
 }
 /* Navigation par adresse (#/…) : chaque écran a son adresse, le bouton « Retour » du navigateur fonctionne,
    et la barre du haut donne accès à tous les écrans depuis n'importe où. */
-const ROUTES = {"#/ouvrages": _accueil, "#/dashboard": _dashboard, "#/inventaire": _ouvrage, "#/es": _es, "#/materiel": _materiel, "#/referentiel": _referentiel, "#/standards": _standards,
+const ROUTES = {"#/ouvrages": _accueil, "#/dashboard": _dashboard, "#/inventaire": _ouvrage, "#/es": _es, "#/materiel": _materiel, "#/referentiel": _referentiel, "#/standards": _standards, "#/grille": _grille,
                 "#/variables": j => _aVenir("variables", j), "#/supervision": j => _aVenir("supervision", j), "#/adressage": j => _aVenir("adressage", j), "#/recette": j => _aVenir("recette", j),
                 "#/controles": j => _aVenir("recette", j), "#/exports": j => _aVenir("recette", j)};
 async function naviguer(route) {
@@ -257,6 +266,7 @@ function rendre() {
   if (E.vue === "dashboard") return vueDashboardV31();
   if (E.vue === "referentiel") return vueReferentiel();
   if (E.vue === "standards") return vueStandards();
+  if (E.vue === "grille") return vueGrille();
   if (E.vue === "es") return vueES();
   if (E.vue === "materiel") return vueMateriel();
   if (E.vue === "variables") return vueVariablesV31();
@@ -910,6 +920,98 @@ async function contenu() {
   await contenuDetail(); piedEtape();
   if (E.vue === "ouvrage" && !E.ouvrage?.en_conception && document.getElementById("b-eq")) rubanEquipements();
   Coque.majFil();
+}
+/* Grille d'ingénierie (lot 5, 19/11) : tous les équipements de l'ouvrage en un tableau ; désignation, UF, local et
+   attributs se modifient dans la cellule ou en masse sur une sélection (tout ou rien, confirmation). Type, numéro et
+   modèle restent sur la fiche : ils changent signaux, noms et adresses. */
+const VUES_GRILLE = {identification: "Identification", attributs: "Attributs", tout: "Tout"};
+function vueGrille() {
+  Coque.ruban(null);
+  const d = E.grille || {lignes: [], attributs: [], ufs: [], champs: {}};
+  E.grilleVue = VUES_GRILLE[E.grilleVue] ? E.grilleVue : (d.attributs.length ? "tout" : "identification");
+  E.grilleSel = E.grilleSel instanceof Set ? E.grilleSel : new Set();
+  const idents = new Set(d.lignes.map(l => l.ident));
+  [...E.grilleSel].forEach(i => { if (!idents.has(i)) E.grilleSel.delete(i); });
+  const filtre = (E.grilleFiltre || "").toLowerCase(), typeF = E.grilleType || "";
+  const lignes = d.lignes.filter(l => (!typeF || l.type === typeF) && (!filtre || [l.repere, l.libelle, l.designation, l.local, l.uf, l.modele, ...Object.values(l.attributs).filter(Boolean)].join(" ").toLowerCase().includes(filtre)));
+  const voirId = E.grilleVue !== "attributs", voirAt = E.grilleVue !== "identification" && d.attributs.length;
+  const types = [...new Set(d.lignes.map(l => l.type))].sort();
+  const optUf = v => `<option value="">— sans UF —</option>${d.ufs.map(u => `<option value="${esc(u.code)}" ${u.code === v ? "selected" : ""}>${esc(u.code)} ${esc(u.libelle)}</option>`).join("")}`;
+  const champAttr = (a, v, attrs) => {
+    if (v === null) return '<span class="g-so" title="Sans objet pour ce type">—</span>';
+    const base = `data-g-champ="attr:${esc(a.code)}" aria-label="${esc(a.nom)}"`;
+    if (a.type === "liste" || a.type === "oui_non") {
+      const vals = a.type === "oui_non" ? ["Oui", "Non"] : a.valeurs;
+      return `<select ${base} ${attrs}><option value="">—</option>${vals.map(x => `<option ${x === v ? "selected" : ""}>${esc(x)}</option>`).join("")}${v && !vals.includes(v) ? `<option selected>${esc(v)}</option>` : ""}</select>`;
+    }
+    return `<input ${base} ${attrs} value="${esc(v || "")}" ${a.type === "nombre" ? 'inputmode="decimal"' : ""} placeholder="${esc(a.defaut || "")}">`;
+  };
+  const colonnesMasse = [...(voirId ? Object.entries(d.champs) : []), ...(voirAt ? d.attributs.map(a => ["attr:" + a.code, a.nom]) : [])];
+  E.grilleColonne = colonnesMasse.some(([k]) => k === E.grilleColonne) ? E.grilleColonne : colonnesMasse[0]?.[0];
+  const toutCoche = lignes.length && lignes.every(l => E.grilleSel.has(l.ident));
+  $("#vue").innerHTML = `<section class="contenu grille-ingenierie">
+   <div class="grille-barre">
+    <input type="search" id="g-filtre" placeholder="Filtrer : repère, désignation, local, valeur…" value="${esc(E.grilleFiltre || "")}" aria-label="Filtrer les équipements">
+    <select id="g-type" aria-label="Type d'équipement"><option value="">Tous les types</option>${types.map(t => `<option ${t === typeF ? "selected" : ""}>${esc(t)}</option>`).join("")}</select>
+    <div class="o-segments" role="group" aria-label="Colonnes affichées">${Object.entries(VUES_GRILLE).map(([k, l]) => `<button type="button" data-g-vue="${k}" class="${k === E.grilleVue ? "on" : ""}" aria-pressed="${k === E.grilleVue}">${l}</button>`).join("")}</div>
+    <span class="aide">${lignes.length} / ${d.lignes.length} équipement(s)</span>
+    <span class="droite"><button type="button" id="g-export">Exporter (Excel)</button><button type="button" id="g-import">Importer une liste…</button></span>
+   </div>
+   <div class="grille-masse" ${E.grilleSel.size ? "" : "hidden"}><b>${E.grilleSel.size} sélectionné(s)</b>
+    <label for="g-m-col">Colonne</label><select id="g-m-col">${colonnesMasse.map(([k, l]) => `<option value="${esc(k)}" ${k === E.grilleColonne ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+    <label for="g-m-val">Valeur</label><span id="g-m-champ"></span>
+    <button type="button" class="prim" id="g-m-ok">Appliquer à la sélection</button><button type="button" class="lien" id="g-m-aucun">Tout désélectionner</button></div>
+   ${d.lignes.length ? `<div class="grille-cadre"><table class="grille-table"><thead><tr><th class="g-coche"><input type="checkbox" id="g-tout" ${toutCoche ? "checked" : ""} aria-label="Tout sélectionner (lignes filtrées)"></th><th>Repère</th><th>Type</th>
+     ${voirId ? "<th>Désignation</th><th>Modèle</th><th>UF</th><th>Local</th>" : ""}${voirAt ? d.attributs.map(a => `<th title="${esc(a.description || "")}">${esc(a.nom)}${a.unite ? ` <span class="aide">${esc(a.unite)}</span>` : ""}${a.obligatoire ? ' <span class="oblig">*</span>' : ""}</th>`).join("") : ""}<th>Contrôles</th></tr></thead>
+    <tbody>${lignes.map(l => { const a = `data-g-ident="${l.ident}"`; return `<tr class="${E.grilleSel.has(l.ident) ? "g-sel" : ""}"><td class="g-coche"><input type="checkbox" data-g-sel="${l.ident}" ${E.grilleSel.has(l.ident) ? "checked" : ""} aria-label="Sélectionner ${esc(l.repere)}"></td>
+      <td><button type="button" class="lien mono" data-g-fiche="${l.ident}">${esc(l.repere)}</button></td><td title="${esc(l.designation)}"><span class="tag">${esc(l.type)}</span></td>
+      ${voirId ? `<td><input data-g-champ="libelle" ${a} value="${esc(l.libelle)}" maxlength="32" aria-label="Désignation ${esc(l.repere)}"></td><td class="g-lecture">${esc(l.modele || "—")}</td>
+        <td><select data-g-champ="uf" ${a} aria-label="UF ${esc(l.repere)}">${optUf(l.uf)}</select></td><td><input data-g-champ="local" ${a} value="${esc(l.local)}" maxlength="40" aria-label="Local ${esc(l.repere)}"></td>` : ""}
+      ${voirAt ? d.attributs.map(at => `<td>${champAttr(at, l.attributs[at.code], a)}</td>`).join("") : ""}
+      <td class="g-ctrl" title="${esc(l.controles.join("\n"))}">${l.erreurs ? `<span class="badge b-err">${l.erreurs}</span> ` : ""}${l.alertes ? `<span class="badge b-al">${l.alertes}</span>` : ""}${!l.erreurs && !l.alertes ? '<span class="aide">—</span>' : ""}</td></tr>`; }).join("")}</tbody></table></div>`
+     : '<div class="vide-bloc">Aucun équipement : ajoutez-en dans Équipements, ou importez une liste.</div>'}
+  </section>`;
+  const recharger = async () => { E.grille = await api("/api/grille"); vueGrille(); };
+  $("#g-filtre").oninput = ev => { E.grilleFiltre = ev.target.value; const pos = ev.target.selectionStart; vueGrille(); const f = $("#g-filtre"); f.focus(); f.setSelectionRange(pos, pos); };
+  $("#g-type").onchange = ev => { E.grilleType = ev.target.value; vueGrille(); };
+  document.querySelectorAll("[data-g-vue]").forEach(b => b.onclick = () => { E.grilleVue = b.dataset.gVue; vueGrille(); });
+  $("#g-export").onclick = () => d.lignes.length ? telecharger("equipements") : toast("Aucun équipement à exporter.", true);
+  $("#g-import").onclick = async () => { await modaleImport(d.lignes.length ? "equipements_aller_retour" : "inventaire"); };
+  document.querySelectorAll("[data-g-fiche]").forEach(b => b.onclick = () => { E.sel = {nature: "eq", valeur: b.dataset.gFiche}; naviguer("#/inventaire"); });
+  document.querySelectorAll("[data-g-sel]").forEach(c => c.onchange = () => { c.checked ? E.grilleSel.add(c.dataset.gSel) : E.grilleSel.delete(c.dataset.gSel); vueGrille(); });
+  if ($("#g-tout")) $("#g-tout").onchange = ev => { lignes.forEach(l => ev.target.checked ? E.grilleSel.add(l.ident) : E.grilleSel.delete(l.ident)); vueGrille(); };
+  // Saisie dans la cellule : enregistrée au changement ; refusée = valeur d'avant rétablie
+  document.querySelectorAll("[data-g-champ][data-g-ident]").forEach(ch => ch.onchange = async () => {
+    const ligne = d.lignes.find(l => l.ident === ch.dataset.gIdent), champ = ch.dataset.gChamp;
+    const avant = champ.startsWith("attr:") ? (ligne.attributs[champ.slice(5)] || "") : ligne[champ];
+    try { const r = await api("/api/grille/appliquer", {idents: [ligne.ident], champ, valeur: ch.value});
+      ch.value = r.valeur; if (champ.startsWith("attr:")) ligne.attributs[champ.slice(5)] = r.valeur; else ligne[champ] = r.valeur;
+      ch.classList.add("g-ok"); setTimeout(() => ch.classList.remove("g-ok"), 900);
+      if (r.modifies) { E.grille = await api("/api/grille"); const t = E.grille.lignes.find(l => l.ident === ligne.ident); const td = ch.closest("tr").lastElementChild;
+        if (t && td) { td.title = t.controles.join("\n"); td.innerHTML = `${t.erreurs ? `<span class="badge b-err">${t.erreurs}</span> ` : ""}${t.alertes ? `<span class="badge b-al">${t.alertes}</span>` : ""}${!t.erreurs && !t.alertes ? '<span class="aide">—</span>' : ""}`; } }
+    } catch (err) { ch.value = avant; toast(err.message, true); }
+  });
+  // Modification en masse
+  const champMasse = () => {
+    const k = $("#g-m-col")?.value; if (!k) return;
+    E.grilleColonne = k;
+    const zone = $("#g-m-champ");
+    if (k === "uf") zone.innerHTML = `<select id="g-m-val">${optUf("")}</select>`;
+    else if (k.startsWith("attr:")) { const a = d.attributs.find(x => "attr:" + x.code === k); zone.innerHTML = champAttr(a, "", 'id="g-m-val"').replace(/data-g-champ="[^"]*"/, ""); }
+    else zone.innerHTML = `<input id="g-m-val" maxlength="${k === "libelle" ? 32 : 40}">`;
+  };
+  if ($("#g-m-col")) { $("#g-m-col").onchange = champMasse; champMasse(); }
+  if ($("#g-m-aucun")) $("#g-m-aucun").onclick = () => { E.grilleSel.clear(); vueGrille(); };
+  if ($("#g-m-ok")) $("#g-m-ok").onclick = () => {
+    const champ = $("#g-m-col").value, valeur = $("#g-m-val").value, n = E.grilleSel.size;
+    const nom = colonnesMasse.find(([k]) => k === champ)?.[1] || champ;
+    confirmer("Modifier en masse ?", `« ${nom} » = « ${valeur || "(vide)"} » pour ${n} équipement(s) sélectionné(s). Tout est contrôlé avant d'écrire : en cas de refus, rien n'est modifié.`, "Appliquer", async () => {
+      try { const r = await api("/api/grille/appliquer", {idents: [...E.grilleSel], champ, valeur});
+        toast(`${r.modifies} équipement(s) modifié(s)${r.inchanges ? `, ${r.inchanges} déjà à cette valeur` : ""}${r.sans_objet ? `, ${r.sans_objet} sans objet pour leur type` : ""}.`);
+        await recharger();
+      } catch (err) { toast(err.message, true); }
+    });
+  };
 }
 /* Standards d'ingénierie (19/11) : un standard par client = assemblage de briques (référentiel métier, charte,
    plan d'adressage, chaîne d'outils). Choisi à la création de l'ouvrage, copié dans l'ouvrage. Étape 2 : bibliothèques

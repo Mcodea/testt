@@ -1112,6 +1112,62 @@ class Session:
         nouveau.numero = f"{libres[0]:02d}"
         return nouveau
 
+    # Champs descriptifs modifiables dans la grille d'ingénierie (19/11, lot 5) : ni repère, ni signaux, ni adresses.
+    CHAMPS_GRILLE = {"libelle": "Désignation", "uf": "UF", "local": "Local"}
+
+    def appliquer_en_masse(self, idents, champ, valeur):
+        """Même valeur pour plusieurs équipements (grille d'ingénierie). Tout ou rien : chaque équipement est
+        contrôlé avant la première écriture. Un attribut sans objet pour un type est sauté (compté à part).
+        Renvoie {"modifies", "inchanges", "sans_objet", "valeur"}. Les équipements ne repassent pas « à valider »."""
+        from . import attributs
+        idents = list(dict.fromkeys(idents or []))
+        eqs = [self.ouvrage.equipement(i) for i in idents]
+        if not eqs or any(e is None for e in eqs):
+            raise RegleMetier("Sélection vide ou équipement introuvable.")
+        valeur = " ".join(str(valeur or "").split())
+        if champ == "libelle":
+            if len(valeur) > 32:
+                raise RegleMetier("Désignation : 32 caractères au plus (libellés de supervision).")
+            cibles, sans_objet = eqs, 0
+        elif champ == "uf":
+            if valeur and not any(u.code == valeur for u in self.ouvrage.unites):
+                raise RegleMetier(f"Unité fonctionnelle {valeur} inconnue.")
+            cibles, sans_objet = eqs, 0
+        elif champ == "local":
+            valeur, cibles, sans_objet = valeur[:40], eqs, 0
+        elif champ.startswith("attr:"):
+            a = attributs.trouver(champ[5:])
+            if a is None or a.get("archive"):
+                raise RegleMetier("Attribut inconnu ou archivé.")
+            try:
+                valeur = attributs.valider(a, valeur)
+            except attributs.AttributRefuse as exc:
+                raise RegleMetier(str(exc)) from None
+            cibles = [e for e in eqs if not a.get("types") or e.type in a["types"]]
+            sans_objet = len(eqs) - len(cibles)
+        else:
+            raise RegleMetier("Colonne non modifiable dans la grille (type, numéro et modèle se changent sur la fiche).")
+        modifies = 0
+        for e in cibles:
+            if champ.startswith("attr:"):
+                code = champ[5:]
+                if (e.attributs or {}).get(code, "") == valeur:
+                    continue
+                if valeur:
+                    e.attributs[code] = valeur
+                else:
+                    e.attributs.pop(code, None)
+            else:
+                if getattr(e, champ) == valeur:
+                    continue
+                setattr(e, champ, valeur)
+            modifies += 1
+        if modifies:
+            # Désignation, UF et local apparaissent dans des documents : l'ouvrage validé repasse en contrôle ;
+            # un attribut est une donnée descriptive (même règle que definir_attribut).
+            self._change(devalider=not champ.startswith("attr:"))
+        return {"modifies": modifies, "inchanges": len(cibles) - modifies, "sans_objet": sans_objet, "valeur": valeur}
+
     def definir_attribut(self, ident_eq, code, valeur):
         """Valeur d'un attribut de l'atelier sur un équipement (19/11, lot 4), contrôlée selon sa définition ; vide =
         retirée. Donnée descriptive : ni adresse ni validation ne changent."""

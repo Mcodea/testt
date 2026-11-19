@@ -1036,6 +1036,43 @@ class Application:
             raise RegleMetier("Action inconnue.")
         return {**self.standards_web({}), "ident": d.get("ident", ""), "alertes": alertes}
 
+    def grille_web(self, _):
+        """Grille d'ingénierie (lot 5, 19/11) : une ligne par équipement, colonnes descriptives et attributs de
+        l'atelier (None = sans objet pour ce type), état de contrôle. Lecture seule."""
+        if not self.ouvert or self.creation_en_attente:
+            raise RegleMetier("Ouvrez d'abord un ouvrage.")
+        from genvar import attributs
+        o = self.s.ouvrage
+        try:
+            defs = attributs.lister(actifs_seulement=True)
+        except ValueError:
+            defs = []
+        anomalies = self.s.anomalies()
+        par_eq: dict[str, list] = {}
+        for a in anomalies:
+            if a.ident_eq:
+                par_eq.setdefault(a.ident_eq, []).append(a)
+        lignes = []
+        for e in sorted(o.equipements, key=o.repere):
+            an = par_eq.get(e.ident, [])
+            lignes.append({"ident": e.ident, "repere": o.repere(e), "type": e.type, "designation": self.s.designation_type(e.type),
+                           "libelle": e.libelle, "modele": e.modele, "uf": e.uf, "local": e.local, "valide": e.valide,
+                           "erreurs": sum(a.niveau == "Erreur" for a in an), "alertes": sum(a.niveau == "Alerte" for a in an),
+                           "controles": [f"{a.code} · {a.message}" for a in an][:6],
+                           "attributs": {a["code"]: ((e.attributs or {}).get(a["code"], "") if not a.get("types") or e.type in a["types"] else None)
+                                         for a in defs}})
+        return {"lignes": lignes, "attributs": defs, "ufs": [{"code": u.code, "libelle": u.libelle} for u in o.unites],
+                "champs": self.s.CHAMPS_GRILLE}
+
+    def grille_appliquer(self, d):
+        idents = d.get("idents") or []
+        if not isinstance(idents, list) or not all(isinstance(x, str) for x in idents) or len(idents) > 5000:
+            raise RegleMetier("Sélection invalide.")
+        r = self.s.appliquer_en_masse(idents, str(d.get("champ") or ""), d.get("valeur", ""))
+        if r["modifies"]:
+            self._sauver()
+        return r
+
     def attributs_web(self, _):
         """Attributs d'équipement de l'atelier (lot 4, 19/11) et types d'équipement connus."""
         from genvar import attributs
@@ -1996,14 +2033,14 @@ ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle":
               "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre",
               "/api/es": "es", "/api/numero-ouvrage": "numero_ouvrage_suggere",
               "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page",
-              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/attributs": "attributs_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
+              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/grille": "grille_web", "/api/attributs": "attributs_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
               "/api/referentiel/synchronisation": "synchronisation_referentiel", "/api/ouvrage/copies": "copies_ouvrage",
               "/api/referentiel/impact": "rapport_impact", "/api/referentiel/propagation": "apercu_propagation",
               "/api/referentiel/apercu-modele": "apercu_modele"}
 ROUTES_POST = {"/api/nouveau": "nouveau", "/api/ouvrir": "ouvrir", "/api/fermer": "fermer",
                "/api/supprimer_ouvrage": "supprimer_ouvrage", "/api/definir": "definir",
                "/api/fiche-ouvrage": "fiche_ouvrage",
-               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/attributs/action": "attributs_action", "/api/equipement/attribut": "equipement_attribut", "/api/essais/reporter": "essais_reporter", "/api/modeles-livrables/action": "modeles_livrables_action", "/api/standards/appliquer": "appliquer_standard", "/api/standards/charte-apercu": "apercu_charte", "/api/reglages/reprendre": "reprendre_reglages",
+               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/grille/appliquer": "grille_appliquer", "/api/attributs/action": "attributs_action", "/api/equipement/attribut": "equipement_attribut", "/api/essais/reporter": "essais_reporter", "/api/modeles-livrables/action": "modeles_livrables_action", "/api/standards/appliquer": "appliquer_standard", "/api/standards/charte-apercu": "apercu_charte", "/api/reglages/reprendre": "reprendre_reglages",
                "/api/identification/type": "identifier_type",
                "/api/identification/selection": "identifier_selection", "/api/uf": "uf",
                "/api/equipement/ajouter": "ajouter_equipement", "/api/equipement/modifier": "modifier_equipement",

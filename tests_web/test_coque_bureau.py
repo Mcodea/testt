@@ -635,3 +635,33 @@ class TestCoqueBureau(ServeurNavigateur):
         self.assertFalse(any(f'Marque fictive {self.numero}' in m for m in fiche['alertes']))
         with self.assertRaisesRegex(RuntimeError, 'hors liste'):
             self.api('/api/equipement/attribut', {'ident_eq': ident, 'code': code, 'valeur': 'Marque Z'})
+
+    def test_grille_d_ingenierie(self):
+        """19/11, lot 5 : saisie dans la cellule, modification en masse avec confirmation ; type et modèle en lecture
+        seule ; aucun équipement ne repasse « à valider »."""
+        self.api('/api/equipement/ajouter', {'type': 'HV', 'numero': '02', 'se': '00', 'libelle': 'Vanne fictive 2'})
+        self.ouvrir('#/dashboard')
+        self.page.locator('#o-explorateur a[href="#/grille"]').click()
+        self.titre("Grille d’ingénierie")
+        self.page.locator('.grille-table tbody tr').first.wait_for()
+        lignes = self.api('/api/grille')['lignes']
+        premier = lignes[0]
+        champ = self.page.locator(f'input[data-g-champ="libelle"][data-g-ident="{premier["ident"]}"]')
+        champ.fill('Désignation fictive grille')
+        champ.press('Enter')
+        self.page.wait_for_function("i => document.querySelector(`input[data-g-champ='libelle'][data-g-ident='${i}']`)?.classList.contains('g-ok')", arg=premier['ident'])
+        self.assertEqual(self.api('/api/grille')['lignes'][0]['libelle'], 'Désignation fictive grille')
+        # Masse : local pour tous
+        self.page.locator('#g-tout').check()
+        self.page.locator('.grille-masse').wait_for()
+        self.page.locator('#g-m-col').select_option('local')
+        self.page.locator('#g-m-val').fill('Local fictif')
+        self.page.locator('#g-m-ok').click()
+        self.page.locator('.boite #m-ok').click()
+        self.page.wait_for_function("() => document.querySelector('#toasts')?.innerText.includes('modifié')")
+        apres = self.api('/api/grille')['lignes']
+        self.assertTrue(all(l['local'] == 'Local fictif' for l in apres))
+        self.assertEqual([l['valide'] for l in apres], [l['valide'] for l in lignes])
+        self.assertEqual(self.page.locator('input[data-g-champ="modele"], select[data-g-champ="type"]').count(), 0)
+        with self.assertRaisesRegex(RuntimeError, 'non modifiable'):
+            self.api('/api/grille/appliquer', {'idents': [premier['ident']], 'champ': 'modele', 'valeur': 'X'})

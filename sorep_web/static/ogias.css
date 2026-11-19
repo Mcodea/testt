@@ -769,6 +769,32 @@ html[data-theme] .creation-standard small { display: block; color: var(--o-texte
 @media (max-width: 1200px) { html[data-theme] .std-grille, html[data-theme] .std-briques, html[data-theme] .std-bibliotheque { grid-template-columns: minmax(0, 1fr); }
   html[data-theme] .std-brique:nth-child(even) { border-left: 0; } html[data-theme] .std-brique:nth-child(2) { border-top: 1px solid var(--o-ligne); } }
 
+/* Grille d'ingénierie (19/11, lot 5) : tableau dense éditable, en-tête fixe, sélection pour la modification en masse */
+html[data-theme] .grille-ingenierie { display: flex; flex-direction: column; gap: var(--o-e-2); min-height: 0; }
+html[data-theme] .grille-barre { display: flex; flex-wrap: wrap; align-items: center; gap: var(--o-e-2); }
+html[data-theme] .grille-barre #g-filtre { width: 320px; max-width: 100%; }
+html[data-theme] .grille-barre .droite { margin-left: auto; display: flex; gap: var(--o-e-2); }
+html[data-theme] .o-segments { display: inline-flex; border: 1px solid var(--o-ligne-forte); border-radius: var(--o-r-m); overflow: hidden; }
+html[data-theme] .o-segments button { border: 0; border-radius: 0; background: var(--o-surface); color: var(--o-texte); padding: 0 var(--o-e-3); min-height: var(--o-h-champ); }
+html[data-theme] .o-segments button + button { border-left: 1px solid var(--o-ligne-forte); }
+html[data-theme] .o-segments button.on { background: var(--o-action-fond); color: var(--o-texte); font-weight: 600; }
+html[data-theme] .grille-masse { display: flex; flex-wrap: wrap; align-items: center; gap: var(--o-e-2); padding: var(--o-e-2) var(--o-e-3); border: 1px solid var(--o-action); border-radius: var(--o-r-m); background: var(--o-action-fond); }
+html[data-theme] .grille-masse #g-m-champ input, html[data-theme] .grille-masse #g-m-champ select { min-width: 200px; }
+html[data-theme] .grille-cadre { overflow: auto; border: 1px solid var(--o-ligne); border-radius: var(--o-r-m); max-height: calc(100vh - 260px); }
+html[data-theme] table.grille-table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: var(--o-t-s); }
+html[data-theme] table.grille-table thead th { position: sticky; top: 0; z-index: 1; background: var(--o-surface-2); text-align: left; white-space: nowrap; }
+html[data-theme] table.grille-table td { padding: 2px var(--o-e-1); border-bottom: 1px solid var(--o-ligne); vertical-align: middle; }
+html[data-theme] table.grille-table td input, html[data-theme] table.grille-table td select { width: 100%; min-width: 90px; min-height: 28px; padding: 0 var(--o-e-1); font-size: var(--o-t-s); }
+html[data-theme] table.grille-table td input[data-g-champ="libelle"] { min-width: 200px; }
+html[data-theme] table.grille-table tr.g-sel td { background: var(--o-action-fond); }
+html[data-theme] table.grille-table .g-coche { width: 32px; text-align: center; }
+html[data-theme] table.grille-table .g-coche input { width: auto; min-width: 0; min-height: 0; }
+html[data-theme] table.grille-table .g-lecture { color: var(--o-texte-2); white-space: nowrap; }
+html[data-theme] table.grille-table .g-ctrl { white-space: nowrap; }
+html[data-theme] table.grille-table .g-so { color: var(--o-texte-2); padding-left: var(--o-e-2); }
+html[data-theme] table.grille-table .oblig { color: var(--o-erreur); }
+html[data-theme] table.grille-table .g-ok { outline: 2px solid var(--o-ok); outline-offset: -2px; }
+
 /* Attributs d'équipement (19/11, lot 4) */
 html[data-theme] .std-attributs { margin-top: var(--o-e-4); }
 html[data-theme] .std-attributs > .aide { margin: 0 0 var(--o-e-2); max-width: 110ch; }

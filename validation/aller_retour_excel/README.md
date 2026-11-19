@@ -31,7 +31,9 @@ Règles de sécurité :
   - Le modèle doit appartenir au type dans le référentiel.
   - L'UF doit exister dans l'ouvrage.
   - La désignation fait 32 caractères au plus.
-- **Équipement modifié.** Il repasse « à valider », comme pour une modification dans OGIAS.
+- **Équipement modifié.** Seul un changement de modèle le fait repasser « à valider » (ses signaux peuvent
+  changer). Désignation, UF, local et attributs sont descriptifs : même règle que la grille d'ingénierie
+  (lot 5, 19/11).
 
 Non repris de Typical Manager (à décider si besoin) : « Remplacer par » pour un équipement absent du fichier, et
 l'import des signaux ou des attributs. Ces derniers viendront avec la grille d'ingénierie (lot 5).
