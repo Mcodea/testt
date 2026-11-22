@@ -41,7 +41,10 @@ Les critères de sortie demeurent bloquants hors preuves utilisateur de section 
   contrôlé ; qualification après un premier essai réel confirmé, puis contrôle automatique. Notice :
   `validation/formats_appris/README.md`. Lot 2 fait : télétransmission (chaque supervision) et IHM. Suivant : XML.
 - Feuille de route d'ingénierie : `docs/FEUILLE_DE_ROUTE.md` (objectifs priorisés, règles non négociables).
-- Vérifié localement : 857 tests Python (5 ignorés), 119 tests navigateur, `outils/ci.py static`
+- **Gammes de matériel déclarées par l'atelier** (chaque client a un automate différent) : la gamme d'un automate
+  non livré se déclare une fois (racks, cartes, texte de reconnaissance) ; OGIAS la calcule comme une gamme livrée.
+  Notice : `validation/gammes_materiel/README.md`.
+- Vérifié localement : 865 tests Python (5 ignorés), 120 tests navigateur, `outils/ci.py static`
   (ruff, mypy moteur), audit données 0 détection.
 
 ## Point CI en cours — lot Formulaires

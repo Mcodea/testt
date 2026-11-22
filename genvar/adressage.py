@@ -241,7 +241,7 @@ def _physique(session, plan, plat, controleur, points, eqs):
 def _simuler_besoins(session, plan, manquantes):
     """Cartes qu'il faudrait AJOUTER (simulation, rien n'est ajouté)."""
     try:
-        cat = materiel.catalogue()
+        cat = materiel.catalogue_pour(session.ouvrage.automate)
         profil = session.ouvrage.profil_cartes if session.ouvrage.profil_cartes in cat["profils"] else cat["profil_defaut"]
         for nature, n in sorted(manquantes.items()):
             ref = cat["profils"][profil][nature]

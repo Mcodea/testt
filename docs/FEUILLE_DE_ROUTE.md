@@ -41,7 +41,7 @@ Principes retenus de ces outils, et ce qu'OGIAS en fait :
 - [x] Formats appris, lot 1 : liste des E/S physiques (texte à colonnes).
 - [x] Formats appris, lot 2 : télétransmission (chaque supervision) et IHM.
 - [ ] Formats appris, lot 3 : fichiers XML (exports de variables des logiciels récents).
-- [ ] Catalogue matériel déclaré par l'atelier pour un constructeur non décrit (cartes, voies), au même principe.
+- [x] Gammes de matériel déclarées par l'atelier : tout automate est calculé comme une gamme livrée.
 
 ### 2. Révisions des livrables (niveau professionnel)
 - [ ] Indice de révision par livrable et **liste des modifications** entre deux indices (E/S, variables, adresses

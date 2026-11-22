@@ -2355,7 +2355,7 @@ class Session:
             raise RegleMetier(f"Un module est déjà déclaré en {rack}.{position}.")
         self._verifier_emplacement_libre(rack, position)
         # Audit du 16/11 : une référence du catalogue impose sa nature et son nombre de voies.
-        carte = self._carte_catalogue(reference)
+        carte = self._carte_catalogue(reference, self.ouvrage.automate)
         if carte is not None:
             if carte["nature"] != nature or int(carte["voies"]) != voies:
                 raise RegleMetier(f"{carte['reference']} est une carte {carte['nature']} de {carte['voies']} voies "
@@ -2368,14 +2368,14 @@ class Session:
         return m.cle
 
     @staticmethod
-    def _carte_catalogue(reference):
-        """Carte du catalogue matériel correspondant à la référence (espaces ignorés), sinon None."""
+    def _carte_catalogue(reference, automate=""):
+        """Carte du catalogue matériel de la gamme de l'automate correspondant à la référence (espaces ignorés)."""
         ref = re.sub(r"\s+", "", reference or "").upper()
         if not ref:
             return None
         try:
-            from .materiel import catalogue
-            cartes = catalogue()["_cartes"]
+            from .materiel import catalogue_pour
+            cartes = catalogue_pour(automate)["_cartes"]
         except Exception:               # catalogue illisible : la saisie libre reste possible, signalée ailleurs
             return None
         return next((c for r, c in cartes.items() if re.sub(r"\s+", "", r).upper() == ref), None)
@@ -2408,7 +2408,7 @@ class Session:
         if r is None:
             raise RegleMetier("Retenez d'abord le matériel (« Recalculer le matériel ») avant d'équiper un emplacement.")
         plat = materiel.plateforme_materiel(self.ouvrage.automate)[0]
-        coms = {c["reference"] for c in materiel.catalogue().get("communication", {}).get(plat, [])}
+        coms = {c["reference"] for c in materiel.catalogue_pour(self.ouvrage.automate).get("communication", {}).get(plat, [])}
         if reference not in coms:
             raise RegleMetier(f"Module de communication inconnu du catalogue {plat} : {reference}.")
         if any(m.rack == rack and m.position == position for m in self.ouvrage.modules):
@@ -2655,7 +2655,7 @@ class Session:
         from . import materiel
         try:
             plat = materiel.plateforme_materiel(self.ouvrage.automate)[0]
-            cat = materiel.catalogue()
+            cat = materiel.catalogue_pour(self.ouvrage.automate)
         except materiel.CatalogueMaterielErreur as exc:
             raise RegleMetier(str(exc)) from exc
         if plat not in cat["plateformes"]:
@@ -2692,7 +2692,11 @@ class Session:
         from . import materiel
         if not self.ouvrage.racks or any(r.get("nim") for r in self.ouvrage.racks):
             return []
-        return materiel.nomenclature(self.ouvrage.racks, self.ouvrage.modules)
+        try:
+            cat = materiel.catalogue_pour(self.ouvrage.automate)
+        except materiel.CatalogueMaterielErreur:
+            cat = None
+        return materiel.nomenclature(self.ouvrage.racks, self.ouvrage.modules, cat=cat)
 
     def exporter_nomenclature(self, chemin):
         from .export_xlsx import ecrire_xlsx

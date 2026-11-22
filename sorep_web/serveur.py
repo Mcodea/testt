@@ -453,7 +453,7 @@ class Application:
                             "impulsion": o.equipement(p.ident_eq).es_meta.get(p.cle, {}).get('impulsion')} for p in pts],
                 "bilan": self.s.bilan_es(), "modules": self.s.bilan_modules(), "racks": o.racks,
                 "materiel_valide": o.materiel_valide,
-                "reserve_min": o.reserve_min, "cartes": self._cartes_catalogue(CARTES),
+                "reserve_min": o.reserve_min, "cartes": self._cartes_catalogue(CARTES, o.automate),
                 "sans_es": [o.repere(e) for e in self.s.equipements_tries() if not any(p.ident_eq == e.ident for p in pts)]}
 
     def configurer_equipement(self, d):
@@ -512,10 +512,11 @@ class Application:
         return {"n": n}
 
     @staticmethod
-    def _cartes_catalogue(anciennes):
+    def _cartes_catalogue(anciennes, automate=""):
         from genvar import materiel as mat
         try:
-            return [{"reference": c["reference"], "nature": c["nature"], "voies": c["voies"]} for c in mat.catalogue()["cartes"]]
+            return [{"reference": c["reference"], "nature": c["nature"], "voies": c["voies"]}
+                    for c in mat.catalogue_pour(automate)["cartes"]]
         except mat.CatalogueMaterielErreur:
             return [{"reference": r, "nature": n, "voies": v} for r, n, v in anciennes]
 
@@ -524,7 +525,7 @@ class Application:
         from genvar import materiel as mat
         o = self.s.ouvrage
         try:
-            cat = mat.catalogue()
+            cat = mat.catalogue_pour(o.automate)          # gamme déclarée par l'atelier, sinon catalogue livré
         except mat.CatalogueMaterielErreur as exc:
             raise RegleMetier(str(exc)) from exc
         try:
@@ -567,7 +568,7 @@ class Application:
             self.s.appliquer_materiel(d.get("profil"))
         elif a == "profil":
             from genvar import materiel as mat
-            if d.get("profil") not in mat.catalogue()["profils"]:
+            if d.get("profil") not in mat.catalogue_pour(self.s.ouvrage.automate)["profils"]:
                 raise RegleMetier("Profil de cartes inconnu.")
             self.s.ouvrage.profil_cartes = d["profil"]
             self.s.ouvrage.materiel_valide = False
@@ -1202,6 +1203,35 @@ class Application:
         if conflits:
             raise RegleMetier(f"Export refusé : {len(conflits)} conflit(s) d'adressage à résoudre à l'étape Variables "
                               f"(ex. {conflits[0][1]}).")
+
+    def gammes_materiel_web(self, _):
+        """Gammes de matériel déclarées par l'atelier (22/11) et gammes livrées, pour l'écran Standards."""
+        from genvar import gammes_materiel as gm
+        try:
+            gammes = [gm.resume(g) for g in gm.lister()]
+        except ValueError as exc:
+            raise RegleMetier(str(exc)) from None
+        o = self.s.ouvrage if self.ouvert else None
+        from genvar import materiel as mat
+        return {"gammes": gammes, "natures": list(gm.NATURES), "statut": gm.STATUT,
+                "livrees": ["Schneider Modicon M340", "Schneider Modicon M580", "Schneider Advantys STB",
+                            "SOFREL S4W"],
+                "ouvrage": ({"automate": o.automate, "gamme": mat.gamme(o.automate) or ""} if o is not None else None)}
+
+    def gammes_materiel_action(self, d):
+        """Déclarer, modifier ou supprimer une gamme. Aucun ouvrage n'est modifié."""
+        from genvar import gammes_materiel as gm
+        action = d.get("action")
+        try:
+            if action == "enregistrer":
+                g = gm.enregistrer(d.get("gamme") or {}, str(d.get("ident") or ""))
+                return {**self.gammes_materiel_web({}), "ident": g["ident"]}
+            if action == "supprimer":
+                gm.supprimer(str(d.get("ident") or ""))
+                return self.gammes_materiel_web({})
+        except gm.GammeRefusee as exc:
+            raise RegleMetier(str(exc)) from None
+        raise RegleMetier("Action inconnue.")
 
     def formats_appris_web(self, _):
         """Formats d'export appris (22/11) : bibliothèque, formats livrés, et pour l'ouvrage ouvert les formats retenus
@@ -2204,14 +2234,14 @@ ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle":
               "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre",
               "/api/es": "es", "/api/numero-ouvrage": "numero_ouvrage_suggere",
               "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page",
-              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/grille": "grille_web", "/api/attributs": "attributs_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/formats-appris": "formats_appris_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
+              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/grille": "grille_web", "/api/attributs": "attributs_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/formats-appris": "formats_appris_web", "/api/gammes-materiel": "gammes_materiel_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
               "/api/referentiel/synchronisation": "synchronisation_referentiel", "/api/ouvrage/copies": "copies_ouvrage",
               "/api/referentiel/impact": "rapport_impact", "/api/referentiel/propagation": "apercu_propagation",
               "/api/referentiel/apercu-modele": "apercu_modele"}
 ROUTES_POST = {"/api/nouveau": "nouveau", "/api/ouvrir": "ouvrir", "/api/fermer": "fermer",
                "/api/supprimer_ouvrage": "supprimer_ouvrage", "/api/definir": "definir",
                "/api/fiche-ouvrage": "fiche_ouvrage",
-               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/grille/appliquer": "grille_appliquer", "/api/attributs/action": "attributs_action", "/api/equipement/attribut": "equipement_attribut", "/api/essais/reporter": "essais_reporter", "/api/modeles-livrables/action": "modeles_livrables_action", "/api/formats-appris/action": "formats_appris_action", "/api/standards/appliquer": "appliquer_standard", "/api/standards/charte-apercu": "apercu_charte", "/api/reglages/reprendre": "reprendre_reglages",
+               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/grille/appliquer": "grille_appliquer", "/api/attributs/action": "attributs_action", "/api/equipement/attribut": "equipement_attribut", "/api/essais/reporter": "essais_reporter", "/api/modeles-livrables/action": "modeles_livrables_action", "/api/formats-appris/action": "formats_appris_action", "/api/gammes-materiel/action": "gammes_materiel_action", "/api/standards/appliquer": "appliquer_standard", "/api/standards/charte-apercu": "apercu_charte", "/api/reglages/reprendre": "reprendre_reglages",
                "/api/identification/type": "identifier_type",
                "/api/identification/selection": "identifier_selection", "/api/uf": "uf",
                "/api/equipement/ajouter": "ajouter_equipement", "/api/equipement/modifier": "modifier_equipement",

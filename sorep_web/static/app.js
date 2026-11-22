@@ -137,6 +137,7 @@ async function _standards(j) {
   E.standards = await api("/api/standards");
   E.modelesLivrables = await api("/api/modeles-livrables");
   E.formatsAppris = await api("/api/formats-appris");
+  E.gammesMateriel = await api("/api/gammes-materiel");
   E.attributsAtelier = await api("/api/attributs");
   if (perime(j)) return;
   rendre();
@@ -1108,6 +1109,7 @@ function vueStandards() {
     ${biblio("adressage", "Plans d'adressage", "Nouveau plan d'adressage…")}
     ${biblio("outils", "Chaînes d'outils", "Nouvelle chaîne d'outils…")}
    </div>
+   ${blocGammesMateriel(E.gammesMateriel)}
    ${blocFormatsAppris(E.formatsAppris)}
    ${blocModelesLivrables(E.modelesLivrables)}
    ${blocAttributsAtelier(E.attributsAtelier)}</section>`;
@@ -1124,9 +1126,71 @@ function vueStandards() {
     `« ${sel.nom} » archivé : il n'est plus proposé à la création. Les ouvrages créés selon ce standard ne changent pas.`);
   if ($("#std-reactiver")) $("#std-reactiver").onclick = () => agir({action: "statut", ident: sel.ident, statut: "actif"}, `« ${sel.nom} » réactivé.`);
   document.querySelectorAll("[data-nouvelle-brique]").forEach(b => b.onclick = () => modaleBrique(d, b.dataset.nouvelleBrique, agir));
+  brancherGammesMateriel();
   brancherFormatsAppris();
   brancherModelesLivrables();
   brancherAttributsAtelier();
+}
+/* Gammes de matériel de l'atelier (22/11) : chaque client a un automate différent. L'atelier déclare une fois la
+   gamme (texte de reconnaissance, racks, cartes) ; OGIAS calcule ensuite racks, cartes, nomenclature et contrôles
+   comme pour une gamme livrée. Les listes se saisissent une ligne par élément (copier-coller depuis Excel accepté). */
+function blocGammesMateriel(d) {
+  if (!d) return "";
+  const lignes = d.gammes.map(g => `<tr class="cliquable" data-gm="${esc(g.ident)}" tabindex="0"><td><b class="mono">${esc(g.code)}</b></td><td>${esc(g.nom)}</td><td>${esc(g.constructeur)}</td><td class="mono">${esc(g.motifs.join(", "))}</td>
+    <td>${d.natures.map(n => `<span class="tag p-${n}">${n} ${g.cartes_par_nature[n]}</span>`).join(" ")}</td><td class="num">${g.racks.length}</td></tr>`).join("");
+  const ouv = d.ouvrage && d.ouvrage.automate && !d.ouvrage.gamme ? `<div class="avert" id="gm-ouvrage">L'automate de l'ouvrage ouvert, <b>${esc(d.ouvrage.automate)}</b>, n'appartient à aucune gamme décrite : déclarez sa gamme pour qu'OGIAS propose son matériel. <button type="button" class="lien" id="gm-pour-ouvrage">Déclarer cette gamme…</button></div>` : "";
+  return `<div class="bloc std-gammes"><div class="bloc-tete"><h2>Gammes de matériel</h2>
+    <div class="boutons-ligne"><button type="button" class="prim" id="gm-nouvelle">Déclarer une gamme…</button></div></div>
+    <p class="aide">Gammes livrées : ${d.livrees.map(esc).join(", ")}. Pour tout autre automate (Siemens, Wago, Allen-Bradley, Omron…), déclarez une fois sa gamme : le texte qui la reconnaît dans le champ Automate de l'ouvrage, ses racks et ses cartes d'E/S. OGIAS calcule ensuite les racks, les cartes, la nomenclature et les contrôles comme pour une gamme livrée.</p>
+    ${ouv}
+    ${d.gammes.length ? `<table data-o-tableau="sans-selection" data-o-cle="gammes-materiel"><thead><tr><th>Code</th><th>Gamme</th><th>Constructeur</th><th>Reconnue par</th><th>Cartes</th><th class="num">Racks</th></tr></thead><tbody>${lignes}</tbody></table>`
+      : '<div class="vide-bloc">Aucune gamme déclarée par l\'atelier.</div>'}</div>`;
+}
+function brancherGammesMateriel() {
+  const d = E.gammesMateriel; if (!d) return;
+  if ($("#gm-nouvelle")) $("#gm-nouvelle").onclick = () => modaleGamme(null);
+  if ($("#gm-pour-ouvrage")) $("#gm-pour-ouvrage").onclick = () => modaleGamme(null, d.ouvrage.automate);
+  document.querySelectorAll("[data-gm]").forEach(r => { r.onkeydown = ev => { if (ev.key === "Enter") r.click(); };
+    r.onclick = () => modaleGamme(d.gammes.find(g => g.ident === r.dataset.gm)); });
+  if (E.gammePourAutomate) { const a = E.gammePourAutomate; E.gammePourAutomate = ""; modaleGamme(null, a); }
+}
+const gmLignes = texte => texte.split(/\r?\n/).map(l => l.split(/\t|;/).map(x => x.trim())).filter(x => x[0]);
+function modaleGamme(g, automate) {
+  const d = E.gammesMateriel;
+  const lignes = (liste, f) => (liste || []).map(f).join("\n");
+  const motifProp = automate ? automate.replace(/^[A-Za-z]{2,4}\s*-\s*/, "").toUpperCase() : "";
+  const m = ouvrirModale(`<div class="boite-tete"><h2>${g ? `Gamme ${esc(g.code)}` : "Déclarer une gamme de matériel"}</h2>
+    <p>Une ligne par élément ; colonnes séparées par un point-virgule ou une tabulation (copier-coller depuis Excel accepté). Les références et capacités sont celles de la documentation du constructeur : OGIAS ne les devine pas et les marque « à vérifier ».</p></div>
+    <div class="boite-corps std-formulaire gm-formulaire">
+     <label for="gm-code">Code de la gamme</label><input id="gm-code" maxlength="12" class="mono" value="${esc(g?.code || motifProp.slice(0, 12))}" placeholder="Ex. S7-1500">
+     <label for="gm-nom">Nom</label><input id="gm-nom" maxlength="60" value="${esc(g?.nom || "")}" placeholder="Ex. Siemens S7-1500">
+     <label for="gm-constructeur">Constructeur</label><input id="gm-constructeur" maxlength="40" value="${esc(g?.constructeur || "")}">
+     <label for="gm-motifs">Reconnue quand le champ Automate de l'ouvrage contient (un texte par ligne)</label><textarea id="gm-motifs" rows="2" class="mono">${esc(g ? g.motifs.join("\n") : motifProp)}</textarea>
+     <label for="gm-cpu">Emplacements pris par le processeur dans le rack local</label><input id="gm-cpu" type="number" min="0" max="4" value="${g ? g.emplacements_cpu : 1}">
+     <label for="gm-racks">Racks : référence ; nombre d'emplacements</label><textarea id="gm-racks" rows="3" class="mono" placeholder="Rail 160 mm ; 8">${esc(lignes(g?.racks, r => `${r.reference} ; ${r.positions}`))}</textarea>
+     <label for="gm-cartes">Cartes d'E/S : référence ; nature (ET, ST, EA, SA) ; voies ; description</label><textarea id="gm-cartes" rows="7" class="mono" placeholder="DI 32x24VDC ; ET ; 32 ; 32 entrées TOR">${esc(lignes(g?.cartes, c => `${c.reference} ; ${c.nature} ; ${c.voies}${c.description ? " ; " + c.description : ""}`))}</textarea>
+     <label for="gm-defaut">Carte par défaut quand une nature en a plusieurs : nature ; référence</label><textarea id="gm-defaut" rows="2" class="mono" placeholder="ET ; DI 32x24VDC">${esc(lignes(Object.entries(g?.defaut || {}), ([n, r]) => `${n} ; ${r}`))}</textarea>
+     <label for="gm-cpus">Processeurs (facultatif) : référence ; description</label><textarea id="gm-cpus" rows="2" class="mono">${esc(lignes(g?.processeurs, x => `${x.reference}${x.description ? " ; " + x.description : ""}`))}</textarea>
+     <label for="gm-alims">Alimentations (facultatif) : référence ; description</label><textarea id="gm-alims" rows="2" class="mono">${esc(lignes(g?.alimentations, x => `${x.reference}${x.description ? " ; " + x.description : ""}`))}</textarea>
+     <label for="gm-remarque">Remarque (source, version du catalogue…)</label><input id="gm-remarque" maxlength="300" value="${esc(g?.remarque || "")}">
+     <div class="erreur-form" id="gm-err" role="alert"></div></div>
+    <div class="boite-pied">${g ? '<button type="button" class="danger gauche" id="gm-supprimer">Supprimer la gamme</button>' : ""}<button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="gm-ok">${g ? "Enregistrer les modifications" : "Déclarer la gamme"}</button></div>`, true);
+  const v = id => m.querySelector(id).value;
+  const gamme = () => ({code: v("#gm-code"), nom: v("#gm-nom"), constructeur: v("#gm-constructeur"),
+    motifs: v("#gm-motifs").split(/\r?\n|,/).map(x => x.trim()).filter(Boolean), emplacements_cpu: v("#gm-cpu"),
+    racks: gmLignes(v("#gm-racks")).map(([reference, positions]) => ({reference, positions})),
+    cartes: gmLignes(v("#gm-cartes")).map(([reference, nature, voies, description]) => ({reference, nature, voies, description})),
+    defaut: Object.fromEntries(gmLignes(v("#gm-defaut")).map(([n, r]) => [n.toUpperCase(), r])),
+    processeurs: gmLignes(v("#gm-cpus")).map(([reference, description]) => ({reference, description})),
+    alimentations: gmLignes(v("#gm-alims")).map(([reference, description]) => ({reference, description})), remarque: v("#gm-remarque")});
+  const agir = async (corps, message) => {
+    try { E.gammesMateriel = await api("/api/gammes-materiel/action", corps); fermerModale(); toast(message); vueStandards(); }
+    catch (e) { m.querySelector("#gm-err").textContent = e.message; }
+  };
+  m.querySelector("#gm-ok").onclick = () => agir({action: "enregistrer", ident: g?.ident || "", gamme: gamme()},
+    g ? "Gamme modifiée : les ouvrages gardent les cartes déjà retenues." : "Gamme déclarée : OGIAS propose désormais le matériel des ouvrages de cet automate.");
+  if (m.querySelector("#gm-supprimer")) m.querySelector("#gm-supprimer").onclick = () => confirmer("Supprimer cette gamme ?", `La gamme ${g.code} ne sera plus reconnue. Les ouvrages gardent les cartes déjà retenues ; leur matériel ne sera plus recalculé.`, "Supprimer",
+    () => agir({action: "supprimer", ident: g.ident}, "Gamme supprimée."));
 }
 /* Formats d'export appris (22/11) : OGIAS ouvert à tout constructeur. L'atelier fait apprendre une fois le format
    d'un fichier exporté par l'outil du constructeur (liste des E/S physiques) ; OGIAS exporte ensuite chaque ouvrage
@@ -3632,7 +3696,7 @@ function vueMateriel() {
      <div class="droite"><button class="${rien ? "prim" : ""}" id="m-calc" ${prop && prop.applicable ? "" : "disabled"} title="${s4w ? "Proposition indicative pour un poste S4W" : ""}">${rien ? "Calculer le matériel" : "Recalculer le matériel"}</button><button id="m-cartes">Ajuster les cartes…</button></div>
    </div>
    <div id="pa-materiel"></div>
-   ${m.remarque_plateforme ? `<div class="avert">${esc(m.remarque_plateforme)}</div>` : ""}
+   ${m.remarque_plateforme ? `<div class="avert">${esc(m.remarque_plateforme)}${m.plateforme === "Non décrite" && m.automate ? ` <button type="button" class="lien" id="m-declarer-gamme">Déclarer la gamme de cet automate…</button>` : ""}</div>` : ""}
    ${m.blocage ? `<div class="alerte-bloc"><b>Calcul impossible :</b> ${esc(m.blocage)} <button class="lien" data-nav="#/es">Aller à la liste des E/S</button></div>` : ""}
    ${differe ? `<div class="avert">Les cartes retenues diffèrent de la proposition actuelle (densité ou E/S modifiées). « Recalculer le matériel » applique la proposition.</div>` : ""}
    <div class="bloc"><div class="bloc-tete"><h2>Racks</h2><span class="aide">${rien ? "aucune carte retenue" : `${d.modules.length} carte(s) · cliquez un emplacement pour l'inspecter, double-cliquez pour le changer`}</span>
@@ -3692,6 +3756,7 @@ function vueMateriel() {
   };
   if ($("#m-profil")) $("#m-profil").onchange = ev => agir(api("/api/materiel/action", {action: "profil", profil: ev.target.value})).then(rechargerMateriel);
   $("#m-cartes").onclick = () => modaleModules();
+  if ($("#m-declarer-gamme")) $("#m-declarer-gamme").onclick = () => { E.gammePourAutomate = m.automate; location.hash = "#/standards"; };
   document.querySelectorAll("[data-carte]").forEach(x => x.onclick = () => modaleVoiesCarte(x.dataset.carte));
   if ($("#m-valider")) $("#m-valider").onclick = () => agir(api("/api/materiel/action", {action: "valider"})).then(() => { toast("Matériel validé."); rechargerMateriel(); });
   if ($("#m-deval")) $("#m-deval").onclick = () => agir(api("/api/materiel/action", {action: "valider", valide: false})).then(rechargerMateriel);

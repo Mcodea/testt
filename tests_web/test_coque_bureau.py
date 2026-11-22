@@ -698,6 +698,41 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.locator('.boite #m-ok').click()
         self.assertIn('au moins une destination', self.page.locator('.boite #m-err').inner_text())
 
+    def test_declarer_la_gamme_d_un_automate_non_decrit(self):
+        """22/11 : un automate d'un autre constructeur (fictif) mène de l'écran Matériel à la déclaration de sa gamme,
+        préremplie ; une fois déclarée, l'écran Matériel la reconnaît et n'affiche que ses cartes."""
+        automate = f'Xyz - Automate fictif {self.numero}'
+        code = f'XYZ{self.numero}'
+        self.api('/api/listes-ouvrage/action', {'action': 'ajouter', 'groupe': 'automates', 'code': automate, 'regie': 'Automate'})
+        self.api('/api/nouveau', {'mode': 'Neuf'})
+        self.api('/api/fiche-ouvrage', {'action': 'creer', 'identification': {
+            'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': f'{40 + self.numero:02d}',
+            'libelle': 'Automate fictif', 'automate': automate, 'revision': 'A'}})
+        ident = self.api('/api/equipement/ajouter', {'type': 'HV', 'numero': '01', 'se': '00'})['ident']
+        self.api('/api/equipement/proposition', {'ident_eq': ident, 'decision': 'retenir'})
+        self.api('/api/equipement/valider', {'idents': [ident], 'valide': True})
+        self.ouvrir('#/materiel')
+        self.page.locator('#m-declarer-gamme').click()
+        boite = self.page.locator('.boite')
+        boite.locator('#gm-code').wait_for()
+        self.assertIn('AUTOMATEFICTIF', boite.locator('#gm-motifs').input_value().replace(' ', ''))
+        boite.locator('#gm-code').fill(code)
+        boite.locator('#gm-motifs').fill(f'AUTOMATE FICTIF {self.numero}')
+        boite.locator('#gm-nom').fill('Gamme fictive')
+        boite.locator('#gm-constructeur').fill('Xyz')
+        boite.locator('#gm-racks').fill('Châssis 10 ; 10')
+        boite.locator('#gm-cartes').fill('XDI-16\tET\t16\t16 entrées\nXDO-16 ; ST ; 16\nXAI-8 ; EA ; 8\nXAO-4 ; SA ; 4')
+        boite.locator('#gm-ok').click()
+        ligne = self.page.locator('[data-gm]', has_text=code)
+        ligne.wait_for()
+        self.addCleanup(self.api, '/api/gammes-materiel/action', {'action': 'supprimer', 'ident': ligne.get_attribute('data-gm')})
+        self.assertIn('ET 1', ligne.inner_text())
+        self.ouvrir('#/materiel')
+        self.page.wait_for_function("c => document.querySelector('.bandeau-materiel b')?.textContent === c", arg=code)
+        self.assertEqual(self.page.locator('#m-declarer-gamme').count(), 0)
+        cartes = self.api('/api/materiel')['cartes_catalogue']
+        self.assertEqual({c['reference'] for c in cartes}, {'XDI-16', 'XDO-16', 'XAI-8', 'XAO-4'})
+
     def test_apprendre_un_format_d_export(self):
         """22/11 : un export FICTIF d'une liste d'E/S (forme octet.bit, guillemets, commentaires avant l'en-tête) est
         appris : colonnes proposées, aperçu sur l'ouvrage, enregistrement, puis qualification après essai réel."""

@@ -70,10 +70,36 @@ def emplacements_libres(racks, modules):
     return sortie
 
 
-def gamme(automate):
-    """Code de gamme décrite (S4W, STB, M580, M340) ou None si l'automate n'est pas reconnu."""
+def gamme_livree(automate):
+    """Code d'une gamme livrée (S4W, STB, M580, M340) reconnue dans le texte, sinon None."""
     a = re.sub(r"\s+", "", (automate or "").upper())
     return next((code for code, motifs in _GAMMES if any(m in a for m in motifs)), None)
+
+
+def gamme(automate):
+    """Code de gamme décrite : livrée (S4W, STB, M580, M340), sinon déclarée par l'atelier ; None si inconnue."""
+    livree = gamme_livree(automate)
+    if livree:
+        return livree
+    from .gammes_materiel import reconnaitre
+    g = reconnaitre(automate)
+    return g["code"] if g else None
+
+
+def est_atelier(plat):
+    return bool(plat) and plat not in ("S4W", "STB", "M580", "M340", "Non décrite")
+
+
+def catalogue_pour(automate, chemin=None):
+    """Catalogue de la gamme de l'automate : celui d'une gamme déclarée par l'atelier, sinon le catalogue livré."""
+    g = gamme(automate)
+    if est_atelier(g):
+        cle = "atelier:" + g
+        if cle not in _CACHE:
+            from .gammes_materiel import catalogue as cat_atelier
+            _CACHE[cle] = cat_atelier(g)
+        return _CACHE[cle]
+    return catalogue(chemin)
 
 
 def plateforme(automate):
@@ -98,9 +124,10 @@ def plateforme_materiel(automate):
     if gamme(automate) is None:
         raise CatalogueMaterielErreur(
             f"Source « {automate} » : cette gamme n'est pas décrite dans le catalogue matériel d'OGIAS. Aucune "
-            "configuration n'est proposée, pour ne pas présenter le matériel d'une autre gamme. Gammes prises en "
-            "charge : Modicon M340 (BMX P34…), Modicon M580 (BME P58 / H58…), Advantys STB (STB NIP 2212), "
-            "SOFREL S4W.")
+            "configuration n'est proposée, pour ne pas présenter le matériel d'une autre gamme. Gammes livrées : "
+            "Modicon M340 (BMX P34…), Modicon M580 (BME P58 / H58…), Advantys STB (STB NIP 2212), SOFREL S4W. "
+            "Pour tout autre automate, déclarez sa gamme (cartes, racks) dans Standards d'ingénierie › Gammes de "
+            "matériel : OGIAS la calcule ensuite comme une gamme livrée.")
     return plateforme(automate)
 
 
@@ -302,9 +329,17 @@ def proposer(points, automate="", profil="", reserve=0.2, chemin=None, min_carte
     if plat == "STB":
         return proposer_stb(points, reserve, min_cartes=min_cartes, emplacements_libres=emplacements_libres,
                             automate=automate)
-    cat = catalogue(chemin)
+    cat = catalogue_pour(automate, chemin)
     profil = profil if profil in cat["profils"] else cat["profil_defaut"]
     p = Proposition(plat, profil, remarques=[remarque] if remarque else [])
+    if cat.get("_atelier"):
+        p.remarques.append("Gamme déclarée par l'atelier : références et capacités à vérifier sur la documentation "
+                           f"{cat.get('_constructeur', 'du constructeur')}.")
+        absentes = sorted(n for n, nb in compter(points).items() if nb and not cat["profils"][profil].get(n))
+        if absentes:
+            raise CatalogueMaterielErreur(
+                f"Gamme {plat} : aucune carte {', '.join(absentes)} déclarée alors que l'ouvrage en a besoin. "
+                "Complétez la gamme dans Standards d'ingénierie › Gammes de matériel.")
     choix = config_materiel(cat, plat, automate, config)
     p.config = choix
     pc = cat["plateformes"][plat]
@@ -372,17 +407,18 @@ def proposer(points, automate="", profil="", reserve=0.2, chemin=None, min_carte
     if not choix["processeur"]:
         p.remarques.append("Processeur à choisir (référence exacte du catalogue).")
     p.remarques.append("Bilan de consommation des racks non calculé (consommations non intégrées) : à vérifier "
-                       "avec l'outil Schneider.")
+                       f"avec l'outil {cat.get('_constructeur', 'Schneider')}.")
     return p
 
 
-def nomenclature(racks, modules, chemin=None):
+def nomenclature(racks, modules, chemin=None, cat=None):
     """Nomenclature de commande : [{reference, designation, quantite, role}] d'après les racks et cartes retenus
     (alimentation, processeur, communication, cartes, extension, caches des emplacements libres)."""
-    cat = catalogue(chemin)
+    cat = cat if cat is not None else catalogue(chemin)
     desig = {c["reference"]: c.get("description", "") for c in cat["cartes"] + cat.get("cartes_speciales", [])}
     for a in cat.get("alimentations", []):
-        desig[a["reference"]] = f"Alimentation {a['entree']}, {a['puissance_w']} W" + (" (redondante)" if a["redondante"] else "")
+        desig[a["reference"]] = a.get("description") or (
+            f"Alimentation {a['entree']}, {a['puissance_w']} W" + (" (redondante)" if a["redondante"] else ""))
     for plat in cat.get("processeurs", {}).values():
         for c in plat:
             desig[c["reference"]] = "Processeur — " + c["description"]
