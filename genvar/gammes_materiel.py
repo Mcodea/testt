@@ -30,6 +30,8 @@ from . import chemins
 NATURES = ("ET", "ST", "EA", "SA")
 CODES_LIVRES = ("M340", "M580", "STB", "S4W", "NONDECRITE")
 STATUT = "Gamme déclarée par l'atelier : références et capacités à vérifier sur la documentation du constructeur."
+STATUT_LIVREE = ("Gamme livrée : références vérifiées le 22/11/2026 sur le catalogue du constructeur ; capacité des "
+                 "rails estimée (modules de 35 mm), à confirmer dans l'outil du constructeur.")
 RE_CODE = re.compile(r"[A-Z0-9][A-Z0-9_-]{1,11}")
 
 
@@ -68,13 +70,25 @@ def _ecrire(gammes: list[dict]) -> None:
                                 + "\n").encode("utf-8"))
 
 
+def livrees() -> list[dict]:
+    """Gammes livrées avec OGIAS hors catalogue Schneider (`data/gammes_livrees.json`), en lecture seule."""
+    chemin = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "gammes_livrees.json")
+    with open(chemin, encoding="utf-8") as fh:
+        return [{**g, "livree": True} for g in json.load(fh)["gammes"]]
+
+
+def toutes() -> list[dict]:
+    """Gammes livrées puis gammes déclarées par l'atelier."""
+    return livrees() + lister()
+
+
 def trouver(ident: str) -> dict | None:
     return next((g for g in lister() if g.get("ident") == ident), None)
 
 
 def par_code(code: str) -> dict | None:
     try:
-        return next((g for g in lister() if g.get("code") == code), None)
+        return next((g for g in toutes() if g.get("code") == code), None)
     except ValueError:
         return None
 
@@ -86,9 +100,9 @@ def reconnaitre(automate: str) -> dict | None:
     if not a:
         return None
     try:
-        gammes = lister()
+        gammes = toutes()
     except ValueError:
-        return None
+        gammes = livrees()
     return next((g for g in gammes if any(m in a for m in g.get("motifs", []))), None)
 
 
@@ -114,10 +128,10 @@ def controler(brut: dict, ident_modifie: str = "") -> dict:
         livree = materiel.gamme_livree(m)
         if livree:
             raise GammeRefusee(f"Le texte « {m} » est déjà reconnu comme la gamme livrée {livree}.")
-    autres = [g for g in lister() if g.get("ident") != ident_modifie]
+    autres = [g for g in toutes() if g.get("ident") != ident_modifie]
     for g in autres:
         if g["code"] == code:
-            raise GammeRefusee(f"Une gamme porte déjà le code {code}.")
+            raise GammeRefusee(f"Une gamme {'livrée ' if g.get('livree') else ''}porte déjà le code {code}.")
         commun = [m for m in motifs if any(m in x or x in m for x in g.get("motifs", []))]
         if commun:
             raise GammeRefusee(f"Le texte « {commun[0]} » recoupe celui de la gamme {g['code']} : un automate doit "
@@ -221,10 +235,12 @@ def catalogue(code: str) -> dict:
     if g is None:
         from .materiel import CatalogueMaterielErreur
         raise CatalogueMaterielErreur(f"Gamme {code} introuvable dans les gammes déclarées par l'atelier.")
-    cartes = [{**c, "source": "déclarée par l'atelier"} for c in g["cartes"]]
+    source = "catalogue Siemens (voir les sources de la gamme)" if g.get("livree") else "déclarée par l'atelier"
+    cartes = [{**c, "source": source} for c in g["cartes"]]
+    statut = STATUT_LIVREE if g.get("livree") else STATUT
     return {
-        "statut": STATUT, "cartes": cartes,
-        "profils": {"atelier": {"libelle": "Cartes par défaut de la gamme", **g["defaut"]}},
+        "statut": statut, "cartes": cartes,
+        "profils": {"atelier": {"libelle": "Cartes par défaut de la gamme", **defaut_complet(g)}},
         "profil_defaut": "atelier",
         "plateformes": {code: {"racks": g["racks"], "positions_cpu": list(range(g["emplacements_cpu"]))}},
         "cartes_speciales": [], "remarque_speciales": "",
@@ -233,11 +249,19 @@ def catalogue(code: str) -> dict:
         "processeurs": {code: [{"reference": p["reference"], "description": p["description"] or "Processeur"}
                                for p in g["processeurs"]]},
         "communication": {code: []},
-        "extension": {"regle": "liaison d'extension selon la documentation du constructeur."},
+        "extension": {"regle": g.get("extension") or "liaison d'extension selon la documentation du constructeur."},
         "_cartes": {c["reference"]: c for c in cartes}, "_atelier": True, "_constructeur": g["constructeur"],
+        "_livree": bool(g.get("livree")),
     }
+
+
+def defaut_complet(g: dict) -> dict:
+    """Carte par défaut de chaque nature : celle déclarée, sinon la seule carte de cette nature."""
+    seules = {n: [c["reference"] for c in g["cartes"] if c["nature"] == n] for n in NATURES}
+    return {**{n: refs[0] for n, refs in seules.items() if len(refs) == 1}, **(g.get("defaut") or {})}
 
 
 def resume(g: dict) -> dict:
     par_nature = {n: sum(1 for c in g["cartes"] if c["nature"] == n) for n in NATURES}
-    return {**g, "statut": STATUT, "cartes_par_nature": par_nature}
+    return {**g, "statut": STATUT_LIVREE if g.get("livree") else STATUT, "cartes_par_nature": par_nature,
+            "livree": bool(g.get("livree"))}

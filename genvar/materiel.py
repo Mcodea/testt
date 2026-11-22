@@ -125,7 +125,8 @@ def plateforme_materiel(automate):
         raise CatalogueMaterielErreur(
             f"Source « {automate} » : cette gamme n'est pas décrite dans le catalogue matériel d'OGIAS. Aucune "
             "configuration n'est proposée, pour ne pas présenter le matériel d'une autre gamme. Gammes livrées : "
-            "Modicon M340 (BMX P34…), Modicon M580 (BME P58 / H58…), Advantys STB (STB NIP 2212), SOFREL S4W. "
+            "Modicon M340 (BMX P34…), Modicon M580 (BME P58 / H58…), Advantys STB (STB NIP 2212), SOFREL S4W, "
+            "Siemens S7-1500. "
             "Pour tout autre automate, déclarez sa gamme (cartes, racks) dans Standards d'ingénierie › Gammes de "
             "matériel : OGIAS la calcule ensuite comme une gamme livrée.")
     return plateforme(automate)
@@ -333,7 +334,8 @@ def proposer(points, automate="", profil="", reserve=0.2, chemin=None, min_carte
     profil = profil if profil in cat["profils"] else cat["profil_defaut"]
     p = Proposition(plat, profil, remarques=[remarque] if remarque else [])
     if cat.get("_atelier"):
-        p.remarques.append("Gamme déclarée par l'atelier : références et capacités à vérifier sur la documentation "
+        p.remarques.append(cat["statut"] if cat.get("_livree") else
+                           "Gamme déclarée par l'atelier : références et capacités à vérifier sur la documentation "
                            f"{cat.get('_constructeur', 'du constructeur')}.")
         absentes = sorted(n for n, nb in compter(points).items() if nb and not cat["profils"][profil].get(n))
         if absentes:

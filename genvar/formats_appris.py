@@ -19,7 +19,8 @@ Un format appris ne se modifie pas : pour le changer, on en apprend un autre (ri
 qualification reste attachée à la structure qualifiée par son empreinte).
 
 Lot 1 : liste des E/S physiques ; lot 2 : télétransmission (chaque supervision) et IHM, à partir des variables
-d'échange de l'ouvrage. Fichiers texte à colonnes (CSV, TXT). Stockage : `formats_appris/index.json` dans le
+d'échange de l'ouvrage. Fichiers texte à colonnes (CSV, TXT) et classeurs Excel (.xlsx, ex. tables de variables
+exportées par TIA Portal) : le classeur d'exemple sert alors de gabarit, conservé avec son empreinte. Stockage : `formats_appris/index.json` dans le
 dossier de données de l'atelier, écriture atomique ; bibliothèque vide au premier accès.
 """
 from __future__ import annotations
@@ -121,7 +122,8 @@ RE_ADR_OCTET_BIT = re.compile(r"^%?([IQEA])(\d+)\.(\d+)$", re.I)
 def _proposer_champ(titre: str, valeurs: list[str], nature: str = "es_physiques") -> str:
     t = _sans_accent(titre)
     for champ, indices in (INDICES_TITRE if nature == "es_physiques" else INDICES_VAR):
-        if any(i in t for i in indices):
+        # mots entiers : « Typeobject ID » n'est pas un type, « Hmi Accessible » n'est pas un accès
+        if any(re.search(r"(?<![a-z0-9])" + re.escape(i) + r"(?![a-z0-9])", t) for i in indices):
             return champ
     pleines = [v for v in valeurs if v.strip()]
     if not pleines:
@@ -203,20 +205,14 @@ def _lire(texte: str, separateur: str) -> list[list[str]]:
     return list(csv.reader(io.StringIO(texte), delimiter=separateur, quotechar='"'))
 
 
-def analyser(octets: bytes, nom_fichier: str = "", entete_index: int | None = None,
-             nature: str = "es_physiques") -> dict:
-    """Structure du fichier exemple et propositions pour la nature demandée (rien n'est enregistré)."""
-    if nature not in NATURES:
-        raise FormatRefuse("Nature de fichier inconnue.")
-    if not octets or len(octets) > TAILLE_MAX:
-        raise FormatRefuse("Fichier vide ou trop volumineux (2 Mo au plus).")
+def _structure_texte(octets: bytes, entete_index: int | None) -> dict:
     try:
         texte, encodage = ml.decoder(octets)
     except ml.ModeleRefuse as exc:
         raise FormatRefuse(str(exc)) from None
     if texte.lstrip().startswith("<"):
-        raise FormatRefuse("Fichier XML : ce premier lot apprend les fichiers texte à colonnes (CSV, TXT). "
-                           "Exportez la liste des E/S en CSV depuis l'outil, ou attendez le lot XML.")
+        raise FormatRefuse("Fichier XML : OGIAS apprend les fichiers à colonnes (CSV, TXT) et les classeurs Excel "
+                           "(.xlsx). Exportez la liste depuis l'outil dans l'un de ces formats.")
     fin_ligne = "\r\n" if "\r\n" in texte else "\n"
     lignes = texte.split(fin_ligne)
     fin_fichier = bool(lignes) and lignes[-1] == ""
@@ -224,9 +220,9 @@ def analyser(octets: bytes, nom_fichier: str = "", entete_index: int | None = No
         lignes = lignes[:-1]
     pleines = [x for x in lignes if x.strip()]
     if len(pleines) < 2:
-        raise FormatRefuse("Il faut au moins une ligne d'en-tête et une ligne d'E/S dans l'exemple.")
+        raise FormatRefuse("Il faut au moins une ligne d'en-tête et une ligne de données dans l'exemple.")
     # Séparateur : celui qui donne le plus de colonnes sur le bloc final de lignes de même largeur (l'en-tête et les
-    # E/S) ; les lignes de commentaire avant l'en-tête n'entrent pas dans ce bloc.
+    # données) ; les lignes de commentaire avant l'en-tête n'entrent pas dans ce bloc.
     meilleur, score, debut = "", (0, 0), 0
     indices = [i for i, x in enumerate(lignes) if x.strip()]
     for sep in SEPARATEURS:
@@ -241,7 +237,7 @@ def analyser(octets: bytes, nom_fichier: str = "", entete_index: int | None = No
             meilleur, score, debut = sep, (n, bloc), indices[-bloc]
     if not meilleur:
         raise FormatRefuse("Séparateur de colonnes introuvable (point-virgule, virgule, tabulation ou barre "
-                           "verticale, même nombre de colonnes sur chaque ligne d'E/S).")
+                           "verticale, même nombre de colonnes sur chaque ligne).")
     if entete_index is None:
         entete_index = debut
     if not 0 <= entete_index < len(lignes) - 1:
@@ -249,16 +245,92 @@ def analyser(octets: bytes, nom_fichier: str = "", entete_index: int | None = No
     titres = _lire(lignes[entete_index], meilleur)[0]
     donnees = [_lire(x, meilleur)[0] for x in lignes[entete_index + 1:] if x.strip()]
     if not donnees or any(len(r) != len(titres) for r in donnees):
-        raise FormatRefuse("Les lignes d'E/S n'ont pas toutes le même nombre de colonnes que l'en-tête : "
+        raise FormatRefuse("Les lignes de données n'ont pas toutes le même nombre de colonnes que l'en-tête : "
                            "choisissez une autre ligne d'en-tête.")
     brutes = [x for x in lignes[entete_index + 1:] if x.strip()]
-    guillemets = sum(x.count('"') for x in brutes) >= len(brutes) * len(titres) * 2
+    return {"type_fichier": "texte", "encodage": encodage, "fin_ligne": fin_ligne, "fin_fichier": fin_fichier,
+            "separateur": meilleur, "guillemets": sum(x.count('"') for x in brutes) >= len(brutes) * len(titres) * 2,
+            "preambule": lignes[:entete_index], "entete": lignes[entete_index], "entete_index": entete_index,
+            "titres": titres, "donnees": donnees, "types_premiere": [None] * len(titres),
+            "lignes_exemple": brutes[:8], "lignes_total": len(brutes), "feuille": "", "feuilles": [],
+            "lignes_entete": [{"index": i, "texte": x[:160]} for i, x in enumerate(lignes[:min(len(lignes), 12)])]}
+
+
+def _cellule(v) -> str:
+    if v is None:
+        return ""
+    if isinstance(v, bool):
+        return "True" if v else "False"
+    if isinstance(v, float) and v.is_integer():
+        return str(int(v))
+    return str(v)
+
+
+def _ouvrir_classeur(octets: bytes):
+    import openpyxl
+    try:
+        return openpyxl.load_workbook(io.BytesIO(octets))
+    except Exception as exc:                                 # noqa: BLE001 — fichier fourni : refus motivé
+        raise FormatRefuse(f"Classeur Excel illisible ({exc.__class__.__name__}).") from None
+
+
+def _lignes_feuille(ws) -> list[list]:
+    lignes = [list(r) for r in ws.iter_rows(values_only=True)]
+    largeur = max((max((i + 1 for i, v in enumerate(r) if v not in (None, "")), default=0) for r in lignes), default=0)
+    return [(r + [None] * largeur)[:largeur] for r in lignes]
+
+
+def _structure_xlsx(octets: bytes, entete_index: int | None, feuille: str | None) -> dict:
+    wb = _ouvrir_classeur(octets)
+    noms = wb.sheetnames
+    if feuille and feuille not in noms:
+        raise FormatRefuse(f"Feuille « {feuille} » absente du classeur.")
+    if not feuille:                          # la feuille qui a le plus de lignes remplies
+        feuille = max(noms, key=lambda n: sum(1 for r in _lignes_feuille(wb[n]) if any(v not in (None, "") for v in r)))
+    lignes = _lignes_feuille(wb[feuille])
+    pleines = [i for i, r in enumerate(lignes) if any(v not in (None, "") for v in r)]
+    if len(pleines) < 2:
+        raise FormatRefuse(f"Feuille « {feuille} » : il faut au moins une ligne d'en-tête et une ligne de données.")
+    if entete_index is None:                 # première ligne la plus remplie
+        largeur = max(sum(v not in (None, "") for v in lignes[i]) for i in pleines)
+        entete_index = next(i for i in pleines if sum(v not in (None, "") for v in lignes[i]) == largeur)
+    if not 0 <= entete_index < len(lignes) - 1:
+        raise FormatRefuse("Ligne d'en-tête hors de la feuille.")
+    n = max((i + 1 for i, v in enumerate(lignes[entete_index]) if v not in (None, "")), default=0)
+    titres = [_cellule(v) for v in lignes[entete_index][:n]]
+    typees = [r[:n] for r in lignes[entete_index + 1:] if any(v not in (None, "") for v in r)]
+    if not typees:
+        raise FormatRefuse("Aucune ligne de données sous l'en-tête choisi.")
+    donnees = [[_cellule(v) for v in r] for r in typees]
+    return {"type_fichier": "xlsx", "encodage": "", "fin_ligne": "", "fin_fichier": False, "separateur": "",
+            "guillemets": False, "preambule": [[_cellule(v) for v in r] for r in lignes[:entete_index]],
+            "entete": titres, "entete_index": entete_index, "titres": titres, "donnees": donnees,
+            "types_premiere": [v if isinstance(v, (bool, int, float)) else None for v in typees[0]],
+            "lignes_exemple": [" | ".join(r) for r in donnees[:8]], "lignes_total": len(donnees),
+            "feuille": feuille, "feuilles": noms,
+            "lignes_entete": [{"index": i, "texte": " | ".join(_cellule(v) for v in r)[:160]}
+                              for i, r in enumerate(lignes[:min(len(lignes), 12)])]}
+
+
+def analyser(octets: bytes, nom_fichier: str = "", entete_index: int | None = None,
+             nature: str = "es_physiques", feuille: str | None = None) -> dict:
+    """Structure du fichier exemple (texte à colonnes ou classeur Excel) et propositions pour la nature demandée.
+    Rien n'est enregistré."""
+    if nature not in NATURES:
+        raise FormatRefuse("Nature de fichier inconnue.")
+    if not octets or len(octets) > TAILLE_MAX:
+        raise FormatRefuse("Fichier vide ou trop volumineux (2 Mo au plus).")
+    s = _structure_xlsx(octets, entete_index, feuille) if octets[:4] == b"PK\x03\x04" \
+        else _structure_texte(octets, entete_index)
+    titres, donnees = s["titres"], s["donnees"]
     colonnes = []
     for k, titre in enumerate(titres):
         valeurs = [r[k] for r in donnees]
         champ = _proposer_champ(titre, valeurs, nature)
+        valeur = s["types_premiere"][k] if s["types_premiere"][k] is not None else valeurs[0]
         colonnes.append({"titre": titre, "exemples": list(dict.fromkeys(v for v in valeurs if v))[:3],
-                         "champ": champ, "valeur": valeurs[0] if champ == "fixe" else "", "valeurs": valeurs})
+                         "champ": champ, "valeur": valeur if champ == "fixe" else "", "valeurs": valeurs,
+                         "valeur_exemple": valeur})
     col_adr = next((c for c in colonnes if c["champ"] == "adresse"), None)
     adresse = _proposer_adresse(col_adr["exemples"][0] if col_adr and col_adr["exemples"] else "", nature)
     adresse.update({"decalage": 0, "taille": 4})
@@ -286,14 +358,10 @@ def analyser(octets: bytes, nom_fichier: str = "", entete_index: int | None = No
     alarme = _proposer_alarme(valeurs_de(col_alarme))
     for c in colonnes:
         c.pop("valeurs")
-    return {"nature": nature, "fichier": os.path.basename(nom_fichier or "")[:120], "encodage": encodage,
-            "fin_ligne": fin_ligne,
-            "fin_fichier": fin_fichier, "separateur": meilleur, "guillemets": guillemets,
-            "preambule": lignes[:entete_index], "entete": lignes[entete_index], "entete_index": entete_index,
-            "colonnes": colonnes, "adresse": adresse,
-            "types": types, "sens": sens, "alarme": alarme,
-            "lignes_exemple": brutes[:8], "lignes_total": len(brutes), "alertes": alertes,
-            "lignes_entete": [{"index": i, "texte": x[:160]} for i, x in enumerate(lignes[:min(len(lignes), 12)])]}
+    sortie = {k: v for k, v in s.items() if k not in ("titres", "donnees", "types_premiere")}
+    sortie.update({"nature": nature, "fichier": os.path.basename(nom_fichier or "")[:120], "colonnes": colonnes,
+                   "adresse": adresse, "types": types, "sens": sens, "alarme": alarme, "alertes": alertes})
+    return sortie
 
 
 # --------------------------------------------------------------------------------------------- définition
@@ -313,7 +381,7 @@ def definir(analyse: dict, reglages: dict) -> dict:
     for c, champ in zip(analyse["colonnes"], choix):
         if champ not in champs:
             raise FormatRefuse(f"Contenu inconnu pour la colonne « {c['titre']} ».")
-        valeur = c["exemples"][0] if champ == "fixe" and c["exemples"] else ""
+        valeur = c.get("valeur_exemple", c["exemples"][0] if c["exemples"] else "") if champ == "fixe" else ""
         colonnes.append({"titre": c["titre"], "champ": champ, "valeur": valeur})
     for unique in ("nom", "adresse"):
         if sum(c["champ"] == unique for c in colonnes) != 1:
@@ -331,23 +399,29 @@ def definir(analyse: dict, reglages: dict) -> dict:
         raise FormatRefuse("Décalage et taille d'emplacement : nombres entiers.") from None
     if not 0 <= decalage <= 65535 or not 1 <= taille <= 256:
         raise FormatRefuse("Décalage de 0 à 65535, taille d'emplacement de 1 à 256 octets.")
-    tables = {}
+    tables: dict = {}
     for t in ("types", "sens"):
         source = reglages.get(t)
         source = source if isinstance(source, dict) else analyse[t]
         tables[t] = {n: _texte_court(source.get(n, ""), 40) for n in cles}
     alarme = reglages.get("alarme")
     alarme = alarme if isinstance(alarme, dict) else (analyse.get("alarme") or {})
+    autres = reglages.get("autres_feuilles") or "vider"
+    if autres not in ("vider", "conserver"):
+        raise FormatRefuse("Autres feuilles du classeur : « vider » ou « conserver ».")
+    tables["autres_feuilles"] = autres if analyse.get("type_fichier") == "xlsx" else ""
     tables["alarme"] = {k: _texte_court(alarme.get(k, ""), 40) for k in ("oui", "non")}
-    return {"nature": nature, "encodage": analyse["encodage"], "fin_ligne": analyse["fin_ligne"], "fin_fichier": analyse["fin_fichier"],
+    return {"nature": nature, "type_fichier": analyse.get("type_fichier", "texte"), "feuille": analyse.get("feuille", ""),
+            "encodage": analyse["encodage"], "fin_ligne": analyse["fin_ligne"], "fin_fichier": analyse["fin_fichier"],
             "separateur": analyse["separateur"], "guillemets": bool(analyse["guillemets"]),
             "preambule": analyse["preambule"], "entete": analyse["entete"], "colonnes": colonnes,
             "adresse": {"gabarits": gabarits, "decalage": decalage, "taille": taille}, **tables}
 
 
 def empreinte(definition: dict) -> str:
-    cles = ("nature", "encodage", "fin_ligne", "fin_fichier", "separateur", "guillemets", "preambule", "entete",
-            "colonnes", "adresse", "types", "sens", "alarme")
+    cles = ("nature", "type_fichier", "feuille", "gabarit_sha256", "encodage", "fin_ligne", "fin_fichier",
+            "separateur", "guillemets", "preambule", "entete", "colonnes", "adresse", "types", "sens", "alarme",
+            "autres_feuilles")
     canon = json.dumps({k: definition.get(k) for k in cles}, ensure_ascii=False, sort_keys=True,
                        separators=(",", ":"))
     return hashlib.sha256(canon.encode("utf-8")).hexdigest()
@@ -486,6 +560,88 @@ def relire(definition: dict, texte: str, session, items=None) -> list[str]:
     return ecarts
 
 
+def _valeur_cellule(champ: str, col: dict, x, session, definition: dict):
+    v = col["valeur"] if champ == "fixe" else _valeur(champ, col, x, session, definition)
+    return None if v == "" else v
+
+
+def produire_xlsx(definition: dict, session, gabarit: bytes, items=None) -> bytes:
+    """Le classeur d'exemple sert de gabarit : en-tête et lignes au-dessus conservés, lignes de données remplacées par
+    celles de l'ouvrage. Les autres feuilles sont vidées sous leur première ligne (« vider », défaut : rien d'un autre
+    projet ne part avec le livrable) ou conservées telles quelles (« conserver »)."""
+    items = elements(session, _nature(definition)) if items is None else items
+    wb = _ouvrir_classeur(gabarit)
+    if definition["feuille"] not in wb.sheetnames:
+        raise FormatRefuse(f"Feuille « {definition['feuille']} » absente du gabarit.")
+    ws = wb[definition["feuille"]]
+    tete = len(definition["preambule"]) + 1
+    if ws.max_row > tete:
+        ws.delete_rows(tete + 1, ws.max_row - tete)
+    for i, x in enumerate(items):
+        for j, col in enumerate(definition["colonnes"]):
+            ws.cell(row=tete + 1 + i, column=j + 1, value=_valeur_cellule(col["champ"], col, x, session, definition))
+    if definition.get("autres_feuilles", "vider") == "vider":
+        for autre in wb.worksheets:
+            if autre.title != definition["feuille"] and autre.max_row > 1:
+                autre.delete_rows(2, autre.max_row - 1)
+    sortie = io.BytesIO()
+    wb.save(sortie)
+    return sortie.getvalue()
+
+
+def lignes_xlsx(definition: dict, octets: bytes) -> list[list[str]]:
+    wb = _ouvrir_classeur(octets)
+    if definition["feuille"] not in wb.sheetnames:
+        return []
+    n = len(definition["colonnes"])
+    return [[_cellule(v) for v in (list(r) + [None] * n)[:n]] for r in wb[definition["feuille"]].iter_rows(values_only=True)]
+
+
+def relire_xlsx(definition: dict, octets: bytes, session, items=None) -> list[str]:
+    items = elements(session, _nature(definition)) if items is None else items
+    lignes = lignes_xlsx(definition, octets)
+    tete = len(definition["preambule"]) + 1
+    ecarts = []
+    attendu = [[*(r + [""] * len(definition["colonnes"]))[:len(definition["colonnes"])]] for r in definition["preambule"]]
+    if [r for r in lignes[:tete - 1]] != attendu or lignes[tete - 1:tete] != [definition["entete"]]:
+        ecarts.append("Les lignes d'en-tête de la feuille ne sont pas celles du format appris.")
+    lues = [r for r in lignes[tete:] if any(r)]
+    quoi = "E/S" if _nature(definition) == "es_physiques" else "variable(s)"
+    if len(lues) != len(items):
+        ecarts.append(f"{len(lues)} ligne(s) relue(s) pour {len(items)} {quoi}.")
+    i_nom = next(k for k, c in enumerate(definition["colonnes"]) if c["champ"] == "nom")
+    i_adr = next(k for k, c in enumerate(definition["colonnes"]) if c["champ"] == "adresse")
+    for r, x in zip(lues, items):
+        if r[i_nom] != x.nom or r[i_adr] != adresse_de(x, definition, session):
+            ecarts.append(f"{x.nom} : nom ou adresse relus différents ({r[i_nom]} / {r[i_adr]}).")
+        if len(ecarts) >= 10:
+            break
+    return ecarts
+
+
+def produire(definition: dict, session, gabarit: bytes | None = None) -> tuple[bytes, list[str]]:
+    """(octets, écarts de relecture) dans le type de fichier du format."""
+    if definition.get("type_fichier") == "xlsx":
+        if not gabarit:
+            raise FormatRefuse("Gabarit Excel du format absent.")
+        octets = produire_xlsx(definition, session, gabarit)
+        return octets, relire_xlsx(definition, octets, session)
+    texte = produire_texte(definition, session)
+    ecarts = relire(definition, texte, session)
+    try:
+        return texte.encode(definition["encodage"]), ecarts
+    except UnicodeEncodeError as exc:
+        raise FormatRefuse(f"Caractère « {texte[exc.start:exc.end]} » impossible à écrire en "
+                           f"{definition['encodage']}.") from None
+
+
+def apercu_lignes(definition: dict, octets: bytes, maxi: int = 9) -> list[str]:
+    if definition.get("type_fichier") == "xlsx":
+        return [" | ".join(r) for r in lignes_xlsx(definition, octets)[:len(definition["preambule"]) + maxi]]
+    texte = octets.decode(definition["encodage"])
+    return texte.split(definition["fin_ligne"])[:len(definition["preambule"]) + maxi]
+
+
 def controler_ouvrage(definition: dict, session) -> list[str]:
     """Refus avant export : donnée manquante, adresse impossible à construire, adresses en double après conversion."""
     nature = _nature(definition)
@@ -545,7 +701,29 @@ def trouver(ident: str) -> dict | None:
     return next((f for f in lister() if f.get("ident") == ident), None)
 
 
-def enregistrer(nom: str, nature: str, logiciel: str, definition: dict, fichier: str = "") -> dict:
+def _gabarit_chemin(ident: str) -> str:
+    if not re.fullmatch(r"[0-9a-f]{12}", ident or ""):
+        raise FormatRefuse("Format introuvable.")
+    return os.path.join(dossier(), ident + ".xlsx")
+
+
+def gabarit(f: dict) -> bytes | None:
+    """Classeur d'exemple d'un format Excel, contrôlé par son empreinte (None pour un format texte)."""
+    d = f["definition"]
+    if d.get("type_fichier") != "xlsx":
+        return None
+    try:
+        with open(_gabarit_chemin(f["ident"]), "rb") as fh:
+            octets = fh.read()
+    except OSError:
+        raise FormatRefuse("Gabarit Excel du format introuvable : apprenez de nouveau le format.") from None
+    if hashlib.sha256(octets).hexdigest() != d.get("gabarit_sha256"):
+        raise FormatRefuse("Gabarit Excel du format modifié hors d'OGIAS : apprenez de nouveau le format.")
+    return octets
+
+
+def enregistrer(nom: str, nature: str, logiciel: str, definition: dict, fichier: str = "",
+                gabarit_octets: bytes | None = None) -> dict:
     nom = " ".join(str(nom or "").split())
     logiciel = " ".join(str(logiciel or "").split())
     if not 3 <= len(nom) <= 60:
@@ -557,7 +735,13 @@ def enregistrer(nom: str, nature: str, logiciel: str, definition: dict, fichier:
     formats = lister()
     if any(f["nom"].casefold() == nom.casefold() for f in formats):
         raise FormatRefuse(f"Un format porte déjà le nom « {nom} ».")
-    f = {"ident": uuid.uuid4().hex[:12], "nom": nom, "nature": nature, "logiciel": logiciel,
+    ident = uuid.uuid4().hex[:12]
+    if definition.get("type_fichier") == "xlsx":
+        if not gabarit_octets:
+            raise FormatRefuse("Classeur d'exemple absent.")
+        definition = {**definition, "gabarit_sha256": hashlib.sha256(gabarit_octets).hexdigest()}
+        ml._ecrire_atomique(_gabarit_chemin(ident), gabarit_octets)
+    f = {"ident": ident, "nom": nom, "nature": nature, "logiciel": logiciel,
          "fichier_origine": os.path.basename(fichier or "")[:120], "cree_le": time.strftime("%d/%m/%Y %H:%M"),
          "definition": definition, "empreinte": empreinte(definition), "qualification": None}
     _ecrire([*formats, f])
@@ -569,6 +753,10 @@ def supprimer(ident: str) -> None:
     if not any(f["ident"] == ident for f in formats):
         raise FormatRefuse("Format introuvable.")
     _ecrire([f for f in formats if f["ident"] != ident])
+    try:
+        os.unlink(_gabarit_chemin(ident))
+    except FileNotFoundError:
+        pass
 
 
 def qualifier(ident: str, version: str, compte_rendu: str, auteur: str = "") -> dict:
@@ -614,21 +802,16 @@ def exporter(f: dict, session) -> tuple[str, bytes, str]:
     refus = controler_ouvrage(d, session)
     if refus:
         raise FormatRefuse("Export refusé : " + " ; ".join(refus))
-    texte = produire_texte(d, session)
-    ecarts = relire(d, texte, session)
+    octets, ecarts = produire(d, session, gabarit(f))
     if ecarts:
         raise FormatRefuse("Export refusé : le fichier produit ne se relit pas avec le format appris ("
                            + " ; ".join(ecarts[:3]) + "). Une valeur contient peut-être le séparateur.")
-    try:
-        octets = texte.encode(d["encodage"])
-    except UnicodeEncodeError as exc:
-        raise FormatRefuse(f"Caractère « {texte[exc.start:exc.end]} » impossible à écrire en {d['encodage']}.") from None
     statut = (f"Conforme au format qualifié ({f['logiciel']} {f['qualification']['version']}) : contrôle automatique "
               "réussi." if qualifie(f) else
               f"Conforme au format appris, NON QUALIFIÉ : à importer une fois dans {f['logiciel']} puis confirmer.")
     slug = re.sub(r"[^A-Za-z0-9]+", "_", unicodedata.normalize("NFKD", f["nom"]).encode("ascii", "ignore").decode())
     ext = os.path.splitext(f.get("fichier_origine") or "")[1].lstrip(".").lower()
-    ext = ext if re.fullmatch(r"[a-z0-9$]{1,5}", ext or "") else "csv"
+    ext = "xlsx" if d.get("type_fichier") == "xlsx" else ext if re.fullmatch(r"[a-z0-9$]{1,5}", ext or "") else "csv"
     return f"{session.nom_fichier_propose() or 'ouvrage'}_{slug.strip('_')[:40] or 'ES'}.{ext}", octets, statut
 
 
@@ -639,6 +822,8 @@ def resume(f: dict, ouvrage=None) -> dict:
               "cles": list(CLES[f["nature"]]), "libelle_sens": LIBELLE_SENS[f["nature"]],
               "alarme": d.get("alarme") or {"oui": "", "non": ""},
               "separateur": SEPARATEURS.get(d["separateur"], d["separateur"]), "encodage": d["encodage"],
+              "type_fichier": d.get("type_fichier", "texte"), "feuille": d.get("feuille", ""),
+              "autres_feuilles": d.get("autres_feuilles", ""),
               "colonnes": [{"titre": c["titre"], "champ": c["champ"], "champ_libelle": CHAMPS[c["champ"]],
                             "valeur": c["valeur"]} for c in d["colonnes"]],
               "adresse": d["adresse"], "types": d["types"], "sens": d["sens"]})

@@ -60,7 +60,7 @@ TYPES_DEFAUT = [
 CATEGORIES_SOURCES = ("Automate", "Télégestion", "E/S déportées", "Autres")
 SOURCES_DEFAUT = {
     "Automate": ["Sch - Micro TSX37", "Sch - Premium TSX57", "Sch - M580", "Sch - M340", "Sch - M221",
-                 "Sch - M241", "Sch - M251"],
+                 "Sch - M241", "Sch - M251", "Sie - S7-1500"],
     "Télégestion": ["Sof - S4W Dual", "Sof - S4W Small", "Sof - S4W Medium", "Sof - S4W Large", "Sof - S500",
                     "Sof - LogUp", "Sof - DL4W (LS / LT / OS)", "Sof - NEO", "Sof - Ydrix", "Sch - SCADAPack 474",
                     "Sch - SCADAPack 574", "Sch - SCADAPack 300E / 500E", "Sch - SCADAPack 570",
@@ -75,7 +75,7 @@ SUPERVISIONS_DEFAUT = ["TOPKAPI"]
 IHM_DEFAUT = ["Vijeo Designer"]
 # Valeurs des versions précédentes : conservées (projets existants) et classées sans deviner.
 CATEGORIES_HISTORIQUES = {"M580": "Automate", "M340": "Automate", "TSX": "Automate", "SOFREL S4W": "Télégestion"}
-VERSION_SOURCES = 1
+VERSION_SOURCES = 2                  # 2 : Siemens S7-1500 (22/11/2026), ajout sans rien retirer
 
 DEFAUT = {
     "version": VERSION,

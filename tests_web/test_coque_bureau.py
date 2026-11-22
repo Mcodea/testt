@@ -769,6 +769,41 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.wait_for_function("t => [...document.querySelectorAll('[data-fa]')].some(r => r.innerText.includes(t) && r.innerText.includes('Qualifié'))", arg=nom)
         self.assertEqual(self.projet.read_bytes(), avant, "Apprendre un format ne modifie pas l'ouvrage")
 
+    def test_apprendre_un_format_excel(self):
+        """22/11 : un classeur FICTIF de la forme d'une table de variables TIA Portal est appris (feuille, gabarit)."""
+        import tempfile
+        import openpyxl
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'PLC Tags'
+        ws.append(['Name', 'Path', 'Data Type', 'Logical Address', 'Comment', 'Hmi Visible'])
+        ws.append(['Marche', 'Table fictive', 'Bool', '%I4.0', 'Marche', True])
+        ws.append(['Niveau', 'Table fictive', 'Int', '%IW64', 'Niveau', True])
+        wb.create_sheet('User Constants').append(['Name', 'Path', 'Data Type', 'Value'])
+        exemple = Path(tempfile.mkdtemp()) / 'PLCTags_fictif.xlsx'
+        wb.save(exemple)
+        nom = f'Table TIA fictive {self.numero}'
+        self.ouvrir('#/standards')
+        self.page.locator('#fa-apprendre').click()
+        boite = self.page.locator('.boite')
+        boite.locator('#fa-fichier').set_input_files(str(exemple))
+        boite.locator('#fa-analyser').click()
+        boite.locator('#fa-feuille').wait_for()
+        self.assertEqual(boite.locator('#fa-feuille').input_value(), 'PLC Tags')
+        self.assertEqual(boite.locator('#fa-autres').input_value(), 'vider')
+        self.assertEqual(boite.locator('[data-fa-col="3"]').input_value(), 'adresse')
+        boite.locator('#fa-apercu').click()
+        boite.locator('.fa-comparaison').wait_for()
+        self.assertIn('Name | Path | Data Type | Logical Address', boite.locator('.fa-comparaison').inner_text())
+        boite.locator('#fa-logiciel').fill('Sch - M340')
+        boite.locator('#fa-nom').fill(nom)
+        boite.locator('#fa-ok').click()
+        ligne = self.page.locator('[data-fa]', has_text=nom)
+        ligne.wait_for()
+        self.addCleanup(self.api, '/api/formats-appris/action', {'action': 'supprimer', 'ident': ligne.get_attribute('data-fa')})
+        ligne.click()
+        self.assertIn('classeur Excel, feuille « PLC Tags »', self.page.locator('.boite').inner_text())
+
     def test_apprendre_un_format_de_supervision(self):
         """22/11, lot 2 : la nature « Télétransmission » adapte la fenêtre (familles TS…CP, jetons, alarme)."""
         import tempfile

@@ -39,6 +39,22 @@ la télétransmission (chaque supervision) et l'IHM, qui exportent les variables
 6. **Enregistrement** avec le logiciel ou l'automate cible. Un format appris ne se modifie pas : pour le changer, on
    en apprend un autre.
 
+## Classeurs Excel (.xlsx) — TIA Portal
+
+TIA Portal (Siemens) exporte et importe ses tables de variables en classeur Excel. OGIAS apprend donc aussi un format
+à partir d'un `.xlsx` :
+- choix de la feuille de la table (proposée : la plus remplie) et de la ligne d'en-tête ;
+- le classeur d'exemple devient le **gabarit**, conservé à côté de la bibliothèque avec son empreinte SHA-256 : un
+  gabarit modifié hors d'OGIAS bloque l'export ;
+- à l'export, les lignes de données de la feuille sont remplacées par celles de l'ouvrage ; les valeurs fixes gardent
+  leur type (un booléen reste un booléen) ;
+- **autres feuilles** (ex. constantes) : vidées sous leur première ligne par défaut, pour que rien du projet
+  d'exemple ne parte avec le livrable ; ou conservées sur demande ;
+- le classeur produit est relu (en-tête, lignes, noms, adresses) comme un fichier texte.
+
+La reconnaissance des titres se fait par mots entiers : « Typeobject ID » n'est pas un type, « Hmi Accessible »
+n'est pas un accès.
+
 ## Export et contrôle automatique
 
 - Le format sert aux ouvrages dont l'automate correspond (même règle que les modèles de livrables : automate saisi,
@@ -64,7 +80,8 @@ Control Expert E/S (XSY, TXT) restent disponibles tels quels et figurent dans la
 
 ## Limites de ce lot
 
-- Fichiers texte à colonnes seulement. Les exports XML viendront dans un lot suivant.
+- Fichiers texte à colonnes et classeurs Excel. Les exports XML ne sont pas pris en charge.
+- Aucun vrai fichier TIA Portal n'a encore été essayé : la qualification se fera avec le premier export réel.
 - La règle octet / bit (décalage + emplacement × taille) est déclarée par l'atelier : elle doit correspondre à la
   configuration matérielle réelle de l'automate, à vérifier lors de l'essai de qualification.
 - Lot suivant : fichiers XML.
@@ -78,7 +95,11 @@ Control Expert E/S (XSY, TXT) restent disponibles tels quels et figurent dans la
 - `tests/test_formats_appris_variables.py` (10 tests) : supervision %MW (colonnes, types, accès, alarme),
   IHM par registre avec décalage Modbus, jetons contrôlés par nature, variables sans adresse refusées, bit exigé sur
   un mot refusé, adresses en double, choix par supervision et IHM, génération groupée, API.
-- `tests_web/test_coque_bureau.py::test_apprendre_un_format_d_export` et `::test_apprendre_un_format_de_supervision`.
+- `tests/test_formats_appris_xlsx.py` (7 tests, classeur fictif de la forme d'une table TIA) : feuille et colonnes
+  (mots entiers), valeurs typées, export relu, autres feuilles vidées ou conservées, gabarit contrôlé par empreinte,
+  classeur altéré détecté, API.
+- `tests_web/test_coque_bureau.py::test_apprendre_un_format_d_export`, `::test_apprendre_un_format_de_supervision`
+  et `::test_apprendre_un_format_excel`.
 
 ## Captures (données fictives XTST)
 

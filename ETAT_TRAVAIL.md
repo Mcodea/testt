@@ -44,7 +44,10 @@ Les critères de sortie demeurent bloquants hors preuves utilisateur de section 
 - **Gammes de matériel déclarées par l'atelier** (chaque client a un automate différent) : la gamme d'un automate
   non livré se déclare une fois (racks, cartes, texte de reconnaissance) ; OGIAS la calcule comme une gamme livrée.
   Notice : `validation/gammes_materiel/README.md`.
-- Vérifié localement : 865 tests Python (5 ignorés), 120 tests navigateur, `outils/ci.py static`
+- **Schneider et Siemens** (décision de l'utilisateur, 22/11 ; message perdu du 19/11 non retrouvé) : gamme livrée
+  Siemens S7-1500 (références vérifiées, sources dans `genvar/data/gammes_livrees.json`) ; formats appris en classeur
+  Excel pour les tables de variables TIA Portal. S7-1200 non livré (module AQ non commandable, passage à G2).
+- Vérifié localement : 875 tests Python (5 ignorés), 121 tests navigateur, `outils/ci.py static`
   (ruff, mypy moteur), audit données 0 détection.
 
 ## Point CI en cours — lot Formulaires

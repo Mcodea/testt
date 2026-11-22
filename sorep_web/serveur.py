@@ -1213,9 +1213,10 @@ class Application:
             raise RegleMetier(str(exc)) from None
         o = self.s.ouvrage if self.ouvert else None
         from genvar import materiel as mat
-        return {"gammes": gammes, "natures": list(gm.NATURES), "statut": gm.STATUT,
+        return {"gammes": [gm.resume(g) for g in gm.livrees()] + gammes, "natures": list(gm.NATURES),
+                "statut": gm.STATUT,
                 "livrees": ["Schneider Modicon M340", "Schneider Modicon M580", "Schneider Advantys STB",
-                            "SOFREL S4W"],
+                            "SOFREL S4W", *(g["nom"] for g in gm.livrees())],
                 "ouvrage": ({"automate": o.automate, "gamme": mat.gamme(o.automate) or ""} if o is not None else None)}
 
     def gammes_materiel_action(self, d):
@@ -1266,7 +1267,7 @@ class Application:
                     raise RegleMetier("Contenu du fichier invalide.") from None
                 index = d.get("entete_index")
                 analyse = fa.analyser(octets, str(d.get("fichier") or ""), int(index) if index not in (None, "") else None,
-                                      str(d.get("nature") or "es_physiques"))
+                                      str(d.get("nature") or "es_physiques"), str(d.get("feuille") or "") or None)
                 if action == "analyser":
                     return {"analyse": analyse}
                 definition = fa.definir(analyse, d.get("reglages") or {})
@@ -1275,12 +1276,11 @@ class Application:
                         return {"analyse": analyse, "apercu": None,
                                 "motif": "Ouvrez un ouvrage qui a des " + ("E/S" if analyse["nature"] == "es_physiques"
                                                                            else "variables") + " pour voir l'aperçu."}
-                    texte = fa.produire_texte(definition, self.s)
-                    lignes = texte.split(definition["fin_ligne"])
-                    return {"analyse": analyse, "apercu": lignes[:len(definition["preambule"]) + 9],
-                            "refus": fa.controler_ouvrage(definition, self.s), "ecarts": fa.relire(definition, texte, self.s)}
+                    produit, ecarts = fa.produire(definition, self.s, octets)
+                    return {"analyse": analyse, "apercu": fa.apercu_lignes(definition, produit),
+                            "refus": fa.controler_ouvrage(definition, self.s), "ecarts": ecarts}
                 f = fa.enregistrer(str(d.get("nom") or ""), str(d.get("nature") or ""), str(d.get("logiciel") or ""),
-                                   definition, analyse["fichier"])
+                                   definition, analyse["fichier"], octets)
                 return {**self.formats_appris_web({}), "ident": f["ident"]}
             if action == "qualifier":
                 fa.qualifier(str(d.get("ident") or ""), str(d.get("version") or ""), str(d.get("compte_rendu") or ""),

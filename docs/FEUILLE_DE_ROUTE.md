@@ -40,7 +40,10 @@ Principes retenus de ces outils, et ce qu'OGIAS en fait :
 ### 1. Ouverture à tout constructeur (en cours)
 - [x] Formats appris, lot 1 : liste des E/S physiques (texte à colonnes).
 - [x] Formats appris, lot 2 : télétransmission (chaque supervision) et IHM.
-- [ ] Formats appris, lot 3 : fichiers XML (exports de variables des logiciels récents).
+- [x] Formats appris : classeurs Excel (tables de variables TIA Portal).
+- [x] Gamme livrée Siemens S7-1500 (références vérifiées). Schneider et Siemens couverts (décision du 22/11).
+- [ ] S7-1200 / S7-1200 G2 : quand des références commandables seront vérifiées.
+- [ ] Formats appris : fichiers XML, si un outil des clients l'exige.
 - [x] Gammes de matériel déclarées par l'atelier : tout automate est calculé comme une gamme livrée.
 
 ### 2. Révisions des livrables (niveau professionnel)
@@ -60,6 +63,5 @@ Principes retenus de ces outils, et ce qu'OGIAS en fait :
 
 ## Décisions attendues de l'utilisateur
 
-- Message non lu de la session du 19/11 (pièce jointe) : à renvoyer.
-- Automates et supervisions effectivement employés par les clients (pour prioriser les essais de qualification).
+- Automates : Schneider et Siemens pour l'instant (22/11). Supervisions employées : à préciser.
 - A1 / R1 / D5-b (référentiel).

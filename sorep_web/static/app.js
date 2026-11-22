@@ -1136,12 +1136,12 @@ function vueStandards() {
    comme pour une gamme livrée. Les listes se saisissent une ligne par élément (copier-coller depuis Excel accepté). */
 function blocGammesMateriel(d) {
   if (!d) return "";
-  const lignes = d.gammes.map(g => `<tr class="cliquable" data-gm="${esc(g.ident)}" tabindex="0"><td><b class="mono">${esc(g.code)}</b></td><td>${esc(g.nom)}</td><td>${esc(g.constructeur)}</td><td class="mono">${esc(g.motifs.join(", "))}</td>
+  const lignes = d.gammes.map(g => `<tr class="cliquable" data-gm="${esc(g.ident)}" tabindex="0"><td><b class="mono">${esc(g.code)}</b>${g.livree ? ' <span class="badge b-ok">Livrée</span>' : ""}</td><td>${esc(g.nom)}</td><td>${esc(g.constructeur)}</td><td class="mono">${esc(g.motifs.join(", "))}</td>
     <td>${d.natures.map(n => `<span class="tag p-${n}">${n} ${g.cartes_par_nature[n]}</span>`).join(" ")}</td><td class="num">${g.racks.length}</td></tr>`).join("");
   const ouv = d.ouvrage && d.ouvrage.automate && !d.ouvrage.gamme ? `<div class="avert" id="gm-ouvrage">L'automate de l'ouvrage ouvert, <b>${esc(d.ouvrage.automate)}</b>, n'appartient à aucune gamme décrite : déclarez sa gamme pour qu'OGIAS propose son matériel. <button type="button" class="lien" id="gm-pour-ouvrage">Déclarer cette gamme…</button></div>` : "";
   return `<div class="bloc std-gammes"><div class="bloc-tete"><h2>Gammes de matériel</h2>
     <div class="boutons-ligne"><button type="button" class="prim" id="gm-nouvelle">Déclarer une gamme…</button></div></div>
-    <p class="aide">Gammes livrées : ${d.livrees.map(esc).join(", ")}. Pour tout autre automate (Siemens, Wago, Allen-Bradley, Omron…), déclarez une fois sa gamme : le texte qui la reconnaît dans le champ Automate de l'ouvrage, ses racks et ses cartes d'E/S. OGIAS calcule ensuite les racks, les cartes, la nomenclature et les contrôles comme pour une gamme livrée.</p>
+    <p class="aide">Gammes livrées : ${d.livrees.map(esc).join(", ")}. Pour tout autre automate (Wago, Allen-Bradley, Omron…), déclarez une fois sa gamme : le texte qui la reconnaît dans le champ Automate de l'ouvrage, ses racks et ses cartes d'E/S. OGIAS calcule ensuite les racks, les cartes, la nomenclature et les contrôles comme pour une gamme livrée.</p>
     ${ouv}
     ${d.gammes.length ? `<table data-o-tableau="sans-selection" data-o-cle="gammes-materiel"><thead><tr><th>Code</th><th>Gamme</th><th>Constructeur</th><th>Reconnue par</th><th>Cartes</th><th class="num">Racks</th></tr></thead><tbody>${lignes}</tbody></table>`
       : '<div class="vide-bloc">Aucune gamme déclarée par l\'atelier.</div>'}</div>`;
@@ -1159,8 +1159,10 @@ function modaleGamme(g, automate) {
   const d = E.gammesMateriel;
   const lignes = (liste, f) => (liste || []).map(f).join("\n");
   const motifProp = automate ? automate.replace(/^[A-Za-z]{2,4}\s*-\s*/, "").toUpperCase() : "";
-  const m = ouvrirModale(`<div class="boite-tete"><h2>${g ? `Gamme ${esc(g.code)}` : "Déclarer une gamme de matériel"}</h2>
-    <p>Une ligne par élément ; colonnes séparées par un point-virgule ou une tabulation (copier-coller depuis Excel accepté). Les références et capacités sont celles de la documentation du constructeur : OGIAS ne les devine pas et les marque « à vérifier ».</p></div>
+  const lecture = !!g?.livree;
+  const m = ouvrirModale(`<div class="boite-tete"><h2>${g ? `Gamme ${esc(g.code)}${lecture ? " (livrée, lecture seule)" : ""}` : "Déclarer une gamme de matériel"}</h2>
+    ${lecture ? `<p>${esc(g.statut)}</p><details class="gm-sources"><summary>Sources (${g.sources.length})</summary><ul>${g.sources.map(s => `<li class="mono">${esc(s)}</li>`).join("")}</ul></details>${g.extension ? `<p class="aide">${esc(g.extension)}</p>` : ""}` : ""}
+    <p ${lecture ? "hidden" : ""}>Une ligne par élément ; colonnes séparées par un point-virgule ou une tabulation (copier-coller depuis Excel accepté). Les références et capacités sont celles de la documentation du constructeur : OGIAS ne les devine pas et les marque « à vérifier ».</p></div>
     <div class="boite-corps std-formulaire gm-formulaire">
      <label for="gm-code">Code de la gamme</label><input id="gm-code" maxlength="12" class="mono" value="${esc(g?.code || motifProp.slice(0, 12))}" placeholder="Ex. S7-1500">
      <label for="gm-nom">Nom</label><input id="gm-nom" maxlength="60" value="${esc(g?.nom || "")}" placeholder="Ex. Siemens S7-1500">
@@ -1174,7 +1176,8 @@ function modaleGamme(g, automate) {
      <label for="gm-alims">Alimentations (facultatif) : référence ; description</label><textarea id="gm-alims" rows="2" class="mono">${esc(lignes(g?.alimentations, x => `${x.reference}${x.description ? " ; " + x.description : ""}`))}</textarea>
      <label for="gm-remarque">Remarque (source, version du catalogue…)</label><input id="gm-remarque" maxlength="300" value="${esc(g?.remarque || "")}">
      <div class="erreur-form" id="gm-err" role="alert"></div></div>
-    <div class="boite-pied">${g ? '<button type="button" class="danger gauche" id="gm-supprimer">Supprimer la gamme</button>' : ""}<button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="gm-ok">${g ? "Enregistrer les modifications" : "Déclarer la gamme"}</button></div>`, true);
+    <div class="boite-pied">${lecture ? '<button type="button" data-fermer>Fermer</button>' : `${g ? '<button type="button" class="danger gauche" id="gm-supprimer">Supprimer la gamme</button>' : ""}<button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="gm-ok">${g ? "Enregistrer les modifications" : "Déclarer la gamme"}</button>`}</div>`, true);
+  if (lecture) { m.querySelectorAll(".gm-formulaire input, .gm-formulaire textarea").forEach(x => { x.readOnly = true; }); return; }
   const v = id => m.querySelector(id).value;
   const gamme = () => ({code: v("#gm-code"), nom: v("#gm-nom"), constructeur: v("#gm-constructeur"),
     motifs: v("#gm-motifs").split(/\r?\n|,/).map(x => x.trim()).filter(Boolean), emplacements_cpu: v("#gm-cpu"),
@@ -1215,7 +1218,7 @@ function brancherFormatsAppris() {
     r.onclick = () => {
       const d = E.formatsAppris, f = d.formats.find(x => x.ident === r.dataset.fa); if (!f) return;
       const table = (titre, t) => `<tr><th>${titre}</th>${f.cles.map(n => `<td class="mono">${esc(t[n] || "—")}</td>`).join("")}</tr>`;
-      const m = ouvrirModale(`<div class="boite-tete"><h2>${esc(f.nom)}</h2><p>${esc(f.nature_libelle)} pour <b>${esc(f.logiciel)}</b> · appris le ${esc(f.cree_le)} depuis ${esc(f.fichier_origine || "un exemple")} · ${esc(f.encodage)} · ${esc(f.separateur)}</p></div>
+      const m = ouvrirModale(`<div class="boite-tete"><h2>${esc(f.nom)}</h2><p>${esc(f.nature_libelle)} pour <b>${esc(f.logiciel)}</b> · appris le ${esc(f.cree_le)} depuis ${esc(f.fichier_origine || "un exemple")} · ${f.type_fichier === "xlsx" ? `classeur Excel, feuille « ${esc(f.feuille)} », autres feuilles : ${f.autres_feuilles === "conserver" ? "conservées" : "vidées"}` : `${esc(f.encodage)} · ${esc(f.separateur)}`}</p></div>
         <div class="boite-corps">${d.ouvert && !f.retenu ? `<div class="avert">${esc(f.motif_non_retenu)}</div>` : ""}${f.controle && !f.controle.pret ? `<div class="avert">${esc(f.controle.statut)}</div>` : ""}
          <h3>Colonnes</h3><table><thead><tr><th>Colonne du fichier</th><th>Contenu écrit par OGIAS</th></tr></thead><tbody>${f.colonnes.map(c => `<tr><td class="mono">${esc(c.titre)}</td><td>${esc(c.champ_libelle)}${c.champ === "fixe" ? ` : <span class="mono">${esc(c.valeur)}</span>` : ""}</td></tr>`).join("")}</tbody></table>
          <h3>Conversions</h3><table><thead><tr><th></th>${f.cles.map(n => `<th>${n}</th>`).join("")}</tr></thead><tbody>${table("Adresse", f.adresse.gabarits)}${table("Type", f.types)}${table(esc(f.libelle_sens), f.sens)}</tbody></table>
@@ -1240,7 +1243,7 @@ function modaleApprendreFormat(recharger) {
     <p>Donnez un fichier exporté par l'outil du constructeur (un projet quelconque suffit). OGIAS en apprend la structure ; vous confirmez ce que contient chaque colonne et la forme des adresses. Rien n'est enregistré avant votre accord.</p></div>
     <div class="boite-corps std-formulaire">
      <label for="fa-nature">Nature du fichier</label><select id="fa-nature">${Object.entries(d.natures).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("")}</select>
-     <label for="fa-fichier">Fichier exemple exporté par l'outil (texte à colonnes : CSV, TXT)</label><input type="file" id="fa-fichier">
+     <label for="fa-fichier">Fichier exemple exporté par l'outil (CSV, TXT ou classeur Excel .xlsx, ex. table de variables TIA Portal)</label><input type="file" id="fa-fichier">
      <div class="boutons-ligne"><button type="button" id="fa-analyser">Analyser le fichier</button></div>
      <div id="fa-resultat" class="as-resultat" aria-live="polite"></div></div>
     <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="fa-ok" disabled>Enregistrer le format</button></div>`, true);
@@ -1253,13 +1256,18 @@ function modaleApprendreFormat(recharger) {
               decalage: zone.querySelector("#fa-decalage")?.value || 0, taille: zone.querySelector("#fa-taille")?.value || 4},
     types: Object.fromEntries(cles.map(n => [n, zone.querySelector(`#fa-type-${n}`).value])),
     sens: Object.fromEntries(cles.map(n => [n, zone.querySelector(`#fa-sens-${n}`).value])),
-    alarme: zone.querySelector("#fa-alarme-oui") ? {oui: zone.querySelector("#fa-alarme-oui").value, non: zone.querySelector("#fa-alarme-non").value} : null}; };
-  const corps = extra => ({fichier: source.nom, contenu: source.contenu, nature: m.querySelector("#fa-nature").value, entete_index: analyse ? zone.querySelector("#fa-entete")?.value : "", ...extra});
+    alarme: zone.querySelector("#fa-alarme-oui") ? {oui: zone.querySelector("#fa-alarme-oui").value, non: zone.querySelector("#fa-alarme-non").value} : null,
+    autres_feuilles: zone.querySelector("#fa-autres")?.value || "vider"}; };
+  const corps = extra => ({fichier: source.nom, contenu: source.contenu, nature: m.querySelector("#fa-nature").value, entete_index: analyse ? zone.querySelector("#fa-entete")?.value : "",
+                           feuille: analyse ? zone.querySelector("#fa-feuille")?.value || "" : "", ...extra});
   const ligne = (id, t) => spec().cles.map(n => `<td><input id="fa-${id}-${n}" class="mono" maxlength="60" value="${esc(t[n] || "")}" aria-label="${id} ${n}"></td>`).join("");
   const afficher = a => {
     analyse = a;
     const sp = spec(), es = a.nature === "es_physiques";
-    zone.innerHTML = `<p class="aide">${esc(a.encodage)} · séparateur « ${esc(a.separateur === "\t" ? "tabulation" : a.separateur)} » · ${a.guillemets ? "valeurs entre guillemets" : "sans guillemets"} · ${a.lignes_total} ligne(s) d'E/S dans l'exemple</p>
+    const xlsx = a.type_fichier === "xlsx";
+    zone.innerHTML = `<p class="aide">${xlsx ? `Classeur Excel · feuille « ${esc(a.feuille)} » · le classeur d'exemple sert de gabarit` : `${esc(a.encodage)} · séparateur « ${esc(a.separateur === "\t" ? "tabulation" : a.separateur)} » · ${a.guillemets ? "valeurs entre guillemets" : "sans guillemets"}`} · ${a.lignes_total} ligne(s) de données dans l'exemple</p>
+      ${xlsx ? `<label for="fa-feuille">Feuille de la table</label><select id="fa-feuille">${a.feuilles.map(f => `<option ${f === a.feuille ? "selected" : ""}>${esc(f)}</option>`).join("")}</select>
+       <label for="fa-autres">Autres feuilles du classeur (${a.feuilles.filter(f => f !== a.feuille).map(esc).join(", ") || "aucune"})</label><select id="fa-autres"><option value="vider">Vider sous leur première ligne : rien du projet d'exemple n'est livré (recommandé)</option><option value="conserver">Conserver telles quelles</option></select>` : ""}
       <label for="fa-entete">Ligne d'en-tête</label><select id="fa-entete">${a.lignes_entete.map(l => `<option value="${l.index}" ${l.index === a.entete_index ? "selected" : ""}>${l.index + 1} : ${esc(l.texte)}</option>`).join("")}</select>
       ${a.alertes.length ? `<div class="avert"><ul>${a.alertes.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
       <h3>Que contient chaque colonne ?</h3><table class="fa-colonnes"><thead><tr><th>Colonne de l'exemple</th><th>Valeurs de l'exemple</th><th>OGIAS y écrira</th></tr></thead><tbody>
@@ -1278,6 +1286,7 @@ function modaleApprendreFormat(recharger) {
       <label for="fa-nom">Nom du format</label><input id="fa-nom" maxlength="60" value="${esc(m.querySelector("#fa-nom")?.value || "")}" placeholder="Ex. Liste des E/S – TIA Portal">`;
     m.querySelector("#fa-ok").disabled = false;
     zone.querySelector("#fa-entete").onchange = analyser;
+    if (zone.querySelector("#fa-feuille")) zone.querySelector("#fa-feuille").onchange = () => { zone.querySelector("#fa-entete").value = ""; analyserFeuille(); };
     zone.querySelector("#fa-apercu").onclick = apercu;
   };
   const analyser = async () => {
@@ -1285,6 +1294,10 @@ function modaleApprendreFormat(recharger) {
     if (!source) { if (!f.files.length) return toast("Choisissez le fichier exemple.", true); source = await lireFichier(f); }
     try { afficher((await api("/api/formats-appris/action", corps({action: "analyser"}))).analyse); }
     catch (e) { analyse = null; m.querySelector("#fa-ok").disabled = true; zone.innerHTML = `<div class="avert">${esc(e.message)}</div>`; }
+  };
+  const analyserFeuille = async () => {
+    try { afficher((await api("/api/formats-appris/action", {...corps({action: "analyser"}), entete_index: ""})).analyse); }
+    catch (e) { toast(e.message, true); }
   };
   const apercu = async () => {
     const z = zone.querySelector("#fa-apercu-zone");
