@@ -136,6 +136,7 @@ async function _standards(j) {
   E.vue = "standards";
   E.standards = await api("/api/standards");
   E.modelesLivrables = await api("/api/modeles-livrables");
+  E.formatsAppris = await api("/api/formats-appris");
   E.attributsAtelier = await api("/api/attributs");
   if (perime(j)) return;
   rendre();
@@ -648,6 +649,21 @@ function modaleReporterEssais(nature) {
     } catch (e) { zone.insertAdjacentHTML("afterbegin", `<p class="std-erreur">${esc(e.message)}</p>`); }
   };
 }
+async function blocFormatsRecette() {
+  const zone = $("#rc-formats"); if (!zone) return;
+  let d; try { d = await api("/api/formats-appris"); } catch (e) { zone.querySelector(".vide-bloc").textContent = e.message; return; }
+  if (!document.body.contains(zone)) return;
+  const corps = zone.querySelector(".vide-bloc"); if (!corps) return;
+  const retenus = d.formats.filter(f => f.retenu), autres = d.formats.length - retenus.length;
+  corps.outerHTML = retenus.length ? `<table class="rc-table"><colgroup><col class="rc-c-livrable"><col class="rc-c-formats"><col class="rc-c-etat"><col><col class="rc-c-actions"></colgroup><thead class="o-masque"><tr><th>Livrable</th><th>Format</th><th>État</th><th>Remarque</th><th>Téléchargement</th></tr></thead><tbody>
+    ${retenus.map(f => { const ok = f.controle?.pret; return `<tr class="rc-carte ${ok ? "pret" : "bloque"}" data-fa-recette="${esc(f.ident)}"><td class="rc-livrable"><h3>${esc(f.nom)}</h3><p class="rc-texte">${esc(f.nature_libelle)} pour ${esc(f.logiciel)}</p></td>
+      <td class="rc-formats"><span class="rc-format">${esc(f.logiciel)}</span></td>
+      <td><span class="rc-etat ${ok ? "pret" : "bloque"}">${!ok ? "Export impossible" : f.qualifie ? "Conforme au format qualifié" : "Conforme, non qualifié"}</span></td>
+      <td><p class="rc-motif">${esc(f.controle?.statut || "")}</p></td>
+      <td class="rc-carte-pied"><button class="${ok ? "prim" : ""}" data-format-appris="${esc(f.ident)}" ${ok ? "" : "disabled"}>Exporter <span aria-hidden="true">↓</span></button></td></tr>`; }).join("")}</tbody></table>`
+    : `<div class="vide-bloc">${d.formats.length ? `Aucun format appris pour l'automate de cet ouvrage (${autres} format(s) pour d'autres automates).` : "Aucun format appris."} Apprenez celui de votre outil dans <a href="#/standards">Standards d'ingénierie › Formats d'export appris</a>.</div>`;
+  zone.querySelectorAll("[data-format-appris]").forEach(b => b.onclick = () => telecharger("format_appris&ident=" + encodeURIComponent(b.dataset.formatAppris)));
+}
 async function blocModelesRecette() {
   const zone = $("#rc-modeles"); if (!zone) return;
   let d; try { d = await api("/api/modeles-livrables"); } catch (e) { zone.querySelector(".vide-bloc").textContent = e.message; return; }
@@ -713,6 +729,9 @@ function vueRecette() {
        <h2>${g.titre}</h2><p>${g.sous}</p></div>
      <table class="rc-table"><colgroup><col class="rc-c-livrable"><col class="rc-c-formats"><col class="rc-c-etat"><col><col class="rc-c-actions"></colgroup><thead class="o-masque"><tr><th>Livrable</th><th>Formats</th><th>État</th><th>Remarque</th><th>Téléchargement</th></tr></thead>
        <tbody>${g.cartes.map(carte).join("")}</tbody></table></section>`).join("")}
+     <section class="rc-groupe" data-groupe="formats" id="rc-formats"><div class="rc-groupe-tete"><span class="rc-icone">${V31.icon("clipboard", 16)}</span>
+       <h2>Formats appris</h2><p>Liste des E/S au format de l'outil du constructeur · chaque export est relu et contrôlé</p></div>
+       <div class="vide-bloc">Chargement…</div></section>
      <section class="rc-groupe" data-groupe="modeles" id="rc-modeles"><div class="rc-groupe-tete"><span class="rc-icone">${V31.icon("clipboard", 16)}</span>
        <h2>Vos modèles</h2><p>Fichiers de vos outils remplis par OGIAS · conformes au modèle fourni, à essayer dans l'outil cible</p></div>
        <div class="vide-bloc">Chargement…</div></section></div>
@@ -734,6 +753,7 @@ function vueRecette() {
    ${d.tronque ? '<div class="avert">Affichage limité aux 500 premiers contrôles.</div>' : ''}</details>
    <p class="rc-note">Statut industriel : NON QUALIFIÉ. Une recette sans erreur ne vaut pas validation des fichiers dans Control Expert, SOFREL, TOPKAPI ou Vijeo : chaque import reste à essayer dans le logiciel cible.</p></section>`;
   document.querySelectorAll("[data-export]").forEach(b => b.onclick = () => telecharger(b.dataset.export));
+  blocFormatsRecette();
   blocModelesRecette();
   blocEssaisRecette();
   $("#r-actualiser").onclick = async () => { E.detailEtape = await api('/api/recette'); rendre(); };
@@ -752,7 +772,7 @@ function vueRecette() {
 /* Génération groupée (lot 6, 19/11) : un zip rangé par destination, chaque pièce produite par l'export unitaire
    (mêmes contrôles, mêmes refus), journal des pièces produites et non produites avec leur motif. */
 const FAMILLES_GROUPE = [
-  ["automate", "Automate", "E/S et table de télétransmission au format Control Expert"],
+  ["automate", "Automate", "E/S et table de télétransmission au format Control Expert, formats appris de l'automate"],
   ["sofrel", "Télégestion SOFREL", "Format non décrit dans OGIAS : seulement signalé au journal"],
   ["supervision", "Supervision / IHM", "Table TOPKAPI ; Vijeo signalé comme non disponible"],
   ["documents", "Documents d'études", "E/S, télétransmission, variables, cartes, nomenclature, liste des équipements"],
@@ -1088,6 +1108,7 @@ function vueStandards() {
     ${biblio("adressage", "Plans d'adressage", "Nouveau plan d'adressage…")}
     ${biblio("outils", "Chaînes d'outils", "Nouvelle chaîne d'outils…")}
    </div>
+   ${blocFormatsAppris(E.formatsAppris)}
    ${blocModelesLivrables(E.modelesLivrables)}
    ${blocAttributsAtelier(E.attributsAtelier)}</section>`;
   document.querySelectorAll("[data-std]").forEach(r => { r.onclick = () => { E.standardSel = r.dataset.std; vueStandards(); };
@@ -1103,8 +1124,118 @@ function vueStandards() {
     `« ${sel.nom} » archivé : il n'est plus proposé à la création. Les ouvrages créés selon ce standard ne changent pas.`);
   if ($("#std-reactiver")) $("#std-reactiver").onclick = () => agir({action: "statut", ident: sel.ident, statut: "actif"}, `« ${sel.nom} » réactivé.`);
   document.querySelectorAll("[data-nouvelle-brique]").forEach(b => b.onclick = () => modaleBrique(d, b.dataset.nouvelleBrique, agir));
+  brancherFormatsAppris();
   brancherModelesLivrables();
   brancherAttributsAtelier();
+}
+/* Formats d'export appris (22/11) : OGIAS ouvert à tout constructeur. L'atelier fait apprendre une fois le format
+   d'un fichier exporté par l'outil du constructeur (liste des E/S physiques) ; OGIAS exporte ensuite chaque ouvrage
+   dans ce format, relit le fichier pour le contrôler, et le déclare conforme au format qualifié après un premier
+   essai réel confirmé. Un format appris ne se modifie pas : on en apprend un autre. */
+const faQualif = f => f.qualifie ? `<span class="badge b-ok" title="${esc(f.qualification.compte_rendu)}">Qualifié · ${esc(f.qualification.version)}</span>` : '<span class="badge b-al">Non qualifié</span>';
+function blocFormatsAppris(d) {
+  if (!d) return "";
+  const lignes = d.formats.map(f => `<tr class="cliquable" data-fa="${esc(f.ident)}" tabindex="0"><td><b>${esc(f.nom)}</b></td><td>${esc(f.nature_libelle)}</td><td><b>${esc(f.logiciel)}</b></td><td class="mono">${esc(f.fichier_origine || "—")}</td><td>${faQualif(f)}</td>
+    <td>${!d.ouvert ? "—" : !f.retenu ? `<span class="badge b-al" title="${esc(f.motif_non_retenu)}">Autre automate</span>` : f.controle?.pret ? '<span class="badge b-ok">Contrôle réussi</span>' : `<span class="badge b-err" title="${esc(f.controle?.statut || "")}">Export impossible</span>`}</td></tr>`).join("");
+  const livres = d.livres.map(f => `<tr><td><b>${esc(f.nom)}</b></td><td>${esc(d.natures[f.nature])}</td><td><b>${esc(f.logiciel)}</b></td><td colspan="2"><span class="aide">Format livré avec OGIAS</span></td><td>—</td></tr>`).join("");
+  return `<div class="bloc std-formats"><div class="bloc-tete"><h2>Formats d'export appris</h2>
+    <div class="boutons-ligne"><button type="button" class="prim" id="fa-apprendre" title="Donner un fichier exporté par l'outil du constructeur : OGIAS apprend son format et exportera ensuite chaque ouvrage dans ce format">Apprendre un format…</button></div></div>
+    <p class="aide">OGIAS n'est lié à aucun constructeur. Pour la <b>liste des E/S physiques</b>, donnez une fois un fichier exporté par l'outil de l'automate (n'importe quel projet) : OGIAS apprend ses colonnes, la forme des adresses et les valeurs de type, puis exporte chaque ouvrage dans ce format. Chaque export est relu et contrôlé ; après un premier essai réel confirmé, le format est <b>qualifié</b>.</p>
+    <table data-o-tableau="sans-selection" data-o-cle="formats-appris"><thead><tr><th>Format</th><th>Fichier</th><th>Logiciel ou automate</th><th>Exemple d'origine</th><th>Qualification</th><th>Pour l'ouvrage ouvert</th></tr></thead><tbody>${lignes}${livres}</tbody></table></div>`;
+}
+function brancherFormatsAppris() {
+  const recharger = (r, message) => { E.formatsAppris = r; toast(message); vueStandards(); };
+  const action = async (corps, message) => { try { const r = await api("/api/formats-appris/action", corps); fermerModale(); recharger(r, message); } catch (e) { toast(e.message, true); } };
+  if ($("#fa-apprendre")) $("#fa-apprendre").onclick = () => modaleApprendreFormat(recharger);
+  document.querySelectorAll("[data-fa]").forEach(r => { r.onkeydown = ev => { if (ev.key === "Enter") r.click(); };
+    r.onclick = () => {
+      const d = E.formatsAppris, f = d.formats.find(x => x.ident === r.dataset.fa); if (!f) return;
+      const table = (titre, t) => `<tr><th>${titre}</th>${d.natures_voie.map(n => `<td class="mono">${esc(t[n] || "—")}</td>`).join("")}</tr>`;
+      const m = ouvrirModale(`<div class="boite-tete"><h2>${esc(f.nom)}</h2><p>${esc(f.nature_libelle)} pour <b>${esc(f.logiciel)}</b> · appris le ${esc(f.cree_le)} depuis ${esc(f.fichier_origine || "un exemple")} · ${esc(f.encodage)} · ${esc(f.separateur)}</p></div>
+        <div class="boite-corps">${d.ouvert && !f.retenu ? `<div class="avert">${esc(f.motif_non_retenu)}</div>` : ""}${f.controle && !f.controle.pret ? `<div class="avert">${esc(f.controle.statut)}</div>` : ""}
+         <h3>Colonnes</h3><table><thead><tr><th>Colonne du fichier</th><th>Contenu écrit par OGIAS</th></tr></thead><tbody>${f.colonnes.map(c => `<tr><td class="mono">${esc(c.titre)}</td><td>${esc(c.champ_libelle)}${c.champ === "fixe" ? ` : <span class="mono">${esc(c.valeur)}</span>` : ""}</td></tr>`).join("")}</tbody></table>
+         <h3>Conversions</h3><table><thead><tr><th></th>${d.natures_voie.map(n => `<th>${n}</th>`).join("")}</tr></thead><tbody>${table("Adresse", f.adresse.gabarits)}${table("Type", f.types)}${table("Sens", f.sens)}</tbody></table>
+         <p class="aide">Décalage ${f.adresse.decalage}, ${f.adresse.taille} octet(s) par emplacement.</p>
+         <h3>Qualification</h3>${f.qualifie ? `<p>${faQualif(f)} le ${esc(f.qualification.le)}${f.qualification.auteur ? ` par ${esc(f.qualification.auteur)}` : ""} : ${esc(f.qualification.compte_rendu)}</p><p class="aide">Chaque export est désormais contrôlé automatiquement contre ce format qualifié.</p>`
+          : `<p class="aide">Importez une fois un fichier produit par OGIAS dans ${esc(f.logiciel)}, puis décrivez l'essai : le format passe « qualifié » et chaque export suivant est contrôlé automatiquement.</p>
+           <div class="std-formulaire"><label for="faq-version">Version du logiciel essayée</label><input id="faq-version" maxlength="60" placeholder="Ex. V16 SP1">
+           <label for="faq-cr">Compte rendu de l'essai réel</label><input id="faq-cr" maxlength="600" placeholder="Fichier importé, nombre d'E/S créées, anomalies éventuelles">
+           <label for="faq-auteur">Essai réalisé par (facultatif)</label><input id="faq-auteur" maxlength="60">
+           <div class="boutons-ligne"><button type="button" id="faq-ok">Confirmer la qualification</button></div></div>`}</div>
+        <div class="boite-pied"><button type="button" class="danger gauche" id="fa-supprimer">Supprimer le format</button>${f.qualifie ? '<button type="button" id="faq-retirer">Retirer la qualification</button>' : ""}${d.ouvert && f.retenu && f.controle?.pret ? '<button type="button" id="fa-exporter">Exporter l\'ouvrage ouvert</button>' : ""}<button type="button" data-fermer>Fermer</button></div>`, true);
+      if (m.querySelector("#faq-ok")) m.querySelector("#faq-ok").onclick = () => action({action: "qualifier", ident: f.ident, version: m.querySelector("#faq-version").value, compte_rendu: m.querySelector("#faq-cr").value, auteur: m.querySelector("#faq-auteur").value}, "Format qualifié : les exports suivants sont contrôlés automatiquement.");
+      if (m.querySelector("#faq-retirer")) m.querySelector("#faq-retirer").onclick = () => action({action: "retirer_qualification", ident: f.ident}, "Qualification retirée.");
+      if (m.querySelector("#fa-exporter")) m.querySelector("#fa-exporter").onclick = () => telecharger("format_appris&ident=" + encodeURIComponent(f.ident));
+      m.querySelector("#fa-supprimer").onclick = () => confirmer("Supprimer ce format ?", `« ${f.nom} » sera retiré de la bibliothèque. Les fichiers déjà exportés ne changent pas.`, "Supprimer",
+        () => action({action: "supprimer", ident: f.ident}, "Format supprimé."));
+    }; });
+}
+function modaleApprendreFormat(recharger) {
+  const d = E.formatsAppris;
+  const m = ouvrirModale(`<div class="boite-tete"><h2>Apprendre un format d'export</h2>
+    <p>Donnez un fichier exporté par l'outil du constructeur (un projet quelconque suffit). OGIAS en apprend la structure ; vous confirmez ce que contient chaque colonne et la forme des adresses. Rien n'est enregistré avant votre accord.</p></div>
+    <div class="boite-corps std-formulaire">
+     <label for="fa-nature">Nature du fichier</label><select id="fa-nature">${Object.entries(d.natures).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("")}</select>
+     <label for="fa-fichier">Fichier exemple (texte à colonnes : CSV, TXT)</label><input type="file" id="fa-fichier">
+     <div class="boutons-ligne"><button type="button" id="fa-analyser">Analyser le fichier</button></div>
+     <div id="fa-resultat" class="as-resultat" aria-live="polite"></div></div>
+    <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="fa-ok" disabled>Enregistrer le format</button></div>`, true);
+  let source = null, analyse = null;
+  const zone = m.querySelector("#fa-resultat");
+  const reglages = () => ({
+    colonnes: [...zone.querySelectorAll("[data-fa-col]")].map(s => s.value),
+    adresse: {gabarits: Object.fromEntries(d.natures_voie.map(n => [n, zone.querySelector(`#fa-adr-${n}`).value])),
+              decalage: zone.querySelector("#fa-decalage").value, taille: zone.querySelector("#fa-taille").value},
+    types: Object.fromEntries(d.natures_voie.map(n => [n, zone.querySelector(`#fa-type-${n}`).value])),
+    sens: Object.fromEntries(d.natures_voie.map(n => [n, zone.querySelector(`#fa-sens-${n}`).value]))});
+  const corps = extra => ({fichier: source.nom, contenu: source.contenu, entete_index: analyse ? zone.querySelector("#fa-entete")?.value : "", ...extra});
+  const ligne = (id, t) => d.natures_voie.map(n => `<td><input id="fa-${id}-${n}" class="mono" maxlength="60" value="${esc(t[n] || "")}" aria-label="${id} ${n}"></td>`).join("");
+  const afficher = a => {
+    analyse = a;
+    zone.innerHTML = `<p class="aide">${esc(a.encodage)} · séparateur « ${esc(a.separateur === "\t" ? "tabulation" : a.separateur)} » · ${a.guillemets ? "valeurs entre guillemets" : "sans guillemets"} · ${a.lignes_total} ligne(s) d'E/S dans l'exemple</p>
+      <label for="fa-entete">Ligne d'en-tête</label><select id="fa-entete">${a.lignes_entete.map(l => `<option value="${l.index}" ${l.index === a.entete_index ? "selected" : ""}>${l.index + 1} : ${esc(l.texte)}</option>`).join("")}</select>
+      ${a.alertes.length ? `<div class="avert"><ul>${a.alertes.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+      <h3>Que contient chaque colonne ?</h3><table class="fa-colonnes"><thead><tr><th>Colonne de l'exemple</th><th>Valeurs de l'exemple</th><th>OGIAS y écrira</th></tr></thead><tbody>
+      ${a.colonnes.map((c, i) => `<tr><td class="mono">${esc(c.titre)}</td><td class="mono">${esc(c.exemples.join(" · ") || "(vide)")}</td><td><select data-fa-col="${i}" aria-label="Contenu de la colonne ${esc(c.titre)}">${Object.entries(d.champs).map(([k, l]) => `<option value="${k}" ${k === c.champ ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></td></tr>`).join("")}</tbody></table>
+      <h3>Conversions par nature de voie</h3>
+      <p class="aide">Adresse : écrivez sa forme avec les jetons ${Object.entries(d.jetons).map(([k, l]) => `<abbr class="mono" title="${esc(l)}">{${k}}</abbr>`).join(" ")}. ${a.adresse.reconnue ? `Forme reconnue : <b>${esc(a.adresse.reconnue)}</b>.` : "Forme non reconnue : à décrire."} Type et sens : la valeur que l'outil attend (vide : celle d'OGIAS).</p>
+      <table class="fa-conversions"><thead><tr><th></th>${d.natures_voie.map(n => `<th>${n}</th>`).join("")}</tr></thead><tbody>
+       <tr><th>Adresse</th>${ligne("adr", a.adresse.gabarits)}</tr><tr><th>Type</th>${ligne("type", a.types)}</tr><tr><th>Sens</th>${ligne("sens", a.sens)}</tr></tbody></table>
+      <div class="fa-params"><label for="fa-decalage">Décalage (octets)</label><input id="fa-decalage" type="number" min="0" max="65535" value="${a.adresse.decalage}">
+       <label for="fa-taille">Octets par emplacement</label><input id="fa-taille" type="number" min="1" max="256" value="${a.adresse.taille}"></div>
+      <div class="boutons-ligne"><button type="button" id="fa-apercu">Aperçu sur l'ouvrage ouvert</button></div>
+      <div id="fa-apercu-zone"></div>
+      <label for="fa-logiciel">Logiciel ou automate cible (comme dans la fiche de l'ouvrage, ex. Control Expert, TIA Portal)</label><input id="fa-logiciel" maxlength="40" value="${esc(m.querySelector("#fa-logiciel")?.value || "")}">
+      <label for="fa-nom">Nom du format</label><input id="fa-nom" maxlength="60" value="${esc(m.querySelector("#fa-nom")?.value || "")}" placeholder="Ex. Liste des E/S – TIA Portal">`;
+    m.querySelector("#fa-ok").disabled = false;
+    zone.querySelector("#fa-entete").onchange = analyser;
+    zone.querySelector("#fa-apercu").onclick = apercu;
+  };
+  const analyser = async () => {
+    const f = m.querySelector("#fa-fichier");
+    if (!source) { if (!f.files.length) return toast("Choisissez le fichier exemple.", true); source = await lireFichier(f); }
+    try { afficher((await api("/api/formats-appris/action", corps({action: "analyser"}))).analyse); }
+    catch (e) { analyse = null; m.querySelector("#fa-ok").disabled = true; zone.innerHTML = `<div class="avert">${esc(e.message)}</div>`; }
+  };
+  const apercu = async () => {
+    const z = zone.querySelector("#fa-apercu-zone");
+    try {
+      const r = await api("/api/formats-appris/action", corps({action: "apercu", reglages: reglages()}));
+      z.innerHTML = !r.apercu ? `<p class="aide">${esc(r.motif)}</p>` : `${[...r.refus, ...r.ecarts].length ? `<div class="avert"><ul>${[...r.refus, ...r.ecarts].map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : '<p><span class="badge b-ok">Relu sans écart</span></p>'}
+        <div class="fa-comparaison"><div><h4>Exemple</h4><pre class="ml-apercu">${esc([...analyse.preambule, analyse.entete, ...analyse.lignes_exemple].join("\n"))}</pre></div>
+        <div><h4>Ouvrage ouvert dans ce format</h4><pre class="ml-apercu">${esc(r.apercu.join("\n"))}</pre></div></div>`;
+    } catch (e) { z.innerHTML = `<div class="avert">${esc(e.message)}</div>`; }
+  };
+  m.querySelector("#fa-fichier").onchange = () => { source = null; analyse = null; };
+  m.querySelector("#fa-analyser").onclick = analyser;
+  m.querySelector("#fa-ok").onclick = async () => {
+    if (!analyse) return;
+    try {
+      const r = await api("/api/formats-appris/action", corps({action: "enregistrer", reglages: reglages(), nature: m.querySelector("#fa-nature").value,
+        logiciel: zone.querySelector("#fa-logiciel").value, nom: zone.querySelector("#fa-nom").value}));
+      fermerModale(); recharger(r, "Format appris : il sert aux ouvrages dont l'automate correspond.");
+    } catch (e) { toast(e.message, true); }
+  };
 }
 /* Attributs d'équipement de l'atelier (lot 4, 19/11) : code et type figés à la création ; on archive, on ne
    supprime pas (les valeurs restent sur les équipements). */

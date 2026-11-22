@@ -858,3 +858,15 @@ html[data-theme] .as-props { width: 100%; border-collapse: collapse; }
 html[data-theme] .as-props td, html[data-theme] .as-props th { padding: var(--o-e-1) var(--o-e-2); border-bottom: 1px solid var(--o-ligne); text-align: left; font-size: var(--o-t-s); }
 html[data-theme] .as-props tr.refusee td { color: var(--o-texte-2); }
 html[data-theme] .as-props td.num, html[data-theme] .as-props th.num { text-align: right; }
+
+/* Formats d'export appris (22/11) : apprentissage du format d'un constructeur */
+html[data-theme] .std-formats { margin-top: var(--o-e-4); }
+html[data-theme] .std-formats > .aide { margin: 0 0 var(--o-e-2); max-width: 110ch; }
+html[data-theme] table.fa-conversions { width: auto; }
+html[data-theme] table.fa-conversions input { width: 13em; }
+html[data-theme] table.fa-colonnes select { min-width: 16em; }
+html[data-theme] .fa-params { display: flex; flex-wrap: wrap; align-items: center; gap: var(--o-e-2); }
+html[data-theme] .fa-params input { width: 7em; }
+html[data-theme] .fa-comparaison { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--o-e-2); }
+html[data-theme] .fa-comparaison h4 { margin: 0 0 var(--o-e-1); }
+@media (max-width: 900px) { html[data-theme] .fa-comparaison { grid-template-columns: minmax(0, 1fr); } }

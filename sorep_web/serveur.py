@@ -70,6 +70,7 @@ class Application:
         self.creation_en_attente = False  # session provisoire non enregistrée
         self._inbound_pending = None  # aperçu éphémère, lié à la session courante
         self.dernier_bilan_groupe = None  # génération groupée (lot 6) : produits / non produits, pour l'en-tête
+        self.dernier_statut_format = ""   # formats appris (22/11) : statut du dernier export (qualifié ou non)
 
     # ------------------------------------------------------------------ outils
     def _sauver(self):
@@ -629,6 +630,10 @@ class Application:
             # Le chemin provient seulement de l'adoption courante, jamais d'un paramètre HTTP.
             with open(fichier, "rb") as f:
                 return "OGIAS_" + quoi + ".json", f.read()
+        if quoi == "format_appris":               # formats appris (22/11) : export dans le format d'un constructeur
+            if not self.ouvert or self.creation_en_attente:
+                raise RegleMetier("Ouvrez d'abord un ouvrage.")
+            return self._exporter_ouvrage("format_appris:" + str(q.get("ident") or ""), None, None)
         if quoi == "modele_livrable":             # lot 1 (19/11) : modèle à variables rempli pour l'ouvrage ouvert
             if not self.ouvert or self.creation_en_attente:
                 raise RegleMetier("Ouvrez d'abord un ouvrage.")
@@ -674,6 +679,23 @@ class Application:
         return nom, octets
 
     def _exporter_ouvrage(self, quoi, dossier, base):
+        if quoi.startswith("format_appris:"):           # formats appris (22/11) : mêmes refus que l'export Control Expert
+            from genvar import formats_appris as fa
+            fmt = fa.trouver(quoi.split(":", 1)[1])
+            if fmt is None:
+                raise RegleMetier("Format appris introuvable.")
+            if self.s.ouvrage.mode != "Neuf":
+                raise RegleMetier("Projet existant : le programme en place n'est jamais réécrit.")
+            if not any(p.adresse for p in fa.points_exportes(self.s)):
+                raise RegleMetier("Aucune E/S n'a de voie : implantez les E/S à l'étape Matériel.")
+            erreurs = self.s.erreurs_materiel()
+            if erreurs:
+                raise RegleMetier(f"Export refusé : {len(erreurs)} erreur(s) de cartes ou de voies (ex. {erreurs[0]})")
+            try:
+                nom, octets, self.dernier_statut_format = fa.exporter(fmt, self.s)
+            except fa.FormatRefuse as exc:
+                raise RegleMetier(str(exc)) from None
+            return nom, octets
         if quoi in ("essais_fat", "essais_sat"):         # cahiers d'essais (lot 3, 19/11)
             from genvar import essais
             nature = quoi[-3:].upper()
@@ -1167,6 +1189,67 @@ class Application:
         n = essais.reporter(self.s, nature, lu["resultats"])
         self._sauver()
         return {**apercu, "reportes": n, "etat": essais.etat(self.s, nature)}
+
+    def formats_appris_web(self, _):
+        """Formats d'export appris (22/11) : bibliothèque, formats livrés, et pour l'ouvrage ouvert les formats retenus
+        selon son automate, avec l'état du contrôle automatique (export relu, sans rien écrire)."""
+        from genvar import formats_appris as fa, modeles_livrables as ml
+        o = self.s.ouvrage if self.ouvert else None
+        formats = []
+        for f in fa.lister():
+            r = fa.resume(f, o)
+            if o is not None and r["retenu"] and o.mode == "Neuf":
+                try:
+                    if not any(p.adresse for p in fa.points_exportes(self.s)):
+                        raise fa.FormatRefuse("Aucune E/S n'a de voie : implantez les E/S à l'étape Matériel.")
+                    r["controle"] = {"pret": True, "statut": fa.exporter(f, self.s)[2]}
+                except fa.FormatRefuse as exc:
+                    r["controle"] = {"pret": False, "statut": str(exc)}
+            formats.append(r)
+        return {"formats": formats, "livres": fa.FORMATS_LIVRES, "natures": fa.NATURES, "champs": fa.CHAMPS,
+                "jetons": fa.JETONS, "natures_voie": list(fa.NATURES_VOIE), "ouvert": self.ouvert,
+                "automate": ({"automate": o.automate, "logiciels": ml.logiciels_ouvrage(o, "automate")}
+                             if o is not None else None)}
+
+    def formats_appris_action(self, d):
+        """Apprendre un format (analyser, aperçu, enregistrer), qualifier, retirer la qualification, supprimer.
+        Aucun ouvrage n'est modifié. La structure vient toujours de l'analyse du fichier par le serveur."""
+        from genvar import formats_appris as fa
+        action = d.get("action")
+        try:
+            if action in ("analyser", "apercu", "enregistrer"):
+                try:
+                    octets = base64.b64decode(str(d.get("contenu") or ""), validate=True)
+                except (ValueError, binascii.Error):
+                    raise RegleMetier("Contenu du fichier invalide.") from None
+                index = d.get("entete_index")
+                analyse = fa.analyser(octets, str(d.get("fichier") or ""), int(index) if index not in (None, "") else None)
+                if action == "analyser":
+                    return {"analyse": analyse}
+                definition = fa.definir(analyse, d.get("reglages") or {})
+                if action == "apercu":
+                    if not self.ouvert or self.creation_en_attente or not fa.points_exportes(self.s):
+                        return {"analyse": analyse, "apercu": None,
+                                "motif": "Ouvrez un ouvrage qui a des E/S pour voir l'aperçu."}
+                    texte = fa.produire_texte(definition, self.s)
+                    lignes = texte.split(definition["fin_ligne"])
+                    return {"analyse": analyse, "apercu": lignes[:len(definition["preambule"]) + 9],
+                            "refus": fa.controler_ouvrage(definition, self.s), "ecarts": fa.relire(definition, texte, self.s)}
+                f = fa.enregistrer(str(d.get("nom") or ""), str(d.get("nature") or ""), str(d.get("logiciel") or ""),
+                                   definition, analyse["fichier"])
+                return {**self.formats_appris_web({}), "ident": f["ident"]}
+            if action == "qualifier":
+                fa.qualifier(str(d.get("ident") or ""), str(d.get("version") or ""), str(d.get("compte_rendu") or ""),
+                             str(d.get("auteur") or ""))
+            elif action == "retirer_qualification":
+                fa.retirer_qualification(str(d.get("ident") or ""))
+            elif action == "supprimer":
+                fa.supprimer(str(d.get("ident") or ""))
+            else:
+                raise RegleMetier("Action inconnue.")
+        except fa.FormatRefuse as exc:
+            raise RegleMetier(str(exc)) from None
+        return self.formats_appris_web({})
 
     def modeles_livrables_web(self, _):
         """Bibliothèque des modèles de livrables (lot 1, 19/11) : chaque modèle et l'état de ses variables, plus la
@@ -2107,14 +2190,14 @@ ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle":
               "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre",
               "/api/es": "es", "/api/numero-ouvrage": "numero_ouvrage_suggere",
               "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page",
-              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/grille": "grille_web", "/api/attributs": "attributs_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
+              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/grille": "grille_web", "/api/attributs": "attributs_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/formats-appris": "formats_appris_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
               "/api/referentiel/synchronisation": "synchronisation_referentiel", "/api/ouvrage/copies": "copies_ouvrage",
               "/api/referentiel/impact": "rapport_impact", "/api/referentiel/propagation": "apercu_propagation",
               "/api/referentiel/apercu-modele": "apercu_modele"}
 ROUTES_POST = {"/api/nouveau": "nouveau", "/api/ouvrir": "ouvrir", "/api/fermer": "fermer",
                "/api/supprimer_ouvrage": "supprimer_ouvrage", "/api/definir": "definir",
                "/api/fiche-ouvrage": "fiche_ouvrage",
-               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/grille/appliquer": "grille_appliquer", "/api/attributs/action": "attributs_action", "/api/equipement/attribut": "equipement_attribut", "/api/essais/reporter": "essais_reporter", "/api/modeles-livrables/action": "modeles_livrables_action", "/api/standards/appliquer": "appliquer_standard", "/api/standards/charte-apercu": "apercu_charte", "/api/reglages/reprendre": "reprendre_reglages",
+               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/grille/appliquer": "grille_appliquer", "/api/attributs/action": "attributs_action", "/api/equipement/attribut": "equipement_attribut", "/api/essais/reporter": "essais_reporter", "/api/modeles-livrables/action": "modeles_livrables_action", "/api/formats-appris/action": "formats_appris_action", "/api/standards/appliquer": "appliquer_standard", "/api/standards/charte-apercu": "apercu_charte", "/api/reglages/reprendre": "reprendre_reglages",
                "/api/identification/type": "identifier_type",
                "/api/identification/selection": "identifier_selection", "/api/uf": "uf",
                "/api/equipement/ajouter": "ajouter_equipement", "/api/equipement/modifier": "modifier_equipement",

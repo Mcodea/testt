@@ -698,6 +698,42 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.locator('.boite #m-ok').click()
         self.assertIn('au moins une destination', self.page.locator('.boite #m-err').inner_text())
 
+    def test_apprendre_un_format_d_export(self):
+        """22/11 : un export FICTIF d'une liste d'E/S (forme octet.bit, guillemets, commentaires avant l'en-tête) est
+        appris : colonnes proposées, aperçu sur l'ouvrage, enregistrement, puis qualification après essai réel."""
+        import tempfile
+        avant = self.projet.read_bytes()
+        exemple = Path(tempfile.mkdtemp()) / 'liste_es_fictive.csv'
+        exemple.write_text('// Export fictif\n"Name","Data Type","Logical Address","Comment"\n'
+                           '"Marche","Bool","%I4.0","Marche"\n"Niveau","Int","%IW64","Niveau"\n', encoding='utf-8')
+        nom = f'Liste E/S fictive {self.numero}'
+        self.ouvrir('#/standards')
+        self.page.locator('#fa-apprendre').click()
+        boite = self.page.locator('.boite')
+        boite.locator('#fa-fichier').set_input_files(str(exemple))
+        boite.locator('#fa-analyser').click()
+        boite.locator('.fa-colonnes').wait_for()
+        self.assertEqual(boite.locator('[data-fa-col="2"]').input_value(), 'adresse')
+        self.assertEqual(boite.locator('#fa-adr-ET').input_value(), '%I{OCTET}.{BIT}')
+        self.assertEqual(boite.locator('#fa-type-EA').input_value(), 'Int')
+        boite.locator('#fa-apercu').click()
+        boite.locator('.fa-comparaison').wait_for()
+        self.assertIn('"Name","Data Type","Logical Address","Comment"', boite.locator('.fa-comparaison').inner_text())
+        boite.locator('#fa-logiciel').fill('Control Expert')
+        boite.locator('#fa-nom').fill(nom)
+        boite.locator('#fa-ok').click()
+        ligne = self.page.locator('[data-fa]', has_text=nom)
+        ligne.wait_for()
+        self.addCleanup(self.api, '/api/formats-appris/action', {'action': 'supprimer', 'ident': ligne.get_attribute('data-fa')})
+        self.assertIn('Non qualifié', ligne.inner_text())
+        ligne.click()
+        boite = self.page.locator('.boite')
+        boite.locator('#faq-version').fill('V16')
+        boite.locator('#faq-cr').fill('Fichier importé dans le logiciel, toutes les E/S créées.')
+        boite.locator('#faq-ok').click()
+        self.page.wait_for_function("t => [...document.querySelectorAll('[data-fa]')].some(r => r.innerText.includes(t) && r.innerText.includes('Qualifié'))", arg=nom)
+        self.assertEqual(self.projet.read_bytes(), avant, "Apprendre un format ne modifie pas l'ouvrage")
+
     def test_modeles_par_logiciel_cible(self):
         """Lot 8 : un modèle déclaré pour un autre logiciel que celui de l'ouvrage est « non retenu », un type sans brique
         est signalé, et la destination se corrige depuis la fiche du modèle sans toucher à l'ouvrage."""

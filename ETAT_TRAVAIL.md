@@ -35,7 +35,12 @@ Les critères de sortie demeurent bloquants hors preuves utilisateur de section 
   l'utilisateur (pièce jointe, envoyée trois fois les 19 et 20/11) n'a jamais été traité et n'est pas récupérable
   ici. Question restée ouverte : quels automates et quelles supervisions les clients emploient (Control Expert seul
   ou aussi TIA Portal ; TOPKAPI seul ou aussi PcVue, Vijeo, Panorama).
-- Vérifié localement : 833 tests Python (5 ignorés), 117 tests navigateur, `outils/ci.py static`
+- **Formats d'export appris, lot 1 (liste des E/S physiques)** — orientation validée par l'utilisateur : OGIAS ouvert
+  à tout constructeur ; il n'exporte vers les outils des constructeurs que la liste des E/S physiques, la
+  télétransmission et l'IHM, dont le format est APPRIS une fois depuis un vrai fichier ; chaque export est relu et
+  contrôlé ; qualification après un premier essai réel confirmé, puis contrôle automatique. Notice :
+  `validation/formats_appris/README.md`. Suivants : télétransmission (supervisions), IHM, puis fichiers XML.
+- Vérifié localement : 847 tests Python (5 ignorés), 118 tests navigateur, `outils/ci.py static`
   (ruff, mypy moteur), audit données 0 détection.
 
 ## Point CI en cours — lot Formulaires

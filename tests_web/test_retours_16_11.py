@@ -427,7 +427,7 @@ class TestRetours1611Apres15h(ServeurNavigateur):
         self.page.locator('.rc-hero').wait_for()
         groupes = self.page.locator('.rc-groupe h2').all_text_contents()
         # 19/11 : « Vos modèles » (livrables à partir des modèles de l'utilisateur) ferme la liste
-        self.assertEqual(groupes, ['Automate', 'Télégestion SOFREL', 'Supervision / IHM', 'Documents', 'Vos modèles'])
+        self.assertEqual(groupes, ['Automate', 'Télégestion SOFREL', 'Supervision / IHM', 'Documents', 'Formats appris', 'Vos modèles'])
         texte = self.page.locator('.recette-lux').inner_text()
         for attendu in ('Table de télétransmission TOPKAPI', 'IHM Vijeo', 'Liste des entrées / sorties SOFREL',
                         'Nomenclature', 'Aucun poste SOFREL configuré'):

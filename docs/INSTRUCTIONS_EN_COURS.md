@@ -5,7 +5,9 @@
 Sur demande de l'utilisateur (« fais les fusions »), toute la chaîne `claude/*` (jusqu'à `claude/assistant-modeles`)
 est fusionnée en avance rapide dans `main` et `claude/referentiel-v2` ; `release/1.0` passe par la PR #2 (CI
 complète Windows et portable). Lot 8 fait : modèles de livrables rangés par logiciel cible
-(`validation/modeles_par_logiciel/README.md`). Le dernier message de l'utilisateur à la session du 19/11 (pièce
+(`validation/modeles_par_logiciel/README.md`). Orientation validée ensuite : **formats d'export appris**
+(OGIAS ouvert à tout constructeur) ; lot 1 fait (liste des E/S physiques, `validation/formats_appris/README.md`),
+suivants : télétransmission par supervision, IHM, XML. Le dernier message de l'utilisateur à la session du 19/11 (pièce
 jointe) n'a pas été lu : limite d'usage atteinte. Le lui redemander.
 
 **Agent actif : libre** (22/11/2026, Claude).
