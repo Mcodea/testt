@@ -18,6 +18,17 @@ couvre qu’une partie de l’exigence laisse la ligne « partiel ». Une captur
 l’application sans comparaison à la maquette ne prouve pas la conformité UI.
 Les critères de sortie demeurent bloquants hors preuves utilisateur de section 8.
 
+## Checkpoint — session Claude du 22/11/2026
+
+- Dépôt `Mcodea/testt`. Sur instruction de l'utilisateur (« fais les fusions »), toute la chaîne de branches
+  (`referentiel-v2` → `assistant-modeles`, lots 1 à 7) est fusionnée dans `main` et `claude/referentiel-v2`.
+- **P8, point 2 de la relecture du 12/11** (règle R-NOM-05) : deux ouvrages sans programme automate déclaré et avec le lieu hors
+  du nom sont désormais comparés ; un nom identique est une **alerte** (pas une erreur), jamais un renommage.
+  Le parcours la range en « à vérifier » avec un message lisible et le lien vers l'équipement (il affichait la
+  représentation brute de l'anomalie). Tests : `tests/test_homonymes_p8.py` (5 nouveaux).
+- Vérifié localement : 824 tests Python (5 ignorés), 116 tests navigateur, `outils/ci.py static`
+  (ruff, mypy moteur), audit données 0 détection.
+
 ## Point CI en cours — lot Formulaires
 
 Run 43317537003 : Windows/Linux, qualité et portable verts ; navigateur échoué.

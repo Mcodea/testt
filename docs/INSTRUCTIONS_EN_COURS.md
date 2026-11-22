@@ -309,9 +309,11 @@ du parcours quand le nom du programme automate est vide). À traiter au prochain
 1. `Session._operation_lourde` : si la copie horodatée échoue, l'ouvrage est
    rétabli mais pas le référentiel figé (`self.catalogue`) ; cas d'une
    restauration de copie. Rétablir aussi le référentiel figé, avec test.
-2. Homonymes (P8) : deux ouvrages sans `nom_projet` ne sont jamais comparés ;
+2. [traité le 22/11] Homonymes (P8) : deux ouvrages sans `nom_projet` ne sont jamais comparés ;
    ajouter une alerte (pas une erreur) quand des ouvrages en charte 12 sans
-   projet déclaré produiraient des noms identiques.
+   projet déclaré produiraient des noms identiques. Fait : `genvar/homonymes.py` (alerte « déclarez le nom du
+   programme automate », jamais d'erreur ni de renommage), point « à vérifier » du parcours (message lisible
+   « repère : message », lien vers l'équipement). Tests : `tests/test_homonymes_p8.py`.
 Pour l'utilisateur : `BI_DIS` = disponible et `BI_DSC` = discordance (sa
 décision du 11/11) diffèrent du PDF VANNE_MV (`BI_DIS` = discordance).
 

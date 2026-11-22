@@ -1660,7 +1660,7 @@ class Session:
         """Homonymes avec les autres ouvrages enregistrés du même programme automate (P8 / R9).
         Lecture seule des fichiers ; un fichier illisible ou archivé est ignoré."""
         from . import homonymes, projets
-        if not homonymes.perimetre(self.ouvrage):
+        if not homonymes.perimetre(self.ouvrage) and self.ouvrage.lieu_dans_le_nom:
             return []
         moi = os.path.abspath(self.chemin) if self.chemin else ""
         autres = []

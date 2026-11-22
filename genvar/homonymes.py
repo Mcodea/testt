@@ -6,8 +6,10 @@ produisent les mêmes noms (`TS_RV01MV01_OUV`). S'ils sont déclarés dans le m�
 l'utilisateur (mettre le lieu dans les noms, ou renuméroter l'un des ouvrages). Rien n'est renommé ici.
 
 Périmètre retenu : le projet Control Expert déclaré (`nom_projet`, sans tenir compte de la casse ni des espaces).
-Un ouvrage sans projet déclaré n'a pas de périmètre commun connu : aucune comparaison. Une table d'échange
-commune à plusieurs programmes n'est pas modélisée à ce jour et n'est donc pas contrôlée.
+Un ouvrage sans projet déclaré n'a pas de périmètre commun connu : s'il a le lieu hors du nom, il est comparé aux
+autres ouvrages dans le même cas et une collision est une **alerte** (pas une erreur) qui invite à déclarer le
+programme automate ; aucun renommage. Une table d'échange commune à plusieurs programmes n'est pas modélisée à ce
+jour et n'est donc pas contrôlée.
 """
 from __future__ import annotations
 
@@ -37,15 +39,17 @@ def noms_ouvrage(ouvrage, catalogue) -> dict[str, str]:
 
 
 def homonymes(ouvrage, catalogue, autres: Iterable[tuple[str, object, object]]) -> list[Anomalie]:
-    """Anomalies « Erreur » pour chaque nom de `ouvrage` déjà employé par un autre ouvrage du même programme.
+    """Anomalies « Erreur » pour chaque nom de `ouvrage` déjà employé par un autre ouvrage du même programme ;
+    « Alerte » quand ni l'un ni l'autre ne déclare de programme et que le lieu est hors du nom des deux.
 
     `autres` : [(repère affiché, ouvrage, catalogue)]. L'ouvrage lui-même (même `ident_projet`) est ignoré.
     """
     cible = perimetre(ouvrage)
-    if not cible:
-        return []
+    if not cible and getattr(ouvrage, "lieu_dans_le_nom", True):
+        return []                           # lieu dans le nom et aucun programme déclaré : rien de commun connu
     concurrents = [(rep, o, c) for rep, o, c in autres
-                   if perimetre(o) == cible and getattr(o, "ident_projet", None) != ouvrage.ident_projet]
+                   if perimetre(o) == cible and getattr(o, "ident_projet", None) != ouvrage.ident_projet
+                   and (cible or not getattr(o, "lieu_dans_le_nom", True))]
     if not concurrents:
         return []
     mes_noms = noms_ouvrage(ouvrage, catalogue)
@@ -61,9 +65,18 @@ def homonymes(ouvrage, catalogue, autres: Iterable[tuple[str, object, object]]) 
     reperes = {eq.ident: ouvrage.repere(eq) for eq in ouvrage.equipements}
     anomalies = []
     for (ident, rep), noms in sorted(groupes.items(), key=lambda g: (reperes.get(g[0][0], ""), g[0][1])):
-        anomalies.append(Anomalie(
-            "Erreur", reperes.get(ident, "Ouvrage"),
-            f"{len(noms)} nom(s) aussi employé(s) par l'ouvrage {rep} du même programme automate "
-            f"« {ouvrage.nom_projet.strip()} » : {', '.join(sorted(noms))}. Arbitrage nécessaire : mettre le lieu "
-            "dans les noms ou renuméroter l'un des ouvrages. Aucun renommage automatique.", ident, "Variables", "R-NOM-04"))
+        if cible:
+            anomalies.append(Anomalie(
+                "Erreur", reperes.get(ident, "Ouvrage"),
+                f"{len(noms)} nom(s) aussi employé(s) par l'ouvrage {rep} du même programme automate "
+                f"« {ouvrage.nom_projet.strip()} » : {', '.join(sorted(noms))}. Arbitrage nécessaire : mettre le "
+                "lieu dans les noms ou renuméroter l'un des ouvrages. Aucun renommage automatique.", ident,
+                "Variables", "R-NOM-04"))
+        else:
+            anomalies.append(Anomalie(
+                "Alerte", reperes.get(ident, "Ouvrage"),
+                f"{len(noms)} nom(s) identique(s) à ceux de l'ouvrage {rep}, lui aussi sans programme automate "
+                f"déclaré et avec le lieu hors du nom : {', '.join(sorted(noms))}. S'ils sont dans le même "
+                "programme, les noms se heurteront : déclarez le nom du programme automate pour que le contrôle "
+                "tranche. Aucun renommage automatique.", ident, "Variables", "R-NOM-05"))
     return anomalies

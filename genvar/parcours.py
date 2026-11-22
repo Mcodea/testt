@@ -117,7 +117,8 @@ def _etape_variables(s):
         pts.append(_point("variables_a_valider", f"{len(a_valider)} adresse(s) de variable à valider "
                                                  f"(ex. {a_valider[0].nom}).", "variables"))
     for m in s.anomalies_homonymes()[:MAX_DETAILS]:
-        pts.append(_point("homonyme", str(m), "variables"))
+        pts.append(_point("homonyme", f"{m.repere} : {m.message}", "variables", m.ident_eq,
+                          "bloquant" if m.niveau == "Erreur" else "à vérifier"))
     if not str(s.ouvrage.nom_projet or "").strip():
         pts.append(_point("programme_non_renseigne", "Nom du programme automate non renseigné : les homonymes avec "
                                                      "les autres ouvrages du même programme ne sont pas contrôlés.",

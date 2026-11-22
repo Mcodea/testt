@@ -116,6 +116,10 @@ REGLES: dict[str, Regle] = {r.code: r for r in [
     Regle("R-NOM-04", "Ouvrages du même programme en collision de noms", _E, _VAR,
           "Deux ouvrages du même programme automate emploient les mêmes noms.",
           "Mettre le lieu dans les noms ou renuméroter l'un des ouvrages (aucun renommage automatique)."),
+    Regle("R-NOM-05", "Ouvrages sans programme déclaré aux noms identiques", _A, _VAR,
+          "Deux ouvrages au lieu hors du nom, sans programme automate déclaré, emploient les mêmes noms : "
+          "s'ils partagent un programme, ces noms se heurteront.",
+          "Déclarer le nom du programme automate de chaque ouvrage (aucun renommage automatique)."),
     # --- E/S physiques et matériel
     Regle("R-ES-01", "E/S non validées", _A, _ES,
           "Des E/S restent à valider : leur contenu peut encore changer avant le câblage.",
