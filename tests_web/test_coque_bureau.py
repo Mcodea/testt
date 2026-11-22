@@ -734,6 +734,25 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.wait_for_function("t => [...document.querySelectorAll('[data-fa]')].some(r => r.innerText.includes(t) && r.innerText.includes('Qualifié'))", arg=nom)
         self.assertEqual(self.projet.read_bytes(), avant, "Apprendre un format ne modifie pas l'ouvrage")
 
+    def test_apprendre_un_format_de_supervision(self):
+        """22/11, lot 2 : la nature « Télétransmission » adapte la fenêtre (familles TS…CP, jetons, alarme)."""
+        import tempfile
+        exemple = Path(tempfile.mkdtemp()) / 'supervision_fictive.csv'
+        exemple.write_text('Tag;Address;DataType;Alarm\nP1;%MW100.0;BOOL;1\nNIV;%MW300;REAL;0\n', encoding='utf-8')
+        self.ouvrir('#/standards')
+        self.page.locator('#fa-apprendre').click()
+        boite = self.page.locator('.boite')
+        boite.locator('#fa-fichier').set_input_files(str(exemple))
+        boite.locator('#fa-analyser').click()
+        boite.locator('#fa-adr-ET').wait_for()
+        boite.locator('#fa-nature').select_option('teletransmission')
+        boite.locator('#fa-adr-TS').wait_for()
+        self.assertEqual(boite.locator('#fa-adr-ET').count(), 0)
+        self.assertEqual(boite.locator('#fa-adr-TS').input_value(), '%MW{MOT}.{BIT}')
+        self.assertEqual(boite.locator('#fa-adr-TM').input_value(), '%MW{MOT}')
+        self.assertEqual((boite.locator('#fa-alarme-oui').input_value(), boite.locator('#fa-alarme-non').input_value()), ('1', '0'))
+        self.assertIn('{REGISTRE}', boite.inner_text())
+
     def test_modeles_par_logiciel_cible(self):
         """Lot 8 : un modèle déclaré pour un autre logiciel que celui de l'ouvrage est « non retenu », un type sans brique
         est signalé, et la destination se corrige depuis la fiche du modèle sans toucher à l'ouvrage."""

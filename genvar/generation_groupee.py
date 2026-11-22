@@ -128,22 +128,24 @@ def constituer(session, produire, familles=None, erreurs_attendues=(ValueError, 
             continue
         ajouter(famille, libelle, nom, octets,
                 "Export non qualifié : à importer et vérifier dans le logiciel cible." if quoi in NON_QUALIFIES else "")
-    if "automate" in familles:                 # formats appris (22/11) : liste des E/S au format d'un constructeur
-        from . import formats_appris as fa
-        for f in fa.lister():
-            libelle = f"Format appris « {f['nom']} »"
-            ok, motif = fa.retenu(f, session.ouvrage)
-            if not ok:
-                refuser("automate", libelle, motif, etat="non retenu")
-                continue
-            try:
-                nom, octets = produire("format_appris:" + f["ident"])
-            except erreurs_attendues as exc:
-                refuser("automate", libelle, str(exc) or exc.__class__.__name__)
-                continue
-            ajouter("automate", libelle, nom, octets,
-                    f"Conforme au format qualifié ({f['logiciel']}) : contrôle automatique réussi." if fa.qualifie(f)
-                    else f"Format appris non qualifié : à importer une fois dans {f['logiciel']} puis confirmer.")
+    from . import formats_appris as fa           # formats appris (22/11) : formats des outils des constructeurs
+    for f in fa.lister():
+        famille = fa.FAMILLE_LIVRABLES.get(f["nature"], "automate")
+        if famille not in familles:
+            continue
+        libelle = f"Format appris « {f['nom']} »"
+        ok, motif = fa.retenu(f, session.ouvrage)
+        if not ok:
+            refuser(famille, libelle, motif, etat="non retenu")
+            continue
+        try:
+            nom, octets = produire("format_appris:" + f["ident"])
+        except erreurs_attendues as exc:
+            refuser(famille, libelle, str(exc) or exc.__class__.__name__)
+            continue
+        ajouter(famille, libelle, nom, octets,
+                f"Conforme au format qualifié ({f['logiciel']}) : contrôle automatique réussi." if fa.qualifie(f)
+                else f"Format appris non qualifié : à importer une fois dans {f['logiciel']} puis confirmer.")
     for famille, libelle, motif in NON_DISPONIBLES:
         if famille in familles:
             refuser(famille, libelle, motif, etat="non disponible")

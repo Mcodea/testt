@@ -39,8 +39,9 @@ Les critères de sortie demeurent bloquants hors preuves utilisateur de section 
   à tout constructeur ; il n'exporte vers les outils des constructeurs que la liste des E/S physiques, la
   télétransmission et l'IHM, dont le format est APPRIS une fois depuis un vrai fichier ; chaque export est relu et
   contrôlé ; qualification après un premier essai réel confirmé, puis contrôle automatique. Notice :
-  `validation/formats_appris/README.md`. Suivants : télétransmission (supervisions), IHM, puis fichiers XML.
-- Vérifié localement : 847 tests Python (5 ignorés), 118 tests navigateur, `outils/ci.py static`
+  `validation/formats_appris/README.md`. Lot 2 fait : télétransmission (chaque supervision) et IHM. Suivant : XML.
+- Feuille de route d'ingénierie : `docs/FEUILLE_DE_ROUTE.md` (objectifs priorisés, règles non négociables).
+- Vérifié localement : 857 tests Python (5 ignorés), 119 tests navigateur, `outils/ci.py static`
   (ruff, mypy moteur), audit données 0 détection.
 
 ## Point CI en cours — lot Formulaires

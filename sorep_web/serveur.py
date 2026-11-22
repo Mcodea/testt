@@ -686,11 +686,7 @@ class Application:
                 raise RegleMetier("Format appris introuvable.")
             if self.s.ouvrage.mode != "Neuf":
                 raise RegleMetier("Projet existant : le programme en place n'est jamais réécrit.")
-            if not any(p.adresse for p in fa.points_exportes(self.s)):
-                raise RegleMetier("Aucune E/S n'a de voie : implantez les E/S à l'étape Matériel.")
-            erreurs = self.s.erreurs_materiel()
-            if erreurs:
-                raise RegleMetier(f"Export refusé : {len(erreurs)} erreur(s) de cartes ou de voies (ex. {erreurs[0]})")
+            self._exigences_format(fmt["nature"])
             try:
                 nom, octets, self.dernier_statut_format = fa.exporter(fmt, self.s)
             except fa.FormatRefuse as exc:
@@ -1190,6 +1186,23 @@ class Application:
         self._sauver()
         return {**apercu, "reportes": n, "etat": essais.etat(self.s, nature)}
 
+    def _exigences_format(self, nature):
+        """Mêmes refus que les exports livrés : E/S implantées et matériel cohérent, ou variables sans conflit."""
+        from genvar import formats_appris as fa, adressage
+        if nature == "es_physiques":
+            if not any(p.adresse for p in fa.points_exportes(self.s)):
+                raise RegleMetier("Aucune E/S n'a de voie : implantez les E/S à l'étape Matériel.")
+            erreurs = self.s.erreurs_materiel()
+            if erreurs:
+                raise RegleMetier(f"Export refusé : {len(erreurs)} erreur(s) de cartes ou de voies (ex. {erreurs[0]})")
+            return
+        if not self.s.variables():
+            raise RegleMetier("Aucune variable d'échange dans l'ouvrage.")
+        conflits = adressage.calculer(self.s).conflits
+        if conflits:
+            raise RegleMetier(f"Export refusé : {len(conflits)} conflit(s) d'adressage à résoudre à l'étape Variables "
+                              f"(ex. {conflits[0][1]}).")
+
     def formats_appris_web(self, _):
         """Formats d'export appris (22/11) : bibliothèque, formats livrés, et pour l'ouvrage ouvert les formats retenus
         selon son automate, avec l'état du contrôle automatique (export relu, sans rien écrire)."""
@@ -1200,16 +1213,15 @@ class Application:
             r = fa.resume(f, o)
             if o is not None and r["retenu"] and o.mode == "Neuf":
                 try:
-                    if not any(p.adresse for p in fa.points_exportes(self.s)):
-                        raise fa.FormatRefuse("Aucune E/S n'a de voie : implantez les E/S à l'étape Matériel.")
+                    self._exigences_format(f["nature"])
                     r["controle"] = {"pret": True, "statut": fa.exporter(f, self.s)[2]}
-                except fa.FormatRefuse as exc:
+                except (fa.FormatRefuse, RegleMetier) as exc:
                     r["controle"] = {"pret": False, "statut": str(exc)}
             formats.append(r)
         return {"formats": formats, "livres": fa.FORMATS_LIVRES, "natures": fa.NATURES, "champs": fa.CHAMPS,
-                "jetons": fa.JETONS, "natures_voie": list(fa.NATURES_VOIE), "ouvert": self.ouvert,
-                "automate": ({"automate": o.automate, "logiciels": ml.logiciels_ouvrage(o, "automate")}
-                             if o is not None else None)}
+                "specs": {n: fa.specification(n) for n in fa.NATURES}, "ouvert": self.ouvert,
+                "logiciels_ouvrage": ({dest: ml.logiciels_ouvrage(o, dest) for dest in ("automate", "supervision", "ihm")}
+                                      if o is not None else {})}
 
     def formats_appris_action(self, d):
         """Apprendre un format (analyser, aperçu, enregistrer), qualifier, retirer la qualification, supprimer.
@@ -1223,14 +1235,16 @@ class Application:
                 except (ValueError, binascii.Error):
                     raise RegleMetier("Contenu du fichier invalide.") from None
                 index = d.get("entete_index")
-                analyse = fa.analyser(octets, str(d.get("fichier") or ""), int(index) if index not in (None, "") else None)
+                analyse = fa.analyser(octets, str(d.get("fichier") or ""), int(index) if index not in (None, "") else None,
+                                      str(d.get("nature") or "es_physiques"))
                 if action == "analyser":
                     return {"analyse": analyse}
                 definition = fa.definir(analyse, d.get("reglages") or {})
                 if action == "apercu":
-                    if not self.ouvert or self.creation_en_attente or not fa.points_exportes(self.s):
+                    if not self.ouvert or self.creation_en_attente or not fa.elements(self.s, analyse["nature"]):
                         return {"analyse": analyse, "apercu": None,
-                                "motif": "Ouvrez un ouvrage qui a des E/S pour voir l'aperçu."}
+                                "motif": "Ouvrez un ouvrage qui a des " + ("E/S" if analyse["nature"] == "es_physiques"
+                                                                           else "variables") + " pour voir l'aperçu."}
                     texte = fa.produire_texte(definition, self.s)
                     lignes = texte.split(definition["fin_ligne"])
                     return {"analyse": analyse, "apercu": lignes[:len(definition["preambule"]) + 9],

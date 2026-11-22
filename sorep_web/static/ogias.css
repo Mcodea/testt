@@ -862,9 +862,10 @@ html[data-theme] .as-props td.num, html[data-theme] .as-props th.num { text-alig
 /* Formats d'export appris (22/11) : apprentissage du format d'un constructeur */
 html[data-theme] .std-formats { margin-top: var(--o-e-4); }
 html[data-theme] .std-formats > .aide { margin: 0 0 var(--o-e-2); max-width: 110ch; }
-html[data-theme] table.fa-conversions { width: auto; }
-html[data-theme] table.fa-conversions input { width: 13em; }
-html[data-theme] table.fa-colonnes select { min-width: 16em; }
+html[data-theme] table.fa-conversions, html[data-theme] table.fa-colonnes { width: 100%; table-layout: fixed; }
+html[data-theme] table.fa-conversions th:first-child { width: 6.5em; }
+html[data-theme] table.fa-conversions input, html[data-theme] table.fa-colonnes select { width: 100%; min-width: 0; box-sizing: border-box; }
+html[data-theme] table.fa-colonnes td { overflow-wrap: anywhere; }
 html[data-theme] .fa-params { display: flex; flex-wrap: wrap; align-items: center; gap: var(--o-e-2); }
 html[data-theme] .fa-params input { width: 7em; }
 html[data-theme] .fa-comparaison { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--o-e-2); }
