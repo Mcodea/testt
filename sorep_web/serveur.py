@@ -1182,7 +1182,16 @@ class Application:
             liste_attr = []
         if liste_attr:
             groupes.insert(2, ("Attributs d'équipement de l'atelier (dans un bloc)", {x["nom"]: x["description"] for x in liste_attr}))
-        return {"modeles": [ml.resume(m) for m in ml.lister()],
+        resumes = [ml.resume(m) for m in ml.lister()]
+        selection = ml.pour_ouvrage(self.s, resumes) if self.ouvert else {"choix": [], "manques": []}
+        retenus = {c["ident"]: c for c in selection["choix"]}
+        for r in resumes:                       # lot 8 : retenu ou non pour l'ouvrage ouvert, avec le motif
+            c = retenus.get(r["ident"])
+            r["retenu"], r["motif_non_retenu"] = (c["retenu"], c["motif"]) if c else (True, "")
+        return {"modeles": resumes,
+                "destinations": ml.DESTINATIONS, "couverture": ml.couverture(resumes), "manques": selection["manques"],
+                "logiciels_ouvrage": ({dest: ml.logiciels_ouvrage(self.s.ouvrage, dest)
+                                       for dest in ("automate", "supervision", "ihm")} if self.ouvert else {}),
                 "variables": [{"groupe": g, "liste": [{"nom": k, "description": v} for k, v in d.items()]} for g, d in groupes],
                 "blocs": {"EQUIPEMENTS": "", "VARIABLES": list(ml.FAMILLES_FILTRE), "ES": list(ml.POINTS_FILTRE)},
                 "echappements": ml.ECHAPPEMENTS, "ouvert": self.ouvert,
@@ -1230,12 +1239,13 @@ class Application:
                        or f"Créé par l'assistant depuis {str(d.get('fichier') or 'un export')[:80]} "
                           f"(équipement de référence {r['equipement']}).")
         m = ml.importer(str(d.get("nom") or ""), str(d.get("fichier") or ""), corps, r["echappement"], description,
-                        encodage_force=encodage)
+                        encodage_force=encodage, destination=str(d.get("destination") or ""),
+                        logiciel=str(d.get("logiciel") or ""))
         return {"modele": ml.resume(m), **self.modeles_livrables_web({})}
 
     def modeles_livrables_action(self, d):
-        """Importer un modèle (fichier de l'outil avec variables), ajouter l'exemple neutre, supprimer. Aucun ouvrage
-        n'est modifié par ces actions."""
+        """Importer un modèle (fichier de l'outil avec variables), ajouter l'exemple neutre, déclarer son logiciel cible,
+        supprimer. Aucun ouvrage n'est modifié par ces actions."""
         from genvar import modeles_livrables as ml
         action = d.get("action")
         try:
@@ -1245,7 +1255,11 @@ class Application:
                 except (ValueError, binascii.Error):
                     raise RegleMetier("Contenu du fichier invalide.") from None
                 m = ml.importer(str(d.get("nom") or ""), str(d.get("fichier") or ""), octets,
-                                str(d.get("echappement") or "aucun"), str(d.get("description") or ""))
+                                str(d.get("echappement") or "aucun"), str(d.get("description") or ""),
+                                destination=str(d.get("destination") or ""), logiciel=str(d.get("logiciel") or ""))
+            elif action == "cible":                 # lot 8 : destination et logiciel déclarés du modèle
+                m = ml.definir_cible(str(d.get("ident") or ""), str(d.get("destination") or ""),
+                                     str(d.get("logiciel") or ""))
             elif action in ("assistant", "assistant_enregistrer"):
                 return self._assistant_modele(d, action == "assistant_enregistrer")
             elif action == "exemple":

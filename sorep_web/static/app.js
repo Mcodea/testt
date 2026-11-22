@@ -654,12 +654,13 @@ async function blocModelesRecette() {
   if (!document.body.contains(zone)) return;
   const corps = zone.querySelector(".vide-bloc, .rc-table"); if (!corps) return;
   corps.outerHTML = d.modeles.length ? `<table class="rc-table"><colgroup><col class="rc-c-livrable"><col class="rc-c-formats"><col class="rc-c-etat"><col><col class="rc-c-actions"></colgroup><thead class="o-masque"><tr><th>Livrable</th><th>Format</th><th>État</th><th>Remarque</th><th>Téléchargement</th></tr></thead><tbody>
-    ${d.modeles.map(m => { const ok = !m.erreurs.length; return `<tr class="rc-carte ${ok ? "pret" : "bloque"}"><td class="rc-livrable"><h3>${esc(m.nom)}</h3><p class="rc-texte">${esc(m.description || `Modèle importé de ${m.fichier_origine || "votre outil"}`)}</p></td>
-      <td class="rc-formats"><span class="rc-format">${esc(m.extension.toUpperCase())}</span></td>
-      <td><span class="rc-etat ${ok ? "pret" : "bloque"}">${ok ? "Conforme au modèle" : "Modèle à corriger"}</span></td>
-      <td>${ok ? "" : `<p class="rc-motif">${esc(m.erreurs[0])}</p>`}</td>
-      <td class="rc-carte-pied"><button class="${ok ? "prim" : ""}" data-modele-livrable="${esc(m.ident)}" ${ok ? "" : "disabled"}>Générer ${esc(m.extension.toUpperCase())} <span aria-hidden="true">↓</span></button></td></tr>`; }).join("")}</tbody></table>`
+    ${d.modeles.map(m => { const ok = !m.erreurs.length, pour = ok && m.retenu; return `<tr class="rc-carte ${ok ? "pret" : "bloque"}" data-ml-retenu="${m.retenu ? "oui" : "non"}"><td class="rc-livrable"><h3>${esc(m.nom)}</h3><p class="rc-texte">${esc(m.description || `Modèle importé de ${m.fichier_origine || "votre outil"}`)}</p></td>
+      <td class="rc-formats"><span class="rc-format">${esc(m.extension.toUpperCase())}</span>${m.logiciel ? ` <span class="rc-format">${esc(m.logiciel)}</span>` : ""}</td>
+      <td><span class="rc-etat ${pour ? "pret" : "bloque"}">${!ok ? "Modèle à corriger" : m.retenu ? "Conforme au modèle" : "Autre logiciel"}</span></td>
+      <td>${!ok ? `<p class="rc-motif">${esc(m.erreurs[0])}</p>` : m.retenu ? "" : `<p class="rc-motif">${esc(m.motif_non_retenu)} Non inclus dans « Tous les livrables ».</p>`}</td>
+      <td class="rc-carte-pied"><button class="${pour ? "prim" : ""}" data-modele-livrable="${esc(m.ident)}" ${ok ? "" : "disabled"}>Générer ${esc(m.extension.toUpperCase())} <span aria-hidden="true">↓</span></button></td></tr>`; }).join("")}</tbody></table>`
     : `<div class="vide-bloc">Aucun modèle pour l'instant. Déposez un fichier de votre outil avec ses variables dans <a href="#/standards">Standards d'ingénierie › Modèles de livrables</a>.</div>`;
+  if (d.manques.length) zone.querySelector(".rc-table, .vide-bloc").insertAdjacentHTML("afterend", `<div class="avert rc-manques"><b>Briques manquantes</b> (rien n'est produit à leur place) :<ul>${d.manques.map(x => `<li>${esc(x.message)}</li>`).join("")}</ul></div>`);
   zone.querySelectorAll("[data-modele-livrable]").forEach(b => b.onclick = () => telecharger("modele_livrable&ident=" + encodeURIComponent(b.dataset.modeleLivrable)));
 }
 function vueRecette() {
@@ -1152,16 +1153,33 @@ function brancherAttributsAtelier() {
 }
 /* Modèles de livrables (lot 1, 19/11) : fichiers tirés des outils du client, avec des variables <#…#> qu'OGIAS
    remplit. Le format vient du fichier fourni ; OGIAS n'en invente aucun. */
+/* Lot 8 : chaque modèle peut déclarer sa destination et son logiciel (TOPKAPI, PcVue…) ; l'ouvrage ne retient que
+   les modèles de ses logiciels et OGIAS signale les types d'équipement sans brique, sans rien inventer. */
+const mlCible = (d, m) => m.destination ? `${esc(d.destinations[m.destination] || m.destination)} · <b>${esc(m.logiciel)}</b>` : `<span class="aide">${esc(d.destinations[""] || "Tout ouvrage")}</span>`;
+const mlTypes = m => !m.types.length ? "—" : m.types[0] === "*" ? "Tous" : m.types.map(esc).join(", ");
+function mlChampsCible(d, prefixe, m) {
+  return `<label for="${prefixe}-destination">Destination</label><select id="${prefixe}-destination">${Object.entries(d.destinations).map(([k, l]) => `<option value="${k}" ${(m?.destination || "") === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+    <label for="${prefixe}-logiciel">Logiciel cible (nom de votre outil, ex. TOPKAPI, PcVue, Control Expert)</label><input id="${prefixe}-logiciel" maxlength="40" value="${esc(m?.logiciel || "")}" placeholder="Laisser vide pour « Tout ouvrage »">`;
+}
+const mlCibleLue = (zone, prefixe) => ({destination: zone.querySelector(`#${prefixe}-destination`).value, logiciel: zone.querySelector(`#${prefixe}-logiciel`).value});
+function blocCouvertureModeles(d) {
+  if (!d.couverture.length && !d.manques.length) return "";
+  const lignes = d.couverture.map(g => `<tr><td>${esc(d.destinations[g.destination])}</td><td><b>${esc(g.logiciel)}</b></td><td class="num">${g.modeles}</td><td>${g.types[0] === "*" ? "Tous les types" : g.types.map(esc).join(", ") || "—"}</td><td>${g.en_erreur ? `<span class="badge b-err">${g.en_erreur} en erreur</span>` : '<span class="badge b-ok">Aucun</span>'}</td></tr>`).join("");
+  return `<h3>Couverture par logiciel</h3>
+    ${d.couverture.length ? `<table data-o-tableau="sans-selection" data-o-cle="modeles-couverture"><thead><tr><th>Destination</th><th>Logiciel</th><th class="num">Modèles</th><th>Types couverts</th><th>Modèles en erreur</th></tr></thead><tbody>${lignes}</tbody></table>` : ""}
+    ${d.manques.length ? `<div class="avert" id="ml-manques"><b>Briques manquantes pour l'ouvrage ouvert</b> (rien n'est produit à leur place) :<ul>${d.manques.map(x => `<li>${esc(x.message)}</li>`).join("")}</ul></div>` : ""}`;
+}
 function blocModelesLivrables(d) {
   if (!d) return "";
   return `<div class="bloc std-modeles"><div class="bloc-tete"><h2>Modèles de livrables</h2>
     <div class="boutons-ligne"><button type="button" class="prim" id="ml-assistant" title="Partir d'un fichier exporté de votre outil pour un équipement : OGIAS y reconnaît ses valeurs et propose le modèle">Créer depuis un export…</button><button type="button" id="ml-importer">Importer un modèle…</button><button type="button" id="ml-variables">Variables disponibles</button>
     ${d.modeles.some(m => m.nom.startsWith("Exemple - ")) ? "" : '<button type="button" class="lien" id="ml-exemple">Ajouter l\'exemple CSV</button>'}</div></div>
     <p class="aide">Le plus simple : <b>Créer depuis un export</b>. Exportez de votre outil (supervision, automate…) le fichier d'un seul équipement déjà décrit dans l'ouvrage ouvert, par exemple une pompe : OGIAS y reconnaît le repère, les variables, les adresses et les libellés, et propose le modèle qui le reproduit pour toutes les pompes. Vous pouvez aussi écrire le modèle vous-même (variables <span class="mono">&lt;#NOM#&gt;</span>) et l'importer.</p>
-    ${d.modeles.length ? `<table data-o-tableau="sans-selection" data-o-cle="modeles-livrables"><thead><tr><th>Modèle</th><th>Fichier d'origine</th><th>Encodage</th><th>Variables</th><th>État</th></tr></thead><tbody>
-      ${d.modeles.map(m => `<tr class="cliquable" data-ml="${esc(m.ident)}" tabindex="0"><td><b>${esc(m.nom)}</b></td><td class="mono">${esc(m.fichier_origine || "—")}</td><td>${esc(m.encodage)}</td><td class="num">${m.variables.length}</td>
-        <td>${m.erreurs.length ? `<span class="badge b-err">${m.erreurs.length} à corriger</span>` : '<span class="badge b-ok">Prêt</span>'}</td></tr>`).join("")}</tbody></table>`
-      : '<div class="vide-bloc">Aucun modèle. Importez un fichier de votre outil, ou ajoutez l\'exemple CSV pour essayer le principe.</div>'}</div>`;
+    ${d.modeles.length ? `<table data-o-tableau="sans-selection" data-o-cle="modeles-livrables"><thead><tr><th>Modèle</th><th>Pour</th><th>Types</th><th>Fichier d'origine</th><th>Encodage</th><th>Variables</th><th>État</th></tr></thead><tbody>
+      ${d.modeles.map(m => `<tr class="cliquable" data-ml="${esc(m.ident)}" tabindex="0"><td><b>${esc(m.nom)}</b></td><td>${mlCible(d, m)}</td><td>${mlTypes(m)}</td><td class="mono">${esc(m.fichier_origine || "—")}</td><td>${esc(m.encodage)}</td><td class="num">${m.variables.length}</td>
+        <td>${m.erreurs.length ? `<span class="badge b-err">${m.erreurs.length} à corriger</span>` : !m.retenu ? `<span class="badge b-al" title="${esc(m.motif_non_retenu)}">Non retenu pour cet ouvrage</span>` : '<span class="badge b-ok">Prêt</span>'}</td></tr>`).join("")}</tbody></table>`
+      : '<div class="vide-bloc">Aucun modèle. Importez un fichier de votre outil, ou ajoutez l\'exemple CSV pour essayer le principe.</div>'}
+    ${blocCouvertureModeles(d)}</div>`;
 }
 function brancherModelesLivrables() {
   const recharger = async (r, message) => { E.modelesLivrables = r; toast(message); vueStandards(); };
@@ -1180,6 +1198,7 @@ function brancherModelesLivrables() {
       <div class="boite-corps std-formulaire"><label for="ml-nom">Nom du modèle</label><input id="ml-nom" maxlength="60" placeholder="Ex. Import variables supervision client B">
        <label for="ml-fichier">Fichier modèle</label><input type="file" id="ml-fichier">
        <label for="ml-echappement">Échappement des valeurs</label><select id="ml-echappement">${Object.entries(d.echappements).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("")}</select>
+       ${mlChampsCible(d, "ml")}
        <label for="ml-description">Description (facultative)</label><input id="ml-description" maxlength="300"></div>
       <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="ml-ok">Importer</button></div>`);
     m.querySelector("#ml-ok").onclick = async () => {
@@ -1187,7 +1206,7 @@ function brancherModelesLivrables() {
       if (!f.files.length) return toast("Choisissez le fichier modèle.", true);
       const source = await lireFichier(f);
       action({action: "importer", nom: m.querySelector("#ml-nom").value, fichier: source.nom, contenu: source.contenu,
-              echappement: m.querySelector("#ml-echappement").value, description: m.querySelector("#ml-description").value}, "Modèle importé.");
+              echappement: m.querySelector("#ml-echappement").value, description: m.querySelector("#ml-description").value, ...mlCibleLue(m, "ml")}, "Modèle importé.");
     };
   };
   document.querySelectorAll("[data-ml]").forEach(r => { r.onkeydown = ev => { if (ev.key === "Enter") r.click(); };
@@ -1196,9 +1215,13 @@ function brancherModelesLivrables() {
       let t = ""; try { t = (await api("/api/modeles-livrables/texte?ident=" + encodeURIComponent(md.ident))).texte; } catch (e) { t = e.message; }
       const m = ouvrirModale(`<div class="boite-tete"><h2>${esc(md.nom)}</h2><p>${esc(md.description || "")} Importé le ${esc(md.importe_le)} · ${esc(md.fichier_origine || "")} · ${esc(md.encodage)} · échappement ${esc(md.echappement)}</p></div>
         <div class="boite-corps">${md.erreurs.length ? `<div class="avert"><b>À corriger avant de générer :</b><ul>${md.erreurs.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+         ${!md.retenu ? `<div class="avert">${esc(md.motif_non_retenu)}</div>` : ""}
+         <h3>Pour quel logiciel</h3><div class="std-formulaire">${mlChampsCible(E.modelesLivrables, "mlc", md)}<p class="aide">Types d'équipement produits : ${mlTypes(md)}.</p>
+          <div class="boutons-ligne"><button type="button" id="mlc-ok">Enregistrer la destination</button></div></div>
          <h3>Variables du modèle</h3><table><thead><tr><th>Variable</th><th>Portée</th><th>Emplois</th><th>Signification</th></tr></thead><tbody>${md.variables.map(v => `<tr><td class="mono">&lt;#${esc(v.nom)}#&gt;</td><td>${v.connue ? esc(v.portee) : `<span class="badge b-err">${esc(v.portee)}</span>`}</td><td class="num">${v.nombre}</td><td>${esc(v.description || "—")}</td></tr>`).join("")}</tbody></table>
          <h3>Contenu du fichier</h3><pre class="ml-apercu">${esc(t)}</pre></div>
         <div class="boite-pied"><button type="button" class="danger gauche" id="ml-supprimer">Supprimer le modèle</button><button type="button" data-fermer>Fermer</button></div>`, true);
+      m.querySelector("#mlc-ok").onclick = () => action({action: "cible", ident: md.ident, ...mlCibleLue(m, "mlc")}, "Destination du modèle enregistrée.");
       m.querySelector("#ml-supprimer").onclick = () => confirmer("Supprimer ce modèle ?", `« ${md.nom} » sera retiré de la bibliothèque. Les livrables déjà téléchargés ne changent pas.`, "Supprimer",
         () => action({action: "supprimer", ident: md.ident}, "Modèle supprimé."));
     }; });
@@ -1237,7 +1260,8 @@ function modaleAssistantModele(recharger) {
       ${r.propositions.map(p => `<tr${p.refusee ? ' class="refusee"' : ""}><td><input type="checkbox" data-as-var="${esc(p.variable)}" ${p.refusee ? "" : "checked"} aria-label="Remplacer par ${esc(p.variable)}"></td>
         <td class="mono">&lt;#${esc(p.variable)}#&gt;</td><td>${esc(p.description || "—")}</td><td class="num">${p.refusee ? "—" : p.occurrences}</td><td class="mono">${esc(p.exemples.join(" · ") || "laissé tel quel")}</td></tr>`).join("")}</tbody></table>
       <h3>Modèle proposé</h3><pre class="ml-apercu">${esc(r.gabarit)}</pre>
-      <label for="as-nom">Nom du modèle</label><input id="as-nom" maxlength="60" value="${esc(m.querySelector("#as-nom")?.value || "")}" placeholder="Ex. Pompe – supervision client B">`;
+      <label for="as-nom">Nom du modèle</label><input id="as-nom" maxlength="60" value="${esc(m.querySelector("#as-nom")?.value || "")}" placeholder="Ex. Pompe – supervision client B">
+      <div class="std-formulaire">${mlChampsCible(d, "as", {destination: m.querySelector("#as-destination")?.value || "", logiciel: m.querySelector("#as-logiciel")?.value || ""})}</div>`;
     m.querySelector("#as-ok").disabled = r.verification.etat === "erreur";
     zone.querySelectorAll("[data-as-var]").forEach(c => c.onchange = () => {
       const v = c.dataset.asVar; refus = c.checked ? refus.filter(x => x !== v) : [...refus, v]; analyser();
@@ -1255,7 +1279,7 @@ function modaleAssistantModele(recharger) {
   m.querySelector("#as-ok").onclick = async () => {
     if (!dernier) return;
     try {
-      const r = await api("/api/modeles-livrables/action", corps({action: "assistant_enregistrer", nom: m.querySelector("#as-nom").value}));
+      const r = await api("/api/modeles-livrables/action", corps({action: "assistant_enregistrer", nom: m.querySelector("#as-nom").value, ...mlCibleLue(m, "as")}));
       fermerModale(); recharger(r, `Modèle « ${r.modele.nom} » enregistré : générez-le dans Recette et livrables.`);
     } catch (e) { toast(e.message, true); }
   };

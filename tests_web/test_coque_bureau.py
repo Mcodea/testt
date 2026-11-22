@@ -698,6 +698,41 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.locator('.boite #m-ok').click()
         self.assertIn('au moins une destination', self.page.locator('.boite #m-err').inner_text())
 
+    def test_modeles_par_logiciel_cible(self):
+        """Lot 8 : un modèle déclaré pour un autre logiciel que celui de l'ouvrage est « non retenu », un type sans brique
+        est signalé, et la destination se corrige depuis la fiche du modèle sans toucher à l'ouvrage."""
+        import base64
+        avant = self.projet.read_bytes()
+        sup = self.api('/api/modeles-livrables')['logiciels_ouvrage']['supervision']
+        self.assertTrue(sup, "L'ouvrage d'essai déclare une supervision")
+        noms = {}
+        for cle, logiciel in (('a', sup[0]), ('b', 'Logiciel fictif')):
+            nom = f'Pompes {cle} {self.numero}'
+            r = self.api('/api/modeles-livrables/action', {
+                'action': 'importer', 'nom': nom, 'fichier': 'pompes.csv', 'destination': 'supervision', 'logiciel': logiciel,
+                'contenu': base64.b64encode(b'<#DEBUT_EQUIPEMENTS_PM#><#REPERE#>\r\n<#FIN_EQUIPEMENTS_PM#>').decode()})
+            noms[cle] = (nom, r['ident'])
+            self.addCleanup(self.api, '/api/modeles-livrables/action', {'action': 'supprimer', 'ident': r['ident']})
+        self.ouvrir('#/standards')
+        bloc = self.page.locator('.std-modeles')
+        bloc.locator('#ml-manques').wait_for()
+        self.assertIn('HV', bloc.locator('#ml-manques').inner_text())
+        ligne_a = self.page.locator('[data-ml]', has_text=noms['a'][0])
+        ligne_b = self.page.locator('[data-ml]', has_text=noms['b'][0])
+        self.assertIn(f'Supervision · {sup[0]}', ligne_a.inner_text())
+        self.assertIn('PM', ligne_a.inner_text())
+        self.assertIn('Prêt', ligne_a.inner_text())
+        self.assertIn('Non retenu', ligne_b.inner_text())
+        self.assertIn('Logiciel fictif', bloc.locator('[data-o-cle="modeles-couverture"]').inner_text())
+        ligne_b.click()
+        boite = self.page.locator('.boite')
+        self.assertIn(f"l'ouvrage utilise {sup[0]}", boite.inner_text())
+        boite.locator('#mlc-logiciel').fill(sup[0])
+        boite.locator('#mlc-ok').click()
+        self.page.wait_for_function("t => [...document.querySelectorAll('[data-ml]')].some(r => r.innerText.includes(t) && r.innerText.includes('Prêt'))",
+                                    arg=noms['b'][0])
+        self.assertEqual(self.projet.read_bytes(), avant, "Les modèles de l'atelier ne modifient pas l'ouvrage")
+
     def test_assistant_modele_depuis_export(self):
         """19/11, lot 7 : un export FICTIF d'un équipement devient un modèle ; une valeur décochée reste écrite ;
         le contrôle de reproduction est affiché ; le modèle rejoint la bibliothèque prêt à générer."""

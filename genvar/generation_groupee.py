@@ -19,6 +19,8 @@ Principes
   Rien n'est assoupli parce que l'export est groupé.
 - Une pièce refusée ne bloque pas les autres ; elle figure au journal avec la raison du refus, jamais remplacée.
 - Un modèle client en erreur n'est pas rempli : il est listé avec ses erreurs d'analyse.
+- Lot 8 : un modèle déclaré pour un autre logiciel que ceux de l'ouvrage est « non retenu » (motif au journal) ; un
+  type d'équipement sans brique pour le logiciel de l'ouvrage est « manquant », jamais comblé par un autre logiciel.
 - Les formats qu'OGIAS ne sait pas produire (SOFREL, Vijeo) sont nommés au journal comme non disponibles.
 - Les exports Control Expert, TOPKAPI et les modèles client ne sont pas qualifiés : le journal le dit.
 """
@@ -130,12 +132,17 @@ def constituer(session, produire, familles=None, erreurs_attendues=(ValueError, 
         if famille in familles:
             refuser(famille, libelle, motif, etat="non disponible")
     if "modeles" in familles:
-        modeles = ml.lister()
-        if not modeles:
+        resumes = [ml.resume(m) for m in ml.lister()]
+        if not resumes:
             refuser("modeles", "Modèles de l'atelier", "Aucun modèle dans la bibliothèque (Standards > Modèles de livrables).")
-        for m in modeles:
+        selection = ml.pour_ouvrage(session, resumes)
+        ecartes = {c["ident"]: c["motif"] for c in selection["choix"] if not c["retenu"]}
+        for r in resumes:
+            m = r
             libelle = f"Modèle « {m['nom']} »"
-            r = ml.resume(m)
+            if m["ident"] in ecartes:                # lot 8 : brique d'un autre logiciel que ceux de l'ouvrage
+                refuser("modeles", libelle, ecartes[m["ident"]], etat="non retenu")
+                continue
             if r["erreurs"]:
                 refuser("modeles", libelle, "Modèle à corriger : " + " ; ".join(r["erreurs"][:3]))
                 continue
@@ -145,6 +152,9 @@ def constituer(session, produire, familles=None, erreurs_attendues=(ValueError, 
                 refuser("modeles", libelle, str(exc))
                 continue
             ajouter("modeles", libelle, nom, octets, "Format défini par l'atelier : non qualifié par OGIAS.")
+        for manque in selection["manques"]:
+            refuser("modeles", f"Brique {manque['logiciel']} du type {manque['type']}", manque["message"]
+                    + " Rien n'est produit à sa place.", etat="manquant")
     ordre = list(FAMILLES)
     journal.sort(key=lambda j: ordre.index(j["famille"]))     # tri stable : l'ordre des pièces est conservé
     return {"fichiers": fichiers, "journal": journal, "familles": familles}

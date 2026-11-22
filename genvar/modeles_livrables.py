@@ -15,6 +15,13 @@ Syntaxe
 - Une balise de bloc seule sur sa ligne consomme la ligne entière : le modèle reste lisible sans lignes vides en trop.
 - Une variable inconnue, ou utilisée hors de sa portée, est signalée à l'analyse et bloque la génération.
 
+Logiciel cible (lot 8, suite du principe « typicals » du 19/11) : un modèle peut déclarer sa destination (automate,
+supervision, IHM) et le logiciel pour lequel il est écrit (TOPKAPI, PcVue…). Le même type d'équipement peut ainsi
+avoir une brique par logiciel ; l'ouvrage ne retient que celles de SES logiciels (fiche de l'ouvrage / standard).
+Un modèle sans logiciel déclaré sert à tout ouvrage (comportement d'avant). Les noms de logiciels sont ceux que
+l'atelier déclare : OGIAS ne les devine pas et ne vérifie pas qu'ils existent. Une brique manquante pour un type
+d'équipement de l'ouvrage est signalée, jamais remplacée par celle d'un autre logiciel.
+
 Stockage : dossier de données de l'atelier, `modeles_livrables/` (index JSON + un fichier par modèle), écriture
 atomique ; rien n'est supposé au premier accès (bibliothèque vide).
 """
@@ -63,6 +70,10 @@ VARIABLES_ES = {
     "ES_DESIGNATION": "Désignation", "ES_RACCORDEMENT": "Câblé ou Communication", "ES_VARIABLE": "Variable d'échange liée",
 }
 COMPTEUR = {"N": "Rang dans le bloc en cours (1, 2, 3…)"}
+DESTINATIONS = {"": "Tout ouvrage", "automate": "Automate", "supervision": "Supervision", "ihm": "IHM"}
+_DE = {"automate": "d'automate", "supervision": "de supervision", "ihm": "d'IHM"}
+# Logiciel de programmation déjà établi dans OGIAS pour une gamme d'automate (exports Control Expert des M340 / M580).
+LOGICIEL_DE_GAMME = {"M340": "Control Expert", "M580": "Control Expert"}
 BLOCS = ("EQUIPEMENTS", "VARIABLES", "ES")
 RE_TYPE_FILTRE = re.compile(r"[A-Z][A-Z0-9]{0,3}")     # DEBUT_EQUIPEMENTS_PM : seulement les équipements de type PM
 
@@ -322,8 +333,22 @@ def texte(ident: str) -> str:
         return decoder(fh.read())[0]
 
 
+def _cible_controlee(destination, logiciel) -> tuple[str, str]:
+    destination = str(destination or "").strip()
+    logiciel = " ".join(str(logiciel or "").split())
+    if destination not in DESTINATIONS:
+        raise ModeleRefuse("Destination inconnue (automate, supervision, IHM ou tout ouvrage).")
+    if not destination:
+        if logiciel:
+            raise ModeleRefuse("Choisissez la destination (automate, supervision ou IHM) du logiciel déclaré.")
+        return "", ""
+    if not 2 <= len(logiciel) <= 40:
+        raise ModeleRefuse("Logiciel cible : 2 à 40 caractères (ex. TOPKAPI, PcVue, Control Expert).")
+    return destination, logiciel
+
+
 def importer(nom: str, nom_fichier: str, octets: bytes, echappement: str = "aucun", description: str = "",
-             encodage_force: str | None = None) -> dict:
+             encodage_force: str | None = None, destination: str = "", logiciel: str = "") -> dict:
     """`encodage_force` : encodage du fichier d'origine quand le modèle a été construit par l'assistant (un modèle
     devenu purement ASCII après substitution ne permet plus de le reconnaître)."""
     nom = " ".join(str(nom or "").split())
@@ -336,6 +361,7 @@ def importer(nom: str, nom_fichier: str, octets: bytes, echappement: str = "aucu
         raise ModeleRefuse("Fichier vide ou trop volumineux (2 Mo au plus).")
     if echappement not in ECHAPPEMENTS:
         raise ModeleRefuse("Échappement inconnu.")
+    destination, logiciel = _cible_controlee(destination, logiciel)
     contenu, encodage = decoder(octets)
     if encodage_force is not None:
         if encodage_force not in ENCODAGES:
@@ -348,7 +374,8 @@ def importer(nom: str, nom_fichier: str, octets: bytes, echappement: str = "aucu
         extension = "txt"
     m = {"ident": uuid.uuid4().hex[:12], "nom": nom, "description": " ".join(str(description or "").split())[:300],
          "extension": extension, "encodage": encodage, "echappement": echappement,
-         "fichier_origine": os.path.basename(nom_fichier or "")[:120], "importe_le": time.strftime("%d/%m/%Y %H:%M")}
+         "fichier_origine": os.path.basename(nom_fichier or "")[:120], "importe_le": time.strftime("%d/%m/%Y %H:%M"),
+         "destination": destination, "logiciel": logiciel}
     _ecrire_atomique(_fichier(m["ident"]), octets)
     _ecrire_index([*modeles, m])
     return m
@@ -365,13 +392,129 @@ def supprimer(ident: str) -> None:
         pass
 
 
+def definir_cible(ident: str, destination: str, logiciel: str) -> dict:
+    """Change la destination et le logiciel déclarés d'un modèle (le fichier du modèle n'est pas touché)."""
+    destination, logiciel = _cible_controlee(destination, logiciel)
+    modeles = lister()
+    m = next((x for x in modeles if x.get("ident") == ident), None)
+    if m is None:
+        raise ModeleRefuse("Modèle introuvable.")
+    m["destination"], m["logiciel"] = destination, logiciel
+    _ecrire_index(modeles)
+    return m
+
+
+def types_couverts(arbre: Bloc) -> list[str]:
+    """Types d'équipement que le modèle produit : ["*"] s'il parcourt tous les équipements (bloc EQUIPEMENTS sans
+    filtre, ou blocs VARIABLES / ES hors d'un bloc EQUIPEMENTS, ou aucun bloc), sinon les filtres EQUIPEMENTS_<TYPE>."""
+    types: set[str] = set()
+    tous = False
+    for x in arbre.enfants:
+        if isinstance(x, Bloc):
+            if x.nom == "EQUIPEMENTS" and x.filtre:
+                types.add(x.filtre)
+            else:
+                tous = True
+    return ["*"] if tous or not types else sorted(types)
+
+
 def resume(m: dict) -> dict:
     """Le modèle et l'état de ses variables (analyse), pour l'écran de la bibliothèque."""
     try:
-        _, erreurs, emplois = analyser(texte(m["ident"]))
+        arbre, erreurs, emplois = analyser(texte(m["ident"]))
+        types = types_couverts(arbre)
     except (OSError, ModeleRefuse, UnicodeDecodeError) as exc:
-        erreurs, emplois = [f"Fichier du modèle illisible : {exc}"], []
-    return {**m, "erreurs": erreurs, "variables": emplois}
+        erreurs, emplois, types = [f"Fichier du modèle illisible : {exc}"], [], []
+    return {"destination": "", "logiciel": "", **m, "erreurs": erreurs, "variables": emplois, "types": types}
+
+
+def _cle(logiciel: str) -> str:
+    return " ".join(str(logiciel or "").split()).casefold()
+
+
+def logiciels_ouvrage(ouvrage, destination: str) -> list[str]:
+    """Noms sous lesquels l'ouvrage désigne son logiciel pour cette destination (vide : rien de déclaré).
+    Automate : l'automate saisi et, pour une gamme connue, son logiciel de programmation (M580 → Control Expert)."""
+    if destination == "supervision":
+        noms = [getattr(ouvrage, "supervision", "")]
+    elif destination == "ihm":
+        noms = [getattr(ouvrage, "ihm", "")]
+    elif destination == "automate":
+        from .outils import gamme_automate
+        noms = [getattr(ouvrage, "automate", ""), LOGICIEL_DE_GAMME.get(gamme_automate(ouvrage) or "", "")]
+    else:
+        return []
+    return [n.strip() for n in noms if (n or "").strip()]
+
+
+def retenu(m: dict, ouvrage) -> tuple[bool, str]:
+    """(retenu pour l'ouvrage, motif si non retenu)."""
+    destination, logiciel = m.get("destination") or "", m.get("logiciel") or ""
+    if not destination:
+        return True, ""
+    siens = logiciels_ouvrage(ouvrage, destination)
+    if any(_cle(n) == _cle(logiciel) for n in siens):
+        return True, ""
+    de = _DE[destination]
+    if not siens:
+        return False, f"Modèle {de} {logiciel} : l'ouvrage ne déclare aucun logiciel {de}."
+    return False, f"Modèle {de} {logiciel} : l'ouvrage utilise {' / '.join(siens)}."
+
+
+def pour_ouvrage(session, resumes: list[dict] | None = None) -> dict:
+    """Modèles retenus ou écartés pour l'ouvrage et briques manquantes.
+
+    Manque : un type d'équipement de l'ouvrage qu'aucun modèle sans erreur de la destination ne couvre, alors que la
+    bibliothèque contient au moins un modèle pour le logiciel de l'ouvrage dans cette destination (sinon l'atelier
+    n'emploie pas de modèle pour ce logiciel et rien n'est attendu)."""
+    o = session.ouvrage
+    resumes = [resume(m) for m in lister()] if resumes is None else resumes
+    choix = []
+    for r in resumes:
+        ok, motif = retenu(r, o)
+        choix.append({"ident": r["ident"], "nom": r["nom"], "retenu": ok, "motif": motif})
+    par_type: dict[str, int] = {}
+    for e in o.equipements:
+        if e.type:
+            par_type[e.type] = par_type.get(e.type, 0) + 1
+    manques = []
+    for destination in ("automate", "supervision", "ihm"):
+        siens = {_cle(n) for n in logiciels_ouvrage(o, destination)}
+        candidats = [r for r in resumes if r.get("destination") == destination and _cle(r.get("logiciel", "")) in siens]
+        if not candidats:
+            continue
+        sains = [r for r in candidats if not r["erreurs"]]
+        couverts = {t for r in sains for t in r["types"]}
+        if "*" in couverts:
+            continue
+        logiciel = candidats[0]["logiciel"]
+        for type_eq, n in sorted(par_type.items()):
+            if type_eq not in couverts:
+                manques.append({"destination": destination, "logiciel": logiciel, "type": type_eq, "equipements": n,
+                                "message": f"Aucun modèle {_DE[destination]} {logiciel} sans erreur "
+                                           f"ne couvre le type {type_eq} ({n} équipement(s))."})
+    return {"choix": choix, "manques": manques}
+
+
+def couverture(resumes: list[dict] | None = None) -> list[dict]:
+    """Complétude de la bibliothèque : pour chaque destination et logiciel déclarés, les types couverts par des
+    modèles sans erreur (« * » : tous) et le nombre de modèles en erreur."""
+    resumes = [resume(m) for m in lister()] if resumes is None else resumes
+    groupes: dict[tuple[str, str], dict] = {}
+    for r in resumes:
+        if not r.get("destination"):
+            continue
+        cle = (r["destination"], _cle(r["logiciel"]))
+        g = groupes.setdefault(cle, {"destination": r["destination"], "logiciel": r["logiciel"], "types": set(),
+                                     "modeles": 0, "en_erreur": 0})
+        g["modeles"] += 1
+        if r["erreurs"]:
+            g["en_erreur"] += 1
+        else:
+            g["types"].update(r["types"])
+    ordre = list(DESTINATIONS)
+    return [{**g, "types": ["*"] if "*" in g["types"] else sorted(g["types"])}
+            for g in sorted(groupes.values(), key=lambda g: (ordre.index(g["destination"]), _cle(g["logiciel"])))]
 
 
 def generer(ident: str, session) -> tuple[str, bytes]:

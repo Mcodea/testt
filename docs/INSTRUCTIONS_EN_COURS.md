@@ -1,5 +1,15 @@
 # Instructions en cours de route
 
+## [nouveau] 22/11/2026 — Fusions et lot 8 (Claude)
+
+Sur demande de l'utilisateur (« fais les fusions »), toute la chaîne `claude/*` (jusqu'à `claude/assistant-modeles`)
+est fusionnée en avance rapide dans `main` et `claude/referentiel-v2` ; `release/1.0` passe par la PR #2 (CI
+complète Windows et portable). Lot 8 fait : modèles de livrables rangés par logiciel cible
+(`validation/modeles_par_logiciel/README.md`). Le dernier message de l'utilisateur à la session du 19/11 (pièce
+jointe) n'a pas été lu : limite d'usage atteinte. Le lui redemander.
+
+**Agent actif : libre** (22/11/2026, Claude).
+
 ## [nouveau] 16/11/2026 — Refonte industrielle de l'interface (Claude)
 
 Demande de l'utilisateur : refonte ergonomique complète (cahier en 15 points). Branche dédiée

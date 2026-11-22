@@ -26,7 +26,16 @@ Les critères de sortie demeurent bloquants hors preuves utilisateur de section 
   du nom sont désormais comparés ; un nom identique est une **alerte** (pas une erreur), jamais un renommage.
   Le parcours la range en « à vérifier » avec un message lisible et le lien vers l'équipement (il affichait la
   représentation brute de l'anomalie). Tests : `tests/test_homonymes_p8.py` (5 nouveaux).
-- Vérifié localement : 824 tests Python (5 ignorés), 116 tests navigateur, `outils/ci.py static`
+- **Lot 8 — modèles de livrables rangés par logiciel cible** (suite du principe « typicals » du 19/11) : chaque
+  modèle déclare sa destination (automate, supervision, IHM) et son logiciel ; l'ouvrage ne retient que ceux de ses
+  logiciels ; un type sans brique est « manquant » au journal, jamais comblé par un autre logiciel ; couverture par
+  logiciel à l'écran. Notice et captures : `validation/modeles_par_logiciel/`. Tests :
+  `tests/test_modeles_par_logiciel.py`, `tests_web/test_coque_bureau.py::test_modeles_par_logiciel_cible`.
+- **Message non lu** : la session du 19/11 a atteint sa limite hebdomadaire à 21 h 47 ; le message suivant de
+  l'utilisateur (pièce jointe, envoyée trois fois les 19 et 20/11) n'a jamais été traité et n'est pas récupérable
+  ici. Question restée ouverte : quels automates et quelles supervisions les clients emploient (Control Expert seul
+  ou aussi TIA Portal ; TOPKAPI seul ou aussi PcVue, Vijeo, Panorama).
+- Vérifié localement : 833 tests Python (5 ignorés), 117 tests navigateur, `outils/ci.py static`
   (ruff, mypy moteur), audit données 0 détection.
 
 ## Point CI en cours — lot Formulaires
