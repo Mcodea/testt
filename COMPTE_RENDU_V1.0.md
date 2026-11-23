@@ -11,9 +11,9 @@ de chaque supervision et l'IHM. Il n'est lié à aucun constructeur : les format
 exporté par l'outil du client, les gammes de matériel se déclarent. Schneider (M340, M580) et Siemens (S7-1500 livrée)
 sont couverts pour l'instant.
 
-Avancement au tableau de conformité (`ETAT_TRAVAIL.md`, 176 exigences du cahier des charges) : **70 % au sens strict
-(103 / 147), 79 % en comptant un « partiel » pour moitié** ; 29 exigences sont remplacées par décision de l'utilisateur
-(refonte d'interface) et sortent du calcul. Restent : 26 partielles (dont les 7 lignes de ce compte rendu, en brouillon), 8 absentes (livraison : version,
+Avancement au tableau de conformité (`ETAT_TRAVAIL.md`, 176 exigences du cahier des charges) : **71 % au sens strict
+(104 / 147), 79 % en comptant un « partiel » pour moitié** ; 29 exigences sont remplacées par décision de l'utilisateur
+(refonte d'interface) et sortent du calcul. Restent : 25 partielles (dont les 7 lignes de ce compte rendu, en brouillon), 8 absentes (livraison : version,
 étiquettes, release, essai sur Windows propre, branche protégée), 10 en attente de fichiers réels des logiciels constructeurs.
 
 ## 2. Décisions prises
@@ -26,15 +26,15 @@ Avancement au tableau de conformité (`ETAT_TRAVAIL.md`, 176 exigences du cahier
 | 23/11 | Ordre d'export des variables par équipement, jamais appliqué aux adresses (option B). |
 | 23/11 | Licences : PyMuPDF (AGPL) remplacé par pdfminer.six (MIT) ; ancienne interface Qt (PySide6, LGPL) retirée de la version vendue. |
 | 23/11 | « Apprentissage des formats » devient un onglet dédié du menu Outils. |
-
-Décision en attente : icônes de la barre et du ruban (dessins propres à OGIAS ou icônes Lucide, cahier V1-4-23).
+| 23/11 | Référentiel A1 publié : 38 renommages sur 57 approuvés (19 refusés), CONS_TAU et CONS_FRQ par suffixe d'E/S, 48 ajouts sur 49 approuvés (6 types créés, statut « À valider »). `TT.EA.TMP.2` reste à examiner. |
+| 23/11 | Icônes : jeu hybride, Lucide pour les commandes courantes, dessins OGIAS pour les symboles métier. |
 
 ## 3. Tests et couverture
 
 Résultats du 23/11/2026 sur le dernier état, exécutés localement et en intégration continue (Linux et Windows) :
 
-- **962 tests Python**, 1 290 sous-cas, aucun échec, aucun ignoré non justifié ;
-- **136 tests navigateur** (Chromium, serveur réel), 128 sous-cas, dont l'accessibilité WCAG AA de chaque écran de
+- **997 tests Python**, 1 301 sous-cas, aucun échec, aucun ignoré non justifié ;
+- **136 tests navigateur** (Chromium, serveur réel), 139 sous-cas, dont l'accessibilité WCAG AA de chaque écran de
   1366 × 768 à 2560 × 1440 ;
 - analyse statique (Ruff, mypy sur 70 fichiers) et audit anti-données réelles : aucune détection ;
 - couverture du moteur : seuil de 85 % imposé par la CI, exports industriels à 100 % (`python outils/ci.py coverage`) ;
