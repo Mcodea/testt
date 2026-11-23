@@ -44,12 +44,12 @@ const Coque = (() => {
    ["materiel", "Matériel", "#/materiel"], ["variables", "Variables", "#/variables"], ["recette", "Recette", "#/recette"]];
  const SYMBOLE_ETAPE = {ouvrage: "equipement", es: "es", materiel: "carte", variables: "variable", recette: "recette"};
  const SYMBOLE_ROUTE = {"#/ouvrages": "dossier", "#/dashboard": "bord", "#/inventaire": "equipement", "#/es": "es",
-   "#/materiel": "carte", "#/variables": "variable", "#/recette": "recette", "#/referentiel": "referentiel", "#/standards": "bord", "#/apprentissage": "importer", "#/grille": "variable"};
+   "#/materiel": "carte", "#/variables": "variable", "#/recette": "recette", "#/referentiel": "referentiel", "#/standards": "bord", "#/apprentissage": "importer", "#/rapprochement": "variable", "#/grille": "variable"};
  const TITRES_ROUTE = {"#/ouvrages": "Mes ouvrages", "#/dashboard": "Tableau de bord", "#/inventaire": "Équipements",
    "#/es": "Liste des E/S", "#/materiel": "Matériel", "#/variables": "Variables", "#/recette": "Recette",
-   "#/referentiel": "Référentiel métier", "#/standards": "Standards d'ingénierie", "#/apprentissage": "Apprentissage des formats", "#/grille": "Grille d'ingénierie"};
+   "#/referentiel": "Référentiel métier", "#/standards": "Standards d'ingénierie", "#/apprentissage": "Apprentissage des formats", "#/rapprochement": "Rapprochement", "#/grille": "Grille d'ingénierie"};
  const ROUTE_VUE = {accueil: "#/ouvrages", dashboard: "#/dashboard", ouvrage: "#/inventaire", es: "#/es", materiel: "#/materiel",
-   variables: "#/variables", supervision: "#/variables", adressage: "#/variables", recette: "#/recette", referentiel: "#/referentiel", standards: "#/standards", apprentissage: "#/apprentissage", grille: "#/grille"};
+   variables: "#/variables", supervision: "#/variables", adressage: "#/variables", recette: "#/recette", referentiel: "#/referentiel", standards: "#/standards", apprentissage: "#/apprentissage", rapprochement: "#/rapprochement", grille: "#/grille"};
  const etat = {documents: [], explorateur: true, menuOuvert: "", sortieOuverte: true, journal: []};
  try {
   etat.explorateur = localStorage.getItem("ogias-explorateur") !== "masque";
@@ -70,7 +70,8 @@ const Coque = (() => {
   ["Affichage", [["Thème clair ou sombre", "", () => document.getElementById("v31-settings")?.click()],
                  ["Afficher ou masquer l'explorateur", "Ctrl B", () => basculerExplorateur()]]],
   ["Ouvrage", [["Tableau de bord", "", () => naviguer("#/dashboard"), () => !!E.ouvrage?.ouvert],
-               ["Grille d'ingénierie", "", () => naviguer("#/grille"), () => !!E.ouvrage?.ouvert], "-",
+               ["Grille d'ingénierie", "", () => naviguer("#/grille"), () => !!E.ouvrage?.ouvert],
+               ["Rapprochement", "", () => naviguer("#/rapprochement"), () => E.ouvrage?.identification?.mode === "Existant"], "-",
                ...ETAPES_PARCOURS.map(([, lib, route], i) => [`${i + 1}. ${lib}`, "", () => naviguer(route), () => !!E.ouvrage?.ouvert])]],
   ["Outils", [["Référentiel métier", "", () => naviguer("#/referentiel")], ["Standards d'ingénierie", "", () => naviguer("#/standards")], ["Apprentissage des formats", "", () => naviguer("#/apprentissage")]]],
   ["Aide", [["Aide d'OGIAS", "F1", () => window.open("aide.html", "_blank", "noopener")],
@@ -364,7 +365,7 @@ const Coque = (() => {
   }
   el.innerHTML = `<div class="o-panneau-tete">Explorateur<button type="button" class="o-replier" title="Masquer l'explorateur (Ctrl B)" aria-label="Masquer l'explorateur">${ico("replier", 14)}</button></div>
    <div class="o-section">OGIAS</div>${lien("#/ouvrages", "dossier", "Mes ouvrages")}${lien("#/referentiel", "referentiel", "Référentiel métier")}${lien("#/standards", "bord", "Standards d'ingénierie")}${lien("#/apprentissage", "importer", "Apprentissage des formats")}
-   ${ouvert ? `<div class="o-section">Ouvrage</div>${lien("#/dashboard", "bord", "Tableau de bord", `<span class="o-code">${esc(o.prefixe || "")}</span>`)}${lien("#/grille", "variable", "Grille d'ingénierie")}${parcours}`
+   ${ouvert ? `<div class="o-section">Ouvrage</div>${lien("#/dashboard", "bord", "Tableau de bord", `<span class="o-code">${esc(o.prefixe || "")}</span>`)}${lien("#/grille", "variable", "Grille d'ingénierie")}${o.identification?.mode === "Existant" ? lien("#/rapprochement", "variable", "Rapprochement") : ""}${parcours}`
             : '<p class="o-vide-texte">Ouvrez un ouvrage pour suivre son parcours.</p>'}`;
   el.querySelector(".o-replier").onclick = basculerExplorateur;
  }

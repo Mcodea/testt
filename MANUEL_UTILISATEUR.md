@@ -133,6 +133,14 @@ E/S physiques de chaque automate, la télétransmission de chaque supervision et
 
 ![Apprendre un format](docs/manuel/captures/10_format_appris.png)
 
+### Rapprochement d'un projet existant
+
+Pour un ouvrage en mode **Existant**, Ouvrage › **Rapprochement** relit le programme importé. OGIAS déclare d'abord les
+équipements détectés dans les noms des variables (vous cochez ceux qui existent), construit une ligne par information
+à télétransmettre, puis **propose** la variable du programme qui la porte. Chaque proposition affiche son niveau de
+confiance (« élevée » ou « à rapprocher manuellement ») et sa raison. Rien n'est appliqué sans votre geste : *Confirmer*
+une ligne, ou *Confirmer en lot* pour les seules confiances élevées (le lot est tracé et peut être annulé).
+
 ## 6. Référentiel métier
 
 Menu Outils › **Référentiel métier** : types d'équipements, modèles, lexique, dictionnaire des codes. On le modifie

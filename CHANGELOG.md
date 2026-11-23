@@ -15,6 +15,8 @@ Le numéro de version (`genvar/__init__.py`) est encore 0.32 ; il passera à 1.0
   ouvert sur un autre poste, qui ne peut alors plus enregistrer.
 - **Journal technique** tournant, consultable par Aide › Journal technique.
 - **Dupliquer un équipement** au ruban : numéro libre suivant, aucune adresse ni voie reprise.
+- **Écran Rapprochement** (projets existants) : équipements détectés à déclarer, variable proposée pour chaque information
+  attendue avec son niveau de confiance et sa raison, confirmation une par une ou en lot (annulable).
 - Table Variables : quand « Valider les propositions » est désactivé, la raison s'affiche avec un lien vers la correction.
 - **Profils d'import** : un fichier aux colonnes inconnues se décrit une fois (Importer › Décrire les colonnes), le profil
   est ensuite proposé pour chaque import de même nature ; l'aperçu avant import reste obligatoire.

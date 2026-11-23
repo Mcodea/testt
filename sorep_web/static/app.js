@@ -218,6 +218,15 @@ async function _apprentissage(j) {
   if (perime(j)) return;
   rendre();
 }
+async function _rapprochement(j) {
+  E.ouvrage = await api("/api/ouvrage");
+  if (!E.ouvrage.ouvert) return _accueil(j);
+  let d;
+  try { d = await api("/api/rapprochement"); }
+  catch (e) { if (!perime(j)) toast(e.message, true); return _dashboard(j); }
+  if (perime(j)) return;
+  E.rapprochement = d; E.vue = "rapprochement"; rendre();
+}
 async function _referentiel(j) {
   E.ouvrage = await api("/api/ouvrage");
   if (perime(j)) return;
@@ -234,7 +243,7 @@ async function chargerReferentiel() {
 }
 /* Navigation par adresse (#/…) : chaque écran a son adresse, le bouton « Retour » du navigateur fonctionne,
    et la barre du haut donne accès à tous les écrans depuis n'importe où. */
-const ROUTES = {"#/ouvrages": _accueil, "#/dashboard": _dashboard, "#/inventaire": _ouvrage, "#/es": _es, "#/materiel": _materiel, "#/referentiel": _referentiel, "#/standards": _standards, "#/apprentissage": _apprentissage, "#/grille": _grille,
+const ROUTES = {"#/ouvrages": _accueil, "#/dashboard": _dashboard, "#/inventaire": _ouvrage, "#/es": _es, "#/materiel": _materiel, "#/referentiel": _referentiel, "#/standards": _standards, "#/apprentissage": _apprentissage, "#/rapprochement": _rapprochement, "#/grille": _grille,
                 "#/variables": j => _aVenir("variables", j), "#/supervision": j => _aVenir("supervision", j), "#/adressage": j => _aVenir("adressage", j), "#/recette": j => _aVenir("recette", j),
                 "#/controles": j => _aVenir("recette", j), "#/exports": j => _aVenir("recette", j)};
 async function naviguer(route) {
@@ -345,6 +354,7 @@ function rendre() {
   if (E.vue === "referentiel") return vueReferentiel();
   if (E.vue === "standards") return vueStandards();
   if (E.vue === "apprentissage") return vueApprentissage();
+  if (E.vue === "rapprochement") return vueRapprochement();
   if (E.vue === "grille") return vueGrille();
   if (E.vue === "es") return vueES();
   if (E.vue === "materiel") return vueMateriel();
@@ -1326,6 +1336,72 @@ function blocFormatsAppris(d) {
   return `<div class="bloc std-formats"><div class="bloc-tete"><h2>Formats d'export appris</h2></div>
     <p class="aide">OGIAS n'est lié à aucun constructeur. Pour la <b>liste des E/S physiques</b> (automate), la <b>télétransmission</b> (supervision) et l'<b>IHM</b>, donnez une fois un fichier exporté par l'outil (n'importe quel projet) : OGIAS apprend ses colonnes, la forme des adresses et les valeurs attendues, puis exporte chaque ouvrage dans ce format. Chaque export est relu et contrôlé ; après un premier essai réel confirmé, le format est <b>qualifié</b>.</p>
     <table data-o-tableau="sans-selection" data-o-cle="formats-appris"><thead><tr><th>Format</th><th>Fichier</th><th>Logiciel cible</th><th>Exemple d'origine</th><th>Qualification</th><th>Pour l'ouvrage ouvert</th></tr></thead><tbody>${lignes}${livres}</tbody></table></div>`;
+}
+/* Rapprochement d'un projet existant (V1-6-02, V1-6-05) : pour chaque information attendue, la variable source du programme
+   existant que propose OGIAS, avec son niveau de confiance et sa raison. Rien n'est confirmé sans geste humain ; la
+   confirmation en lot ne retient que les confiances élevées, elle est tracée et annulable. */
+function vueRapprochement() {
+  Coque.ruban(null);
+  const d = E.rapprochement, b = d.bilan, filtre = E.rapFiltre || "", page = E.rapPage || 0, PAGE = 100;
+  const etats = ["Validée", "À compléter", "Sans source", "Incohérence", "Non accessible"];
+  const visibles = d.lignes.filter(l => !filtre || l.statut === filtre);
+  const pages = Math.max(1, Math.ceil(visibles.length / PAGE)), p = Math.min(page, pages - 1);
+  const classeStatut = s => ({"Validée": "b-ok", "Incohérence": "b-err", "Non accessible": "b-n"}[s] || "b-al");
+  const confiance = l => !l.variable_source ? "—" : l.confiance
+    ? `<span class="badge ${l.confiance === "élevée" ? "b-ok" : "b-al"}" title="${esc(l.raison)}">${esc(l.confiance === "élevée" ? "Confiance élevée" : "À rapprocher manuellement")}</span> <small class="aide">${esc(l.raison)}</small>`
+    : `<small class="aide">${esc(l.origine || "Association manuelle")}</small>`;
+  const ligne = l => {
+    const cle = `data-eq="${esc(l.ident_eq)}" data-cle="${esc(l.cle)}"`;
+    const actions = l.non_accessible ? "" : !l.variable_source
+      ? (l.candidats.length ? `<select data-rap-assoc ${cle} aria-label="Associer une variable à ${esc(l.nom_standard)}"><option value="">Associer…</option>${l.candidats.map(c => `<option value="${esc(c.variable)}">${esc(c.variable)} · ${c.score}/100</option>`).join("")}</select>` : "")
+      : `${l.fonction_validee ? `<button type="button" data-rap="retirer_confirmation" ${cle}>Retirer la confirmation</button>` : `<button type="button" class="prim" data-rap="confirmer" ${cle}>Confirmer</button>`}
+         <button type="button" data-rap="dissocier" ${cle} aria-label="Dissocier ${esc(l.variable_source)}">Dissocier</button>`;
+    return `<tr data-rap-ligne="${esc(l.nom_standard)}"><td class="mono">${esc(l.nom_standard)}<br><small class="aide">${esc(l.repere)} · ${esc(l.information)}</small></td>
+      <td class="mono">${esc(l.variable_source || "—")}${l.adresse_source ? `<br><small class="aide">${esc(l.adresse_source)}</small>` : ""}</td>
+      <td>${confiance(l)}</td><td><span class="badge ${classeStatut(l.statut)}" title="${esc(l.motif)}">${esc(l.fonction_validee && l.statut === "À compléter" ? "Fonction confirmée" : l.statut)}</span></td>
+      <td class="rap-actions">${actions}</td></tr>`;
+  };
+  const sansEquipement = !d.equipements, sansTable = d.equipements && !d.lignes.length;
+  $("#vue").innerHTML = `<section class="contenu rapprochement">
+   <div class="std-intro"><p>Le programme existant est relu ligne à ligne : pour chaque information que l'ouvrage doit télétransmettre, OGIAS propose la variable du programme qui la porte, avec son niveau de confiance et sa raison. <b>Rien n'est appliqué sans votre confirmation.</b> ${d.variables} variable(s) importée(s), ${d.equipements} équipement(s) déclaré(s).</p></div>
+   ${d.detectes.length ? `<div class="bloc"><div class="bloc-tete"><h2>Équipements détectés dans les noms (${d.detectes.length})</h2>
+     <div class="boutons-ligne"><button type="button" class="prim" id="rap-detectes">Choisir et déclarer…</button></div></div>
+     <p class="aide">Trouvés dans les noms des variables importées, jamais créés sans votre accord.</p></div>` : ""}
+   ${d.lignes.length ? `<div class="bloc"><div class="bloc-tete"><h2>Rapprochement des informations</h2><div class="boutons-ligne">
+     <button type="button" id="rap-proposer">Proposer les associations</button>
+     <button type="button" class="prim" id="rap-lot" ${d.confirmables ? "" : "disabled"} title="${d.confirmables ? "Confirme en un geste les lignes de confiance élevée ; annulable" : "Aucune ligne de confiance élevée à confirmer"}">Confirmer en lot · ${d.confirmables}</button></div></div>
+     <div class="compteurs" role="group" aria-label="Filtrer par état"><span class="chip ${filtre ? "" : "on"}" data-rap-etat="">Toutes<b>${d.lignes.length}</b></span>${etats.map(s => `<span class="chip ${filtre === s ? "on" : ""}" data-rap-etat="${esc(s)}">${esc(s)}<b>${b[s] || 0}</b></span>`).join("")}</div>
+     ${d.lots.length ? `<p class="aide">Confirmations en lot : ${d.lots.map(x => `n° ${x.id} (${x.n} ligne(s), ${esc(x.le.replace("T", " ").slice(0, 16))}) <button type="button" class="lien" data-rap-annuler="${x.id}">Annuler ce lot</button>`).join(" · ")}</p>` : ""}
+     <table data-o-tableau="sans-selection" data-o-cle="rapprochement"><thead><tr><th>Information attendue</th><th>Variable du programme</th><th>Confiance et raison</th><th>État</th><th>Action</th></tr></thead>
+      <tbody>${visibles.slice(p * PAGE, (p + 1) * PAGE).map(ligne).join("") || '<tr><td colspan="5"><div class="vide">Aucune ligne dans cet état.</div></td></tr>'}</tbody></table>
+     ${pages > 1 ? `<div class="ligne-actions" style="display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:10px"><button type="button" id="rap-prec" ${p ? "" : "disabled"}>← Précédent</button><span>Page ${p + 1} / ${pages}</span><button type="button" id="rap-suiv" ${p < pages - 1 ? "" : "disabled"}>Suivant →</button></div>` : ""}</div>`
+    : `<div class="bloc"><div class="bloc-tete"><h2>${sansEquipement ? "Aucun équipement déclaré" : "Table non construite"}</h2></div>
+     <p class="aide">${sansEquipement ? "Déclarez d'abord les équipements du programme existant (équipements détectés ci-dessus, ou saisie dans Équipements)." : "Construisez la table : une ligne par information attendue de chaque équipement."}</p>
+     ${sansEquipement ? "" : '<div class="boutons-ligne"><button type="button" class="prim" id="rap-construire">Construire la table</button></div>'}</div>`}
+  </section>`;
+  const agir = async (corps, message) => {
+    try { E.rapprochement = await api("/api/rapprochement/action", corps); if (message) toast(message); vueRapprochement(); }
+    catch (e) { toast(e.message, true); }
+  };
+  document.querySelectorAll("[data-rap]").forEach(bt => bt.onclick = () => agir({action: bt.dataset.rap, ident_eq: bt.dataset.eq, cle: bt.dataset.cle},
+    {confirmer: "Fonction confirmée.", retirer_confirmation: "Confirmation retirée.", dissocier: "Variable dissociée."}[bt.dataset.rap]));
+  document.querySelectorAll("[data-rap-assoc]").forEach(s => s.onchange = () => s.value && agir({action: "associer", ident_eq: s.dataset.eq, cle: s.dataset.cle, variable: s.value}, "Variable associée : à confirmer."));
+  document.querySelectorAll("[data-rap-etat]").forEach(c => c.onclick = () => { E.rapFiltre = c.dataset.rapEtat; E.rapPage = 0; vueRapprochement(); });
+  document.querySelectorAll("[data-rap-annuler]").forEach(bt => bt.onclick = () => confirmer("Annuler cette confirmation en lot ?", "Chaque ligne encore confirmée avec la même source redevient « à confirmer ».", "Annuler le lot",
+    () => agir({action: "annuler_lot", id: bt.dataset.rapAnnuler}, "Lot annulé.")));
+  if ($("#rap-proposer")) $("#rap-proposer").onclick = () => agir({action: "proposer"}, "Associations proposées : aucune n'est confirmée.");
+  if ($("#rap-lot")) $("#rap-lot").onclick = () => confirmer(`Confirmer ${d.confirmables} ligne(s) ?`, "Seules les lignes de confiance élevée sont confirmées. L'opération est tracée et annulable.", "Confirmer en lot",
+    () => agir({action: "lot"}, "Confirmation en lot faite : elle reste annulable."));
+  if ($("#rap-construire")) $("#rap-construire").onclick = () => agir({action: "construire"}, "Table construite.");
+  if ($("#rap-prec")) $("#rap-prec").onclick = () => { E.rapPage = p - 1; vueRapprochement(); };
+  if ($("#rap-suiv")) $("#rap-suiv").onclick = () => { E.rapPage = p + 1; vueRapprochement(); };
+  if ($("#rap-detectes")) $("#rap-detectes").onclick = () => {
+    const m = ouvrirModale(`<div class="boite-tete"><h2>Équipements détectés</h2><p>Cochez ceux qui existent réellement : ils sont déclarés dans l'ouvrage.</p></div>
+      <div class="boite-corps"><table><thead><tr><th></th><th>Équipement</th><th>Variables trouvées</th></tr></thead><tbody>${d.detectes.map(x => `<tr><td><input type="checkbox" data-det="${esc(x.cle)}" checked aria-label="Déclarer ${esc(x.type)}${esc(x.numero)}"></td>
+        <td><b>${esc(x.type)}${esc(x.numero)}</b> · ${esc(x.designation)} (SE ${esc(x.se)})</td><td class="mono">${x.noms.map(esc).join(" · ")}</td></tr>`).join("")}</tbody></table></div>
+      <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="det-ok">Déclarer les équipements cochés</button></div>`, true);
+    m.querySelector("#det-ok").onclick = () => { const cles = [...m.querySelectorAll("[data-det]:checked")].map(x => x.dataset.det); fermerModale(); agir({action: "detectes", cles}, "Équipements déclarés."); };
+  };
 }
 /* Onglet « Apprentissage des formats » : on exporte depuis l'outil du constructeur, on importe le fichier ici, on dit
    de quel format il s'agit ; OGIAS exporte ensuite chaque ouvrage dans ce format. */

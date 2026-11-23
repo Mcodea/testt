@@ -137,7 +137,7 @@ class Application:
     HISTORIQUE_MAX = 30
     SANS_HISTORIQUE = {"nouveau", "ouvrir", "fermer", "annuler", "retablir", "supprimer_ouvrage"}
     LIBELLES_ANNULATION = {
-        "ajouter_equipement": "ajout d'équipement", "ajouter_equipements_serie": "création en série d'équipements", "modifier_equipement": "modification d'équipement",
+        "ajouter_equipement": "ajout d'équipement", "ajouter_equipements_serie": "création en série d'équipements", "rapprochement_action": "rapprochement", "modifier_equipement": "modification d'équipement",
         "supprimer_equipements": "suppression d'équipements", "dupliquer_equipement": "duplication d'équipement", "definir_ordre_export": "ordre d'export", "deplacer": "déplacement d'équipements",
         "valider_equipements": "validation d'équipements", "decider_proposition": "décision sur une proposition",
         "configurer_equipement": "configuration d'équipement", "ligne_equipement": "modification d'équipement",
@@ -1066,6 +1066,79 @@ class Application:
                           "texte": f"{v['n']} {libelle_niveau.get(v['niveau'], 'adresse(s)')} validée(s)" + (f" par {v['par']}" if v["par"] else "")})
         faits.sort(key=lambda f: f["quand"], reverse=True)
         return {"faits": faits[:8], "total": len(faits)}
+
+    def _ouvrage_existant(self):
+        if not self.ouvert or self.creation_en_attente:
+            raise RegleMetier("Ouvrez d'abord un ouvrage.")
+        if self.s.ouvrage.mode != "Existant":
+            raise RegleMetier("Le rapprochement concerne les projets existants.")
+        return self.s.ouvrage
+
+    def rapprochement_web(self, _):
+        """V1-6-02, V1-6-05 : table de télétransmission d'un projet existant, une ligne par information attendue, avec la
+        source associée, son niveau de confiance et sa raison, et les confirmations (une à une ou en lot, annulables)."""
+        o = self._ouvrage_existant()
+        from genvar import teletransmission as tt
+        candidats = self.s.candidats()
+        lignes = []
+        for v in self.s.table():
+            l = v.ligne
+            propositions = candidats.get((l.ident_eq, l.cle), [])
+            courante = next((p for p in propositions if p.variable_nom == l.variable_source), None)
+            lignes.append({
+                "ident_eq": l.ident_eq, "cle": l.cle, "repere": v.repere, "information": v.information,
+                "nom_standard": v.nom_standard, "famille": v.famille, "sens": v.sens, "statut": v.statut, "motif": v.motif,
+                "variable_source": v.variable_source, "type_source": v.type_source, "adresse_source": v.adresse_source,
+                "registre": v.registre, "fonction_validee": l.fonction_validee, "acces_verifie": l.acces_verifie,
+                "non_accessible": l.non_accessible, "origine": l.origine_association,
+                "confiance": courante.confiance if courante else "", "raison": courante.raison if courante else "",
+                "score": courante.score if courante else None,
+                "candidats": [{"variable": p.variable_nom, "score": p.score, "confiance": p.confiance, "raison": p.raison,
+                               "ambigu": p.ambiguite} for p in propositions[:3]]})
+        lots = [{"id": e["id"], "le": e["le"], "par": e.get("par", ""), "n": len(e.get("lignes", []))}
+                for e in o.journal_rapprochement if e.get("action") == "confirmation en lot" and not e.get("annule")]
+        detectes = [{"cle": f"{d.sous_ensemble}|{d.type}|{d.numero}", "type": d.type, "designation": d.designation,
+                     "numero": d.numero, "se": d.sous_ensemble, "noms": list(d.variables[:3])}
+                    for d in self.s.equipements_detectes()]
+        return {"lignes": lignes, "bilan": tt.bilan(o, self.s.catalogue), "confirmables": len(self.s.confirmables_en_lot()),
+                "lots": lots, "detectes": detectes, "variables": len(o.existantes), "equipements": len(o.equipements)}
+
+    def rapprochement_action(self, d):
+        """construire, detectes, proposer, associer, dissocier, confirmer, retirer_confirmation, lot, annuler_lot."""
+        self._ouvrage_existant()
+        d = d or {}
+        action, ident, cle = d.get("action"), str(d.get("ident_eq") or ""), str(d.get("cle") or "")
+        if action == "construire":
+            self.s.construire_table()
+        elif action == "detectes":
+            demandes = {str(x) for x in d.get("cles") or []}
+            choisis = [x for x in self.s.equipements_detectes() if f"{x.sous_ensemble}|{x.type}|{x.numero}" in demandes]
+            if not choisis:
+                raise RegleMetier("Cochez au moins un équipement détecté.")
+            self.s.ajouter_detectes(choisis)
+            self.s.construire_table()
+        elif action == "proposer":
+            self.s.proposer_associations()
+        elif action == "associer":
+            self.s.associer(ident, cle, str(d.get("variable") or ""))
+        elif action == "dissocier":
+            self.s.dissocier(ident, cle)
+        elif action == "confirmer":
+            self.s.valider_fonction(ident, cle, True)
+        elif action == "retirer_confirmation":
+            self.s.valider_fonction(ident, cle, False)
+        elif action == "lot":
+            if self.s.confirmer_en_lot() is None:
+                raise RegleMetier("Aucune ligne de confiance élevée à confirmer.")
+        elif action == "annuler_lot":
+            try:
+                self.s.annuler_lot(int(d.get("id")))
+            except (TypeError, ValueError) as exc:
+                raise RegleMetier("Numéro de lot invalide.") from exc
+        else:
+            raise RegleMetier("Action de rapprochement inconnue.")
+        self._sauver()
+        return self.rapprochement_web({})
 
     def recherche_globale(self, q):
         """V1-5-06 : recherche par repère, variable, adresse ou libellé (équipements et variables de l'ouvrage ouvert)."""
@@ -2602,7 +2675,7 @@ class Application:
 
 
 ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle": "referentiel_cycle", "/api/referentiel/vue": "referentiel_vue", "/api/accueil": "accueil", "/api/ouvrage": "ouvrage", "/api/equipement": "equipement",
-              "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre", "/api/recherche": "recherche_globale", "/api/activite": "activite_recente",
+              "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre", "/api/recherche": "recherche_globale", "/api/rapprochement": "rapprochement_web", "/api/activite": "activite_recente",
               "/api/es": "es", "/api/numero-ouvrage": "numero_ouvrage_suggere",
               "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page", "/api/profils-import": "profils_import_web",
               "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/grille": "grille_web", "/api/attributs": "attributs_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/formats-appris": "formats_appris_web", "/api/gammes-materiel": "gammes_materiel_web", "/api/revisions": "revisions_web", "/api/journal": "journal_web", "/api/equipement/ordre-export": "ordre_export_web", "/api/historique": "historique_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
@@ -2623,7 +2696,7 @@ ROUTES_POST = {"/api/nouveau": "nouveau", "/api/ouvrir": "ouvrir", "/api/fermer"
                # Anciennes routes conservées en réponse d'erreur explicite : pas de contournement possible.
                "/api/inventaire/apercu": "import_inventaire_ancien_desactive",
                "/api/inventaire/appliquer": "import_inventaire_ancien_desactive",
-               "/api/inbound/apercu": "inbound_preview", "/api/profils-import/action": "profils_import_action", "/api/inbound/appliquer": "inbound_apply",
+               "/api/inbound/apercu": "inbound_preview", "/api/rapprochement/action": "rapprochement_action", "/api/profils-import/action": "profils_import_action", "/api/inbound/appliquer": "inbound_apply",
                "/api/referentiel/importer": "importer_modeles", "/api/referentiel/action": "referentiel_action",
                "/api/equipement/ligne": "ligne_equipement", "/api/equipement/configurer": "configurer_equipement", "/api/es/definir": "es_definir",
                "/api/es/valider": "es_valider", "/api/modules": "modules_action",

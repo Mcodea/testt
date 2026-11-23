@@ -875,6 +875,45 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.locator('.v31-variable-row[data-variable="%s"]' % nom).wait_for()
         self.assertEqual(self.page.evaluate('location.hash'), '#/variables')
 
+    def test_rapprochement_d_un_projet_existant(self):
+        """V1-6-02, V1-6-05 : confiance et raison affichées, confirmation une à une, en lot, annulation du lot."""
+        import base64
+        ident = self.api('/api/ouvrage')['identification']
+        pm = self.api('/api/equipement/ajouter', {'type': 'PM', 'numero': '01', 'se': '00'})['ident']
+        self.api('/api/equipement/proposition', {'ident_eq': pm, 'decision': 'retenir'})
+        noms = [v['nom'] for v in self.api('/api/variables')['lignes']]
+        self.assertTrue(noms)
+        self.api('/api/nouveau', {'mode': 'Existant'})
+        self.api('/api/fiche-ouvrage', {'action': 'creer', 'identification': {
+            'lieu': ident['lieu'], 'code_ouvrage': 'SS', 'numero_ouvrage': '51',
+            'libelle': 'Existant fictif', 'automate': 'Sch - M340', 'revision': 'A', 'mode': 'Existant'}})
+        csv = 'Nom;Adresse;Type\n' + ''.join(f'{n};%MW{100 + i};BOOL\n' for i, n in enumerate(noms))
+        apercu = self.api('/api/inbound/apercu', {'nature': 'variables_existantes', 'nom': 'historique.csv',
+                                                  'contenu': base64.b64encode(csv.encode()).decode()})
+        self.api('/api/inbound/appliquer', {'jeton': apercu['jeton'], 'confirmer': True})
+        self.ouvrir('#/rapprochement')
+        self.page.locator('#rap-detectes').wait_for()
+        self.page.locator('#rap-detectes').click()
+        self.page.locator('#det-ok').click()
+        self.page.locator('#rap-proposer').wait_for()
+        self.page.locator('#rap-proposer').click()
+        self.page.wait_for_function("() => document.querySelector('[data-rap-ligne] .badge')")
+        self.assertGreaterEqual(self.page.locator('[data-rap-ligne]').count(), 1)
+        self.assertTrue(self.page.locator('[data-rap-ligne] [title]').count() >= 1)           # raison au survol
+        premier = self.page.locator('[data-rap="confirmer"]').first
+        nom = premier.locator('xpath=ancestor::tr').get_attribute('data-rap-ligne')
+        premier.click()
+        self.page.locator(f'[data-rap-ligne="{nom}"] [data-rap="retirer_confirmation"]').wait_for()
+        self.page.locator(f'[data-rap-ligne="{nom}"] [data-rap="retirer_confirmation"]').click()
+        self.page.locator(f'[data-rap-ligne="{nom}"] [data-rap="confirmer"]').wait_for()
+        if not self.page.locator('#rap-lot').is_disabled():
+            self.page.locator('#rap-lot').click()
+            self.page.locator('#m-ok').click()
+            self.page.locator('[data-rap-annuler]').first.wait_for()
+            self.page.locator('[data-rap-annuler]').first.click()
+            self.page.locator('#m-ok').click()
+            self.page.wait_for_function("() => !document.querySelector('[data-rap-annuler]')")
+
     def test_activite_recente_du_tableau_de_bord(self):
         """V1-4-33 : l'activité récente du tableau de bord ne montre que des faits enregistrés (ici un indice livré)."""
         self.api('/api/revisions/action', {'action': 'livrer', 'motif': 'Diffusion pour essai'})
