@@ -15,6 +15,8 @@ Le numéro de version (`genvar/__init__.py`) est encore 0.32 ; il passera à 1.0
   ouvert sur un autre poste, qui ne peut alors plus enregistrer.
 - **Journal technique** tournant, consultable par Aide › Journal technique.
 - **Dupliquer un équipement** au ruban : numéro libre suivant, aucune adresse ni voie reprise.
+- **Type de signal analogique (23/11/2026)** : l'échelle d'une E/S analogique peut être en courant (4-20 mA, défaut) ou en tension
+  (0-10 V) ; l'unité suit dans la fiche, la liste des E/S et l'export des cartes. Les échelles existantes sont inchangées.
 - **Icônes (23/11/2026)** : jeu hybride. Les commandes courantes de la coque reprennent les géométries Lucide (ISC) ; les symboles métier
   (fil de l'information, équipement, E/S, matériel, variables, supervision, recette) restent dessinés pour OGIAS.
 - **Publication A1 (23/11/2026)** : les 38 renommages approuvés (39 clés) sont publiés dans le référentiel livré ; PD.SA.TAUX devient

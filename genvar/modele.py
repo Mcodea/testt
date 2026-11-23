@@ -390,6 +390,14 @@ def suffixe_point(code, organe):
     return f"{organe}_{code}"
 
 
+TYPES_SIGNAL_ANALOGIQUE = ("courant", "tension")
+
+
+def unite_signal(analogique):
+    """Unité du signal d'une E/S analogique : « mA » (courant, défaut : 4-20 mA) ou « V » (tension, 0-10 V)."""
+    return "V" if (analogique or {}).get("signal_type") == "tension" else "mA"
+
+
 def suffixe_physique(s):
     """Suffixe du nom de l'E/S physique d'un signal : `suffixe_es` s'il est renseigné (collision de clé
     interne, décision D4 du référentiel V2), sinon organe + code (`suffixe_point`)."""

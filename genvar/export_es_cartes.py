@@ -23,6 +23,8 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
+from .modele import unite_signal
+
 NATURE_FEUILLE = {"ET": "ETOR", "ST": "STOR", "EA": "EANA", "SA": "SANA"}
 NATURE_LIBELLE = {"ET": "Entrées TOR", "ST": "Sorties TOR", "EA": "Entrées analogiques", "SA": "Sorties analogiques"}
 PREFIXE = {"ET": "%I", "ST": "%Q", "EA": "%IW", "SA": "%QW"}
@@ -76,7 +78,7 @@ def _echelle(p):
     if not a:
         return "à définir"
     phys = f"{a['phys_min']:g} – {a['phys_max']:g} {a.get('unite', '')}".strip()
-    return f"{phys}\n{a['signal_min']:g}–{a['signal_max']:g} mA"
+    return f"{phys}\n{a['signal_min']:g}–{a['signal_max']:g} {unite_signal(a)}"
 
 
 def _organe(ouvrage, p, eqs, ufs):

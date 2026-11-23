@@ -304,7 +304,7 @@ def verifier_signaux_modele(signaux, code_type):
 def verifier_signal_saisi(champs, code_type):
     """Garde uniquement les métadonnées génériques : jamais de valeur d'installation."""
     champs = dict(champs)
-    for interdit in ("adresse", "adresses", "analogique", "impulsion", "signal_min", "signal_max",
+    for interdit in ("adresse", "adresses", "analogique", "impulsion", "signal_min", "signal_max", "signal_type",
                      "phys_min", "phys_max", "brut_min", "brut_max", "poids", "voie", "module"):
         if interdit in champs:
             raise ValueError(f"{interdit} relève du paramétrage dans l'inventaire, pas du modèle.")

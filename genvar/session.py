@@ -2337,7 +2337,8 @@ class Session:
     def definir_analogique(self, ident_eq, cle, params, *, devalider_equipement=True):
         """Enregistre la correspondance linéaire d'une EA/SA, sans inventer le brut du module.
 
-        Pour une mesure en courant, les 2 points instrument de référence sont exprimés en mA.
+        Pour une mesure en courant, les 2 points instrument de référence sont exprimés en mA (4-20 mA par défaut) ;
+        en tension (`signal_type` = « tension »), ils le sont en V (0-10 V).
         Des points en comptes automates sont facultatifs et dépendent du module configuré.
         """
         import math
@@ -2348,10 +2349,17 @@ class Session:
         try:
             d: dict[str, Any] = {k: float(params[k]) for k in ('signal_min', 'signal_max', 'phys_min', 'phys_max')}
         except (KeyError, TypeError, ValueError):
-            raise RegleMetier('Renseignez les deux points mA et les deux valeurs physiques.')
+            raise RegleMetier('Renseignez les deux points du signal (mA ou V) et les deux valeurs physiques.')
         if not all(math.isfinite(v) for v in d.values()):
             raise RegleMetier('Une échelle analogique ne peut contenir NaN ou infini.')
-        if not (0 <= d['signal_min'] < d['signal_max'] <= 30):
+        type_signal = str(params.get('signal_type') or 'courant').strip().lower()
+        if type_signal not in ('courant', 'tension'):
+            raise RegleMetier('Type de signal inconnu : « courant » (mA) ou « tension » (V).')
+        if type_signal == 'tension':
+            if not (0 <= d['signal_min'] < d['signal_max'] <= 10):
+                raise RegleMetier('Points de tension invalides : renseignez par exemple 0 et 10 V.')
+            d['signal_type'] = 'tension'                 # le courant (défaut) n'est pas écrit : les échelles existantes restent identiques
+        elif not (0 <= d['signal_min'] < d['signal_max'] <= 30):
             raise RegleMetier('Points de courant invalides : renseignez par exemple 4 et 20 mA.')
         if d['phys_min'] == d['phys_max']:
             raise RegleMetier('Les valeurs physiques aux deux points doivent être différentes.')

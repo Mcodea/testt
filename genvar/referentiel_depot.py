@@ -28,7 +28,7 @@ from datetime import datetime
 from . import chemins, dictionnaire_es as _dico, lexique as _lexique, modeles as _modeles
 from .catalogue import Catalogue, PRESENCES, FAMILLES_CATALOGUE, TYPES_LOGIQUES, anomalies_interne
 
-CHAMPS_INSTALLATION = {"adresse", "adresses", "voie", "module", "phys_min", "phys_max", "signal_min", "signal_max",
+CHAMPS_INSTALLATION = {"adresse", "adresses", "voie", "module", "phys_min", "phys_max", "signal_min", "signal_max", "signal_type",
                        "brut_min", "brut_max", "analogique", "impulsion", "poids", "adresse_ip", "ip", "password",
                        "mot_de_passe"}
 

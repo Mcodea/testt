@@ -2515,11 +2515,12 @@ function brancherFonctionnelles(e, c) {
 }
 function modaleEchelleAnalogique(eq, p) {
   const a = p.analogique || {}, m = ouvrirModale(`<div class="boite-tete"><h2>Échelle analogique — ${esc(p.information || p.nom || p.cle)}</h2>
-    <p>Deux points de correspondance courant/mesure physique. Aucun décompte brut n'est supposé : il dépend du module et de sa configuration.</p></div>
+    <p>Deux points de correspondance signal/mesure physique. Aucun décompte brut n'est supposé : il dépend du module et de sa configuration.</p></div>
     <div class="boite-corps"><div class="champs">
-      <label>Courant du point bas (mA)</label><input id="an-smin" inputmode="decimal" value="${esc(a.signal_min ?? 4)}">
+      <label>Type de signal</label><select id="an-type"><option value="courant" ${a.signal_type !== "tension" ? "selected" : ""}>Courant (4-20 mA)</option><option value="tension" ${a.signal_type === "tension" ? "selected" : ""}>Tension (0-10 V)</option></select>
+      <label id="an-lmin">Signal du point bas (${a.signal_type === "tension" ? "V" : "mA"})</label><input id="an-smin" inputmode="decimal" value="${esc(a.signal_min ?? (a.signal_type === "tension" ? 0 : 4))}">
       <label>Valeur physique à ce point</label><input id="an-pmin" inputmode="decimal" value="${esc(a.phys_min ?? '')}" placeholder="ex. 0">
-      <label>Courant du point haut (mA)</label><input id="an-smax" inputmode="decimal" value="${esc(a.signal_max ?? 20)}">
+      <label id="an-lmax">Signal du point haut (${a.signal_type === "tension" ? "V" : "mA"})</label><input id="an-smax" inputmode="decimal" value="${esc(a.signal_max ?? (a.signal_type === "tension" ? 10 : 20))}">
       <label>Valeur physique à ce point</label><input id="an-pmax" inputmode="decimal" value="${esc(a.phys_max ?? '')}" placeholder="ex. 500">
       <label>Unité physique</label><input id="an-uni" value="${esc(a.unite ?? '')}" placeholder="ex. m³/h">
       <label>Valeur brute automate au point bas</label><input id="an-bmin" inputmode="decimal" value="${esc(a.brut_min ?? '')}" placeholder="facultatif — dépend du module">
@@ -2527,8 +2528,13 @@ function modaleEchelleAnalogique(eq, p) {
     </div><div class="aide">Adresse physique, rack et voie : à l'étape « Liste des E/S », après validation du paramétrage.</div><div class="erreur-form" id="an-err"></div></div>
     <div class="boite-pied"><button data-fermer>Annuler</button><button id="an-save" class="prim">Enregistrer l’échelle</button></div>`);
   const q = x => m.querySelector(x);
+  q('#an-type').onchange = () => {                       // 4-20 mA ou 0-10 V : unités et valeurs usuelles
+    const tension = q('#an-type').value === 'tension';
+    q('#an-lmin').textContent = `Signal du point bas (${tension ? 'V' : 'mA'})`; q('#an-lmax').textContent = `Signal du point haut (${tension ? 'V' : 'mA'})`;
+    q('#an-smin').value = tension ? 0 : 4; q('#an-smax').value = tension ? 10 : 20;
+  };
   q('#an-save').onclick = async () => {
-    const params = {signal_min:q('#an-smin').value,signal_max:q('#an-smax').value,
+    const params = {signal_type:q('#an-type').value,signal_min:q('#an-smin').value,signal_max:q('#an-smax').value,
       phys_min:q('#an-pmin').value,phys_max:q('#an-pmax').value,unite:q('#an-uni').value,
       brut_min:q('#an-bmin').value,brut_max:q('#an-bmax').value};
     try { await api('/api/equipement/configurer',{action:'analogique',ident_eq:eq.ident,cle:p.cle,params});
@@ -3382,7 +3388,7 @@ function pastille(cle, val, lib, grav, filtre) {
 function texteSens(p) {
   if (!["EA", "SA"].includes(p.point)) return esc(p.sens);
   const a = p.analogique;
-  return a ? `${esc(a.signal_min)}–${esc(a.signal_max)} mA → ${esc(a.phys_min)}–${esc(a.phys_max)} ${esc(a.unite)}` : '<span class="vide">échelle à renseigner</span>';
+  return a ? `${esc(a.signal_min)}–${esc(a.signal_max)} ${a.signal_type === 'tension' ? 'V' : 'mA'} → ${esc(a.phys_min)}–${esc(a.phys_max)} ${esc(a.unite)}` : '<span class="vide">échelle à renseigner</span>';
 }
 // Validation groupée (contenu à l'étape 2, voie à l'étape 3) avec confirmation.
 async function validerES(points, niveau, valide = true) {
@@ -3489,9 +3495,10 @@ function vueES() {
        <form id="es-form" class="es-form"><div class="es-form-meta"><span class="tag p-${esc(p.point)}">${esc(p.point)}</span> ${etatContenuES(p)}</div>
        <label>Désignation<input id="es-designation" value="${esc(p.designation || "")}" placeholder="${esc(p.commentaire || p.information)}" maxlength="200"></label>
        ${typesTOR.has(p.point) ? `<label>Sens du contact<input id="es-sens" value="${esc(p.sens || "")}" placeholder="ex. 1 = Ouvert"></label>` : ""}
-       ${analogique ? `<fieldset class="es-echelle"><legend>Échelle analogique (mA → unité physique)</legend>
-         <div><label>Courant min. (mA)<input id="es-signal-min" inputmode="decimal" type="number" step="any" value="${esc(a?.signal_min ?? "")}" placeholder="4"></label>
-              <label>Courant max. (mA)<input id="es-signal-max" inputmode="decimal" type="number" step="any" value="${esc(a?.signal_max ?? "")}" placeholder="20"></label></div>
+       ${analogique ? `<fieldset class="es-echelle"><legend>Échelle analogique (signal → unité physique)</legend>
+         <label>Type de signal<select id="es-signal-type"><option value="courant" ${a?.signal_type !== "tension" ? "selected" : ""}>Courant (4-20 mA)</option><option value="tension" ${a?.signal_type === "tension" ? "selected" : ""}>Tension (0-10 V)</option></select></label>
+         <div><label>Signal min. (<span class="es-unite-signal">${a?.signal_type === "tension" ? "V" : "mA"}</span>)<input id="es-signal-min" inputmode="decimal" type="number" step="any" value="${esc(a?.signal_min ?? "")}" placeholder="${a?.signal_type === "tension" ? "0" : "4"}"></label>
+              <label>Signal max. (<span class="es-unite-signal">${a?.signal_type === "tension" ? "V" : "mA"}</span>)<input id="es-signal-max" inputmode="decimal" type="number" step="any" value="${esc(a?.signal_max ?? "")}" placeholder="${a?.signal_type === "tension" ? "10" : "20"}"></label></div>
          <div><label>Physique min.<input id="es-phys-min" inputmode="decimal" type="number" step="any" value="${esc(a?.phys_min ?? "")}"></label>
               <label>Physique max.<input id="es-phys-max" inputmode="decimal" type="number" step="any" value="${esc(a?.phys_max ?? "")}"></label></div>
          <label>Unité<input id="es-unite" value="${esc(a?.unite || "")}" maxlength="24" placeholder="m³/h, bar…"></label>
@@ -3569,6 +3576,11 @@ function brancherVueES(visibles, actif) {
   if (actif && E.esPanneauOuvert) {
     $("#es-form").addEventListener("input", () => { E.esFormDirty = true; });
     $("#es-form").addEventListener("change", () => { E.esFormDirty = true; });
+    if ($("#es-signal-type")) $("#es-signal-type").addEventListener("change", ev => {      // 4-20 mA ou 0-10 V
+      const tension = ev.target.value === "tension";
+      document.querySelectorAll(".es-unite-signal").forEach(x => { x.textContent = tension ? "V" : "mA"; });
+      $("#es-signal-min").placeholder = tension ? "0" : "4"; $("#es-signal-max").placeholder = tension ? "10" : "20";
+    });
     const demander = async (validation) => {
       const val = id => $("#" + id)?.value ?? "";
       const données = {ident_eq: actif.ident_eq, cle: actif.cle, designation: val("es-designation"),
@@ -3578,7 +3590,7 @@ function brancherVueES(visibles, actif) {
         const champs = ["es-signal-min", "es-signal-max", "es-phys-min", "es-phys-max", "es-unite"];
         const remplis = champs.filter(x => String(val(x)).trim() !== "").length;
         if (remplis && remplis !== champs.length) { $("#es-erreur").textContent = "Renseignez les cinq champs de l’échelle analogique."; return; }
-        if (remplis) données.analogique = {signal_min: val("es-signal-min"), signal_max: val("es-signal-max"),
+        if (remplis) données.analogique = {signal_type: val("es-signal-type"), signal_min: val("es-signal-min"), signal_max: val("es-signal-max"),
           phys_min: val("es-phys-min"), phys_max: val("es-phys-max"), unite: val("es-unite"),
           ...(actif.analogique?.brut_min !== undefined ? {brut_min: actif.analogique.brut_min, brut_max: actif.analogique.brut_max} : {})};
         if (validation && données.raccordement !== "Communication" && !remplis && !actif.analogique) {

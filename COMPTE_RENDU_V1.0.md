@@ -27,14 +27,15 @@ Avancement au tableau de conformité (`ETAT_TRAVAIL.md`, 176 exigences du cahier
 | 23/11 | Licences : PyMuPDF (AGPL) remplacé par pdfminer.six (MIT) ; ancienne interface Qt (PySide6, LGPL) retirée de la version vendue. |
 | 23/11 | « Apprentissage des formats » devient un onglet dédié du menu Outils. |
 | 23/11 | Référentiel A1 publié : 38 renommages sur 57 approuvés (19 refusés), CONS_TAU et CONS_FRQ par suffixe d'E/S, 48 ajouts sur 49 approuvés (6 types créés, statut « À valider »). `TT.EA.TMP.2` (sonde PT100) refusé : mesure en 4-20 mA ou 0-10 V. |
+| 23/11 | Les mesures analogiques sont toujours en 4-20 mA ou 0-10 V (sonde PT100 refusée) : le type de signal est choisi sur l'E/S. |
 | 23/11 | Icônes : jeu hybride, Lucide pour les commandes courantes, dessins OGIAS pour les symboles métier. |
 
 ## 3. Tests et couverture
 
 Résultats du 23/11/2026 sur le dernier état, exécutés localement et en intégration continue (Linux et Windows) :
 
-- **997 tests Python**, 1 301 sous-cas, aucun échec, aucun ignoré non justifié ;
-- **136 tests navigateur** (Chromium, serveur réel), 139 sous-cas, dont l'accessibilité WCAG AA de chaque écran de
+- **1 001 tests Python**, 1 301 sous-cas, aucun échec, aucun ignoré non justifié ;
+- **137 tests navigateur** (Chromium, serveur réel), 141 sous-cas, dont l'accessibilité WCAG AA de chaque écran de
   1366 × 768 à 2560 × 1440 ;
 - analyse statique (Ruff, mypy sur 70 fichiers) et audit anti-données réelles : aucune détection ;
 - couverture du moteur : seuil de 85 % imposé par la CI, exports industriels à 100 % (`python outils/ci.py coverage`) ;

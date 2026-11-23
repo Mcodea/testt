@@ -8,6 +8,7 @@ from collections import Counter
 from datetime import datetime
 
 from .export_xlsx import ecrire_xlsx
+from .modele import unite_signal
 
 ORDRE_POINTS = ("ET", "ST", "EA", "SA")
 
@@ -26,7 +27,7 @@ def description_analogique(p):
     a = p.analogique or {}
     if not a or p.point not in ('EA', 'SA'):
         return ''
-    return f"{a['signal_min']:g}–{a['signal_max']:g} mA → {a['phys_min']:g}–{a['phys_max']:g} {a['unite']}"
+    return f"{a['signal_min']:g}–{a['signal_max']:g} {unite_signal(a)} → {a['phys_min']:g}–{a['phys_max']:g} {a['unite']}"
 
 
 def description_brute(p):
