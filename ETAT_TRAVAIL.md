@@ -34,7 +34,7 @@ industrielle du 16/11) et sortent du calcul.
 | En attente de preuves utilisateur (section 8) | 10 |
 | Remplacé par décision | 25 |
 
-**Avancement : 56 % au sens strict (84 / 150), 70 % en comptant un « partiel » pour moitié.**
+**Avancement : 56 % au sens strict (84 / 150), 72 % en comptant un « partiel » pour moitié.**
 
 Écarts nets relevés (absents), traitables sans attendre l'utilisateur : version 1.0.0 et étiquettes (V1-10-19 à 21), compte rendu V1.0 (V1-10-28 à 34).
 
@@ -414,13 +414,13 @@ le défaut démontré et obtenir une CI verte. Codex reste actif sur ce point.
 | V1-10-25 (L230) | Banc de performance dans les objectifs. | fait | bench/performance.py et validation/performance/RESULTAT_LOCAL.json : 300 équipements / 5000 variables / 70 fichiers ; ouverture 0,031 s, génération 0,026 s, adressage 0,649 s, import 0,016 s, exports 1,014 s, rendu 0,092 s, filtrage 0,119 s ; aucune limite modifiée. Mesure locale, CI distante à confirmer. |
 | V1-10-26 (L231) | Installation sur un Windows propre depuis l'artefact : ouvrage neuf jusqu'à la recette, import d'un projet existant fictif, ouverture d'un ouvrage créé en V0.30. Captures d'écran. | absent | Aucun test V1 complet identifié à ce stade. |
 | V1-10-27 (L232) | Aucune donnée réelle ni de l'ancien exploitant dans le dépôt, les artefacts ou les captures. | partiel | outils/ci.py data : 0 détection sur l’état rapproché ; tests/test_verifier_donnees_portable.py ; l’audit de l’artefact Windows rapproché et des captures finales reste à prouver. |
-| V1-10-28 (L233) | COMPTE_RENDU_V1.0.md complet : | absent | Aucun test V1 complet identifié à ce stade. |
-| V1-10-29 (L234) | bilan ; | absent | Aucun test V1 complet identifié à ce stade. |
-| V1-10-30 (L235) | décisions prises ; | absent | Aucun test V1 complet identifié à ce stade. |
-| V1-10-31 (L236) | résultats exacts des tests et de la couverture ; | absent | Aucun test V1 complet identifié à ce stade. |
-| V1-10-32 (L237) | mesures de performance ; | absent | Aucun test V1 complet identifié à ce stade. |
-| V1-10-33 (L238) | précision et rappel du rapprochement ; | absent | Aucun test V1 complet identifié à ce stade. |
-| V1-10-34 (L239) | essais restant à faire sur les logiciels réels. | absent | Aucun test V1 complet identifié à ce stade. |
+| V1-10-28 (L233) | COMPTE_RENDU_V1.0.md complet : | partiel | COMPTE_RENDU_V1.0.md : brouillon du 23/11/2026, chiffres à figer à la livraison. |
+| V1-10-29 (L234) | bilan ; | partiel | Section 1 du brouillon (bilan). |
+| V1-10-30 (L235) | décisions prises ; | partiel | Section 2 du brouillon (décisions prises). |
+| V1-10-31 (L236) | résultats exacts des tests et de la couverture ; | partiel | Section 3 du brouillon (tests, couverture) ; valeur chiffrée de la couverture à reprendre du rapport de la CI. |
+| V1-10-32 (L237) | mesures de performance ; | partiel | Section 4 du brouillon : mesures du banc bench/performance.py. |
+| V1-10-33 (L238) | précision et rappel du rapprochement ; | partiel | Section 5 du brouillon : précision 100 %, rappel 13,9 % (validation/hybride/SEUIL_CONFIANCE.md). |
+| V1-10-34 (L239) | essais restant à faire sur les logiciels réels. | partiel | Section 7 du brouillon : essais restant sur les logiciels réels. |
 | V1-11-01 (L243) | Le projet réel est strictement confidentiel. Aucune donnée réelle n'entre dans le dépôt : seulement des données fictives (lieu XTST) ou anonymisées par l'utilisateur. | fait | Audit `outils/verifier_donnees.py` à chaque CI et avant chaque envoi : 0 détection (tests/test_verifier_donnees_portable.py, tests/test_ci.py::test_data_control_finds_normalized_content_without_disclosing_it). |
 | V1-11-02 (L244) | Ne supprimer aucune fonction opérationnelle. Ne pas modifier les projets originaux. Préserver les anciens repères et les anciennes adresses. | fait | Aucune commande disparue depuis le lot 0 (tests_web/test_registre_commandes.py) ; fichiers d'ouvrage inchangés à l'octet par les aperçus et rapports (tests/test_adoption_controlee.py, test_formats_appris.py::TestApi::test_ouvrage_inchange). |
 | V1-11-03 (L245) | Aucune donnée de démonstration dans une installation vierge. Aucune intelligence artificielle embarquée. | fait | Accueil vierge vérifié par l'essai portable (outils/tester_portable.py) ; aucune dépendance d'intelligence artificielle (requirements-runtime.lock). |
