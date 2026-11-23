@@ -655,7 +655,7 @@ class Session:
                 session._edition_brouillon = True
                 return self_
 
-            def __exit__(self_, exc_type, exc, tb):
+            def __exit__(self_, _type, _exc, _tb):
                 cat, ref = session._catalogue_commun, session.modeles
                 self_.donnees = {"catalogue": {"version": cat.version, "types": cat.types, "signaux": cat.signaux,
                                                "regles": cat.regles}, "modeles": ref}
@@ -1040,12 +1040,6 @@ class Session:
         with self._operation_lourde("inventaire"):
             return inventaire.appliquer(lignes, self)
 
-    def nombre_equipements_uf(self, code):
-        return sum(1 for e in self.ouvrage.equipements if e.uf == code)
-
-    def nombre_equipements(self, code_se):
-        return sum(1 for e in self.ouvrage.equipements if e.sous_ensemble == code_se)
-
     # ================================================================== équipements
     def equipement_vierge(self, sous_ensemble=None, uf=""):
         """Équipement à compléter : dans l'UF donnée, avec le sous-ensemble de l'UF s'il est défini."""
@@ -1384,9 +1378,6 @@ class Session:
         if cle not in eq.exclus:
             eq.exclus.append(cle)
 
-    def nombre_signaux(self, eq):
-        return len(signaux_retenus(self.catalogue_equipement(eq), eq))
-
     @staticmethod
     def basculer_signal(eq, signal, retenu=None):
         """Retire un signal retenu ou le remet. Un signal en option exige d'abord son option.
@@ -1464,40 +1455,6 @@ class Session:
         interne = anomalies_interne({"famille": s.famille, "es": s.es, "alarme": s.alarme})
         if interne:
             raise RegleMetier(interne[0][:1].upper() + interne[0][1:] + ".")
-
-    def promouvoir_signal(self, eq, index, presence="Par défaut", option="", statut="Validé"):
-        """Promouvoir vers le modèle si choisi, sinon vers le catalogue de type historique.
-
-        Cette action ne modifie jamais les copies des ouvrages existants.
-        """
-        a = eq.ajouts[index]
-        if eq.modele and eq.modele in self.modeles["modeles"]:
-            if presence == "Option" and not option:
-                raise RegleMetier("Précisez l'option.")
-            signal = {"type": eq.type, "information": a.information, "famille": a.famille, "code": a.code,
-                      "type_logique": a.type_logique, "unite": a.unite, "es": a.es, "organe": a.organe,
-                      "alarme": a.alarme, "presence": presence,
-                      "option": option if presence == "Option" else "", "statut": statut}
-            self.ajouter_signal_modele(eq.modele, signal)
-            # Garder le signal propre sur cet équipement tant que le modèle n'est
-            # pas réactualisé volontairement ; évite toute disparition silencieuse.
-            return signal
-        if any(s["famille"] == a.famille and s["code"] == a.code
-               for s in self.catalogue.signaux_du_type(eq.type, avec_ecartes=True)):
-            raise RegleMetier(f"Le type {eq.type} a déjà un signal {a.famille}_{a.code} dans le catalogue.")
-        if presence == "Option" and not option:
-            raise RegleMetier("Précisez l'option.")
-        signal = {"type": eq.type, "information": a.information, "famille": a.famille, "code": a.code,
-                  "type_logique": a.type_logique, "unite": a.unite, "es": a.es, "organe": a.organe, "alarme": a.alarme,
-                  "presence": presence, "option": option if presence == "Option" else "", "statut": statut,
-                  "remarque": f"Ajouté depuis l'équipement {self.ouvrage.repere(eq)}."}
-        idx = [k for k, s in enumerate(self.catalogue.signaux) if s["type"] == eq.type]
-        self.catalogue.signaux.insert(idx[-1] + 1 if idx else len(self.catalogue.signaux), signal)
-        del eq.ajouts[index]
-        if presence == "Option" and option not in eq.options:
-            eq.options.append(option)
-        self.enregistrer_catalogue()
-        return signal
 
     def enregistrer_catalogue(self):
         cible = chemins.fichier_catalogue_utilisateur()
@@ -1867,17 +1824,6 @@ class Session:
         """Adresses conservées pour des signaux qui ne sont plus retenus : {clé: adresse}."""
         retenues = {f"{x['famille']}_{x['code']}" for x, _ in signaux_retenus(self.catalogue_equipement(eq), eq)}
         return {c: a for c, a in eq.adresses.items() if c not in retenues}
-
-    def liberer_adresses_orphelines(self, ident_eq):
-        eq = self.ouvrage.equipement(ident_eq)
-        orph = self.adresses_orphelines(eq) if eq else {}
-        for c in orph:
-            eq.adresses.pop(c, None)
-            if c in eq.validees:
-                eq.validees.remove(c)
-        if orph:
-            self._change()
-        return len(orph)
 
     def deverrouiller_adresse(self, ident_eq, cle, motif):
         """Retire la validation d'une adresse (elle redevient « à valider », jamais modifiée) ; motif obligatoire, tracé

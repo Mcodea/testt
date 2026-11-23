@@ -169,6 +169,16 @@ class Depot:
             raise DepotRefuse(f"Révision R{int(numero):04d} altérée (empreinte).")
         return d
 
+    def initialiser(self):
+        """Installation vierge : le référentiel livré est publié comme révision R0001 (V1-3-21). Sans effet si l'historique
+        existe déjà ; refuse en silence un dossier non inscriptible (le cycle s'initialisera au premier brouillon)."""
+        try:
+            with self._verrou():
+                self._initialiser_historique()
+        except (OSError, DepotRefuse):
+            return False
+        return True
+
     def _initialiser_historique(self):
         """Première utilisation : la révision en service devient R0001 (rien n'est modifié)."""
         if self.head() is not None:

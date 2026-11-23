@@ -8,7 +8,6 @@ Donnees/catalogue.json et c'est elle qui est utilisée ensuite.
 import json
 import re
 import os
-import shutil
 
 from . import chemins
 
@@ -127,24 +126,12 @@ class Catalogue:
         os.replace(provisoire, chemin)      # écriture sûre : jamais de fichier à moitié écrit
         self.chemin = chemin
 
-    @staticmethod
-    def restaurer_origine():
-        """Remplace le catalogue de l'utilisateur par celui livré avec l'outil."""
-        cible = chemins.fichier_catalogue_utilisateur()
-        if os.path.exists(cible):
-            shutil.copy2(cible, cible + ".sauvegarde")
-            os.remove(cible)
-        return Catalogue.charger(chemins.fichier_catalogue_origine())
-
     # ------------------------------------------------------------ consultation
     def type(self, code):
         for t in self.types:
             if t["code"] == code:
                 return t
         return None
-
-    def codes_types(self):
-        return [t["code"] for t in self.types]
 
     def designation(self, code):
         t = self.type(code)

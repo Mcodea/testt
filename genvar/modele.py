@@ -747,10 +747,6 @@ def zone(ouvrage, famille):
     return debut, int(fin) if fin is not None else debut + 999
 
 
-def fin_de_zone(ouvrage, famille):
-    return zone(ouvrage, famille)[1]
-
-
 @dataclass
 class Proposition:
     variable: "Variable"

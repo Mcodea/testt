@@ -42,5 +42,5 @@ consultables depuis Aide › À propos.
 
 ## Outils de développement (non distribués)
 
-pytest, ruff, mypy, coverage, playwright, pip-audit et leurs dépendances (`requirements-ci.lock`) servent aux essais
+pytest, ruff, mypy, vulture (MIT), coverage, playwright, pip-audit et leurs dépendances (`requirements-ci.lock`) servent aux essais
 et à l'intégration continue ; ils ne sont pas livrés avec OGIAS.

@@ -79,7 +79,3 @@ def qualifications(ouvrage, catalogue):
             resultat[id(v)] = Qualification('À confirmer', 'Correspondance automatique non confirmée par un automaticien.')
     return resultat
 
-
-def bilan_qualification(ouvrage, catalogue):
-    from collections import Counter
-    return dict(Counter(q.niveau for q in qualifications(ouvrage, catalogue).values()))

@@ -10,12 +10,6 @@ import os
 import sys
 
 
-def dossier_programme():
-    if getattr(sys, "frozen", False):
-        return os.path.dirname(sys.executable)
-    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-
 def dossier_ressources():
     if getattr(sys, "frozen", False):
         return os.path.join(getattr(sys, "_MEIPASS"), "genvar", "data")
@@ -44,12 +38,6 @@ def dossier_donnees():
 
 def dossier_projets():
     chemin = os.path.join(dossier_donnees(), "Projets")
-    os.makedirs(chemin, exist_ok=True)
-    return chemin
-
-
-def dossier_exports():
-    chemin = os.path.join(dossier_donnees(), "Exports")
     os.makedirs(chemin, exist_ok=True)
     return chemin
 

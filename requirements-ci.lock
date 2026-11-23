@@ -48,3 +48,4 @@ tomli==2.5.0
 tomli_w==1.2.0
 typing_extensions==4.16.0
 urllib3==2.8.0
+vulture==2.16

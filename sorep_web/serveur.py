@@ -102,6 +102,8 @@ class Application:
         self.jeton = verrou.nouveau_jeton()          # identité de cet OGIAS pour le verrou d'ouvrage (V1-7-04)
         self.chemin_verrouille = ""
         self.s = Session()
+        from genvar.referentiel_depot import Depot
+        Depot().initialiser()                        # installation vierge : référentiel livré = révision R0001
         self.s.garde_enregistrement = self._garde_verrou
         atexit.register(self._liberer_verrou)
         self.ouvert = False
@@ -1861,7 +1863,11 @@ class Application:
             g = par_regle.setdefault((x["regle"], x["niveau"]), {"regle": x["regle"], "niveau": x["niveau"],
                                      "etape": x["etape"], "nombre": 0, "exemple": x["message"], "detail": x["regle_detail"]})
             g["nombre"] += 1
+        # Avancement de la recette (V1-4-30) : parmi les règles du registre, celles qui n'ont aucun constat sont respectées.
+        from genvar.coherence import REGLES
+        violees = {x["regle"] for x in controles if x["regle"] in REGLES}
         return {"erreurs": erreurs, "alertes": alertes, "controles": controles[:500],
+                "controles_total": len(REGLES), "controles_conformes": len(REGLES) - len(violees),
                 "par_regle": sorted(par_regle.values(), key=lambda g: (g["niveau"] != "Erreur", -g["nombre"], g["regle"])),
                 "tronque": len(controles) > 500, "revision": o.revision,
                 "livrables": self._etat_livrables(erreurs),

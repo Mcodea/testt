@@ -13,7 +13,7 @@ Node et les dépendances sont figées. Les permissions du jeton sont en lecture.
 | Couverture | `python outils/ci.py coverage` : au moins 85 % des instructions de `genvar/`, 100 % sans exclusion sur les trois modules de formats/exports industriels natifs |
 | Navigateur | `python outils/ci.py web --managed-browser` : serveur et API réels, Chromium, au moins 6 cas, données temporaires |
 | Performance | `python outils/ci.py performance` : 300 équipements, 5 000 variables, 70 fichiers TOPKAPI, seuils stricts de la section 7 |
-| Statique | `python outils/ci.py static` : Ruff (correction du code, pas reformatage général), mypy sur le moteur, syntaxe de chaque JS livré |
+| Statique | `python outils/ci.py static` : Ruff (correction du code, pas reformatage général), mypy sur le moteur, vulture (aucun code mort certain, confiance 80 %), syntaxe de chaque JS livré |
 | Dépendances | `python outils/ci.py audit` : service PyPI, collection stricte, versions figées, aucune vulnérabilité ignorée |
 | Données | `python outils/ci.py data` : motifs et empreintes de `validation/CONTROLE_DONNEES.json`, rapport sans copie des valeurs interdites |
 | Portable Windows | `python outils/construire_portable.py` : runtime Python natif copié, dépendances applicatives seules, ZIP déterministe et SHA-256, audit du contenu |

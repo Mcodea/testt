@@ -105,6 +105,16 @@ class TestGeometrieResolutions(ServeurNavigateur):
                     .map(el => el.className)""", cartes)
                 self.assertEqual(imbriquees, [], f'Carte dans une carte sur {route}')
 
+    def test_aucun_compteur_a_zero_sur_les_ecrans(self):
+        """V1-4-36 : aucun compteur à zéro (pastille, puce de filtre, indicateur) sur les écrans de travail."""
+        for route in ECRANS + ("#/standards", "#/apprentissage", "#/grille"):
+            with self.subTest(ecran=route):
+                self.ouvrir(route)
+                zeros = self.page.evaluate("""() => [...document.querySelectorAll('#vue .chip b, #vue .compteurs b, #vue .v31-filter, #vue .v31-kpi-value, #vue .badge')]
+                    .filter(e => /(^|\\s)0$/.test(e.textContent.trim()) && !e.closest('[data-ok-zero]'))
+                    .map(e => e.className + ':' + e.textContent.trim())""")
+                self.assertEqual(zeros, [], f'Compteur à zéro sur {route}')
+
     def test_structure_sans_debordement_ni_chevauchement(self):
         for largeur, hauteur in RESOLUTIONS:
             self.page.set_viewport_size({'width': largeur, 'height': hauteur})

@@ -91,6 +91,8 @@ def main(argv: list[str] | None = None) -> int:
         elif args.suite == "static":
             for index, command in enumerate(([sys.executable, "-m", "ruff", "check", "--config", "ruff.toml", "."],
                             [sys.executable, "-m", "mypy", "--config-file", "mypy.ini", "genvar", "sorep_web"],
+                            [sys.executable, "-m", "vulture", "genvar", "sorep_web", "--min-confidence", "80"],   # aucun code mort certain
+
                             *(["node", "--check", str(file)] for file in sorted((ROOT / "sorep_web/static").glob("*.js"))))):
                 code = execute(command, output / f"static-{index}.log", env)
                 if code:

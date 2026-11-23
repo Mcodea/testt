@@ -17,6 +17,8 @@ def test_alerte_modele_non_valide(tmp_path, monkeypatch):
     nom = s.creer_modele('FT', 'MODELE_FT_OGIAS_TEST', True)
     eq = s.ajouter_equipement(Equipement('11', 'FT', '01', 'Fictif', modele=nom))
     app = Application()
+    # Le cycle de révisions démarre à l'installation (R0001) ; ce test couvre l'écriture directe d'avant le cycle.
+    monkeypatch.setattr('genvar.referentiel_depot.Depot.head', lambda self: None)
     app.s = s
     app.ouvert = True
     fiche = app.equipement({'ident': eq.ident})

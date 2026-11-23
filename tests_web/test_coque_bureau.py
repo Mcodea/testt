@@ -915,6 +915,7 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.locator('#rap-detectes').click()
         self.page.locator('#det-ok').click()
         self.page.locator('#rap-proposer').wait_for()
+        self.assertEqual(self.page.evaluate("() => [...document.querySelectorAll('#vue .chip b')].filter(b => b.textContent.trim() === '0').length"), 0)   # V1-4-36
         self.page.locator('#rap-proposer').click()
         self.page.wait_for_function("() => document.querySelector('[data-rap-ligne] .badge')")
         self.assertGreaterEqual(self.page.locator('[data-rap-ligne]').count(), 1)
