@@ -1,6 +1,5 @@
 """Brouillon A1 : renommages approuvés le 23/11/2026, ajouts non appliqués, rien de publié."""
 import copy
-import hashlib
 import importlib.util
 import json
 import os
