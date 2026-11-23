@@ -23,6 +23,15 @@ class TestDocumentation(unittest.TestCase):
         self.assertEqual((RACINE / "REGLES_DE_NOMMAGE.md").read_text(encoding="utf-8"), module.generer(),
                          "REGLES_DE_NOMMAGE.md périmé : py outils/documenter_regles_nommage.py")
 
+    def test_compatibilite_ne_declare_rien_sans_essai_reel(self):
+        """V1-9-12 : COMPATIBILITE.md liste les logiciels visés et leurs essais manquants, sans rien déclarer compatible."""
+        texte = (RACINE / "COMPATIBILITE.md").read_text(encoding="utf-8")
+        for logiciel in ("Control Expert", "TOPKAPI", "S4W-Tools", "TIA Portal"):
+            with self.subTest(logiciel=logiciel):
+                self.assertIn(logiciel, texte)
+        self.assertIn("Aucun export n'est actuellement déclaré compatible", texte)
+        self.assertEqual(len([l for l in texte.splitlines() if l.startswith("|") and "En attente" not in l and "Cible" not in l and "---" not in l]), 0)
+
     def test_captures_du_manuel_presentes(self):
         texte = (RACINE / "MANUEL_UTILISATEUR.md").read_text(encoding="utf-8")
         images = re.findall(r"!\[[^\]]*\]\(([^)]+)\)", texte)

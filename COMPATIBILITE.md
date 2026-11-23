@@ -8,7 +8,12 @@ sur des données synthétiques ; ils ne remplacent pas ces essais.
 | --- | --- | --- |
 | Control Expert M340/M580 | **14.1** | En attente des exports natifs, environnement matériel, imports OGIAS et réexports ; procédure dans `validation/controlexpert/ENVIRONNEMENT.md` |
 | TOPKAPI / SOFTLINK | **6.3**, build et options à relever | En attente d'un projet d'essai anonymisé/fictif, export natif, paramètres de pilote confirmés, journal d'import OGIAS et réexport sans perte |
+| Siemens TIA Portal (S7-1500) | Version à relever (tables de variables en classeur Excel) | En attente d'un export natif d'une table de variables d'un projet fictif, puis de l'import dans TIA Portal du classeur produit par OGIAS (format appris, qualification dans l'onglet « Apprentissage des formats ») |
 | SOFREL S4W-Tools | Version exacte à fournir | En attente d'un export natif de station fictive avec boîtier/modules, identifiants réels des voies, import du fichier OGIAS, journal et réexport |
+
+Les formats d'export des autres constructeurs s'apprennent depuis un fichier exporté par l'outil du client (onglet
+« Apprentissage des formats ») ; un format appris reste « non qualifié » tant qu'un premier import réel n'a pas été confirmé
+dans la fiche du format, avec la version du logiciel essayée et le compte rendu de l'essai.
 
 Pour TOPKAPI : relever la version, la disponibilité de SOFTLINK, le pilote et la
 convention d'adressage sur la copie d'essai ; exporter les variables dans le
