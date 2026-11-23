@@ -51,8 +51,13 @@ Principes retenus de ces outils, et ce qu'OGIAS en fait :
       adresses, cartes ; ajoutés, supprimés, modifiés champ par champ), Excel et « Tous les livrables ».
 
 ### 3. Mesure honnête de l'avancement
-- [ ] Réévaluer le tableau de conformité de `ETAT_TRAVAIL.md` ligne par ligne avec les preuves des lots du 16 au
-      22/11, et publier un taux fondé sur les preuves.
+- [x] Tableau de conformité réévalué ligne par ligne (23/11) : 37 % strict, 57 % pondéré ; écarts listés en tête
+      de `ETAT_TRAVAIL.md`.
+
+### 3 bis. Écarts nets du cahier, sans attendre l'utilisateur
+- [ ] Verrou d'ouvrage, journal applicatif tournant, annulation Ctrl+Z.
+- [ ] Duplication d'équipement ; duplication et réordonnancement de variables.
+- [ ] Documentation utilisateur et administrateur, CHANGELOG, notes de version.
 
 ### 4. Vers la version 1.0 vendable
 - [ ] Décisions utilisateur sur le référentiel (A1, R1, D5-b) puis application.
@@ -64,3 +69,4 @@ Principes retenus de ces outils, et ce qu'OGIAS en fait :
 
 - Automates : Schneider et Siemens pour l'instant (22/11). Supervisions employées : à préciser.
 - A1 / R1 / D5-b (référentiel).
+- Licences : PyMuPDF (AGPL-3.0) et PySide6 (LGPL-3.0) livrés, hors liste du cahier.
