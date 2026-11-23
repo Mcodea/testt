@@ -2430,6 +2430,55 @@ class Application:
         self._sauver()
         return {"crees": n}
 
+    def profils_import_web(self, q):
+        """V1-5-04 : profils d'import enregistrés (avec les champs associables par nature)."""
+        from genvar import profils_import
+        return {"profils": profils_import.lister(), "champs": {n: [{"cle": c, "libelle": l, "obligatoire": o} for c, l, o in cs]
+                                                                for n, cs in profils_import.CHAMPS.items()}}
+
+    def profils_import_action(self, d):
+        """enregistrer / supprimer un profil ; entetes : lignes d'en-tête candidates d'un fichier, pour décrire ses colonnes."""
+        from genvar import profils_import
+        from genvar.inbound.readers import read_source
+        d = d or {}
+        action = d.get("action")
+        try:
+            if action == "enregistrer":
+                p = profils_import.enregistrer(d.get("nom"), d.get("nature"), d.get("correspondances"))
+                return {**self.profils_import_web({}), "ident": p["ident"]}
+            if action == "supprimer":
+                profils_import.supprimer(d.get("ident"))
+                return self.profils_import_web({})
+            if action == "entetes":
+                nom = os.path.basename(str(d.get("nom", "")))
+                extension = os.path.splitext(nom)[1].lower()
+                if extension not in (".csv", ".txt", ".xlsx", ".xlsm", ".ods"):
+                    raise RegleMetier("Format accepté : .xlsx, .xlsm, .ods, .csv ou .txt.")
+                try:
+                    contenu = base64.b64decode(d.get("contenu", ""), validate=True)
+                except (ValueError, binascii.Error) as exc:
+                    raise RegleMetier("Contenu du fichier invalide.") from exc
+                if not contenu or len(contenu) > 15 * 1024 * 1024:
+                    raise RegleMetier("Fichier vide ou trop volumineux (15 Mo maximum).")
+                dossier = tempfile.mkdtemp(prefix="ogias_profil_")
+                try:
+                    chemin = os.path.join(dossier, "source" + extension)
+                    with open(chemin, "wb") as flux:
+                        flux.write(contenu)
+                    try:
+                        source = read_source(chemin)
+                    except InboundError as exc:
+                        raise RegleMetier(str(exc)) from exc
+                finally:
+                    shutil.rmtree(dossier, ignore_errors=True)
+                feuilles = [{"nom": t.name, "lignes": [{"index": i, "cellules": [c.strip() for c in r.cells][:40]}
+                                                       for i, r in enumerate(t.rows[:15]) if any(c.strip() for c in r.cells)]}
+                            for t in source.tables]
+                return {"feuilles": feuilles}
+        except profils_import.ProfilRefuse as exc:
+            raise RegleMetier(str(exc)) from exc
+        raise RegleMetier("Action inconnue.")
+
     def inbound_preview(self, d):
         """Prévisualisation stricte depuis l'UI, sans écriture de projet.
 
@@ -2461,7 +2510,13 @@ class Application:
         try:
             with open(source, "wb") as stream:
                 stream.write(contents)
-            preview = preview_import(source, kind, self.s)
+            profil = None
+            if d.get("profil"):
+                from genvar import profils_import
+                profil = profils_import.trouver(d.get("profil"))
+                if profil is None or profil["nature"] != kind.value:
+                    raise RegleMetier("Profil d'import introuvable pour cette nature.")
+            preview = preview_import(source, kind, self.s, profil=profil)
             ticket = uuid.uuid4().hex
             self._inbound_pending = (ticket, preview, directory)
             # Toutes les lignes sont contrôlées ; seules 100 sont transmises par page.
@@ -2549,7 +2604,7 @@ class Application:
 ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle": "referentiel_cycle", "/api/referentiel/vue": "referentiel_vue", "/api/accueil": "accueil", "/api/ouvrage": "ouvrage", "/api/equipement": "equipement",
               "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre", "/api/recherche": "recherche_globale", "/api/activite": "activite_recente",
               "/api/es": "es", "/api/numero-ouvrage": "numero_ouvrage_suggere",
-              "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page",
+              "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page", "/api/profils-import": "profils_import_web",
               "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/grille": "grille_web", "/api/attributs": "attributs_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/formats-appris": "formats_appris_web", "/api/gammes-materiel": "gammes_materiel_web", "/api/revisions": "revisions_web", "/api/journal": "journal_web", "/api/equipement/ordre-export": "ordre_export_web", "/api/historique": "historique_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
               "/api/referentiel/synchronisation": "synchronisation_referentiel", "/api/ouvrage/copies": "copies_ouvrage",
               "/api/referentiel/impact": "rapport_impact", "/api/referentiel/propagation": "apercu_propagation",
@@ -2568,7 +2623,7 @@ ROUTES_POST = {"/api/nouveau": "nouveau", "/api/ouvrir": "ouvrir", "/api/fermer"
                # Anciennes routes conservées en réponse d'erreur explicite : pas de contournement possible.
                "/api/inventaire/apercu": "import_inventaire_ancien_desactive",
                "/api/inventaire/appliquer": "import_inventaire_ancien_desactive",
-               "/api/inbound/apercu": "inbound_preview", "/api/inbound/appliquer": "inbound_apply",
+               "/api/inbound/apercu": "inbound_preview", "/api/profils-import/action": "profils_import_action", "/api/inbound/appliquer": "inbound_apply",
                "/api/referentiel/importer": "importer_modeles", "/api/referentiel/action": "referentiel_action",
                "/api/equipement/ligne": "ligne_equipement", "/api/equipement/configurer": "configurer_equipement", "/api/es/definir": "es_definir",
                "/api/es/valider": "es_valider", "/api/modules": "modules_action",

@@ -37,8 +37,12 @@ def _header_key(kind: InputKind, header: str) -> str:
     return normaliser_io(header)
 
 
-def columns(kind: InputKind, headers: tuple[str, ...]) -> dict[str, int]:
+def columns(kind: InputKind, headers: tuple[str, ...], profil: dict | None = None) -> dict[str, int]:
     aliases = _aliases(kind)
+    if profil:      # profil d'import (V1-5-04) : libellés propres au fichier du client, en plus des synonymes livrés
+        for champ, libelle in (profil.get("correspondances") or {}).items():
+            if champ in aliases:
+                aliases[champ] = aliases[champ] | {_header_key(kind, libelle)}
     result: dict[str, int] = {}
     for idx, cell in enumerate(headers):
         key = _header_key(kind, cell)
@@ -66,7 +70,8 @@ def columns(kind: InputKind, headers: tuple[str, ...]) -> dict[str, int]:
     return result
 
 
-def choose_table(data: SourceData, kind: InputKind, sheet: str | None = None) -> tuple[SourceTable, int, dict[str, int]]:
+def choose_table(data: SourceData, kind: InputKind, sheet: str | None = None,
+                 profil: dict | None = None) -> tuple[SourceTable, int, dict[str, int]]:
     """Exige une sélection explicite si plusieurs feuilles pertinentes coexistent."""
     possible: list[tuple[SourceTable, int, dict[str, int]]] = []
     tables = [x for x in data.tables if sheet is None or x.name == sheet]
@@ -77,7 +82,7 @@ def choose_table(data: SourceData, kind: InputKind, sheet: str | None = None) ->
             if not any(cell.strip() for cell in row.cells):
                 continue
             try:
-                mapping = columns(kind, row.cells)
+                mapping = columns(kind, row.cells, profil)
             except InboundError as exc:
                 if "ambiguës" in str(exc):
                     raise

@@ -904,3 +904,6 @@ html[data-theme] .ap-action { align-items: center; gap: var(--o-e-3); margin-bot
 /* Tableau de bord : activité récente (faits enregistrés) */
 html[data-theme] .v31-activite { list-style: none; margin: 0 0 var(--o-e-3); padding: 0; display: grid; gap: var(--o-e-1); font-size: var(--o-t-s); }
 html[data-theme] .v31-activite time { color: var(--o-texte-3); margin-right: var(--o-e-1); }
+
+/* Fenêtre d'import : sélection du profil de colonnes */
+html[data-theme] .i-profil-ligne { display: flex; gap: var(--o-e-2); align-items: center; flex-wrap: wrap; }

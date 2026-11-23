@@ -2785,7 +2785,47 @@ function modaleEquipement(eq, ufDefaut, depuisCatalogue) {
     } catch (e) { q("#m-err").textContent = e.message; }
   };
 }
-function modaleImport(natureInitiale = "inventaire") {
+/* Profil d'import : on montre les premières lignes du fichier, on choisit la ligne d'en-tête, puis pour chaque champ
+   d'OGIAS la colonne du fichier qui le contient. Seuls des libellés de colonnes sont enregistrés. */
+async function decrireColonnes(source, nature, champs, apres, retour) {
+  let r;
+  try { r = await api("/api/profils-import/action", {action: "entetes", nature, nom: source.nom, contenu: source.contenu}); }
+  catch (e) { return toast(e.message, true); }
+  const feuille = r.feuilles.find(f => f.lignes.length) || r.feuilles[0];
+  if (!feuille || !feuille.lignes.length) return toast("Aucune ligne lisible dans ce fichier.", true);
+  const m = ouvrirModale(`<div class="boite-tete"><h2>Décrire les colonnes du fichier</h2>
+    <p>Choisissez la ligne qui contient les titres de colonnes, puis associez chaque champ d'OGIAS à sa colonne. Rien n'est importé : l'aperçu reste à confirmer.</p></div>
+    <div class="boite-corps std-formulaire">
+     ${r.feuilles.length > 1 ? `<label for="pc-feuille">Feuille</label><select id="pc-feuille">${r.feuilles.map((f, i) => `<option value="${i}">${esc(f.nom)}</option>`).join("")}</select>` : ""}
+     <label for="pc-ligne">Ligne des titres de colonnes</label><select id="pc-ligne"></select>
+     <div id="pc-champs"></div>
+     <label for="pc-nom">Nom du profil</label><input id="pc-nom" maxlength="60" placeholder="Ex. Inventaire du client Durand">
+     <div class="erreur-form" id="pc-err" role="alert"></div></div>
+    <div class="boite-pied"><button type="button" id="pc-annuler">Annuler</button><button type="button" class="prim" id="pc-ok">Enregistrer le profil</button></div>`, true);
+  m.querySelector("#pc-annuler").onclick = () => { fermerModale(); retour(); };
+  const feuilleCourante = () => r.feuilles[+(m.querySelector("#pc-feuille")?.value || 0)];
+  const dessinerChamps = () => {
+    const l = feuilleCourante().lignes.find(x => String(x.index) === m.querySelector("#pc-ligne").value);
+    const cellules = l ? l.cellules : [];
+    m.querySelector("#pc-champs").innerHTML = champs.map(c => `<label for="pc-${esc(c.cle)}">${esc(c.libelle)}${c.obligatoire ? " (obligatoire)" : ""}</label>
+      <select id="pc-${esc(c.cle)}" data-champ="${esc(c.cle)}"><option value="">— aucune colonne —</option>${cellules.filter(x => x).map(x => `<option>${esc(x)}</option>`).join("")}</select>`).join("");
+  };
+  const dessinerLignes = () => {
+    m.querySelector("#pc-ligne").innerHTML = feuilleCourante().lignes.map(l => `<option value="${l.index}">${l.index + 1} : ${esc(l.cellules.filter(x => x).join(" · ").slice(0, 90))}</option>`).join("");
+    dessinerChamps();
+  };
+  dessinerLignes();
+  m.querySelector("#pc-ligne").onchange = dessinerChamps;
+  if (m.querySelector("#pc-feuille")) m.querySelector("#pc-feuille").onchange = dessinerLignes;
+  m.querySelector("#pc-ok").onclick = async () => {
+    const correspondances = Object.fromEntries([...m.querySelectorAll("[data-champ]")].filter(s => s.value).map(s => [s.dataset.champ, s.value]));
+    try {
+      const res = await api("/api/profils-import/action", {action: "enregistrer", nom: m.querySelector("#pc-nom").value, nature, correspondances});
+      fermerModale(); toast("Profil enregistré : il sert aux fichiers de même forme."); apres(res.ident);
+    } catch (e) { m.querySelector("#pc-err").textContent = e.message; }
+  };
+}
+function modaleImport(natureInitiale = "inventaire", reprise = null) {
   const types = [
     ["equipements_aller_retour", "Liste des équipements (aller-retour : comparer et mettre à jour)"],
     ["inventaire", "Inventaire des équipements (ajouts seulement)"],
@@ -2796,7 +2836,9 @@ function modaleImport(natureInitiale = "inventaire") {
     <p>OGIAS analyse toutes les lignes avant intégration. Un doublon ou une erreur bloque l'import ; les données du projet ne changent pas pendant l'aperçu.</p></div>
     <div class="boite-corps">
       <div class="champs"><label>Nature des données</label><select id="i-nature">${types.map(([v,l]) => `<option value="${v}">${l}</option>`).join("")}</select>
-      <label>Fichier source</label><input type="file" id="i-f" accept=".xlsx,.xlsm,.ods,.csv,.txt,.scy"></div>
+      <label>Fichier source</label><input type="file" id="i-f" accept=".xlsx,.xlsm,.ods,.csv,.txt,.scy">
+      <label for="i-profil">Profil de colonnes</label><span class="i-profil-ligne"><select id="i-profil"><option value="">Reconnaissance automatique</option></select>
+       <button type="button" id="i-profil-sup" hidden>Supprimer ce profil</button></span></div>
       <div id="i-res" style="margin-top:14px" aria-live="polite"></div>
       <div class="erreur-form" id="m-err" role="alert"></div></div>
     <div class="boite-pied"><span class="gauche" id="i-bilan"></span><button data-fermer>Annuler</button>
@@ -2839,14 +2881,30 @@ function modaleImport(natureInitiale = "inventaire") {
     } catch (e) { errors.textContent = e.message; }
     finally { if (ancienToken === token) etatPages(); }
   };
-  select.onchange = reset;
-  file.onchange = async () => {
+  // Profils d'import (V1-5-04) : libellés de colonnes propres au fichier d'un client, décrits une fois, réutilisables.
+  const profilSel = m.querySelector("#i-profil"), profilSup = m.querySelector("#i-profil-sup");
+  let profils = {profils: [], champs: {}};
+  const chargerProfils = async (choisi = "") => {
+    try { profils = await api("/api/profils-import"); } catch (_) { profils = {profils: [], champs: {}}; }
+    const propres = profils.profils.filter(p => p.nature === select.value);
+    profilSel.innerHTML = '<option value="">Reconnaissance automatique</option>' + propres.map(p => `<option value="${esc(p.ident)}">${esc(p.nom)}</option>`).join("");
+    profilSel.value = propres.some(p => p.ident === choisi) ? choisi : "";
+    profilSup.hidden = !profilSel.value;
+  };
+  let sourceReprise = reprise ? reprise.source : null;     // fichier déjà lu : on revient ici après avoir décrit ses colonnes
+  chargerProfils(reprise?.profil || "").then(() => { if (sourceReprise) analyser(); });
+  select.onchange = () => { reset(); chargerProfils(); };
+  profilSel.onchange = () => { profilSup.hidden = !profilSel.value; if (file.files.length || sourceReprise) analyser(); };
+  profilSup.onclick = () => confirmer("Supprimer ce profil ?", "Les fichiers déjà importés ne changent pas ; ce profil ne sera plus proposé.", "Supprimer", async () => {
+    try { await api("/api/profils-import/action", {action: "supprimer", ident: profilSel.value}); toast("Profil supprimé."); await chargerProfils(); if (file.files.length || sourceReprise) analyser(); }
+    catch (e) { toast(e.message, true); } });
+  const analyser = async () => {
     reset();
-    if (!file.files.length) return;
+    if (!file.files.length && !sourceReprise) return;
     output.innerHTML = '<div class="vide">Analyse et validation du fichier…</div>';
     try {
-      const source = await lireFichier(file);
-      const report = await api("/api/inbound/apercu", {...source, nature: select.value});
+      const source = file.files.length ? await lireFichier(file) : sourceReprise;
+      const report = await api("/api/inbound/apercu", {...source, nature: select.value, ...(profilSel.value ? {profil: profilSel.value} : {})});
       token = report.jeton;
       const stats = report.statistiques;
       pageActive = report.pagination.page;
@@ -2880,8 +2938,21 @@ function modaleImport(natureInitiale = "inventaire") {
       };
       output.querySelectorAll('[data-obsolete]').forEach(s => s.onchange = libelleAction);
       libelleAction();
-    } catch (e) { token = ""; output.innerHTML = ""; errors.textContent = e.message; }
+    } catch (e) {
+      token = ""; output.innerHTML = ""; errors.textContent = e.message;
+      if (/olonne/i.test(e.message) && (file.files.length || sourceReprise)) {
+        output.innerHTML = `<div class="note">Les colonnes de ce fichier ne sont pas reconnues. Décrivez-les une fois : ce profil servira aux fichiers de même forme.
+          <div class="boutons-ligne"><button type="button" id="i-decrire">Décrire les colonnes de ce fichier…</button></div></div>`;
+        output.querySelector("#i-decrire").onclick = async () => {
+          try {
+            const src = file.files.length ? await lireFichier(file) : sourceReprise, nature = select.value;
+            decrireColonnes(src, nature, profils.champs[nature] || [], ident => modaleImport(nature, {source: src, profil: ident}), () => modaleImport(nature, {source: src}));
+          } catch (err) { errors.textContent = err.message; }
+        };
+      }
+    }
   };
+  file.onchange = () => { sourceReprise = null; analyser(); };
   action.onclick = async () => {
     if (!token) return;
     action.disabled = true;

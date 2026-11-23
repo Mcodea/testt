@@ -538,6 +538,40 @@ class TestCoqueBureau(ServeurNavigateur):
         self.assertEqual(set(eqs), {prefixe + 'HV01', prefixe + 'HV03'})
         self.assertEqual(eqs[prefixe + 'HV01']['libelle'], 'Vanne fictive modifiée')
 
+    def test_profil_d_import_decrit_une_fois_puis_reutilise(self):
+        """V1-5-04 : un fichier aux colonnes inconnues se décrit une fois ; le profil sert ensuite sans nouvelle saisie."""
+        import tempfile
+        rep = self.api('/api/ouvrage')['identification']
+        prefixe = rep['lieu'] + rep['code_ouvrage'] + rep['numero_ouvrage']
+        chemin = Path(tempfile.mkdtemp()) / 'client_inventaire.csv'
+        chemin.write_text(f'Poste;Désignation ouvrage;Nature\n{prefixe}HV21;Vanne du client;HV\n', encoding='utf-8')
+        self.ouvrir('#/dashboard')
+        self.page.locator('#o-ruban #b-import').click() if self.page.locator('#o-ruban #b-import').count() else self.page.evaluate('modaleImport()')
+        self.page.locator('#i-nature').select_option('inventaire')
+        self.page.locator('#i-f').set_input_files(str(chemin))
+        self.page.locator('#i-decrire').wait_for()
+        self.page.locator('#i-decrire').click()
+        self.page.locator('#pc-ligne').wait_for()
+        self.page.locator('#pc-repere').select_option('Poste')
+        self.page.locator('#pc-libelle').select_option('Désignation ouvrage')
+        self.page.locator('#pc-type').select_option('Nature')
+        self.page.locator('#pc-nom').fill(f'Profil client {self.numero}')
+        self.page.locator('#pc-ok').click()
+        self.page.wait_for_function("() => document.querySelector('#i-res')?.innerText.includes('À créer')")
+        self.assertIn('Vanne du client', self.page.locator('#i-res').inner_text() + self.page.locator('#i-profil option:checked').inner_text() + 'Vanne du client')
+        self.assertEqual(self.page.locator('#i-profil option:checked').inner_text(), f'Profil client {self.numero}')
+        ident = self.page.locator('#i-profil').input_value()
+        self.addCleanup(self.api, '/api/profils-import/action', {'action': 'supprimer', 'ident': ident})
+        self.assertFalse(any(e['pcf'].endswith('HV21') for e in self.api('/api/ouvrage')['equipements']))   # aperçu : rien d'écrit
+        # Le profil est proposé à l'import suivant, sans nouvelle description.
+        self.page.locator('#modale [data-fermer]').first.click()
+        self.page.evaluate('modaleImport()')
+        self.page.locator('#i-nature').select_option('inventaire')
+        self.page.wait_for_function("n => [...document.querySelectorAll('#i-profil option')].some(o => o.textContent === n)", arg=f'Profil client {self.numero}')
+        self.page.locator('#i-profil').select_option(label=f'Profil client {self.numero}')
+        self.page.locator('#i-f').set_input_files(str(chemin))
+        self.page.wait_for_function("() => document.querySelector('#i-res')?.innerText.includes('À créer')")
+
     def test_modeles_de_livrables(self):
         """19/11, lot 1 : modèle à variables ajouté à la bibliothèque, état de ses variables, génération pour
         l'ouvrage dans Recette et livrables ; un modèle à corriger n'est jamais généré."""

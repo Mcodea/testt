@@ -302,14 +302,14 @@ def _io(row: SourceRow, values: dict[str, str], session: Session,
 
 
 def preview_import(path: str | Path, kind: InputKind | str, session: Session,
-                   *, sheet: str | None = None) -> ImportPreview:
+                   *, sheet: str | None = None, profil: dict | None = None) -> ImportPreview:
     """Prévisualise sans écrire. Une anomalie bloquante interdit toute intégration."""
     try:
         kind = InputKind(kind)
     except ValueError as exc:
         raise InboundError("Type d'import inconnu.") from exc
     source = read_source(path)
-    table, header_index, mapping = choose_table(source, kind, sheet)
+    table, header_index, mapping = choose_table(source, kind, sheet, profil)
     rows: list[PreviewRow] = []
     seen: dict[str, SourceRow] = {}
     validator = {InputKind.INVENTORY: _inventory, InputKind.EQUIPMENT_SYNC: _sync,
