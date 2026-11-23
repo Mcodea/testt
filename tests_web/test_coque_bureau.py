@@ -3,6 +3,7 @@
 Chaque commande de la coque réutilise une route ou une action existante ; ces essais vérifient qu'elle mène au bon
 endroit, au clavier comme à la souris, sans rien écrire dans le projet.
 """
+import os
 from pathlib import Path
 
 from support import ServeurNavigateur
@@ -785,7 +786,8 @@ class TestCoqueBureau(ServeurNavigateur):
         Path(chemin + '.verrou').write_text(_json.dumps({'jeton': 'autre', 'hote': 'POSTE-FICTIF', 'utilisateur': 'dupont',
                                                           'pid': 1, 'depuis': '2026-11-22T10:00:00+00:00'}), encoding='utf-8')
         self.ouvrir('#/ouvrages')
-        self.page.locator(f'[data-project="{chemin}"]').first.click()
+        # Windows peut renvoyer le chemin long (runneradmin) pour un chemin court (RUNNER~1) : on cherche par nom de fichier.
+        self.page.locator(f'[data-project$="{os.path.basename(chemin)}"]').first.click()
         boite = self.page.locator('.boite')
         boite.wait_for()
         self.assertIn('dupont sur POSTE-FICTIF', boite.inner_text())
