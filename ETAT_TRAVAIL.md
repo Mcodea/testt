@@ -47,7 +47,9 @@ Les critères de sortie demeurent bloquants hors preuves utilisateur de section 
 - **Schneider et Siemens** (décision de l'utilisateur, 22/11 ; message perdu du 19/11 non retrouvé) : gamme livrée
   Siemens S7-1500 (références vérifiées, sources dans `genvar/data/gammes_livrees.json`) ; formats appris en classeur
   Excel pour les tables de variables TIA Portal. S7-1200 non livré (module AQ non commandable, passage à G2).
-- Vérifié localement : 875 tests Python (5 ignorés), 121 tests navigateur, `outils/ci.py static`
+- **Indices de livraison et liste des modifications** (objectif 2 de la feuille de route) : photo figée par indice
+  livré, modifications champ par champ entre indices, Excel et génération groupée. Notice : `validation/revisions/`.
+- Vérifié localement : 885 tests Python (5 ignorés), 122 tests navigateur, `outils/ci.py static`
   (ruff, mypy moteur), audit données 0 détection.
 
 ## Point CI en cours — lot Formulaires

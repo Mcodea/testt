@@ -650,6 +650,44 @@ function modaleReporterEssais(nature) {
     } catch (e) { zone.insertAdjacentHTML("afterbegin", `<p class="std-erreur">${esc(e.message)}</p>`); }
   };
 }
+/* Indices de livraison (22/11) : chaque indice livré fige une photo de l'ouvrage ; la liste des modifications
+   (équipements, E/S, variables, cartes, identification) se lit ici et s'exporte en Excel. */
+async function blocIndicesRecette(q) {
+  const zone = $("#rc-indices"); if (!zone) return;
+  let d; try { d = await api("/api/revisions" + (q || "")); } catch (e) { zone.innerHTML = `<div class="avert">${esc(e.message)}</div>`; return; }
+  if (!document.body.contains(zone) || !d.ouvert) return;
+  const c = d.comparaison, cats = d.categories;
+  const total = c ? c.modifications.length : 0;
+  const bilan = c ? Object.entries(c.bilan).filter(([, b]) => b.ajouté + b.supprimé + b.modifié).map(([k, b]) =>
+    `<span class="chip">${esc(cats[k])}${b.ajouté ? ` <b class="ri-aj">+${b.ajouté}</b>` : ""}${b.supprimé ? ` <b class="ri-sup">−${b.supprimé}</b>` : ""}${b.modifié ? ` <b class="ri-mod">~${b.modifié}</b>` : ""}</span>`).join(" ") : "";
+  const choix = (id, val, avecEnCours) => `<select id="${id}" aria-label="${id === "ri-depuis" ? "Depuis l'indice" : "Jusqu'à"}">${avecEnCours ? `<option value="">${esc(d.revision)} (en cours)</option>` : ""}${d.indices.map(x => `<option value="${esc(x.indice)}" ${x.indice === val ? "selected" : ""}>Indice ${esc(x.indice)}</option>`).join("")}</select>`;
+  zone.innerHTML = `<div class="rc-groupe-tete"><span class="rc-icone">${V31.icon("clipboard", 16)}</span><h2>Indices de livraison</h2>
+      <p>Indice en cours : <b>${esc(d.revision)}</b>${d.livre ? " (livré)" : ""} · ${d.indices.length} indice(s) livré(s) · chaque indice livré fige l'ouvrage et ne change plus</p></div>
+    <div class="boutons-ligne">${d.livre ? (d.suivant ? `<button class="prim" id="ri-suivant">Passer à l'indice ${esc(d.suivant)}</button>` : '<span class="aide">Saisissez l\'indice suivant dans la fiche de l\'ouvrage.</span>')
+      : `<button class="prim" id="ri-livrer">Livrer l'indice ${esc(d.revision)}…</button>`}
+      ${c ? `<button id="ri-export" ${total ? "" : "disabled"}>Liste des modifications (Excel) ↓</button>` : ""}</div>
+    ${d.indices.length ? `<table data-o-tableau="sans-selection" data-o-cle="indices"><thead><tr><th>Indice</th><th>Livré le</th><th>Objet</th><th>Par</th></tr></thead><tbody>${d.indices.map(x => `<tr><td><b>${esc(x.indice)}</b></td><td>${esc(x.le.replace("T", " ").slice(0, 16))} UTC</td><td>${esc(x.motif)}</td><td>${esc(x.auteur || "—")}</td></tr>`).join("")}</tbody></table>` : '<div class="vide-bloc">Aucun indice livré : la liste des modifications commence après la première livraison.</div>'}
+    ${c ? `<div class="ri-comparaison"><div class="ri-choix">Modifications depuis ${choix("ri-depuis", c.depuis, false)} jusqu'à ${choix("ri-vers", c.vers.includes("en cours") ? "" : c.vers, true)}</div>
+      ${total ? `<p>${total} élément(s) modifié(s) : ${bilan}</p>
+      <details class="ri-detail" ${total <= 40 ? "open" : ""}><summary>Détail des modifications</summary><table data-o-tableau="sans-selection" data-o-cle="modifications"><thead><tr><th>Catégorie</th><th>Élément</th><th>État</th><th>Champ</th><th>Indice ${esc(c.depuis)}</th><th>${esc(c.vers)}</th></tr></thead><tbody>
+      ${c.modifications.slice(0, 300).map(x => (x.champs.length ? x.champs : [{libelle: "", avant: "", apres: ""}]).map((ch, i) => `<tr class="ri-${x.etat === "ajouté" ? "aj" : x.etat === "supprimé" ? "sup" : "mod"}">${i ? '<td></td><td></td><td></td>' : `<td>${esc(x.categorie_libelle)}</td><td class="mono">${esc(x.element)}</td><td>${esc(x.etat)}</td>`}<td>${esc(ch.libelle)}</td><td class="mono">${esc(ch.avant)}</td><td class="mono">${esc(ch.apres)}</td></tr>`).join("")).join("")}</tbody></table>${total > 300 ? '<p class="aide">Affichage limité aux 300 premiers éléments : la liste complète est dans le fichier Excel.</p>' : ""}</details>`
+      : '<p class="aide">Aucune modification entre ces deux états.</p>'}</div>` : ""}`;
+  if ($("#ri-livrer")) $("#ri-livrer").onclick = () => {
+    const m = ouvrirModale(`<div class="boite-tete"><h2>Livrer l'indice ${esc(d.revision)}</h2><p>OGIAS fige une photo de l'ouvrage (équipements, E/S, variables, adresses, cartes). Cet indice ne changera plus ; les modifications suivantes seront listées par rapport à lui.</p></div>
+      <div class="boite-corps std-formulaire"><label for="ri-motif">Objet de la livraison</label><input id="ri-motif" maxlength="300" placeholder="Ex. Première diffusion pour visa">
+      <label for="ri-auteur">Livré par (facultatif)</label><input id="ri-auteur" maxlength="60"><div class="erreur-form" id="ri-err" role="alert"></div></div>
+      <div class="boite-pied"><button data-fermer>Annuler</button><button class="prim" id="ri-ok">Livrer l'indice ${esc(d.revision)}</button></div>`);
+    m.querySelector("#ri-ok").onclick = async () => {
+      try { await api("/api/revisions/action", {action: "livrer", motif: m.querySelector("#ri-motif").value, auteur: m.querySelector("#ri-auteur").value}); fermerModale(); toast(`Indice ${d.revision} livré.`); blocIndicesRecette(); }
+      catch (e) { m.querySelector("#ri-err").textContent = e.message; }
+    };
+  };
+  if ($("#ri-suivant")) $("#ri-suivant").onclick = () => confirmer(`Passer à l'indice ${d.suivant} ?`, `Les prochaines modifications seront livrées sous l'indice ${d.suivant} et listées par rapport à l'indice ${d.revision}.`, `Passer à l'indice ${d.suivant}`,
+    async () => { try { await api("/api/revisions/action", {action: "suivant"}); toast(`Indice ${d.suivant} en cours.`); E.detailEtape = await api('/api/recette'); rendre(); } catch (e) { toast(e.message, true); } });
+  const filtre = () => `?depuis=${encodeURIComponent($("#ri-depuis").value)}&vers=${encodeURIComponent($("#ri-vers").value)}`;
+  if ($("#ri-depuis")) $("#ri-depuis").onchange = $("#ri-vers").onchange = () => blocIndicesRecette(filtre());
+  if ($("#ri-export")) $("#ri-export").onclick = () => telecharger("modifications&depuis=" + encodeURIComponent($("#ri-depuis").value) + "&vers=" + encodeURIComponent($("#ri-vers").value));
+}
 async function blocFormatsRecette() {
   const zone = $("#rc-formats"); if (!zone) return;
   let d; try { d = await api("/api/formats-appris"); } catch (e) { zone.querySelector(".vide-bloc").textContent = e.message; return; }
@@ -726,6 +764,7 @@ function vueRecette() {
        <button id="r-groupe" title="Un zip rangé par destination : formats automate et supervision, documents, cahiers d'essais, vos modèles, avec le journal de ce qui a été produit ou refusé">Tous les livrables (zip)</button>
        <button id="r-actualiser">Actualiser les contrôles</button></div>
    </header>
+   <section class="rc-indices" id="rc-indices" aria-label="Indices de livraison"><div class="vide-bloc">Chargement des indices…</div></section>
    <div class="rc-groupes">${LIVRABLES.map(g => `<section class="rc-groupe" data-groupe="${g.groupe}"><div class="rc-groupe-tete"><span class="rc-icone">${V31.icon(g.icone, 16)}</span>
        <h2>${g.titre}</h2><p>${g.sous}</p></div>
      <table class="rc-table"><colgroup><col class="rc-c-livrable"><col class="rc-c-formats"><col class="rc-c-etat"><col><col class="rc-c-actions"></colgroup><thead class="o-masque"><tr><th>Livrable</th><th>Formats</th><th>État</th><th>Remarque</th><th>Téléchargement</th></tr></thead>
@@ -754,6 +793,7 @@ function vueRecette() {
    ${d.tronque ? '<div class="avert">Affichage limité aux 500 premiers contrôles.</div>' : ''}</details>
    <p class="rc-note">Statut industriel : NON QUALIFIÉ. Une recette sans erreur ne vaut pas validation des fichiers dans Control Expert, SOFREL, TOPKAPI ou Vijeo : chaque import reste à essayer dans le logiciel cible.</p></section>`;
   document.querySelectorAll("[data-export]").forEach(b => b.onclick = () => telecharger(b.dataset.export));
+  blocIndicesRecette();
   blocFormatsRecette();
   blocModelesRecette();
   blocEssaisRecette();

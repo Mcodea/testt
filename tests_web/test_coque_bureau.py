@@ -769,6 +769,32 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.wait_for_function("t => [...document.querySelectorAll('[data-fa]')].some(r => r.innerText.includes(t) && r.innerText.includes('Qualifié'))", arg=nom)
         self.assertEqual(self.projet.read_bytes(), avant, "Apprendre un format ne modifie pas l'ouvrage")
 
+    def test_indices_de_livraison(self):
+        """22/11 : livrer l'indice A, passer à B, modifier un équipement : la Recette liste la modification."""
+        self.ouvrir('#/recette')
+        self.page.locator('#ri-livrer').click()
+        boite = self.page.locator('.boite')
+        boite.locator('#ri-motif').fill('Première diffusion')
+        boite.locator('#ri-ok').click()
+        self.page.locator('#ri-suivant').wait_for()
+        self.assertIn('Première diffusion', self.page.locator('#rc-indices').inner_text())
+        self.page.locator('#ri-suivant').click()
+        self.page.locator('.boite').get_by_role('button', name="Passer à l'indice B").click()
+        self.page.locator('#ri-livrer').wait_for()
+        self.assertIn("Livrer l'indice B", self.page.locator('#ri-livrer').inner_text())
+        self.page.reload(wait_until='networkidle')
+        self.page.locator('#rc-indices table').first.wait_for()
+        self.assertEqual(self.page.locator('#ri-depuis').input_value(), 'A')
+        self.assertIn('Aucune modification', self.page.locator('#rc-indices').inner_text())
+        eq = self.api('/api/ouvrage')['equipements'][0]
+        self.api('/api/equipement/modifier', {'ident': eq['ident'], 'type': 'HV', 'numero': '07', 'se': '00'})
+        self.page.reload(wait_until='networkidle')
+        self.page.locator('.ri-detail').wait_for()
+        texte = self.page.locator('#rc-indices').inner_text()
+        self.assertIn('HV07', texte)
+        self.assertIn('modifié', texte)
+        self.assertTrue(self.page.locator('#ri-export').is_enabled())
+
     def test_apprendre_un_format_excel(self):
         """22/11 : un classeur FICTIF de la forme d'une table de variables TIA Portal est appris (feuille, gabarit)."""
         import tempfile

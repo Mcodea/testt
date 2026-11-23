@@ -876,3 +876,13 @@ html[data-theme] .fa-comparaison h4 { margin: 0 0 var(--o-e-1); }
 html[data-theme] .std-gammes { margin-top: var(--o-e-4); }
 html[data-theme] .std-gammes > .aide { margin: 0 0 var(--o-e-2); max-width: 110ch; }
 html[data-theme] .gm-formulaire textarea { width: 100%; box-sizing: border-box; resize: vertical; }
+
+/* Indices de livraison et liste des modifications (22/11) */
+html[data-theme] .rc-indices { border: 1px solid var(--o-ligne); border-radius: var(--o-r-m); background: var(--o-surface); padding: var(--o-e-3); margin: 0 0 var(--o-e-4); display: grid; gap: var(--o-e-2); }
+html[data-theme] .rc-indices .rc-groupe-tete h2 { margin: 0; }
+html[data-theme] .ri-choix { display: flex; flex-wrap: wrap; align-items: center; gap: var(--o-e-2); }
+html[data-theme] .ri-comparaison .chip b { margin-left: 4px; }
+html[data-theme] .ri-aj, html[data-theme] tr.ri-aj td:nth-child(3) { color: var(--o-ok); }
+html[data-theme] .ri-sup, html[data-theme] tr.ri-sup td:nth-child(3) { color: var(--o-erreur); }
+html[data-theme] .ri-mod, html[data-theme] tr.ri-mod td:nth-child(3) { color: var(--o-alerte); }
+html[data-theme] .ri-detail summary { cursor: pointer; font-weight: 600; }

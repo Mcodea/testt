@@ -20,7 +20,7 @@ Principes retenus de ces outils, et ce qu'OGIAS en fait :
 | Ouverture aux outils de chaque client | **Formats d'export appris** : le format du constructeur s'apprend, il n'est pas codé. |
 | Standards par client | Standards d'ingénierie : charte de nommage, plan d'adressage, chaîne d'outils. |
 | Contrôles de cohérence nommés | Règles R-xxx, recette consolidée, aucun export s'il reste une erreur bloquante. |
-| Gestion des révisions | Copies horodatées, adoption contrôlée du référentiel ; **à compléter** : liste des modifications entre deux indices de livrable. |
+| Gestion des révisions | Copies horodatées, adoption contrôlée du référentiel, indices de livraison figés et liste des modifications entre indices. |
 | Traçabilité de la qualification | Formats qualifiés par un essai réel tracé, puis contrôlés automatiquement. |
 
 ## Règles d'ingénierie (non négociables)
@@ -47,9 +47,8 @@ Principes retenus de ces outils, et ce qu'OGIAS en fait :
 - [x] Gammes de matériel déclarées par l'atelier : tout automate est calculé comme une gamme livrée.
 
 ### 2. Révisions des livrables (niveau professionnel)
-- [ ] Indice de révision par livrable et **liste des modifications** entre deux indices (E/S, variables, adresses
-      ajoutées, supprimées, modifiées), jointe au dossier de recette — comme le marquage des révisions des outils
-      de schéma.
+- [x] Indices de livraison et **liste des modifications** entre deux indices (équipements, E/S, variables,
+      adresses, cartes ; ajoutés, supprimés, modifiés champ par champ), Excel et « Tous les livrables ».
 
 ### 3. Mesure honnête de l'avancement
 - [ ] Réévaluer le tableau de conformité de `ETAT_TRAVAIL.md` ligne par ligne avec les preuves des lots du 16 au

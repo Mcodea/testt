@@ -193,6 +193,8 @@ class Ouvrage:
     entrees_physiques_importees: list = field(default_factory=list)  # Sources E/S documentaires, sans modification automate
     ident_projet: str = field(default_factory=lambda: uuid.uuid4().hex)
     revision: str = "A"
+    # Indices livrés (22/11) : [{indice, le, motif, auteur, empreinte, photo}] ; un indice livré ne change plus.
+    indices: list = field(default_factory=list)
     statut: str = "En cours"                 # Brouillon, En cours, À contrôler, Validé
     archive: bool = False
     cree_le: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())

@@ -56,6 +56,7 @@ PIECES = [
     ("documents", "cartes", "Cartes d'E/S"),
     ("documents", "nomenclature", "Nomenclature matériel"),
     ("documents", "equipements", "Liste des équipements (aller-retour Excel)"),
+    ("documents", "modifications", "Liste des modifications depuis le dernier indice livré"),
     ("essais", "essais_fat", "Cahier d'essais FAT"),
     ("essais", "essais_sat", "Cahier d'essais SAT"),
 ]

@@ -631,6 +631,15 @@ class Application:
             # Le chemin provient seulement de l'adoption courante, jamais d'un paramètre HTTP.
             with open(fichier, "rb") as f:
                 return "OGIAS_" + quoi + ".json", f.read()
+        if quoi == "modifications" and (q.get("depuis") or q.get("vers")):   # indices choisis (22/11)
+            if not self.ouvert or self.creation_en_attente:
+                raise RegleMetier("Ouvrez d'abord un ouvrage.")
+            dossier_m = tempfile.mkdtemp(prefix="sorep_modifs_")
+            c = self.s.comparer_indices(str(q.get("depuis") or ""), str(q.get("vers") or ""))
+            nom = f"{self.s.nom_fichier_propose() or 'ouvrage'}_modifications_{c['depuis']}_{c['vers'].split()[0]}.xlsx"
+            self.s.exporter_modifications(os.path.join(dossier_m, nom), str(q.get("depuis") or ""), str(q.get("vers") or ""))
+            with open(os.path.join(dossier_m, nom), "rb") as f:
+                return nom, f.read()
         if quoi == "format_appris":               # formats appris (22/11) : export dans le format d'un constructeur
             if not self.ouvert or self.creation_en_attente:
                 raise RegleMetier("Ouvrez d'abord un ouvrage.")
@@ -680,6 +689,12 @@ class Application:
         return nom, octets
 
     def _exporter_ouvrage(self, quoi, dossier, base):
+        if quoi == "modifications":                      # indices (22/11) : dernier indice livré → état en cours
+            c = self.s.comparer_indices()
+            nom = f"{base}_modifications_{c['depuis']}_{self.s.ouvrage.revision}.xlsx"
+            self.s.exporter_modifications(os.path.join(dossier, nom))
+            with open(os.path.join(dossier, nom), "rb") as f:
+                return nom, f.read()
         if quoi.startswith("format_appris:"):           # formats appris (22/11) : mêmes refus que l'export Control Expert
             from genvar import formats_appris as fa
             fmt = fa.trouver(quoi.split(":", 1)[1])
@@ -1232,6 +1247,36 @@ class Application:
                 return self.gammes_materiel_web({})
         except gm.GammeRefusee as exc:
             raise RegleMetier(str(exc)) from None
+        raise RegleMetier("Action inconnue.")
+
+    def revisions_web(self, q):
+        """Indices livrés de l'ouvrage et modifications depuis le dernier (ou entre deux indices choisis)."""
+        from genvar import revisions
+        if not self.ouvert:
+            return {"ouvert": False}
+        o = self.s.ouvrage
+        liste = revisions.resume_indices(o)
+        comparaison = None
+        if liste:
+            comparaison = self.s.comparer_indices(str((q or {}).get("depuis") or ""), str((q or {}).get("vers") or ""))
+        livre = any(x["indice"] == o.revision for x in liste)
+        try:
+            suivant = revisions.indice_suivant(o.revision) if livre else ""
+        except revisions.IndiceRefuse:
+            suivant = ""
+        return {"ouvert": True, "revision": o.revision, "indices": liste, "livre": livre, "suivant": suivant,
+                "comparaison": comparaison, "categories": revisions.CATEGORIES}
+
+    def revisions_action(self, d):
+        action = d.get("action")
+        if action == "livrer":
+            x = self.s.livrer_indice(str(d.get("motif") or ""), str(d.get("auteur") or ""))
+            self._sauver()
+            return {**self.revisions_web({}), "livre_indice": x["indice"]}
+        if action == "suivant":
+            self.s.passer_indice_suivant()
+            self._sauver()
+            return self.revisions_web({})
         raise RegleMetier("Action inconnue.")
 
     def formats_appris_web(self, _):
@@ -2234,14 +2279,14 @@ ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle":
               "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre",
               "/api/es": "es", "/api/numero-ouvrage": "numero_ouvrage_suggere",
               "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page",
-              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/grille": "grille_web", "/api/attributs": "attributs_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/formats-appris": "formats_appris_web", "/api/gammes-materiel": "gammes_materiel_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
+              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/grille": "grille_web", "/api/attributs": "attributs_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/formats-appris": "formats_appris_web", "/api/gammes-materiel": "gammes_materiel_web", "/api/revisions": "revisions_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
               "/api/referentiel/synchronisation": "synchronisation_referentiel", "/api/ouvrage/copies": "copies_ouvrage",
               "/api/referentiel/impact": "rapport_impact", "/api/referentiel/propagation": "apercu_propagation",
               "/api/referentiel/apercu-modele": "apercu_modele"}
 ROUTES_POST = {"/api/nouveau": "nouveau", "/api/ouvrir": "ouvrir", "/api/fermer": "fermer",
                "/api/supprimer_ouvrage": "supprimer_ouvrage", "/api/definir": "definir",
                "/api/fiche-ouvrage": "fiche_ouvrage",
-               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/grille/appliquer": "grille_appliquer", "/api/attributs/action": "attributs_action", "/api/equipement/attribut": "equipement_attribut", "/api/essais/reporter": "essais_reporter", "/api/modeles-livrables/action": "modeles_livrables_action", "/api/formats-appris/action": "formats_appris_action", "/api/gammes-materiel/action": "gammes_materiel_action", "/api/standards/appliquer": "appliquer_standard", "/api/standards/charte-apercu": "apercu_charte", "/api/reglages/reprendre": "reprendre_reglages",
+               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/grille/appliquer": "grille_appliquer", "/api/attributs/action": "attributs_action", "/api/equipement/attribut": "equipement_attribut", "/api/essais/reporter": "essais_reporter", "/api/modeles-livrables/action": "modeles_livrables_action", "/api/formats-appris/action": "formats_appris_action", "/api/gammes-materiel/action": "gammes_materiel_action", "/api/revisions/action": "revisions_action", "/api/standards/appliquer": "appliquer_standard", "/api/standards/charte-apercu": "apercu_charte", "/api/reglages/reprendre": "reprendre_reglages",
                "/api/identification/type": "identifier_type",
                "/api/identification/selection": "identifier_selection", "/api/uf": "uf",
                "/api/equipement/ajouter": "ajouter_equipement", "/api/equipement/modifier": "modifier_equipement",

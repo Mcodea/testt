@@ -2028,6 +2028,42 @@ class Session:
     def manque_adresses(self):
         return any(not v.adresse for v in self.variables())
 
+    # ================================================================== indices de livraison (22/11)
+    def livrer_indice(self, motif, auteur=""):
+        """Fige l'indice courant (photo de l'ouvrage) ; refusé s'il est déjà livré."""
+        from . import revisions
+        try:
+            x = revisions.livrer(self, motif, auteur)
+        except revisions.IndiceRefuse as exc:
+            raise RegleMetier(str(exc)) from exc
+        self._change(devalider=False)
+        return x
+
+    def passer_indice_suivant(self):
+        """Passe la révision de l'ouvrage à l'indice suivant, une fois l'indice courant livré."""
+        from . import revisions
+        o = self.ouvrage
+        if not any(x["indice"] == o.revision for x in revisions.indices(o)):
+            raise RegleMetier(f"Livrez d'abord l'indice {o.revision} avant de passer au suivant.")
+        try:
+            o.revision = revisions.indice_suivant(o.revision)
+        except revisions.IndiceRefuse as exc:
+            raise RegleMetier(str(exc)) from exc
+        self._change(devalider=False)
+        return o.revision
+
+    def comparer_indices(self, depuis="", vers=""):
+        from . import revisions
+        try:
+            return revisions.comparer(self, depuis, vers)
+        except revisions.IndiceRefuse as exc:
+            raise RegleMetier(str(exc)) from exc
+
+    def exporter_modifications(self, chemin, depuis="", vers=""):
+        from . import revisions
+        from .export_xlsx import ecrire_xlsx
+        ecrire_xlsx(chemin, revisions.feuilles_xlsx(self.ouvrage, self.comparer_indices(depuis, vers)))
+
     # ================================================================== exports
     def recap_export(self):
         variables, points = self.variables(), self.points()
