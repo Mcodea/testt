@@ -26,7 +26,7 @@ Avancement au tableau de conformité (`ETAT_TRAVAIL.md`, 176 exigences du cahier
 | 23/11 | Ordre d'export des variables par équipement, jamais appliqué aux adresses (option B). |
 | 23/11 | Licences : PyMuPDF (AGPL) remplacé par pdfminer.six (MIT) ; ancienne interface Qt (PySide6, LGPL) retirée de la version vendue. |
 | 23/11 | « Apprentissage des formats » devient un onglet dédié du menu Outils. |
-| 23/11 | Référentiel A1 publié : 38 renommages sur 57 approuvés (19 refusés), CONS_TAU et CONS_FRQ par suffixe d'E/S, 48 ajouts sur 49 approuvés (6 types créés, statut « À valider »). `TT.EA.TMP.2` reste à examiner. |
+| 23/11 | Référentiel A1 publié : 38 renommages sur 57 approuvés (19 refusés), CONS_TAU et CONS_FRQ par suffixe d'E/S, 48 ajouts sur 49 approuvés (6 types créés, statut « À valider »). `TT.EA.TMP.2` (sonde PT100) refusé : mesure en 4-20 mA ou 0-10 V. |
 | 23/11 | Icônes : jeu hybride, Lucide pour les commandes courantes, dessins OGIAS pour les symboles métier. |
 
 ## 3. Tests et couverture

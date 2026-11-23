@@ -19,7 +19,7 @@ Le numéro de version (`genvar/__init__.py`) est encore 0.32 ; il passera à 1.0
   (fil de l'information, équipement, E/S, matériel, variables, supervision, recette) restent dessinés pour OGIAS.
 - **Publication A1 (23/11/2026)** : les 38 renommages approuvés (39 clés) sont publiés dans le référentiel livré ; PD.SA.TAUX devient
   `CONS_TAU` et PM.SA.CONS_FREQ `CONS_FRQ` (suffixe_es). Les ouvrages existants gardent leur référentiel figé et adoptent la révision
-  volontairement, adresses conservées. Les ajouts approuvés (48 sur 49, types AB, CE, CG, DG, FI, UV créés, statut « À valider ») sont publiés ; `TT.EA.TMP.2` reste à examiner (clé existante). État d'avant : `validation/referentiel/avant_a1/`.
+  volontairement, adresses conservées. Les ajouts approuvés (48 sur 49, types AB, CE, CG, DG, FI, UV créés, statut « À valider ») sont publiés ; `TT.EA.TMP.2` (sonde PT100) est refusé : la température est toujours en 4-20 mA ou 0-10 V. État d'avant : `validation/referentiel/avant_a1/`.
 - **Aperçu A1** des 57 renommages et 49 ajouts du référentiel à approuver (`docs/APERCU_A1_A_APPROUVER.md` et `.xlsx`, générés par
   `outils/apercu_a1.py`) : rien n'est appliqué sans accord.
 - **Ouvrage d'exemple fictif** livré à part (`exemples/`, généré par `outils/generer_exemple.py`).

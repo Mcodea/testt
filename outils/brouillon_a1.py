@@ -30,7 +30,7 @@ def code_nouveau_de(cle):
     return cle.split("_", 1)[1]
 
 
-def appliquer_ajouts(candidat, apercu, bibliotheque) -> tuple[list, list]:
+def appliquer_ajouts(candidat, apercu, bibliotheque, refuses=frozenset()) -> tuple[list, list]:
     """Ajoute au candidat les E/S physiques de la bibliothèque V1 absentes du catalogue (approuvées le 23/11/2026).
     Chaque E/S devient un signal physique (famille ES) et son information de télétransmission (signal interne alimenté par
     elle) avec la règle documentaire qui les relie. Tout est au statut « À valider » : seules les valeurs de la bibliothèque
@@ -48,6 +48,8 @@ def appliquer_ajouts(candidat, apercu, bibliotheque) -> tuple[list, list]:
                           "remarque": "Type ajouté par la décision A1 du 23/11/2026 (bibliothèque V1) : à valider.", "domaine": x["Domaine"]})
             codes_types.add(a["type"])
         cle = (a["type"], "ES", a["code"])
+        if a["id"] in refuses:
+            continue
         if cle in existants:
             ignores.append(f"{a['id']} : la clé {a['type']}.ES_{a['code']} existe déjà (variante « {a['variante']} » de la même E/S) : "
                            "non ajoutée, à examiner.")
@@ -127,7 +129,7 @@ def construire():
                     exceptions_d4.append({"ident": ident, "cle": nouvelle, "suffixe_es": attendu})
             appliques.append({"ident": ident, "type": r["type"], "nature": cible["es"], "ancienne": ancienne, "nouvelle": nouvelle,
                               "physique_propose": r["physique_propose"] if cible["es"] == r["nature"] else "—"})
-    ajoutes, ignores = appliquer_ajouts(candidat, apercu, bibliotheque) if decision.get("ajouts_approuves") == "tous" else ([], [])
+    ajoutes, ignores = appliquer_ajouts(candidat, apercu, bibliotheque, set(decision.get("ajouts_refuses", {}))) if decision.get("ajouts_approuves") == "tous" else ([], [])
     ecarts += ignores
     renommes = {(a["type"], a["ancienne"]): a["nouvelle"] for a in appliques}
     for s2 in signaux:                                          # un signal peut citer sa source physique par sa clé
@@ -176,7 +178,7 @@ def _rapport(candidat, rapport, c) -> str:
          "Généré par `outils/brouillon_a1.py` : ne pas modifier à la main. **Publié le 23/11/2026** (autorisation de l'utilisateur) : "
          "`genvar/data/` reprend ce candidat ; l'état d'avant est conservé dans `validation/referentiel/avant_a1/`. Aucun ouvrage n'est touché.", "",
          f"- Clés de signaux renommées dans le candidat : **{len(rapport['appliques'])}** (pour les 38 renommages approuvés sur 57 ; refusés : {len(rapport['refuses'])}).",
-         f"- Ajouts : **{len(rapport['ajoutes'])} appliqués** (« Ajouts : tous approuvés »), {rapport['ajouts_non_appliques']} non appliqué(s) (voir « À examiner »).",
+         f"- Ajouts : **{len(rapport['ajoutes'])} appliqués** (« Ajouts : tous approuvés »), {rapport['ajouts_non_appliques']} refusé(s) (`TT.EA.TMP.2`, sonde PT100 : la température se mesure en 4-20 mA ou 0-10 V).",
          f"- Contrôles du dépôt de référentiel : {len(c['erreurs'])} erreur(s), {len(c['alertes'])} alerte(s) ; "
          f"{len(c['doublons'])} clé(s) en double.", "",
          "## Renommages appliqués", "", "| Type | Nature | Clé actuelle → nouvelle | Nom physique après renommage (exemple) |", "| --- | --- | --- | --- |"]

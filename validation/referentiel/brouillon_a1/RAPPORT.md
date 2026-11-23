@@ -3,7 +3,7 @@
 Généré par `outils/brouillon_a1.py` : ne pas modifier à la main. **Publié le 23/11/2026** (autorisation de l'utilisateur) : `genvar/data/` reprend ce candidat ; l'état d'avant est conservé dans `validation/referentiel/avant_a1/`. Aucun ouvrage n'est touché.
 
 - Clés de signaux renommées dans le candidat : **39** (pour les 38 renommages approuvés sur 57 ; refusés : 19).
-- Ajouts : **48 appliqués** (« Ajouts : tous approuvés »), 1 non appliqué(s) (voir « À examiner »).
+- Ajouts : **48 appliqués** (« Ajouts : tous approuvés »), 1 refusé(s) (`TT.EA.TMP.2`, sonde PT100 : la température se mesure en 4-20 mA ou 0-10 V).
 - Contrôles du dépôt de référentiel : 0 erreur(s), 27 alerte(s) ; 0 clé(s) en double.
 
 ## Renommages appliqués
@@ -68,10 +68,6 @@ Le nom physique de la bibliothèque V1 diffère du code fonctionnel : il est por
 | --- | --- | --- |
 | `PD.SA.TAUX` | `TR_TAU` | `CONS_TAU` |
 | `PM.SA.CONS_FREQ` | `ES_CONS_FRQ` | `CONS_FRQ` |
-
-## À examiner
-
-- TT.EA.TMP.2 : la clé TT.ES_TMP existe déjà (variante « Sonde PT100 directe » de la même E/S) : non ajoutée, à examiner.
 
 ## Effet sur les ouvrages
 

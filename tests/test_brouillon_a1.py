@@ -42,11 +42,12 @@ class TestBrouillonA1(unittest.TestCase):
         self.assertNotIn("A1 (", self.livre["version"])
         self.assertNotEqual(self.candidat["catalogue"]["signaux"], self.livre["signaux"])
 
-    def test_ajouts_approuves_appliques_sauf_cle_existante(self):
-        """« Ajouts : tous approuvés » : 48 sur 49 ; TT.EA.TMP.2 a la même clé que TT.ES_TMP et reste à examiner."""
+    def test_ajouts_approuves_appliques_sauf_la_pt100_refusee(self):
+        """« Ajouts : tous approuvés » : 48 sur 49 ; TT.EA.TMP.2 (sonde PT100) refusé par l'utilisateur le 23/11/2026."""
         self.assertEqual(len(self.rapport["ajoutes"]), 48)
         self.assertEqual(self.rapport["ajouts_non_appliques"], 1)
-        self.assertTrue(any("TT.EA.TMP.2" in x for x in self.rapport["ecarts"]))
+        self.assertNotIn("TT.EA.TMP.2", self.rapport["ajoutes"])
+        self.assertEqual(self.rapport["ecarts"], [])
         types = {t["code"] for t in self.candidat["catalogue"]["types"]}
         self.assertTrue({"AB", "CE", "CG", "DG", "FI", "UV"} <= types)
         cles = {(s["type"], s["es"], s["code"]) for s in self.candidat["catalogue"]["signaux"]}
@@ -74,7 +75,7 @@ class TestBrouillonA1(unittest.TestCase):
             self.assertNotIn((a["type"], a["nature"], a["ancienne"].split("_", 1)[1]), actuels, a)
 
     def test_aucun_ecart_et_exceptions_d4_decidees(self):
-        self.assertEqual([x for x in self.rapport["ecarts"] if "TT.EA.TMP.2" not in x], [])
+        self.assertEqual(self.rapport["ecarts"], [])
         self.assertEqual({x["ident"]: x["suffixe_es"] for x in self.rapport["exceptions_d4"]},
                          {"PD.SA.TAUX": "CONS_TAU", "PM.SA.CONS_FREQ": "CONS_FRQ"})
 

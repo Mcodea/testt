@@ -31,5 +31,8 @@
     "PM.SA.CONS_FREQ": "nom physique CONS_FRQ (bibliothèque V1) : suffixe_es mis à CONS_FRQ"
   },
   "date_points": "2026-11-23",
-  "ajouts_approuves": "tous"
+  "ajouts_approuves": "tous",
+  "ajouts_refuses": {
+    "TT.EA.TMP.2": "Sonde PT100 directe : refusée le 23/11/2026 (« c'est toujours soit en 4-20 mA ou 0-10 V ») ; la mesure de température reste TT.ES_TMP."
+  }
 }
