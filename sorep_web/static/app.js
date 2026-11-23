@@ -9,12 +9,30 @@ const ROLES_ORDRE = ["TS", "DEF", "ALA", "EVI", "TC", "TR", "RTR", "TM", "TMC", 
 const classeRole = r => ["TS", "DEF", "ALA", "EVI", "TC", "TR", "RTR"].includes(r) ? "r-" + r : "";
 
 /* ------------------------------------------------------------------ échanges */
+/* Retour visible de chaque action (V1-4-48) : un indicateur « En cours… » apparaît si une requête dure plus de 300 ms ;
+   le succès et l'erreur (cause et solution) s'affichent par toast ; un serveur injoignable a son propre message. */
+const ENCOURS = {n: 0, minuteur: 0};
+function indicateurEncours(delta) {
+  ENCOURS.n = Math.max(0, ENCOURS.n + delta);
+  clearTimeout(ENCOURS.minuteur);
+  const montrer = () => {
+    let el = document.getElementById("o-encours");
+    if (!el) { el = document.createElement("div"); el.id = "o-encours"; el.setAttribute("role", "status"); el.textContent = "En cours…"; document.body.appendChild(el); }
+    el.hidden = !ENCOURS.n; document.body.toggleAttribute("aria-busy", ENCOURS.n > 0);
+  };
+  if (ENCOURS.n) ENCOURS.minuteur = setTimeout(montrer, 300); else if (document.getElementById("o-encours")) montrer();
+}
 async function api(chemin, donnees) {
   const opt = donnees === undefined ? {} : {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(donnees)};
-  const r = await fetch(chemin, opt);
-  const j = await r.json().catch(() => ({erreur: "Réponse illisible du serveur."}));
-  if (!r.ok) { const e = new Error(j.erreur || "Erreur"); e.donnees = j; throw e; }
-  return j;
+  indicateurEncours(1);
+  try {
+    let r;
+    try { r = await fetch(chemin, opt); }
+    catch (_) { throw new Error("OGIAS ne répond plus : vérifiez que la fenêtre du serveur est ouverte, puis recommencez."); }
+    const j = await r.json().catch(() => ({erreur: "Réponse illisible du serveur."}));
+    if (!r.ok) { const e = new Error(j.erreur || "Erreur"); e.donnees = j; throw e; }
+    return j;
+  } finally { indicateurEncours(-1); }
 }
 /* Ordre d'export des variables d'un équipement (V1-5-02, option B) : il ne vaut que pour les tables exportées
    (XSY, Excel, table d'études, formats appris, modèles) ; les adresses ne changent jamais. */

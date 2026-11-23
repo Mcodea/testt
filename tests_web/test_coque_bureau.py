@@ -572,6 +572,25 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.locator('#i-f').set_input_files(str(chemin))
         self.page.wait_for_function("() => document.querySelector('#i-res')?.innerText.includes('À créer')")
 
+    def test_retour_visible_chargement_et_erreur_de_chaque_action(self):
+        """V1-4-48 : indicateur « En cours… » pour une action lente, message clair si le serveur ne répond plus."""
+        self.ouvrir('#/dashboard')
+        # Action lente : l'indicateur apparaît puis disparaît.
+        self.page.evaluate("() => { const f = window.fetch; window.__fetchOrigine = f; window.fetch = (...a) => new Promise(r => setTimeout(r, 900)).then(() => f(...a)); }")
+        self.page.evaluate("() => { window.__p = api('/api/ouvrage'); }")
+        self.page.wait_for_function("() => { const e = document.getElementById('o-encours'); return e && !e.hidden && document.body.hasAttribute('aria-busy'); }")
+        self.page.wait_for_function("() => { const e = document.getElementById('o-encours'); return e && e.hidden; }", timeout=10000)
+        self.page.evaluate("() => { window.fetch = window.__fetchOrigine; }")
+        # Serveur injoignable : cause et solution dans le message.
+        self.page.route('**/api/ouvrage', lambda route: route.abort())
+        message = self.page.evaluate("api('/api/ouvrage').then(() => '', e => e.message)")
+        self.assertIn('OGIAS ne répond plus', message)
+        self.assertIn('recommencez', message)
+        self.page.unroute('**/api/ouvrage')
+        # Erreur métier : la cause du serveur s'affiche telle quelle en toast d'erreur.
+        self.page.evaluate("api('/api/equipement/ajouter', {type: 'ZZ', numero: '01', se: '00'}).catch(e => toast(e.message, true))")
+        self.page.locator('#toasts .toast.err').first.wait_for()
+
     def test_modeles_de_livrables(self):
         """19/11, lot 1 : modèle à variables ajouté à la bibliothèque, état de ses variables, génération pour
         l'ouvrage dans Recette et livrables ; un modèle à corriger n'est jamais généré."""

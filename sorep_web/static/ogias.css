@@ -907,3 +907,9 @@ html[data-theme] .v31-activite time { color: var(--o-texte-3); margin-right: var
 
 /* Fenêtre d'import : sélection du profil de colonnes */
 html[data-theme] .i-profil-ligne { display: flex; gap: var(--o-e-2); align-items: center; flex-wrap: wrap; }
+
+/* Indicateur d'opération en cours (V1-4-48) */
+html[data-theme] #o-encours { position: fixed; right: var(--o-e-3); bottom: calc(var(--o-e-4) + 28px); z-index: 50; padding: var(--o-e-1) var(--o-e-3);
+  background: var(--o-nuit); color: var(--o-nuit-texte); border-radius: var(--o-r-m); font-size: var(--o-t-s); box-shadow: var(--o-ombre-flottant); }
+html[data-theme] #o-encours[hidden] { display: none; }
+html[data-theme] body[aria-busy="true"] { cursor: progress; }

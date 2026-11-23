@@ -34,7 +34,7 @@ industrielle du 16/11) et sortent du calcul.
 | En attente de preuves utilisateur (section 8) | 10 |
 | Remplacé par décision | 25 |
 
-**Avancement : 61 % au sens strict (91 / 149), 74 % en comptant un « partiel » pour moitié.**
+**Avancement : 62 % au sens strict (92 / 149), 75 % en comptant un « partiel » pour moitié.**
 
 Écarts nets relevés (absents), traitables sans attendre l'utilisateur : version 1.0.0 et étiquettes (V1-10-19 à 21), compte rendu V1.0 (V1-10-28 à 34).
 
@@ -333,7 +333,7 @@ le défaut démontré et obtenir une CI verte. Codex reste actif sur ce point.
 | V1-4-45 (L128) | Accessibilité WCAG AA et navigation complète au clavier. | fait | Audit de chaque écran, clair et sombre : contraste AA, noms accessibles, accès clavier (tests_web/test_registre_commandes.py, lot 7b) ; formulaires : tests_web/test_formulaires_industriels.py. |
 | V1-4-46 (L129) | Affichage correct de 1366×768 à 2560×1440. | fait | Chaque écran à 1366×768, 1440×900, 1920×1080 et 2560×1440 : tests_web/test_geometrie_resolutions.py. |
 | V1-4-47 (L130) | Annulation (Ctrl+Z) des modifications de l'ouvrage. | fait | Ctrl+Z / Ctrl+Y et menu Édition : 30 pas, seulement les commandes qui modifient l'ouvrage, fichier enregistré, tout ou rien si l'enregistrement échoue, indices livrés jamais annulés, saisie dans un champ laissée au navigateur : tests/test_annulation.py, tests_web/test_coque_bureau.py::test_annuler_et_retablir_au_clavier. |
-| V1-4-48 (L131) | Chaque action a un retour visible : chargement, succès, erreur avec la cause et la solution. | partiel | Messages d'erreur métier avec cause et correction ; retour de chargement non vérifié écran par écran. |
+| V1-4-48 (L131) | Chaque action a un retour visible : chargement, succès, erreur avec la cause et la solution. | fait | Chaque appel passe par api() : indicateur « En cours… » au-delà de 300 ms, succès et erreur (cause et solution du serveur) en toast conservé au journal, message dédié si le serveur ne répond plus : tests_web/test_coque_bureau.py::test_retour_visible_chargement_et_erreur_de_chaque_action. |
 | V1-5-01 (L135) | Dupliquer un équipement : aucune adresse recopiée, nouveau numéro proposé. | fait | « Dupliquer » au ruban de l'équipement : numéro libre suivant (ou demandé), paramétrage, désignations et attributs repris ; aucune adresse d'échange ni physique, aucune carte ou voie, aucune validation ni trace reprise ; annulable : tests/test_duplication_equipement.py, tests_web/test_coque_bureau.py::test_dupliquer_un_equipement_depuis_le_ruban. Défaut corrigé : l'ancienne fonction moteur gardait carte et voie. |
 | V1-5-02 (L136) | Dupliquer, réordonner et déplacer des lignes de variables, avec un ordre stable dans les exports. | partiel | Ordre d'export par équipement (décision B du 23/11/2026) : ruban › Ordre d'export, appliqué aux tables XSY, Excel, études de télétransmission, formats appris et modèles de livrables, jamais aux adresses ; annulable (`tests/test_ordre_export.py`, `tests_web`). Dupliquer ou déplacer une ligne seule est sans objet : les variables sont produites par le référentiel (on duplique l'équipement). |
 | V1-5-03 (L137) | Sens de chaque variable (lecture, commande, consigne, retour, réserve), affiché et filtrable. | partiel | Sens lecture / commande / consigne / retour déduit de la famille, affiché au détail et sur la famille, filtrable par puces (tests_web/test_variables_v031.py::test_sens_des_variables_affiche_et_filtrable) ; « réserve » non modélisé : les réserves d'OGIAS sont des plages d'adresses, pas des variables. |
