@@ -20,7 +20,7 @@ Les critères de sortie demeurent bloquants hors preuves utilisateur de section 
 « Remplacé par décision » : exigence du cahier supplantée par une décision ultérieure de l'utilisateur (refonte
 industrielle du 16/11) ; elle sort du calcul d'avancement et sa ligne cite la nouvelle cible et ses preuves.
 
-## Avancement mesuré au 23/11/2026 (réévaluation ligne par ligne, mis à jour après le verrou, le journal, Ctrl+Z et la duplication)
+## Avancement mesuré au 23/11/2026 (réévaluation ligne par ligne, mis à jour après le verrou, le journal, Ctrl+Z, la duplication et la documentation)
 
 Les 176 exigences du cahier ont été réévaluées une à une avec les preuves des lots du 16 au 22/11 ; plus aucune
 ligne ne porte la mention générique « à vérifier ». 25 exigences sont « remplacées par décision » (refonte
@@ -28,17 +28,16 @@ industrielle du 16/11) et sortent du calcul.
 
 | État | Nombre |
 | --- | --- |
-| Fait (prouvé par un test) | 61 |
-| Partiel | 59 |
-| Absent | 21 |
+| Fait (prouvé par un test) | 67 |
+| Partiel | 57 |
+| Absent | 17 |
 | En attente de preuves utilisateur (section 8) | 10 |
 | Remplacé par décision | 25 |
 
-**Avancement : 40 % au sens strict (61 / 151), 60 % en comptant un « partiel » pour moitié.**
+**Avancement : 44 % au sens strict (67 / 151), 63 % en comptant un « partiel » pour moitié.**
 
 Écarts nets relevés (absents), traitables sans attendre l'utilisateur : duplication et
-réordonnancement de variables (V1-5-02), documentation utilisateur et administrateur, CHANGELOG, notes de version
-(V1-9-06 à 11), version 1.0.0 et étiquettes (V1-10-19 à 21), compte rendu V1.0 (V1-10-28 à 34).
+réordonnancement de variables (V1-5-02), notes de version 1.0 (V1-9-11), version 1.0.0 et étiquettes (V1-10-19 à 21), compte rendu V1.0 (V1-10-28 à 34).
 
 Décision requise : **licences** (V1-11-05). `requirements-runtime.lock` livre PyMuPDF (AGPL-3.0, ou licence
 commerciale Artifex ; analyse des PDF PL7) et PySide6 (LGPL-3.0 ; ancienne interface Qt), hors de la liste
@@ -350,7 +349,7 @@ le défaut démontré et obtenir une CI verte. Codex reste actif sur ce point.
 | V1-6-05 (L148) | Les confirmations (une par une, ou en lot pour les confiances élevées) sont tracées et annulables. | partiel | Moteur : confirmation une par une tracée (`valider_fonction`), en lot limitée à la confiance élevée (`confirmer_en_lot`), annulable à l'identique (`annuler_lot`), journal `journal_rapprochement` enregistré ; tests/test_seuil_confiance_rapprochement.py::TestConfirmationEnLot et TestJournalPersistant ; boutons et routes : Codex. |
 | V1-7-01 (L152) | **Données :** | partiel | Titre de groupe : voir V1-7-02 à V1-7-05 (verrou d'ouvrage absent). |
 | V1-7-02 (L153) | écriture atomique et sauvegarde automatique ; | partiel | Écriture atomique avec fsync (Ouvrage.enregistrer) et enregistrement automatique avec .bak ; pas de test d'arrêt brutal. |
-| V1-7-03 (L154) | copies horodatées avant chaque opération lourde, restaurables depuis l'interface ; | partiel | Moteur et API faits : `genvar/copies.py`, `Session.copies_horodatees` / `restaurer_copie`, `GET /api/ouvrage/copies`, `POST /api/ouvrage/restaurer-copie` ; copie de l'état d'avant (non enregistré compris) pour adressage, plan historique, implantation, matériel, inventaire, confirmation en lot, import, adoption ; refus ou sans effet → aucune copie ; copie impossible → opération annulée ; restauration réversible : tests/test_copies_horodatees.py (17). Reste : écran de liste et bouton « Restaurer » (Codex). |
+| V1-7-03 (L154) | copies horodatées avant chaque opération lourde, restaurables depuis l'interface ; | fait | Copies horodatées avant chaque opération lourde (genvar/copies.py, tests/test_copies_horodatees.py), consultables et restaurables par Fichier › Copies de sauvegarde (tests_web/test_coque_bureau.py::test_copies_de_sauvegarde_restaurables) ; restauration annulable par Ctrl+Z. |
 | V1-7-04 (L155) | verrou d'ouvrage ; | fait | Verrou `<fichier>.verrou` posé à l'ouverture et à la création, repris automatiquement s'il est abandonné sur ce poste, repris sur l'autre poste seulement sur demande explicite ; le poste qui l'a perdu ne peut plus enregistrer : tests/test_verrou_ouvrage.py, tests_web/test_coque_bureau.py::test_journal_technique_et_reprise_d_un_ouvrage_verrouille. |
 | V1-7-05 (L156) | reprise sans perte après un arrêt brutal. | partiel | Fichier jamais à moitié écrit (remplacement atomique) ; reprise après arrêt brutal non testée. |
 | V1-7-06 (L157) | **Journal :** fichier tournant, sans donnée sensible, consultable dans l'interface. Aucune exception brute n'est affichée à l'utilisateur. | fait | journal.log tournant (1 Mo, 2 anciens fichiers), événements et erreurs sans donnée d'ouvrage, consultable par Aide › Journal technique ; erreurs affichées sans exception brute : tests/test_journal_technique.py, tests_web/test_coque_bureau.py::test_journal_technique_et_reprise_d_un_ouvrage_verrouille. |
@@ -382,14 +381,14 @@ le défaut démontré et obtenir une CI verte. Codex reste actif sur ce point.
 | V1-9-03 (L189) | script de construction reproductible. | fait | tests/test_ci.py::test_portable_archive_is_reproducible. |
 | V1-9-04 (L190) | **Données :** séparées du programme. Une mise à jour (y compris depuis la V0.30 ou la V0.31) ne touche jamais aux ouvrages. | partiel | Données dans un dossier distinct (SOREP_DATA_DIR, chemins.dossier_donnees) ; mise à jour depuis V0.30 / V0.31 sans test dédié. |
 | V1-9-05 (L191) | **Installation vierge :** sans donnée de démonstration. Un ouvrage d'exemple fictif est fourni à part. | partiel | Accueil vierge vérifié par l'essai portable ; ouvrage d'exemple fictif fourni à part (outils/interface_demo.py). |
-| V1-9-06 (L192) | **Documentation en français, avec captures de l'interface finale :** | absent | Documentation utilisateur avec captures de l'interface finale à rédiger. |
-| V1-9-07 (L193) | MANUEL_UTILISATEUR (PDF et Markdown) ; | absent | MANUEL_UTILISATEUR absent. |
-| V1-9-08 (L194) | GUIDE_ADMINISTRATEUR ; | absent | GUIDE_ADMINISTRATEUR absent (GUIDE_INSTALLATION_VIERGE.md partiel). |
+| V1-9-06 (L192) | **Documentation en français, avec captures de l'interface finale :** | fait | Documentation en français avec captures de l'interface actuelle, prises sur l'ouvrage fictif par outils/construire_manuel.py : tests/test_documentation.py. |
+| V1-9-07 (L193) | MANUEL_UTILISATEUR (PDF et Markdown) ; | fait | MANUEL_UTILISATEUR.md et MANUEL_UTILISATEUR.pdf (généré par outils/construire_manuel.py) : tests/test_documentation.py::test_documents_attendus, test_captures_du_manuel_presentes. |
+| V1-9-08 (L194) | GUIDE_ADMINISTRATEUR ; | fait | GUIDE_ADMINISTRATEUR.md (installation, sécurité, données, sauvegarde, verrou, journal, mise à jour) : tests/test_documentation.py::test_guide_administrateur_coherent_avec_le_code. |
 | V1-9-09 (L195) | REGLES_DE_NOMMAGE, générées depuis le référentiel ; | partiel | outils/documenter_referentiel.py génère la documentation du référentiel ; fichier REGLES_DE_NOMMAGE non produit. |
-| V1-9-10 (L196) | CHANGELOG.md, au format Keep a Changelog ; | absent | CHANGELOG.md absent (notes par version dans docs/NOTES_VERSION_0.32.md). |
+| V1-9-10 (L196) | CHANGELOG.md, au format Keep a Changelog ; | fait | CHANGELOG.md au format Keep a Changelog : tests/test_documentation.py::test_journal_des_modifications_au_format_keep_a_changelog. |
 | V1-9-11 (L197) | NOTES_DE_VERSION_1.0 ; | absent | NOTES_DE_VERSION_1.0 absentes. |
 | V1-9-12 (L198) | COMPATIBILITE.md ; | partiel | COMPATIBILITE.md présent ; aucune compatibilité déclarée faute d'essai réel (conforme). |
-| V1-9-13 (L199) | LICENCES_TIERCES.md. | partiel | Licences des polices et icônes embarquées consultables et testées (tests_web/test_ressources_embarquees.py) ; LICENCES_TIERCES.md absent. |
+| V1-9-13 (L199) | LICENCES_TIERCES.md. | fait | LICENCES_TIERCES.md : chaque bibliothèque livrée et chaque ressource embarquée avec sa licence (tests/test_documentation.py::test_chaque_bibliotheque_livree_a_sa_licence) ; les écarts au cahier sont suivis par V1-11-05. |
 | V1-10-01 (L203) | **Intégration continue GitHub Actions**, à chaque push et chaque pull request, sous Windows et Linux : | partiel | .github/workflows/ci.yml ; Actionlint 1.7.7 valide ; exécutions GitHub Windows/Linux encore à observer. |
 | V1-10-02 (L204) | dépendances à versions figées ; | fait | requirements-ci.lock, requirements-runtime.lock ; résolution Windows --dry-run réussie ; tests/test_ci.py ; Python/Node/actions figés. |
 | V1-10-03 (L205) | tests unitaires et d'intégration, avec couverture ; | fait | outils/ci.py python ; tests/test_ci.py ; 541 tests réussis, 0 ignoré, rapport JUnit et couverture du lancement local stable. |

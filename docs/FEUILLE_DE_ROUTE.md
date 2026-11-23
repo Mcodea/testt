@@ -59,7 +59,8 @@ Principes retenus de ces outils, et ce qu'OGIAS en fait :
 - [x] Annulation Ctrl+Z / Ctrl+Y (23/11).
 - [x] Duplication d'équipement (23/11).
 - [ ] Duplication et réordonnancement de variables.
-- [ ] Documentation utilisateur et administrateur, CHANGELOG, notes de version.
+- [x] Manuel (Markdown et PDF avec captures), guide administrateur, CHANGELOG, licences tierces (23/11).
+- [ ] Notes de version 1.0, à la livraison.
 
 ### 4. Vers la version 1.0 vendable
 - [ ] Décisions utilisateur sur le référentiel (A1, R1, D5-b) puis application.

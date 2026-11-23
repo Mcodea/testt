@@ -143,7 +143,7 @@ class Application:
         "fiche_ouvrage": "fiche de l'ouvrage", "definir": "modification de l'ouvrage", "es_definir": "modification d'E/S",
         "es_valider": "validation d'E/S", "materiel_action": "matériel", "modules": "cartes d'E/S",
         "variables_action": "variables", "adressage_action": "adressage", "grille_appliquer": "grille d'ingénierie",
-        "equipement_attribut": "attribut d'équipement", "revisions_action": "indice de l'ouvrage",
+        "equipement_attribut": "attribut d'équipement", "revisions_action": "indice de l'ouvrage", "restaurer_copie": "restauration d'une copie",
     }
 
     def _annulable(self):

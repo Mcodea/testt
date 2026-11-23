@@ -62,6 +62,7 @@ const Coque = (() => {
   ["Fichier", [["Mes ouvrages", "", () => naviguer("#/ouvrages")],
                ["Nouvel ouvrage neuf…", "", () => nouveau("Neuf")],
                ["Reprendre un projet existant…", "", () => nouveau("Existant")], "-",
+               ["Copies de sauvegarde…", "", () => window.afficherCopiesSauvegarde && window.afficherCopiesSauvegarde(), () => !!E.ouvrage?.ouvert],
                ["Fermer l'ouvrage", "", () => fermer(), () => !!E.ouvrage?.ouvert]]],
   ["Édition", [["Annuler", "Ctrl Z", () => window.ogiasAnnuler && window.ogiasAnnuler(), () => !!E.ouvrage?.ouvert],
                ["Rétablir", "Ctrl Y", () => window.ogiasRetablir && window.ogiasRetablir(), () => !!E.ouvrage?.ouvert], "-",

@@ -1,5 +1,8 @@
 # SOREP — Installation propre, sans donnée de projet
 
+> **Remplacé** : ce document décrit l'ancienne interface Qt. Installation, données, sauvegarde et mise à jour de la
+> version actuelle : **`GUIDE_ADMINISTRATEUR.md`** ; utilisation : **`MANUEL_UTILISATEUR.md`** (et sa version PDF).
+
 ## Contenu de cette livraison
 
 - Au premier démarrage : **0 ouvrage**, **0 équipement saisi**, **0 variable enregistrée**, **0 adresse affectée** et **aucun résultat de test affiché**.

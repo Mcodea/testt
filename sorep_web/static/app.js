@@ -26,6 +26,21 @@ async function ogiasHistorique(route, verbe) {
 }
 window.ogiasAnnuler = () => ogiasHistorique("/api/annuler", "Annulé");
 window.ogiasRetablir = () => ogiasHistorique("/api/retablir", "Rétabli");
+/* Copies horodatées (V1-7-03) : OGIAS copie l'ouvrage avant chaque opération lourde ; ici on les consulte et on
+   restaure l'une d'elles (une copie de l'état courant est faite d'abord ; Ctrl+Z annule aussi la restauration). */
+window.afficherCopiesSauvegarde = async () => {
+  let d; try { d = await api("/api/ouvrage/copies"); } catch (e) { return toast(e.message, true); }
+  const m = ouvrirModale(`<div class="boite-tete"><h2>Copies de sauvegarde</h2><p>OGIAS copie l'ouvrage avant chaque opération lourde (adressage, implantation, matériel, import, adoption…). Restaurer une copie la recharge ; l'état actuel est d'abord copié lui aussi.</p></div>
+    <div class="boite-corps">${d.copies.length ? `<table data-o-tableau="sans-selection" data-o-cle="copies"><thead><tr><th>Date</th><th>Copie</th><th class="num">Taille</th><th></th></tr></thead><tbody>
+      ${d.copies.map(c => `<tr><td class="mono">${esc(c.le)}</td><td>${esc(c.libelle)}</td><td class="num">${Math.max(1, Math.round(c.taille / 1024))} Ko</td><td style="text-align:right"><button type="button" data-copie="${esc(c.nom)}">Restaurer</button></td></tr>`).join("")}</tbody></table>`
+      : '<div class="vide-bloc">Aucune copie : elles sont créées avant la première opération lourde.</div>'}</div>
+    <div class="boite-pied"><button type="button" data-fermer>Fermer</button></div>`, true);
+  m.querySelectorAll("[data-copie]").forEach(b => b.onclick = () => {
+    const c = d.copies.find(x => x.nom === b.dataset.copie);
+    confirmer("Restaurer cette copie ?", `L'ouvrage revient à son état du ${c.le} (${c.libelle.toLowerCase()}). L'état actuel est copié d'abord ; Ctrl+Z annule aussi la restauration.`, "Restaurer",
+      async () => { try { await api("/api/ouvrage/restaurer-copie", {nom: c.nom}); toast(`Copie du ${c.le} restaurée.`); await afficher(); } catch (e) { toast(e.message, true); } });
+  });
+};
 /* Journal technique (V1-7-06) : démarrages, ouvertures, exports, reprises de verrou et erreurs inattendues. */
 window.afficherJournalTechnique = async () => {
   let d; try { d = await api("/api/journal"); } catch (e) { return toast(e.message, true); }

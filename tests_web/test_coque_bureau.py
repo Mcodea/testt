@@ -822,6 +822,21 @@ class TestCoqueBureau(ServeurNavigateur):
         self.assertEqual(len(eqs), avant + 1)
         self.assertTrue(any(e['pcf'].endswith('HV02') for e in eqs))
 
+    def test_copies_de_sauvegarde_restaurables(self):
+        """V1-7-03 : la copie faite avant l'adressage est listée par Fichier › Copies de sauvegarde et restaurée."""
+        plan = self.api('/api/adressage')
+        self.api('/api/adressage/action', {'action': 'appliquer', 'empreinte': plan['empreinte'], 'niveaux': ['automate']})
+        self.assertTrue(any(v.get('adresse') for v in self.api('/api/variables')['lignes']))
+        self.ouvrir('#/dashboard')
+        self.page.locator('#o-menus > button', has_text='Fichier').click()
+        self.page.locator('.o-menu').get_by_role('menuitem', name='Copies de sauvegarde…').click()
+        boite = self.page.locator('.boite')
+        self.assertIn("Avant l'adressage", boite.inner_text())
+        boite.locator('[data-copie]').first.click()
+        self.page.locator('.boite').last.get_by_role('button', name='Restaurer').click()
+        self.page.wait_for_function("() => [...document.querySelectorAll('#toasts .toast')].some(t => t.textContent.includes('restaurée'))")
+        self.assertFalse(any(v.get('adresse') for v in self.api('/api/variables')['lignes']))   # état d'avant l'adressage
+
     def test_indices_de_livraison(self):
         """22/11 : livrer l'indice A, passer à B, modifier un équipement : la Recette liste la modification."""
         self.ouvrir('#/recette')
