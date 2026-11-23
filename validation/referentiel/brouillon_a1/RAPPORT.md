@@ -1,10 +1,10 @@
 # Brouillon A1 : renommages approuvés
 
-Généré par `outils/brouillon_a1.py` : ne pas modifier à la main. **Publié le 23/11/2026** (autorisation de l'utilisateur) : `genvar/data/` reprend ce candidat ; l'état d'avant est conservé dans `validation/referentiel/avant_a1/`. Aucun ajout n'est appliqué, aucun ouvrage n'est touché.
+Généré par `outils/brouillon_a1.py` : ne pas modifier à la main. **Publié le 23/11/2026** (autorisation de l'utilisateur) : `genvar/data/` reprend ce candidat ; l'état d'avant est conservé dans `validation/referentiel/avant_a1/`. Aucun ouvrage n'est touché.
 
 - Clés de signaux renommées dans le candidat : **39** (pour les 38 renommages approuvés sur 57 ; refusés : 19).
-- Ajouts : **49 non appliqués** (aucune réponse de l'utilisateur).
-- Contrôles du dépôt de référentiel : 0 erreur(s), 19 alerte(s) ; 0 clé(s) en double.
+- Ajouts : **48 appliqués** (« Ajouts : tous approuvés »), 1 non appliqué(s) (voir « À examiner »).
+- Contrôles du dépôt de référentiel : 0 erreur(s), 27 alerte(s) ; 0 clé(s) en double.
 
 ## Renommages appliqués
 
@@ -50,6 +50,12 @@ Généré par `outils/brouillon_a1.py` : ne pas modifier à la main. **Publié l
 | VE | ET | `TS_MAPV` → `TS_MA_PV` | `ET_SR02VE01_MA_PV` |
 | XV | ET | `TS_DEFCPL` → `TS_DEF_CPL` | `ET_SR02XV01_DEF_CPL` |
 
+## Ajouts appliqués
+
+Chaque E/S est un signal physique (`ES_…`) avec son information de télétransmission et une règle documentaire ; tout est au statut « À valider » (unités, échelles et logiques à renseigner). Une présence « Option » sans variante crée une option portant le libellé de l'E/S. Les types AB, CE, CG, DG, FI et UV sont créés.
+
+`AB.EA.PRE`, `AB.ET.DEF_COMP`, `AB.ET.MA_COMP`, `AB.ET.NIV_B`, `AB.ET.NIV_H`, `AL.ET.DEF_SEC`, `AR.ET.PORTE`, `CE.ET.IMP`, `CG.ET.DEF`, `CG.ET.FUITE`, `CG.ET.INV`, `CG.ET.VIDE`, `DG.EA.VAL`, `DG.ET.DEF`, `DG.ET.SEUIL_1`, `DG.ET.SEUIL_2`, `FI.EA.PRE_DIF`, `FI.ET.COLMAT`, `FI.ET.LAVAGE`, `FV.EA.POS`, `FV.ET.DEF`, `FV.ET.FDC_FER`, `FV.ET.FDC_OUV`, `FV.ET.LOC`, `FV.SA.CONS_POS`, `LT.ET.NIV_TB`, `LT.ET.NIV_TH`, `OU.ET.INTRUS`, `OU.ET.PORTE`, `PD.ET.NIV_B`, `PD.ET.NIV_TB`, `PM.ET.DEF_DEM`, `PM.ET.DEF_HUM`, `PM.ET.DEF_PTC`, `PM.ST.CMD_ACQ`, `UV.EA.INT_UV`, `UV.ET.DEF`, `UV.ET.DEF_LAMP`, `UV.ET.MA`, `UV.ST.CMD_MA`, `VV.EA.FRQ`, `VV.EA.INT`, `VV.ET.DEF`, `VV.ET.DISPO`, `VV.ET.MA`, `VV.SA.CONS_FRQ`, `VV.ST.CMD_ACQ`, `VV.ST.CMD_MA`
+
 ## Renommages refusés (conservés tels quels)
 
 `EV.ST.FER`, `EV.ST.OUV`, `GA.ET.INTR`, `GE.ST.AR`, `GE.ST.MA`, `KM.ST.AR`, `KM.ST.MA`, `MV.ST.FER`, `MV.ST.OUV`, `PD.ST.AR`, `PD.ST.MA`, `SP.ST.AR`, `SP.ST.MA`, `SV.ST.AR`, `SV.ST.FER`, `SV.ST.OUV`, `XV.ST.AR`, `XV.ST.FER`, `XV.ST.OUV`
@@ -62,6 +68,10 @@ Le nom physique de la bibliothèque V1 diffère du code fonctionnel : il est por
 | --- | --- | --- |
 | `PD.SA.TAUX` | `TR_TAU` | `CONS_TAU` |
 | `PM.SA.CONS_FREQ` | `ES_CONS_FRQ` | `CONS_FRQ` |
+
+## À examiner
+
+- TT.EA.TMP.2 : la clé TT.ES_TMP existe déjà (variante « Sonde PT100 directe » de la même E/S) : non ajoutée, à examiner.
 
 ## Effet sur les ouvrages
 

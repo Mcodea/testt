@@ -1,6 +1,6 @@
 # Règles de nommage OGIAS
 
-Document généré par `outils/documenter_regles_nommage.py` depuis le code et le référentiel livrés (« 2026-11-11 référentiel V2 (noms physiques, CT consolidé dans FT, règles documentaires, profil VANNE_MV) + A1 (39 renommages approuvés) ») : ne pas modifier à la main. Les exemples sont fictifs (lieu XTST).
+Document généré par `outils/documenter_regles_nommage.py` depuis le code et le référentiel livrés (« 2026-11-11 référentiel V2 (noms physiques, CT consolidé dans FT, règles documentaires, profil VANNE_MV) + A1 (39 renommages approuvés, 48 ajouts) ») : ne pas modifier à la main. Les exemples sont fictifs (lieu XTST).
 
 ## 1. Repères
 
@@ -49,14 +49,14 @@ OGIAS ne renomme jamais une variable de lui-même : un nom en collision est sign
 
 ## 4. Types d'équipement du référentiel
 
-50 types.
+56 types.
 
-**Hydraulique** : `CL` Clapet, `CU` Cuve (réservoir, bâche), `DA` Cuve de stockage, `EV` Électrovanne, `FQ` Compteur d’achat d’eau en gros, `FV` Vanne de régulation, `HV` Vanne manuelle, `MV` Vanne motorisée, `PD` Pompe doseuse, `PE` Pompe d’épuisement, `PM` Pompe, `RP` Régulateur / réducteur de pression, `RT` Rétention, `SP` Groupe de surpression, `SV` Vanne de trop-plein, `XV` Vanne de sécurité
+**Hydraulique** : `CL` Clapet, `CU` Cuve (réservoir, bâche), `DA` Cuve de stockage, `EV` Électrovanne, `FQ` Compteur d’achat d’eau en gros, `FV` Vanne de régulation, `HV` Vanne manuelle, `MV` Vanne motorisée, `PD` Pompe doseuse, `PE` Pompe d’épuisement, `PM` Pompe, `RP` Régulateur / réducteur de pression, `RT` Rétention, `SP` Groupe de surpression, `SV` Vanne de trop-plein, `XV` Vanne de sécurité, `AB` Ballon anti-bélier
 
 **Instrumentation** : `AT` Analyseur de qualité, `FS` Contrôleur de circulation, `FT` Débitmètre, `LH` Détecteur de niveau (contact), `LS` Poires de niveau, `LT` Capteur de niveau, `PS` Pressostat, `PT` Capteur de pression, `TT` Capteur de température
 
-**Électricité et automatisme** : `AL` Alimentation 24 V CC, `AR` Armoire électrique, `AU` Automate programmable, `DJ` Disjoncteur, `EL` Électricité, `GE` Groupe électrogène, `IS` Interrupteur-sectionneur, `IV` Inverseur de source, `KM` Contacteur / départ moteur, `LI` Liaison de communication, `OD` Onduleur, `TR` Transformateur, `VV` Variateur de vitesse
+**Électricité et automatisme** : `AL` Alimentation 24 V CC, `AR` Armoire électrique, `AU` Automate programmable, `DJ` Disjoncteur, `EL` Électricité, `GE` Groupe électrogène, `IS` Interrupteur-sectionneur, `IV` Inverseur de source, `KM` Contacteur / départ moteur, `LI` Liaison de communication, `OD` Onduleur, `TR` Transformateur, `VV` Variateur de vitesse, `CE` Compteur d'énergie électrique
 
-**Bâtiment et sécurité** : `CH` Chauffage, `CM` Climatisation, `DE` Déshumidificateur, `EX` Extracteur d’air, `GA` Gestion d’accès, `IC` Incendie, `IN` Inondation, `VE` Ventilateur d’air, `XT` Détecteur TOR (contact)
+**Bâtiment et sécurité** : `CH` Chauffage, `CM` Climatisation, `DE` Déshumidificateur, `EX` Extracteur d’air, `GA` Gestion d’accès, `IC` Incendie, `IN` Inondation, `VE` Ventilateur d’air, `XT` Détecteur TOR (contact), `DG` Détecteur de gaz
 
 **Structure** : `AP` Source, `OU` Ouvrage (site), `UF` Unité fonctionnelle

@@ -42,10 +42,24 @@ class TestBrouillonA1(unittest.TestCase):
         self.assertNotIn("A1 (", self.livre["version"])
         self.assertNotEqual(self.candidat["catalogue"]["signaux"], self.livre["signaux"])
 
-    def test_aucun_ajout_et_aucun_type_cree(self):
-        self.assertEqual(len(self.candidat["catalogue"]["signaux"]), len(self.livre["signaux"]))
-        self.assertEqual([t["code"] for t in self.candidat["catalogue"]["types"]], [t["code"] for t in self.livre["types"]])
-        self.assertEqual(self.rapport["ajouts_non_appliques"], 49)
+    def test_ajouts_approuves_appliques_sauf_cle_existante(self):
+        """« Ajouts : tous approuvés » : 48 sur 49 ; TT.EA.TMP.2 a la même clé que TT.ES_TMP et reste à examiner."""
+        self.assertEqual(len(self.rapport["ajoutes"]), 48)
+        self.assertEqual(self.rapport["ajouts_non_appliques"], 1)
+        self.assertTrue(any("TT.EA.TMP.2" in x for x in self.rapport["ecarts"]))
+        types = {t["code"] for t in self.candidat["catalogue"]["types"]}
+        self.assertTrue({"AB", "CE", "CG", "DG", "FI", "UV"} <= types)
+        cles = {(s["type"], s["es"], s["code"]) for s in self.candidat["catalogue"]["signaux"]}
+        for ident in self.rapport["ajoutes"]:
+            type_, nature, code = ident.split(".", 2)
+            self.assertIn((type_, nature, code), cles, ident)
+
+    def test_ajouts_a_valider_sans_valeur_inventee(self):
+        ajoutes = [s for s in self.candidat["catalogue"]["signaux"] if "décision A1 du 23/11/2026" in s["remarque"]]
+        self.assertGreaterEqual(len(ajoutes), 48)
+        for s in ajoutes:
+            self.assertEqual(s["statut"], "À valider", s)
+            self.assertEqual(s["unite"], "", s)
 
     def test_les_refus_gardent_leur_code_et_les_approbations_changent(self):
         actuels = {(s["type"], s["es"], s["code"]) for s in self.candidat["catalogue"]["signaux"]}
@@ -60,7 +74,7 @@ class TestBrouillonA1(unittest.TestCase):
             self.assertNotIn((a["type"], a["nature"], a["ancienne"].split("_", 1)[1]), actuels, a)
 
     def test_aucun_ecart_et_exceptions_d4_decidees(self):
-        self.assertEqual(self.rapport["ecarts"], [])
+        self.assertEqual([x for x in self.rapport["ecarts"] if "TT.EA.TMP.2" not in x], [])
         self.assertEqual({x["ident"]: x["suffixe_es"] for x in self.rapport["exceptions_d4"]},
                          {"PD.SA.TAUX": "CONS_TAU", "PM.SA.CONS_FREQ": "CONS_FRQ"})
 

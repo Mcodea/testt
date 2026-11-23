@@ -1,5 +1,5 @@
 {
- "version": "2026-11-11 référentiel V2 (noms physiques, CT consolidé dans FT, règles documentaires, profil VANNE_MV) + A1 (39 renommages approuvés)",
+ "version": "2026-11-11 référentiel V2 (noms physiques, CT consolidé dans FT, règles documentaires, profil VANNE_MV) + A1 (39 renommages approuvés, 48 ajouts)",
  "types": [
   {
    "code": "AP",
@@ -19,7 +19,9 @@
    "categorie": "Ouvrage",
    "famille_biblio": "",
    "options": [
-    "Détection incendie"
+    "Détection incendie",
+    "Intrusion",
+    "Porte ouverte"
    ],
    "remarque": "Informations du site, sans équipement précis. Code proposé, à valider.",
    "domaine": "Structure"
@@ -99,7 +101,9 @@
    "designation": "Vanne de régulation",
    "categorie": "Équipement",
    "famille_biblio": "",
-   "options": [],
+   "options": [
+    "Télécommandée"
+   ],
    "remarque": "",
    "domaine": "Hydraulique"
   },
@@ -137,7 +141,8 @@
    "options": [
     "Télécommandée",
     "Taux réglable",
-    "Boutons locaux"
+    "Boutons locaux",
+    "Bac de réactif"
    ],
    "remarque": "",
    "domaine": "Hydraulique"
@@ -160,7 +165,10 @@
     "Télécommandée",
     "Variateur",
     "Complément",
-    "Boutons locaux"
+    "Boutons locaux",
+    "Démarreur progressif",
+    "Pompe immergée",
+    "Réarmement à distance"
    ],
    "remarque": "Démarrage direct par défaut ; option Variateur pour une pompe à vitesse variable.",
    "domaine": "Hydraulique"
@@ -286,7 +294,8 @@
    "categorie": "Équipement",
    "famille_biblio": "Mesures",
    "options": [
-    "Seuils réglables"
+    "Seuils réglables",
+    "Contact de sécurité"
    ],
    "remarque": "Transmetteur de niveau ; seuils calculés par l'automate.",
    "domaine": "Instrumentation"
@@ -328,7 +337,9 @@
    "designation": "Alimentation 24 V CC",
    "categorie": "Équipement",
    "famille_biblio": "Électricité",
-   "options": [],
+   "options": [
+    "Redondante"
+   ],
    "remarque": "Alimentation de commande, avec contact de défaut.",
    "domaine": "Électricité et automatisme"
   },
@@ -339,7 +350,8 @@
    "famille_biblio": "Électricité",
    "options": [
     "Ventilation",
-    "Parafoudre"
+    "Parafoudre",
+    "Porte ouverte"
    ],
    "remarque": "Défauts communs de l'armoire.",
    "domaine": "Électricité et automatisme"
@@ -447,7 +459,11 @@
    "designation": "Variateur de vitesse",
    "categorie": "Équipement",
    "famille_biblio": "",
-   "options": [],
+   "options": [
+    "Fréquence",
+    "Intensité",
+    "Commandé en câblé"
+   ],
    "remarque": "",
    "domaine": "Électricité et automatisme"
   },
@@ -537,6 +553,73 @@
    "options": [],
    "remarque": "Contact de détection générique (intrusion, porte, fuite).",
    "domaine": "Bâtiment et sécurité"
+  },
+  {
+   "code": "AB",
+   "designation": "Ballon anti-bélier",
+   "categorie": "Équipement",
+   "famille_biblio": "",
+   "options": [
+    "Compresseur",
+    "Niveau bas",
+    "Niveau haut"
+   ],
+   "remarque": "Type ajouté par la décision A1 du 23/11/2026 (bibliothèque V1) : à valider.",
+   "domaine": "Hydraulique"
+  },
+  {
+   "code": "CE",
+   "designation": "Compteur d'énergie électrique",
+   "categorie": "Équipement",
+   "famille_biblio": "",
+   "options": [],
+   "remarque": "Type ajouté par la décision A1 du 23/11/2026 (bibliothèque V1) : à valider.",
+   "domaine": "Électricité et automatisme"
+  },
+  {
+   "code": "CG",
+   "designation": "Chloration gazeuse",
+   "categorie": "Équipement",
+   "famille_biblio": "",
+   "options": [
+    "Inverseur"
+   ],
+   "remarque": "Type ajouté par la décision A1 du 23/11/2026 (bibliothèque V1) : à valider.",
+   "domaine": "Traitement"
+  },
+  {
+   "code": "DG",
+   "designation": "Détecteur de gaz",
+   "categorie": "Équipement",
+   "famille_biblio": "",
+   "options": [
+    "Valeur de l'analyseur / détecteur"
+   ],
+   "remarque": "Type ajouté par la décision A1 du 23/11/2026 (bibliothèque V1) : à valider.",
+   "domaine": "Bâtiment et sécurité"
+  },
+  {
+   "code": "FI",
+   "designation": "Filtre",
+   "categorie": "Équipement",
+   "famille_biblio": "",
+   "options": [
+    "Pression différentielle",
+    "Lavage automatique"
+   ],
+   "remarque": "Type ajouté par la décision A1 du 23/11/2026 (bibliothèque V1) : à valider.",
+   "domaine": "Traitement"
+  },
+  {
+   "code": "UV",
+   "designation": "Réacteur ultraviolet",
+   "categorie": "Équipement",
+   "famille_biblio": "",
+   "options": [
+    "Télécommandé"
+   ],
+   "remarque": "Type ajouté par la décision A1 du 23/11/2026 (bibliothèque V1) : à valider.",
+   "domaine": "Traitement"
   }
  ],
  "signaux": [
@@ -6818,6 +6901,1672 @@
    "logique": "Télésignalisation à partir du contact TOR ; polarité à confirmer.",
    "organe": "",
    "remarque": ""
+  },
+  {
+   "type": "AB",
+   "information": "Pression (Pression du ballon)",
+   "famille": "ES",
+   "code": "PRE",
+   "type_logique": "INT",
+   "unite": "",
+   "es": "EA",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "AB",
+   "information": "Pression (Pression du ballon)",
+   "famille": "TM",
+   "code": "PRE",
+   "type_logique": "REAL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "ES_PRE",
+   "logique": ""
+  },
+  {
+   "type": "AB",
+   "information": "Défaut compresseur",
+   "famille": "ES",
+   "code": "DEF_COMP",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Compresseur",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "AB",
+   "information": "Défaut compresseur",
+   "famille": "TS",
+   "code": "DEF_COMP",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": true,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "AB",
+   "information": "Compresseur en marche",
+   "famille": "ES",
+   "code": "MA_COMP",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Compresseur",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "AB",
+   "information": "Compresseur en marche",
+   "famille": "TS",
+   "code": "MA_COMP",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "AB",
+   "information": "Niveau bas (Niveau d'eau bas)",
+   "famille": "ES",
+   "code": "NIV_B",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Niveau bas",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "AB",
+   "information": "Niveau bas (Niveau d'eau bas)",
+   "famille": "TS",
+   "code": "NIV_B",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "AB",
+   "information": "Niveau haut (Niveau d'eau haut)",
+   "famille": "ES",
+   "code": "NIV_H",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Niveau haut",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "AB",
+   "information": "Niveau haut (Niveau d'eau haut)",
+   "famille": "TS",
+   "code": "NIV_H",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "AL",
+   "information": "Défaut alimentation de secours (Défaut alimentation secours)",
+   "famille": "ES",
+   "code": "DEF_SEC",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Redondante",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "AL",
+   "information": "Défaut alimentation de secours (Défaut alimentation secours)",
+   "famille": "TS",
+   "code": "DEF_SEC",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": true,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "AR",
+   "information": "Porte ouverte (Porte d'armoire ouverte)",
+   "famille": "ES",
+   "code": "PORTE",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Porte ouverte",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "AR",
+   "information": "Porte ouverte (Porte d'armoire ouverte)",
+   "famille": "TS",
+   "code": "PORTE",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "CE",
+   "information": "Impulsions de comptage (Impulsions d'énergie active (kWh))",
+   "famille": "ES",
+   "code": "IMP",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "CE",
+   "information": "Impulsions de comptage (Impulsions d'énergie active (kWh))",
+   "famille": "CP",
+   "code": "ENER",
+   "type_logique": "DINT",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "CG",
+   "information": "Défaut général (Défaut chloromètre)",
+   "famille": "ES",
+   "code": "DEF",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "CG",
+   "information": "Défaut général (Défaut chloromètre)",
+   "famille": "TS",
+   "code": "DEF",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": true,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "CG",
+   "information": "Fuite détectée (Détection de fuite de chlore)",
+   "famille": "ES",
+   "code": "FUITE",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Obligatoire",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "CG",
+   "information": "Fuite détectée (Détection de fuite de chlore)",
+   "famille": "TS",
+   "code": "FUITE",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "CG",
+   "information": "Inversion sur réserve (Inverseur sur bouteille de réserve)",
+   "famille": "ES",
+   "code": "INV",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Inverseur",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "CG",
+   "information": "Inversion sur réserve (Inverseur sur bouteille de réserve)",
+   "famille": "TS",
+   "code": "INV",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "CG",
+   "information": "Réservoir en service vide (Bouteille en service vide)",
+   "famille": "ES",
+   "code": "VIDE",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "CG",
+   "information": "Réservoir en service vide (Bouteille en service vide)",
+   "famille": "TS",
+   "code": "VIDE",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "DG",
+   "information": "Valeur de l'analyseur / détecteur (Concentration mesurée)",
+   "famille": "ES",
+   "code": "VAL",
+   "type_logique": "INT",
+   "unite": "",
+   "es": "EA",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Valeur de l'analyseur / détecteur",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "DG",
+   "information": "Valeur de l'analyseur / détecteur (Concentration mesurée)",
+   "famille": "TM",
+   "code": "VAL",
+   "type_logique": "REAL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "ES_VAL",
+   "logique": ""
+  },
+  {
+   "type": "DG",
+   "information": "Défaut général (Défaut détecteur)",
+   "famille": "ES",
+   "code": "DEF",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "DG",
+   "information": "Défaut général (Défaut détecteur)",
+   "famille": "TS",
+   "code": "DEF",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": true,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "DG",
+   "information": "Seuil 1 atteint",
+   "famille": "ES",
+   "code": "SEUIL_1",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "DG",
+   "information": "Seuil 1 atteint",
+   "famille": "TS",
+   "code": "SEUIL_1",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "DG",
+   "information": "Seuil 2 atteint",
+   "famille": "ES",
+   "code": "SEUIL_2",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "DG",
+   "information": "Seuil 2 atteint",
+   "famille": "TS",
+   "code": "SEUIL_2",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "FI",
+   "information": "Pression différentielle",
+   "famille": "ES",
+   "code": "PRE_DIF",
+   "type_logique": "INT",
+   "unite": "",
+   "es": "EA",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Pression différentielle",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "FI",
+   "information": "Pression différentielle",
+   "famille": "TM",
+   "code": "PRE_DIF",
+   "type_logique": "REAL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "ES_PRE_DIF",
+   "logique": ""
+  },
+  {
+   "type": "FI",
+   "information": "Colmatage (Filtre colmaté)",
+   "famille": "ES",
+   "code": "COLMAT",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "FI",
+   "information": "Colmatage (Filtre colmaté)",
+   "famille": "TS",
+   "code": "COLMAT",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "FI",
+   "information": "Lavage en cours",
+   "famille": "ES",
+   "code": "LAVAGE",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Lavage automatique",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "FI",
+   "information": "Lavage en cours",
+   "famille": "TS",
+   "code": "LAVAGE",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "FV",
+   "information": "Position (Recopie de position (0–100 %))",
+   "famille": "ES",
+   "code": "POS",
+   "type_logique": "INT",
+   "unite": "",
+   "es": "EA",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "FV",
+   "information": "Position (Recopie de position (0–100 %))",
+   "famille": "TM",
+   "code": "POS",
+   "type_logique": "REAL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "ES_POS",
+   "logique": ""
+  },
+  {
+   "type": "FV",
+   "information": "Défaut général (Défaut actionneur)",
+   "famille": "ES",
+   "code": "DEF",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "FV",
+   "information": "Défaut général (Défaut actionneur)",
+   "famille": "TS",
+   "code": "DEF",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": true,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "FV",
+   "information": "Fin de course fermé (Fin de course fermée)",
+   "famille": "ES",
+   "code": "FDC_FER",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "FV",
+   "information": "Fin de course fermé (Fin de course fermée)",
+   "famille": "TS",
+   "code": "FER",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "FV",
+   "information": "Fin de course ouvert (Fin de course ouverte)",
+   "famille": "ES",
+   "code": "FDC_OUV",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "FV",
+   "information": "Fin de course ouvert (Fin de course ouverte)",
+   "famille": "TS",
+   "code": "OUV",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "FV",
+   "information": "Sélecteur en local (Mode local)",
+   "famille": "ES",
+   "code": "LOC",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "FV",
+   "information": "Sélecteur en local (Mode local)",
+   "famille": "TS",
+   "code": "LOC",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "FV",
+   "information": "Consigne de position (Consigne de position (0–100 %))",
+   "famille": "ES",
+   "code": "CONS_POS",
+   "type_logique": "INT",
+   "unite": "",
+   "es": "SA",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Télécommandée",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "FV",
+   "information": "Consigne de position (Consigne de position (0–100 %))",
+   "famille": "TR",
+   "code": "POS",
+   "type_logique": "REAL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "ES_CONS_POS",
+   "logique": ""
+  },
+  {
+   "type": "FV",
+   "information": "Consigne de position (Consigne de position (0–100 %))",
+   "famille": "RTR",
+   "code": "POS",
+   "type_logique": "REAL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "LT",
+   "information": "Niveau très bas (Niveau très bas (contact de sécurité))",
+   "famille": "ES",
+   "code": "NIV_TB",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Contact de sécurité",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "LT",
+   "information": "Niveau très bas (Niveau très bas (contact de sécurité))",
+   "famille": "TS",
+   "code": "NIV_TB",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "LT",
+   "information": "Niveau très haut (Niveau très haut (contact de sécurité))",
+   "famille": "ES",
+   "code": "NIV_TH",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Contact de sécurité",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "LT",
+   "information": "Niveau très haut (Niveau très haut (contact de sécurité))",
+   "famille": "TS",
+   "code": "NIV_TH",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "OU",
+   "information": "Intrusion (Intrusion détectée)",
+   "famille": "ES",
+   "code": "INTRUS",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Intrusion",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "OU",
+   "information": "Intrusion (Intrusion détectée)",
+   "famille": "TS",
+   "code": "INTRUS",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "OU",
+   "information": "Porte ouverte (Porte d'accès ouverte)",
+   "famille": "ES",
+   "code": "PORTE",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Porte ouverte",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "OU",
+   "information": "Porte ouverte (Porte d'accès ouverte)",
+   "famille": "TS",
+   "code": "PORTE",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "PD",
+   "information": "Niveau bas (Niveau bas du bac de réactif)",
+   "famille": "ES",
+   "code": "NIV_B",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Bac de réactif",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "PD",
+   "information": "Niveau bas (Niveau bas du bac de réactif)",
+   "famille": "TS",
+   "code": "NIV_B",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "PD",
+   "information": "Niveau très bas (Niveau très bas du bac (arrêt dosage))",
+   "famille": "ES",
+   "code": "NIV_TB",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Bac de réactif",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "PD",
+   "information": "Niveau très bas (Niveau très bas du bac (arrêt dosage))",
+   "famille": "TS",
+   "code": "NIV_TB",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "PM",
+   "information": "Défaut démarreur progressif",
+   "famille": "ES",
+   "code": "DEF_DEM",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Démarreur progressif",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "PM",
+   "information": "Défaut démarreur progressif",
+   "famille": "TS",
+   "code": "DEF_DEM",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": true,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "PM",
+   "information": "Défaut humidité moteur (Humidité moteur (sonde d'étanchéité))",
+   "famille": "ES",
+   "code": "DEF_HUM",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Pompe immergée",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "PM",
+   "information": "Défaut humidité moteur (Humidité moteur (sonde d'étanchéité))",
+   "famille": "TS",
+   "code": "DEF_HUM",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": true,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "PM",
+   "information": "Défaut sondes PTC moteur (Température moteur (sondes PTC))",
+   "famille": "ES",
+   "code": "DEF_PTC",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Pompe immergée",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "PM",
+   "information": "Défaut sondes PTC moteur (Température moteur (sondes PTC))",
+   "famille": "TS",
+   "code": "DEF_PTC",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": true,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "PM",
+   "information": "Commande réarmement (Réarmement des défauts)",
+   "famille": "ES",
+   "code": "CMD_ACQ",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ST",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Réarmement à distance",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "PM",
+   "information": "Commande réarmement (Réarmement des défauts)",
+   "famille": "TC",
+   "code": "ACQ",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "ES_CMD_ACQ",
+   "logique": ""
+  },
+  {
+   "type": "UV",
+   "information": "Intensité UV (Intensité UV mesurée)",
+   "famille": "ES",
+   "code": "INT_UV",
+   "type_logique": "INT",
+   "unite": "",
+   "es": "EA",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "UV",
+   "information": "Intensité UV (Intensité UV mesurée)",
+   "famille": "TM",
+   "code": "INT_UV",
+   "type_logique": "REAL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "ES_INT_UV",
+   "logique": ""
+  },
+  {
+   "type": "UV",
+   "information": "Défaut général (Défaut réacteur)",
+   "famille": "ES",
+   "code": "DEF",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "UV",
+   "information": "Défaut général (Défaut réacteur)",
+   "famille": "TS",
+   "code": "DEF",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": true,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "UV",
+   "information": "Défaut lampe",
+   "famille": "ES",
+   "code": "DEF_LAMP",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "UV",
+   "information": "Défaut lampe",
+   "famille": "TS",
+   "code": "DEF_LAMP",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": true,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "UV",
+   "information": "En marche (Réacteur en marche)",
+   "famille": "ES",
+   "code": "MA",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "UV",
+   "information": "En marche (Réacteur en marche)",
+   "famille": "TS",
+   "code": "MA",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "UV",
+   "information": "Commande marche (Commande de marche)",
+   "famille": "ES",
+   "code": "CMD_MA",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ST",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Télécommandé",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "UV",
+   "information": "Commande marche (Commande de marche)",
+   "famille": "TC",
+   "code": "MA",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "ES_CMD_MA",
+   "logique": ""
+  },
+  {
+   "type": "VV",
+   "information": "Fréquence (Fréquence de sortie)",
+   "famille": "ES",
+   "code": "FRQ",
+   "type_logique": "INT",
+   "unite": "",
+   "es": "EA",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Fréquence",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "VV",
+   "information": "Fréquence (Fréquence de sortie)",
+   "famille": "TM",
+   "code": "FRQ",
+   "type_logique": "REAL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "ES_FRQ",
+   "logique": ""
+  },
+  {
+   "type": "VV",
+   "information": "Intensité (Courant moteur)",
+   "famille": "ES",
+   "code": "INT",
+   "type_logique": "INT",
+   "unite": "",
+   "es": "EA",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Intensité",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "VV",
+   "information": "Intensité (Courant moteur)",
+   "famille": "TM",
+   "code": "INT",
+   "type_logique": "REAL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "ES_INT",
+   "logique": ""
+  },
+  {
+   "type": "VV",
+   "information": "Défaut général (Défaut variateur)",
+   "famille": "ES",
+   "code": "DEF",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "VV",
+   "information": "Défaut général (Défaut variateur)",
+   "famille": "TS",
+   "code": "DEF",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": true,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "VV",
+   "information": "Disponible / prêt (Variateur prêt)",
+   "famille": "ES",
+   "code": "DISPO",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "VV",
+   "information": "Disponible / prêt (Variateur prêt)",
+   "famille": "TS",
+   "code": "DISPO",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "VV",
+   "information": "En marche (Variateur en marche)",
+   "famille": "ES",
+   "code": "MA",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ET",
+   "alarme": false,
+   "presence": "Par défaut",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "VV",
+   "information": "En marche (Variateur en marche)",
+   "famille": "TS",
+   "code": "MA",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "VV",
+   "information": "Consigne de fréquence (Consigne de vitesse)",
+   "famille": "ES",
+   "code": "CONS_FRQ",
+   "type_logique": "INT",
+   "unite": "",
+   "es": "SA",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Commandé en câblé",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "VV",
+   "information": "Consigne de fréquence (Consigne de vitesse)",
+   "famille": "TR",
+   "code": "FRQ",
+   "type_logique": "REAL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "ES_CONS_FRQ",
+   "logique": ""
+  },
+  {
+   "type": "VV",
+   "information": "Consigne de fréquence (Consigne de vitesse)",
+   "famille": "RTR",
+   "code": "FRQ",
+   "type_logique": "REAL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "VV",
+   "information": "Commande réarmement (Réarmement défaut)",
+   "famille": "ES",
+   "code": "CMD_ACQ",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ST",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Commandé en câblé",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "VV",
+   "information": "Commande réarmement (Réarmement défaut)",
+   "famille": "TC",
+   "code": "ACQ",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "ES_CMD_ACQ",
+   "logique": ""
+  },
+  {
+   "type": "VV",
+   "information": "Commande marche (Commande de marche)",
+   "famille": "ES",
+   "code": "CMD_MA",
+   "type_logique": "EBOOL",
+   "unite": "",
+   "es": "ST",
+   "alarme": false,
+   "presence": "Option",
+   "option": "Commandé en câblé",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "",
+   "logique": ""
+  },
+  {
+   "type": "VV",
+   "information": "Commande marche (Commande de marche)",
+   "famille": "TC",
+   "code": "MA",
+   "type_logique": "BOOL",
+   "unite": "",
+   "es": "Interne",
+   "alarme": false,
+   "presence": "Règle",
+   "option": "",
+   "statut": "À valider",
+   "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+   "organe": "",
+   "source": "ES_CMD_MA",
+   "logique": ""
   }
  ],
  "regles": [
@@ -7752,6 +9501,678 @@
    "mode": "auto",
    "logique": "",
    "gouvernance": "suggestion optionnelle"
+  },
+  {
+   "id": "AB-01",
+   "type": "AB",
+   "libelle": "Pression → information associée",
+   "si": [
+    "ES_PRE"
+   ],
+   "propose": [
+    "TM_PRE"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "AB-02",
+   "type": "AB",
+   "libelle": "Défaut compresseur → information associée",
+   "si": [
+    "ES_DEF_COMP"
+   ],
+   "propose": [
+    "TS_DEF_COMP"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "AB-03",
+   "type": "AB",
+   "libelle": "Compresseur en marche → information associée",
+   "si": [
+    "ES_MA_COMP"
+   ],
+   "propose": [
+    "TS_MA_COMP"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "AB-04",
+   "type": "AB",
+   "libelle": "Niveau bas → information associée",
+   "si": [
+    "ES_NIV_B"
+   ],
+   "propose": [
+    "TS_NIV_B"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "AB-05",
+   "type": "AB",
+   "libelle": "Niveau haut → information associée",
+   "si": [
+    "ES_NIV_H"
+   ],
+   "propose": [
+    "TS_NIV_H"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "AL-01",
+   "type": "AL",
+   "libelle": "Défaut alimentation de secours → information associée",
+   "si": [
+    "ES_DEF_SEC"
+   ],
+   "propose": [
+    "TS_DEF_SEC"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "AR-01",
+   "type": "AR",
+   "libelle": "Porte ouverte → information associée",
+   "si": [
+    "ES_PORTE"
+   ],
+   "propose": [
+    "TS_PORTE"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "CE-01",
+   "type": "CE",
+   "libelle": "Impulsions de comptage → information associée",
+   "si": [
+    "ES_IMP"
+   ],
+   "propose": [
+    "CP_ENER"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "CG-01",
+   "type": "CG",
+   "libelle": "Défaut général → information associée",
+   "si": [
+    "ES_DEF"
+   ],
+   "propose": [
+    "TS_DEF"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "CG-02",
+   "type": "CG",
+   "libelle": "Fuite détectée → information associée",
+   "si": [
+    "ES_FUITE"
+   ],
+   "propose": [
+    "TS_FUITE"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "CG-03",
+   "type": "CG",
+   "libelle": "Inversion sur réserve → information associée",
+   "si": [
+    "ES_INV"
+   ],
+   "propose": [
+    "TS_INV"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "CG-04",
+   "type": "CG",
+   "libelle": "Réservoir en service vide → information associée",
+   "si": [
+    "ES_VIDE"
+   ],
+   "propose": [
+    "TS_VIDE"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "DG-01",
+   "type": "DG",
+   "libelle": "Valeur de l'analyseur / détecteur → information associée",
+   "si": [
+    "ES_VAL"
+   ],
+   "propose": [
+    "TM_VAL"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "DG-02",
+   "type": "DG",
+   "libelle": "Défaut général → information associée",
+   "si": [
+    "ES_DEF"
+   ],
+   "propose": [
+    "TS_DEF"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "DG-03",
+   "type": "DG",
+   "libelle": "Seuil 1 atteint → information associée",
+   "si": [
+    "ES_SEUIL_1"
+   ],
+   "propose": [
+    "TS_SEUIL_1"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "DG-04",
+   "type": "DG",
+   "libelle": "Seuil 2 atteint → information associée",
+   "si": [
+    "ES_SEUIL_2"
+   ],
+   "propose": [
+    "TS_SEUIL_2"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "FI-01",
+   "type": "FI",
+   "libelle": "Pression différentielle → information associée",
+   "si": [
+    "ES_PRE_DIF"
+   ],
+   "propose": [
+    "TM_PRE_DIF"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "FI-02",
+   "type": "FI",
+   "libelle": "Colmatage → information associée",
+   "si": [
+    "ES_COLMAT"
+   ],
+   "propose": [
+    "TS_COLMAT"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "FI-03",
+   "type": "FI",
+   "libelle": "Lavage en cours → information associée",
+   "si": [
+    "ES_LAVAGE"
+   ],
+   "propose": [
+    "TS_LAVAGE"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "FV-01",
+   "type": "FV",
+   "libelle": "Position → information associée",
+   "si": [
+    "ES_POS"
+   ],
+   "propose": [
+    "TM_POS"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "FV-02",
+   "type": "FV",
+   "libelle": "Défaut général → information associée",
+   "si": [
+    "ES_DEF"
+   ],
+   "propose": [
+    "TS_DEF"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "FV-03",
+   "type": "FV",
+   "libelle": "Fin de course fermé → information associée",
+   "si": [
+    "ES_FDC_FER"
+   ],
+   "propose": [
+    "TS_FER"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "FV-04",
+   "type": "FV",
+   "libelle": "Fin de course ouvert → information associée",
+   "si": [
+    "ES_FDC_OUV"
+   ],
+   "propose": [
+    "TS_OUV"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "FV-05",
+   "type": "FV",
+   "libelle": "Sélecteur en local → information associée",
+   "si": [
+    "ES_LOC"
+   ],
+   "propose": [
+    "TS_LOC"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "FV-06",
+   "type": "FV",
+   "libelle": "Consigne de position → information associée",
+   "si": [
+    "ES_CONS_POS"
+   ],
+   "propose": [
+    "TR_POS"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "LT-03",
+   "type": "LT",
+   "libelle": "Niveau très bas → information associée",
+   "si": [
+    "ES_NIV_TB"
+   ],
+   "propose": [
+    "TS_NIV_TB"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "LT-04",
+   "type": "LT",
+   "libelle": "Niveau très haut → information associée",
+   "si": [
+    "ES_NIV_TH"
+   ],
+   "propose": [
+    "TS_NIV_TH"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "OU-01",
+   "type": "OU",
+   "libelle": "Intrusion → information associée",
+   "si": [
+    "ES_INTRUS"
+   ],
+   "propose": [
+    "TS_INTRUS"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "OU-02",
+   "type": "OU",
+   "libelle": "Porte ouverte → information associée",
+   "si": [
+    "ES_PORTE"
+   ],
+   "propose": [
+    "TS_PORTE"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "PD-01",
+   "type": "PD",
+   "libelle": "Niveau bas → information associée",
+   "si": [
+    "ES_NIV_B"
+   ],
+   "propose": [
+    "TS_NIV_B"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "PD-02",
+   "type": "PD",
+   "libelle": "Niveau très bas → information associée",
+   "si": [
+    "ES_NIV_TB"
+   ],
+   "propose": [
+    "TS_NIV_TB"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "PM-13",
+   "type": "PM",
+   "libelle": "Défaut démarreur progressif → information associée",
+   "si": [
+    "ES_DEF_DEM"
+   ],
+   "propose": [
+    "TS_DEF_DEM"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "PM-14",
+   "type": "PM",
+   "libelle": "Défaut humidité moteur → information associée",
+   "si": [
+    "ES_DEF_HUM"
+   ],
+   "propose": [
+    "TS_DEF_HUM"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "PM-15",
+   "type": "PM",
+   "libelle": "Défaut sondes PTC moteur → information associée",
+   "si": [
+    "ES_DEF_PTC"
+   ],
+   "propose": [
+    "TS_DEF_PTC"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "PM-16",
+   "type": "PM",
+   "libelle": "Commande réarmement → information associée",
+   "si": [
+    "ES_CMD_ACQ"
+   ],
+   "propose": [
+    "TC_ACQ"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "UV-01",
+   "type": "UV",
+   "libelle": "Intensité UV → information associée",
+   "si": [
+    "ES_INT_UV"
+   ],
+   "propose": [
+    "TM_INT_UV"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "UV-02",
+   "type": "UV",
+   "libelle": "Défaut général → information associée",
+   "si": [
+    "ES_DEF"
+   ],
+   "propose": [
+    "TS_DEF"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "UV-03",
+   "type": "UV",
+   "libelle": "Défaut lampe → information associée",
+   "si": [
+    "ES_DEF_LAMP"
+   ],
+   "propose": [
+    "TS_DEF_LAMP"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "UV-04",
+   "type": "UV",
+   "libelle": "En marche → information associée",
+   "si": [
+    "ES_MA"
+   ],
+   "propose": [
+    "TS_MA"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "UV-05",
+   "type": "UV",
+   "libelle": "Commande marche → information associée",
+   "si": [
+    "ES_CMD_MA"
+   ],
+   "propose": [
+    "TC_MA"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "VV-01",
+   "type": "VV",
+   "libelle": "Fréquence → information associée",
+   "si": [
+    "ES_FRQ"
+   ],
+   "propose": [
+    "TM_FRQ"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "VV-02",
+   "type": "VV",
+   "libelle": "Intensité → information associée",
+   "si": [
+    "ES_INT"
+   ],
+   "propose": [
+    "TM_INT"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "VV-03",
+   "type": "VV",
+   "libelle": "Défaut général → information associée",
+   "si": [
+    "ES_DEF"
+   ],
+   "propose": [
+    "TS_DEF"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "VV-04",
+   "type": "VV",
+   "libelle": "Disponible / prêt → information associée",
+   "si": [
+    "ES_DISPO"
+   ],
+   "propose": [
+    "TS_DISPO"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "VV-05",
+   "type": "VV",
+   "libelle": "En marche → information associée",
+   "si": [
+    "ES_MA"
+   ],
+   "propose": [
+    "TS_MA"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "VV-06",
+   "type": "VV",
+   "libelle": "Consigne de fréquence → information associée",
+   "si": [
+    "ES_CONS_FRQ"
+   ],
+   "propose": [
+    "TR_FRQ"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "VV-07",
+   "type": "VV",
+   "libelle": "Commande réarmement → information associée",
+   "si": [
+    "ES_CMD_ACQ"
+   ],
+   "propose": [
+    "TC_ACQ"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
+  },
+  {
+   "id": "VV-08",
+   "type": "VV",
+   "libelle": "Commande marche → information associée",
+   "si": [
+    "ES_CMD_MA"
+   ],
+   "propose": [
+    "TC_MA"
+   ],
+   "mode": "auto",
+   "logique": "",
+   "gouvernance": "relation documentaire"
   }
  ]
 }

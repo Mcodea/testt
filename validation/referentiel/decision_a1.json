@@ -24,11 +24,12 @@
     "XV.ST.OUV"
   ],
   "renommages_approuves": "tous les autres renommages de l'aperçu (38 sur 57)",
-  "ajouts": "sans réponse : aucun ajout n'est approuvé, aucun n'est appliqué",
-  "publication": "non autorisée : le brouillon reste un candidat à relire",
+  "ajouts": "approuvés le 23/11/2026 (« Ajouts : tous approuvés ») : les 49 ajouts, hors les clés déjà existantes signalées dans le rapport",
+  "publication": "autorisée le 23/11/2026 (« Publication autorisé »)",
   "points_tranches": {
     "PD.SA.TAUX": "nom physique CONS_TAU (clé fonctionnelle TR_TAU / RTR_TAU) : exception D4 par suffixe_es",
     "PM.SA.CONS_FREQ": "nom physique CONS_FRQ (bibliothèque V1) : suffixe_es mis à CONS_FRQ"
   },
-  "date_points": "2026-11-23"
+  "date_points": "2026-11-23",
+  "ajouts_approuves": "tous"
 }

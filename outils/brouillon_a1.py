@@ -30,6 +30,60 @@ def code_nouveau_de(cle):
     return cle.split("_", 1)[1]
 
 
+def appliquer_ajouts(candidat, apercu, bibliotheque) -> tuple[list, list]:
+    """Ajoute au candidat les E/S physiques de la bibliothèque V1 absentes du catalogue (approuvées le 23/11/2026).
+    Chaque E/S devient un signal physique (famille ES) et son information de télétransmission (signal interne alimenté par
+    elle) avec la règle documentaire qui les relie. Tout est au statut « À valider » : seules les valeurs de la bibliothèque
+    sont reprises ; unités, échelles et logiques restent à renseigner."""
+    cat = candidat["catalogue"]
+    signaux, regles, types = cat["signaux"], cat["regles"], cat["types"]
+    existants = {(s["type"], s["famille"], s["code"]) for s in signaux}
+    codes_types = {x["code"] for x in types}
+    ajoutes, ignores = [], []
+    for a in apercu["ajouts"]:
+        x = bibliotheque[a["id"]]
+        if a["type"] not in codes_types:
+            types.append({"code": a["type"], "designation": x["Équipement"], "categorie": "Équipement", "famille_biblio": "",
+                          "options": [],
+                          "remarque": "Type ajouté par la décision A1 du 23/11/2026 (bibliothèque V1) : à valider.", "domaine": x["Domaine"]})
+            codes_types.add(a["type"])
+        cle = (a["type"], "ES", a["code"])
+        if cle in existants:
+            ignores.append(f"{a['id']} : la clé {a['type']}.ES_{a['code']} existe déjà (variante « {a['variante']} » de la même E/S) : "
+                           "non ajoutée, à examiner.")
+            continue
+        option = ((a["variante"] if a["variante"] != "Base" else a["libelle"]) if a["presence"] == "Option" else "")
+        if option:                                              # « Option » sans variante : l'option porte le libellé de l'E/S
+            type_ = next(y for y in types if y["code"] == a["type"])
+            if option not in type_["options"]:
+                type_["options"] = [*type_["options"], option]
+        info = a["libelle"] + (f" ({a['precision']})" if a["precision"] else "")
+        signaux.append({"type": a["type"], "information": info, "famille": "ES", "code": a["code"],
+                        "type_logique": "EBOOL" if a["nature"] in ("ET", "ST") else "INT", "unite": "",
+                        "es": a["nature"], "alarme": False, "presence": a["presence"], "option": option, "statut": "À valider",
+                        "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).", "organe": "", "source": "", "logique": ""})
+        existants.add(cle)
+        produites = []
+        for tele in [k.strip() for k in a["tele"].split("/") if "_" in k]:
+            famille, code = tele.split("_", 1)
+            if (a["type"], famille, code) in existants:
+                continue
+            signaux.append({"type": a["type"], "information": info, "famille": famille, "code": code,
+                            "type_logique": "REAL" if famille in ("TM", "TR", "RTR") else "DINT" if famille == "CP" else "BOOL",
+                            "unite": "", "es": "Interne", "alarme": famille == "TS" and code.startswith("DEF"), "presence": "Règle",
+                            "option": "", "statut": "À valider", "remarque": "Ajouté par la décision A1 du 23/11/2026 (bibliothèque V1).",
+                            "organe": "", "source": f"ES_{a['code']}" if famille in ("TM", "TC", "TR") else "", "logique": ""})
+            existants.add((a["type"], famille, code))
+            if famille != "RTR":
+                produites.append(tele)
+        if produites:
+            numero = 1 + max([int(r["id"].split("-")[1]) for r in regles if r["type"] == a["type"] and r["id"].split("-")[1].isdigit()] or [0])
+            regles.append({"id": f"{a['type']}-{numero:02d}", "type": a["type"], "libelle": f"{a['libelle']} → information associée",
+                           "si": [f"ES_{a['code']}"], "propose": produites, "mode": "auto", "logique": "", "gouvernance": "relation documentaire"})
+        ajoutes.append(a["id"])
+    return ajoutes, ignores
+
+
 def construire():
     """(donnees du candidat, rapport) : renommages approuvés appliqués à une COPIE du référentiel livré."""
     decision = json.loads(DECISION.read_text(encoding="utf-8"))
@@ -73,6 +127,8 @@ def construire():
                     exceptions_d4.append({"ident": ident, "cle": nouvelle, "suffixe_es": attendu})
             appliques.append({"ident": ident, "type": r["type"], "nature": cible["es"], "ancienne": ancienne, "nouvelle": nouvelle,
                               "physique_propose": r["physique_propose"] if cible["es"] == r["nature"] else "—"})
+    ajoutes, ignores = appliquer_ajouts(candidat, apercu, bibliotheque) if decision.get("ajouts_approuves") == "tous" else ([], [])
+    ecarts += ignores
     renommes = {(a["type"], a["ancienne"]): a["nouvelle"] for a in appliques}
     for s2 in signaux:                                          # un signal peut citer sa source physique par sa clé
         if s2.get("source"):
@@ -83,7 +139,8 @@ def construire():
     for a in appliques:
         candidat["modeles"].setdefault("correspondances", []).append(
             {"type": a["type"], "ancienne": a["ancienne"], "type_nouveau": a["type"], "nouvelle": a["nouvelle"], "motif": MOTIF})
-    candidat["catalogue"]["version"] = f"{catalogue['version']} + A1 ({len(appliques)} renommages approuvés)"
+    candidat["catalogue"]["version"] = (f"{catalogue['version']} + A1 ({len(appliques)} renommages approuvés"
+                                        + (f", {len(ajoutes)} ajouts)" if ajoutes else ")"))
     physiques_divergents = []
     for a in appliques:
         if a["physique_propose"] == "—" or a["nouvelle"].split("_", 1)[0] == "RTR":
@@ -94,7 +151,7 @@ def construire():
             physiques_divergents.append({"ident": a["ident"], "candidat": suffixe_physique(signal), "bibliotheque": attendu,
                                          "cause": "suffixe_es explicite (décision D4)" if signal.get("suffixe_es") else "autre"})
     return candidat, {"appliques": appliques, "ecarts": ecarts, "exceptions_d4": exceptions_d4, "physiques_divergents": physiques_divergents, "refuses": sorted(refuses), "decision": decision,
-                      "ajouts_non_appliques": len(apercu["ajouts"])}
+                      "ajoutes": ajoutes, "ajouts_non_appliques": len(apercu["ajouts"]) - len(ajoutes)}
 
 
 def controler(candidat) -> dict:
@@ -117,14 +174,19 @@ def controler(candidat) -> dict:
 def _rapport(candidat, rapport, c) -> str:
     l = ["# Brouillon A1 : renommages approuvés", "",
          "Généré par `outils/brouillon_a1.py` : ne pas modifier à la main. **Publié le 23/11/2026** (autorisation de l'utilisateur) : "
-         "`genvar/data/` reprend ce candidat ; l'état d'avant est conservé dans `validation/referentiel/avant_a1/`. Aucun ajout n'est appliqué, aucun ouvrage n'est touché.", "",
+         "`genvar/data/` reprend ce candidat ; l'état d'avant est conservé dans `validation/referentiel/avant_a1/`. Aucun ouvrage n'est touché.", "",
          f"- Clés de signaux renommées dans le candidat : **{len(rapport['appliques'])}** (pour les 38 renommages approuvés sur 57 ; refusés : {len(rapport['refuses'])}).",
-         f"- Ajouts : **{rapport['ajouts_non_appliques']} non appliqués** (aucune réponse de l'utilisateur).",
+         f"- Ajouts : **{len(rapport['ajoutes'])} appliqués** (« Ajouts : tous approuvés »), {rapport['ajouts_non_appliques']} non appliqué(s) (voir « À examiner »).",
          f"- Contrôles du dépôt de référentiel : {len(c['erreurs'])} erreur(s), {len(c['alertes'])} alerte(s) ; "
          f"{len(c['doublons'])} clé(s) en double.", "",
          "## Renommages appliqués", "", "| Type | Nature | Clé actuelle → nouvelle | Nom physique après renommage (exemple) |", "| --- | --- | --- | --- |"]
     for a in rapport["appliques"]:
         l.append(f"| {a['type']} | {a['nature']} | `{a['ancienne']}` → `{a['nouvelle']}` | `{a['physique_propose']}` |")
+    if rapport["ajoutes"]:
+        l += ["", "## Ajouts appliqués", "",
+              "Chaque E/S est un signal physique (`ES_…`) avec son information de télétransmission et une règle documentaire ; tout est au "
+              "statut « À valider » (unités, échelles et logiques à renseigner). Une présence « Option » sans variante crée une option "
+              "portant le libellé de l'E/S. Les types AB, CE, CG, DG, FI et UV sont créés.", "", ", ".join(f"`{x}`" for x in rapport["ajoutes"])]
     l += ["", "## Renommages refusés (conservés tels quels)", "", ", ".join(f"`{x}`" for x in rapport["refuses"]), ""]
     if rapport["exceptions_d4"]:
         l += ["## Exceptions D4 décidées le 23/11/2026", "",
