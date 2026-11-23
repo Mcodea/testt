@@ -8,15 +8,17 @@
 try { if (localStorage.getItem("ogias-ui-theme") === "dark") document.documentElement.dataset.theme = "dark"; } catch (e) { /* stockage indisponible */ }
 const Coque = (() => {
  const esc = x => String(x ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
- // Tracés simples dessinés pour OGIAS (24 × 24, trait) : aucune ressource distante.
+ // Icônes (24 × 24, trait), aucune ressource distante. Décision du 23/11/2026 (cahier V1-4-23, jeu hybride) : les commandes
+ // courantes reprennent les géométries Lucide 0.468.0 (licence ISC, assets/lucide/LICENSE.txt) ; les symboles métier
+ // (fil de l'information, équipement, E/S, matériel, variables, supervision, recette, tableau de bord, groupe) sont dessinés pour OGIAS.
  const TRACES = {
-  dossier: '<path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11H3z"/>',
+  dossier: '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
   bord: '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
-  referentiel: '<path d="m12 3 9 5-9 5-9-5zM3 13l9 5 9-5"/>',
-  chercher: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
-  fermer: '<path d="M6 6l12 12M18 6 6 18"/>',
-  coche: '<path d="m6 12 4 4 8-8"/>',
-  replier: '<path d="m15 6-6 6 6 6"/>',
+  referentiel: '<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.91a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
+  chercher: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  fermer: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  coche: '<path d="M20 6 9 17l-5-5"/>',
+  replier: '<path d="m15 18-6-6 6-6"/>',
   bas: '<path d="m6 9 6 6 6-6"/>',
   // Symboles OGIAS des maillons du fil de l'information (lot 4), dérivés du motif du logo : nœud – bloc – nœud.
   fil: '<circle cx="4" cy="12" r="2.5"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><circle cx="20" cy="12" r="2.5"/><path d="M6.5 12h3M14.5 12h3"/>',
@@ -26,17 +28,17 @@ const Coque = (() => {
   variable: '<path d="M8 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h2M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/><path d="M9 12h6M12 9v6"/>',
   supervision: '<rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/><path d="m6.5 12 3-3 2.5 2 5-4.5"/>',
   recette: '<path d="M9 4h6v3H9z"/><path d="M9 5.5H6a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6.5a1 1 0 0 0-1-1h-3"/><path d="m8.5 14 2.5 2.5 4.5-5"/>',
-  alerte: '<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/>',
-  erreur: '<circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/>',
-  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  alerte: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  erreur: '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+  info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
   // Commandes du ruban (lot 5)
-  plus: '<path d="M12 5v14M5 12h14"/>',
-  importer: '<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>',
-  valider: '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
-  modifier: '<path d="m4 20 1-4L16 5l3 3L8 19z"/><path d="m14 7 3 3"/>',
-  dupliquer: '<rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
-  ranger: '<path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11H3z"/><path d="M9 13h6M12 10v6"/>',
-  supprimer: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  importer: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+  valider: '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  modifier: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+  dupliquer: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  ranger: '<path d="M12 10v6"/><path d="M9 13h6"/><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
+  supprimer: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/>',
   groupe: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 13h8M8 16h5"/>',
  };
  const ico = (nom, t = 16) => `<svg class="o-ico" width="${t}" height="${t}" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${TRACES[nom] || ""}</svg>`;

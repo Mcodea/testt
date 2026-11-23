@@ -126,7 +126,8 @@ class TestRetours1611Parcours(ServeurNavigateur):
         # Options compactes (une ligne) et aide repliée
         options = self.page.locator('.option-eq').all()
         if options:
-            self.assertEqual(len({round(o.bounding_box()['y']) for o in options}), 1)
+            # Compactes : les options tiennent sur une ou deux lignes (le type PM en compte davantage depuis les ajouts A1 du 23/11/2026).
+            self.assertLessEqual(len({round(o.bounding_box()['y']) for o in options}), 2)
         self.assertIsNone(self.page.locator('#configuration-es details.aide-pliable').get_attribute('open'))
         # Le choix d'onglet est conservé quand on revient sur l'équipement
         self.page.locator('[data-onglet-eq="lignes"]').click()

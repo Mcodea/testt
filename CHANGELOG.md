@@ -15,6 +15,8 @@ Le numéro de version (`genvar/__init__.py`) est encore 0.32 ; il passera à 1.0
   ouvert sur un autre poste, qui ne peut alors plus enregistrer.
 - **Journal technique** tournant, consultable par Aide › Journal technique.
 - **Dupliquer un équipement** au ruban : numéro libre suivant, aucune adresse ni voie reprise.
+- **Icônes (23/11/2026)** : jeu hybride. Les commandes courantes de la coque reprennent les géométries Lucide (ISC) ; les symboles métier
+  (fil de l'information, équipement, E/S, matériel, variables, supervision, recette) restent dessinés pour OGIAS.
 - **Publication A1 (23/11/2026)** : les 38 renommages approuvés (39 clés) sont publiés dans le référentiel livré ; PD.SA.TAUX devient
   `CONS_TAU` et PM.SA.CONS_FREQ `CONS_FRQ` (suffixe_es). Les ouvrages existants gardent leur référentiel figé et adoptent la révision
   volontairement, adresses conservées. Les ajouts approuvés (48 sur 49, types AB, CE, CG, DG, FI, UV créés, statut « À valider ») sont publiés ; `TT.EA.TMP.2` reste à examiner (clé existante). État d'avant : `validation/referentiel/avant_a1/`.
