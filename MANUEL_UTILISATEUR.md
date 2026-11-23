@@ -144,6 +144,12 @@ Chaque ligne a aussi son **accès** (adresse ou tag d'acquisition, protocole, «
 supervision) et peut être déclarée **non accessible** avec un motif obligatoire. Le bandeau « Avant de valider l'ouvrage »
 liste ce qui reste à traiter.
 
+### Ouvrage d'exemple
+
+Un ouvrage entièrement fictif (lieu XTST, réservoir et sept équipements) est livré à part, dans le dossier `exemples`
+de la version portable : `OGIAS_exemple_XTSTRV01.ouvrage.json`. Copiez-le dans le dossier des ouvrages pour l'essayer ;
+l'installation, elle, ne contient aucune donnée de démonstration.
+
 ## 6. Référentiel métier
 
 Menu Outils › **Référentiel métier** : types d'équipements, modèles, lexique, dictionnaire des codes. On le modifie

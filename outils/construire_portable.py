@@ -47,7 +47,7 @@ def build(output: Path) -> Path:
                             ignore=shutil.ignore_patterns("site-packages", "__pycache__", "*.pyc", "test", "tests"))
         subprocess.run([sys.executable, "-m", "pip", "install", "--no-deps", "--no-compile", "--target",
                         str(runtime / "Lib/site-packages"), "-r", str(ROOT / "requirements-runtime.lock")], check=True)
-        for name in ("genvar", "sorep_web"):
+        for name in ("genvar", "sorep_web", "exemples"):
             shutil.copytree(ROOT / name, staging / name, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
         (staging / "lancer_portable.py").write_text(
             'from pathlib import Path\nimport runpy, sys\n'

@@ -263,6 +263,13 @@ def proposer_s4w(points, reserve=0.2, chemin=None):
                     remarques=["Proposition indicative : l'implantation des E/S sur un poste S4W et l'export S4W-Tools "
                                "attendent un fichier de configuration S4W-Tools de référence.",
                                "Références de commande à confirmer auprès de LACROIX."])
+    # Règles du cahier (V1-3-17, V1-3-18), tirées de la fiche LACROIX du catalogue : voir tests/test_s4w_regles.py.
+    if besoin["SA"]:
+        p.remarques.append("Sorties analogiques : aucun boîtier S4W n'a de voie AO intégrée, un module AO (4AO ou 8AO "
+                           "multistandard) est imposé.")
+    if besoin["ST"]:
+        p.remarques.append("Sorties TOR : 24 V et 150 mA au plus par sortie (fiche LACROIX) ; au-delà, prévoir un relais "
+                           "d'interface ou le module 4DO+ 60 VA.")
     if retenu is None:
         b = cat["_boitiers"][cat["boitiers_proposes"][-1]]
         p.remarques.insert(0, f"Besoin supérieur à la capacité d'un {b['modele']} ({b['extensions_es']} extensions) : "

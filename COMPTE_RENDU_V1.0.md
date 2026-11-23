@@ -11,9 +11,9 @@ de chaque supervision et l'IHM. Il n'est lié à aucun constructeur : les format
 exporté par l'outil du client, les gammes de matériel se déclarent. Schneider (M340, M580) et Siemens (S7-1500 livrée)
 sont couverts pour l'instant.
 
-Avancement au tableau de conformité (`ETAT_TRAVAIL.md`, 176 exigences du cahier des charges) : **65 % au sens strict
-(96 / 148), 76 % en comptant un « partiel » pour moitié** ; 28 exigences sont remplacées par décision de l'utilisateur
-(refonte d'interface) et sortent du calcul. Restent : 34 partielles (dont les 7 lignes de ce compte rendu, en brouillon), 8 absentes (livraison : version,
+Avancement au tableau de conformité (`ETAT_TRAVAIL.md`, 176 exigences du cahier des charges) : **67 % au sens strict
+(99 / 148), 77 % en comptant un « partiel » pour moitié** ; 28 exigences sont remplacées par décision de l'utilisateur
+(refonte d'interface) et sortent du calcul. Restent : 31 partielles (dont les 7 lignes de ce compte rendu, en brouillon), 8 absentes (livraison : version,
 étiquettes, release, essai sur Windows propre, branche protégée), 10 en attente de fichiers réels des logiciels constructeurs.
 
 ## 2. Décisions prises

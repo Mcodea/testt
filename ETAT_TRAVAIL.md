@@ -34,7 +34,7 @@ industrielle du 16/11) et sortent du calcul.
 | En attente de preuves utilisateur (section 8) | 10 |
 | Remplacé par décision | 25 |
 
-**Avancement : 65 % au sens strict (96 / 148), 76 % en comptant un « partiel » pour moitié.**
+**Avancement : 67 % au sens strict (99 / 148), 77 % en comptant un « partiel » pour moitié.**
 
 Écarts nets relevés (absents), traitables sans attendre l'utilisateur : version 1.0.0 et étiquettes (V1-10-19 à 21), compte rendu V1.0 (V1-10-28 à 34).
 
@@ -279,8 +279,8 @@ le défaut démontré et obtenir une CI verte. Codex reste actif sur ce point.
 | V1-3-14 (L50) | deux codes pour un même libellé déclenchent une alerte ; | fait | test_repetition_identique_et_deux_codes_un_libelle_alertent. |
 | V1-3-15 (L51) | un même code avec deux sens est une erreur. | fait | tests/test_dictionnaire_es_v1.py::test_meme_code_deux_sens_est_une_erreur. |
 | V1-3-16 (L52) | Les correspondances Schneider / SOFREL S4W alimentent l'écran Matériel : | partiel | Correspondances M340 / M580 dans l'écran Matériel (tests/test_materiel_complet.py) ; côté S4W, proposition indicative seulement (tests/test_scenarios_industriels.py::test_s4w_indicatif). |
-| V1-3-17 (L53) | une sortie analogique sur S4W impose un module AO ; | partiel | Règle non prouvée par un test dédié : à couvrir avec le format S4W-Tools (section 8). |
-| V1-3-18 (L54) | une sortie TOR au-delà de 150 mA impose un relais d'interface ou un module 4DO+. | partiel | Règle non prouvée par un test dédié : à couvrir avec le format S4W-Tools (section 8). |
+| V1-3-17 (L53) | une sortie analogique sur S4W impose un module AO ; | fait | Aucun boîtier S4W n'a de voie AO intégrée : toute sortie analogique crée un module AO (4AO ou 8AO multistandard) et le dit en remarque : tests/test_s4w_regles.py::test_une_sortie_analogique_impose_un_module_ao. |
+| V1-3-18 (L54) | une sortie TOR au-delà de 150 mA impose un relais d'interface ou un module 4DO+. | fait | Remarque « 24 V et 150 mA au plus par sortie ; au-delà, relais d'interface ou module 4DO+ 60 VA » dès qu'une sortie TOR est proposée sur S4W (fiche LACROIX du catalogue) : tests/test_s4w_regles.py::test_sortie_tor_signale_la_limite_de_150_ma ; le courant réel d'une sortie n'est pas une donnée de l'ouvrage. |
 | V1-3-19 (L55) | BMX EHC, BMX ART et l'identification des voies S4W-Tools restent « à confirmer ». Aucune adresse S4W n'est inventée. | partiel | Aucune adresse S4W inventée (tests/test_variables_v029.py::test_s4w_ne_recoit_jamais_de_mw_propose_par_la_vue) ; statut « à confirmer » des cartes EHC / ART non prouvé par un test dédié. |
 | V1-3-20 (L56) | Le modèle « Vanne de régulation » est rattaché à FV, et « Détection de gaz » à DG. | partiel | A1 non approuvé : renommages V1 / 49 ajouts non appliqués, conformément à la consigne V2 ; docs/referentiel/PROMPT_CLAUDE_AUTONOME_OGIAS_V2.md et docs/INSTRUCTIONS_EN_COURS.md. |
 | V1-3-21 (L60) | Installation vierge : ce référentiel est publié comme révision 1. | fait | Première utilisation : le référentiel livré est publié comme révision R0001 au démarrage (Depot.initialiser) ; idempotent, historique existant jamais touché, dossier non inscriptible toléré : tests/test_installation_vierge.py. |
@@ -378,7 +378,7 @@ le défaut démontré et obtenir une CI verte. Codex reste actif sur ce point.
 | V1-9-02 (L188) | version portable Windows 10 / 11, hors ligne, sans droits administrateur, avec un Python embarqué et un lanceur ; | partiel | Archive portable construite, extraite avec son runtime et essayée en CI sur windows-2025 (runs verts) ; Windows 10 et poste sans droits administrateur non essayés. |
 | V1-9-03 (L189) | script de construction reproductible. | fait | tests/test_ci.py::test_portable_archive_is_reproducible. |
 | V1-9-04 (L190) | **Données :** séparées du programme. Une mise à jour (y compris depuis la V0.30 ou la V0.31) ne touche jamais aux ouvrages. | fait | Données dans un dossier distinct du programme ; un ouvrage au format des versions 0.30 / 0.31 (sans indices, ordre d'export, zones de fin, référentiel figé) s'ouvre, garde noms et adresses validées et n'est jamais réécrit par la seule ouverture : tests/test_mise_a_jour_donnees.py. |
-| V1-9-05 (L191) | **Installation vierge :** sans donnée de démonstration. Un ouvrage d'exemple fictif est fourni à part. | partiel | Accueil vierge vérifié par l'essai portable ; ouvrage d'exemple fictif fourni à part (outils/interface_demo.py). |
+| V1-9-05 (L191) | **Installation vierge :** sans donnée de démonstration. Un ouvrage d'exemple fictif est fourni à part. | fait | Installation vierge sans donnée de démonstration (aucun ouvrage listé) ; ouvrage d'exemple fictif livré à part dans exemples/ et dans le portable, généré et vérifié à jour par outils/generer_exemple.py : tests/test_ouvrage_exemple.py. |
 | V1-9-06 (L192) | **Documentation en français, avec captures de l'interface finale :** | fait | Documentation en français avec captures de l'interface actuelle, prises sur l'ouvrage fictif par outils/construire_manuel.py : tests/test_documentation.py. |
 | V1-9-07 (L193) | MANUEL_UTILISATEUR (PDF et Markdown) ; | fait | MANUEL_UTILISATEUR.md et MANUEL_UTILISATEUR.pdf (généré par outils/construire_manuel.py) : tests/test_documentation.py::test_documents_attendus, test_captures_du_manuel_presentes. |
 | V1-9-08 (L194) | GUIDE_ADMINISTRATEUR ; | fait | GUIDE_ADMINISTRATEUR.md (installation, sécurité, données, sauvegarde, verrou, journal, mise à jour) : tests/test_documentation.py::test_guide_administrateur_coherent_avec_le_code. |
