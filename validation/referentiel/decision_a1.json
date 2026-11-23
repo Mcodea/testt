@@ -1,0 +1,12 @@
+{
+  "decision": "A1 : renommages et ajouts du rapport V1",
+  "date": "2026-11-23",
+  "source": "Réponse de l'utilisateur sur la feuille d'aperçu (docs/APERCU_A1_A_APPROUVER.md)",
+  "renommages_refuses": [
+    "EV.ST.FER", "EV.ST.OUV", "GA.ET.INTR", "GE.ST.AR", "GE.ST.MA", "KM.ST.AR", "KM.ST.MA", "MV.ST.FER", "MV.ST.OUV",
+    "PD.ST.AR", "PD.ST.MA", "SP.ST.AR", "SP.ST.MA", "SV.ST.AR", "SV.ST.FER", "SV.ST.OUV", "XV.ST.AR", "XV.ST.FER", "XV.ST.OUV"
+  ],
+  "renommages_approuves": "tous les autres renommages de l'aperçu (38 sur 57)",
+  "ajouts": "sans réponse : aucun ajout n'est approuvé, aucun n'est appliqué",
+  "publication": "non autorisée : le brouillon reste un candidat à relire"
+}
