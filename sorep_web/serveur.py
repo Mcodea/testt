@@ -1226,6 +1226,10 @@ class Application:
                                     deverrouiller=bool(d.get("confirmer_changement", False)))
         elif action == "textes":
             self.s.definir_textes(ident, cle, commentaire=d.get("commentaire"), libelle=d.get("libelle"))
+        elif action == "deverrouiller":
+            self.s.deverrouiller_adresse(ident, cle, d.get("motif", ""))
+        elif action == "reserver":
+            self.s.reserver_mot_variable(ident, cle, d.get("motif", ""))
         elif action == "valider":
             n, refus = self.s.valider_adresses([(x["ident_eq"], x["cle"]) for x in d.get("paires", [])])
             self._sauver()

@@ -1879,6 +1879,39 @@ class Session:
             self._change()
         return len(orph)
 
+    def deverrouiller_adresse(self, ident_eq, cle, motif):
+        """Retire la validation d'une adresse (elle redevient « à valider », jamais modifiée) ; motif obligatoire, tracé
+        dans l'ouvrage et son journal d'adressage."""
+        from . import adressage
+        from datetime import datetime
+        if self.ouvrage.mode != "Neuf":
+            raise RegleMetier("Projet existant : les adresses d'origine sont conservées et non réattribuées.")
+        motif = " ".join(str(motif or "").split())
+        if len(motif) < 3:
+            raise RegleMetier("Indiquez le motif du déverrouillage (3 caractères au moins).")
+        v = next((x for x in self.variables() if x.ident_eq == ident_eq and x.cle == cle), None)
+        if v is None:
+            raise RegleMetier("Variable introuvable.")
+        if not v.adresse_validee:
+            raise RegleMetier(f"L'adresse de {v.nom} n'est pas validée : rien à déverrouiller.")
+        self.devalider_adresses([(ident_eq, cle)])
+        adressage.tracer_validation(self, "automate", [(ident_eq, cle)], valide=False)
+        self.ouvrage.journal_adressage.append({"le": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "par": adressage.auteur(),
+                                               "action": "déverrouillage", "variable": v.nom, "adresse": v.adresse, "motif": motif[:120]})
+        self._change(devalider=False)
+
+    def reserver_mot_variable(self, ident_eq, cle, motif):
+        """Réserve le mot %MW de la variable : le moteur ne l'attribue plus à une autre variable."""
+        v = next((x for x in self.variables() if x.ident_eq == ident_eq and x.cle == cle), None)
+        if v is None or not v.adresse:
+            raise RegleMetier("Cette variable n'a pas d'adresse à réserver.")
+        from .modele import _mot
+        mot = _mot(v.adresse)
+        if not mot:
+            raise RegleMetier("Adresse non reconnue : réservation impossible.")
+        self.ajouter_reservation("memoire", f"%MW{mot[0]}", motif)
+        return f"%MW{mot[0]}"
+
     def devalider_adresses(self, paires):
         n = 0
         for ident, cle in paires:

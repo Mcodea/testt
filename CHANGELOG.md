@@ -15,6 +15,7 @@ Le numéro de version (`genvar/__init__.py`) est encore 0.32 ; il passera à 1.0
   ouvert sur un autre poste, qui ne peut alors plus enregistrer.
 - **Journal technique** tournant, consultable par Aide › Journal technique.
 - **Dupliquer un équipement** au ruban : numéro libre suivant, aucune adresse ni voie reprise.
+- Détail d'une variable : **Déverrouiller…** (motif obligatoire, l'adresse ne change pas) et **Réserver…** (mot %MW).
 - **Écran Rapprochement** (projets existants) : équipements détectés à déclarer, variable proposée pour chaque information
   attendue avec son niveau de confiance et sa raison, confirmation une par une ou en lot (annulable), accès TOPKAPI,
   information non accessible (motif obligatoire) et points restant avant la clôture.

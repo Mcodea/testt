@@ -66,6 +66,7 @@ class TestVariablesV031(ServeurNavigateur):
         """V1-4-43 : bouton visible mais désactivé, avec la raison affichée et un lien vers la correction."""
         self.assertTrue(self.page.locator("#v31-validate-proposed").is_enabled())
         self.assertEqual(self.page.locator("#v31-blocage").count(), 0)
+        self.assertRegex(self.page.locator("#v31-validate-proposed").inner_text().strip(), r"^Valider les propositions · \d+$")   # V1-4-41
         self.page.locator("#v31-validate-proposed").click()
         self.page.locator("#m-ok").click()
         self.page.wait_for_function("document.querySelector('#v31-blocage')")
@@ -84,6 +85,33 @@ class TestVariablesV031(ServeurNavigateur):
         self.assertIn("retenez d'abord", self.page.locator("#v31-blocage").inner_text())
         lien.click()
         self.page.wait_for_function("location.hash === '#/inventaire'")
+
+    def test_detail_deverrouiller_avec_motif_et_reserver(self):
+        """V1-4-42 : le détail propose Valider, Saisir, Déverrouiller (motif obligatoire) et Réserver."""
+        self.page.locator("#v31-validate-proposed").click()
+        self.page.locator("#m-ok").click()
+        self.page.wait_for_function("[...document.querySelectorAll('.v31-variable-row')].every(r => r.textContent.includes('validée'))")
+        ligne = self.page.locator(".v31-variable-row").first
+        nom = ligne.get_attribute("data-variable")
+        adresse = next(v for v in self.api("/api/variables")["lignes"] if v["nom"] == nom)["adresse"]
+        ligne.click()
+        self.page.locator(".v31-variable-detail").wait_for()
+        for bouton in ("#v31-validate-single", "#v31-edit-single", "#v31-unlock-single", "#v31-reserve-single"):
+            self.assertEqual(self.page.locator(bouton).count(), 1, bouton)
+        self.page.locator("#v31-unlock-single").click()
+        self.page.locator("#mv-ok").click()
+        self.assertIn("motif", self.page.locator("#mv-err").inner_text())
+        self.page.locator("#mv-motif").fill("Reprise après modification du programme")
+        self.page.locator("#mv-ok").click()
+        self.page.wait_for_function("n => { const v = document.querySelector('.v31-variable-detail'); return v && v.innerText.includes('Non validée'); }", arg=nom)
+        apres = next(v for v in self.api("/api/variables")["lignes"] if v["nom"] == nom)
+        self.assertEqual((apres["adresse"], apres["validee"]), (adresse, False))
+        self.assertTrue(self.page.locator("#v31-unlock-single").is_disabled())
+        self.page.locator("#v31-reserve-single").click()
+        self.page.locator("#mv-motif").fill("Mot gardé pour l'exploitant")
+        self.page.locator("#mv-ok").click()
+        self.page.wait_for_function("() => [...document.querySelectorAll('#toasts .toast')].some(t => t.textContent.includes('Mot réservé'))")
+        self.assertEqual(len(self.api("/api/adressage")["reservations"]), 1)
 
     def test_sens_des_variables_affiche_et_filtrable(self):
         """V1-5-03 : le sens (lecture, commande, consigne, retour) s'affiche au détail et se filtre."""

@@ -112,7 +112,9 @@ function vueVariablesV31(){
    {libelle:'Origine',valeur:selectedVar.origine_adressage||'—'},{libelle:'Règle appliquée',valeur:selectedVar.regle||selectedVar.motif||'Non définie'}]},
   {titre:'Validation',proprietes:[{libelle:'Validation',valeur:(selectedVar.validee_le||'Non validée')+(selectedVar.validee_par?' · '+selectedVar.validee_par:'')}]}])}
  <div class="v31-detail-actions"><button type="button" id="v31-validate-single" class="v31-primary" ${!neuf||!selectedVar.adresse||selectedVar.validee?'disabled':''} title="Une proposition doit d’abord être appliquée avec l’empreinte du plan">${V31.icon('check',16)} Valider l'adresse</button>
- <button type="button" id="v31-edit-single" ${!neuf?'disabled':''}>Saisir / éditer</button></div>
+ <button type="button" id="v31-edit-single" ${!neuf?'disabled':''}>Saisir / éditer</button>
+ <button type="button" id="v31-unlock-single" ${!neuf||!selectedVar.validee?'disabled':''} title="${selectedVar.validee?'Retirer la validation de cette adresse, avec un motif':'Adresse non validée : rien à déverrouiller'}">Déverrouiller…</button>
+ <button type="button" id="v31-reserve-single" ${!neuf||!selectedVar.adresse?'disabled':''} title="Réserver le mot de cette variable : le moteur ne l'attribue plus à une autre">Réserver…</button></div>
  ${selectedVar.ident_eq?'<button type="button" class="v31-text-button" id="v31-source-equip">Ouvrir la fiche équipement</button>':''}</aside>`:'';
  const errCount=rows.filter(x=>['en conflit','non résolue'].includes(x.etat_adressage)).length;
  document.getElementById('vue').innerHTML=`<section class="v31-variable-screen ${withDetail?'has-detail':''}"><div class="v31-card v31-main-table">
@@ -146,6 +148,14 @@ function vueVariablesV31(){
  document.querySelector('#v31-select-all')?.addEventListener('change',ev=>{document.querySelectorAll('.v31-choose:not(:disabled)').forEach(c=>c.checked=ev.target.checked);});
  document.querySelector('#v31-validate-single')?.addEventListener('click',async()=>{try{const v=selectedVar;if(!v||!v.adresse||!neuf)return;
    const res=await api('/api/variables/action',{action:'valider',paires:[{ident_eq:v.ident_eq,cle:v.cle}]});if(res.refus?.length)throw Error(res.refus.join(' | '));toast('Adresse validée et protégée.');await v31ReloadVariables();}catch(e){toast(e.message,true);}});
+ const motifVariable=(titre,texte,bouton,action)=>{const v=selectedVar;if(!v||!neuf)return;
+  const m=ouvrirModale(`<div class="boite-tete"><h2>${titre} · <span class="mono">${V31.esc(v.nom)}</span></h2><p>${texte}</p></div>
+   <div class="boite-corps std-formulaire"><label for="mv-motif">Motif (obligatoire)</label><input id="mv-motif" maxlength="120"><div class="erreur-form" id="mv-err" role="alert"></div></div>
+   <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="mv-ok">${bouton}</button></div>`);
+  m.querySelector('#mv-ok').onclick=async()=>{const motif=m.querySelector('#mv-motif').value.trim();if(!motif)return m.querySelector('#mv-err').textContent='Indiquez le motif.';
+   try{await api('/api/variables/action',{action,ident_eq:v.ident_eq,cle:v.cle,motif});fermerModale();toast(action==='deverrouiller'?'Adresse déverrouillée : elle redevient à valider.':'Mot réservé.');await v31ReloadVariables();}catch(e){m.querySelector('#mv-err').textContent=e.message;}};};
+ document.querySelector('#v31-unlock-single')?.addEventListener('click',()=>motifVariable('Déverrouiller l’adresse','L’adresse n’est pas modifiée : elle repasse « à valider » et le motif est tracé.','Déverrouiller','deverrouiller'));
+ document.querySelector('#v31-reserve-single')?.addEventListener('click',()=>motifVariable('Réserver le mot','Le mot %MW de cette variable ne sera plus attribué à une autre variable par le moteur.','Réserver','reserver'));
  document.querySelector('#v31-edit-single')?.addEventListener('click',()=>{if(neuf&&selectedVar)editerVariableV29(selectedVar);});
  document.querySelector('#v31-source-equip')?.addEventListener('click',()=>allerOuvrage({nature:'eq',valeur:selectedVar.ident_eq}));
  document.getElementById('v31-calculate').onclick=async()=>{try{const plan=await api('/api/adressage');E.v31Plan=plan;toast(`Aperçu recalculé : ${(plan.affectations||[]).filter(a=>a.niveau==='automate'&&a.etat==='proposée').length} proposition(s), ${(plan.conflits||[]).length} conflit(s).`);await v31ReloadVariables();}catch(e){toast(e.message,true);}};
