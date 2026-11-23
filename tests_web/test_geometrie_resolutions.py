@@ -90,6 +90,21 @@ class TestGeometrieResolutions(ServeurNavigateur):
         self.page.evaluate('document.fonts.ready')
         self.page.wait_for_timeout(150)
 
+    def test_jamais_de_carte_dans_une_carte(self):
+        """V1-4-18 : sur chaque écran, aucun conteneur de type carte n'est imbriqué dans un autre."""
+        cartes = '.v31-card, .bloc, .rc-groupe, .carte-choix, .std-formulaire .bloc'
+        for route in ECRANS + ("#/standards", "#/apprentissage", "#/grille"):
+            with self.subTest(ecran=route):
+                self.ouvrir(route)
+                if route == "#/dashboard":     # garde-fou : le détecteur voit bien une carte imbriquée
+                    self.page.evaluate("document.querySelector('#vue .v31-card').insertAdjacentHTML('beforeend', '<div class=\"v31-card\" id=\"intrus\"></div>')")
+                    self.assertEqual(self.page.evaluate("document.querySelectorAll('#vue .v31-card #intrus').length"), 1)
+                    self.page.evaluate("document.querySelector('#intrus').remove()")
+                imbriquees = self.page.evaluate("""s => [...document.querySelectorAll('#vue ' + s.split(',').map(x => x.trim()).join(', #vue '))]
+                    .filter(el => el.parentElement && el.parentElement.closest(s))
+                    .map(el => el.className)""", cartes)
+                self.assertEqual(imbriquees, [], f'Carte dans une carte sur {route}')
+
     def test_structure_sans_debordement_ni_chevauchement(self):
         for largeur, hauteur in RESOLUTIONS:
             self.page.set_viewport_size({'width': largeur, 'height': hauteur})

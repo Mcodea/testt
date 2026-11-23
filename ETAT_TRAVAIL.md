@@ -34,7 +34,7 @@ industrielle du 16/11) et sortent du calcul.
 | En attente de preuves utilisateur (section 8) | 10 |
 | Remplacé par décision | 25 |
 
-**Avancement : 54 % au sens strict (81 / 150), 69 % en comptant un « partiel » pour moitié.**
+**Avancement : 55 % au sens strict (82 / 150), 69 % en comptant un « partiel » pour moitié.**
 
 Écarts nets relevés (absents), traitables sans attendre l'utilisateur : version 1.0.0 et étiquettes (V1-10-19 à 21), compte rendu V1.0 (V1-10-28 à 34).
 
@@ -303,12 +303,12 @@ le défaut démontré et obtenir une CI verte. Codex reste actif sur ce point.
 | V1-4-15 (L89) | boutons et champs : rayon de 12 px, 40 px de haut ; | remplacé par décision | Supplanté par la refonte industrielle demandée par l'utilisateur le 16/11 (ruban, menus, palette et formes de `industrial-ui.css`) ; preuves de la nouvelle cible : tests_web/test_design_industriel.py, test_geometrie_resolutions.py. |
 | V1-4-16 (L90) | pastilles et filtres en gélule ; | remplacé par décision | Supplanté par la refonte industrielle demandée par l'utilisateur le 16/11 (ruban, menus, palette et formes de `industrial-ui.css`) ; preuves de la nouvelle cible : tests_web/test_design_industriel.py, test_geometrie_resolutions.py. |
 | V1-4-17 (L91) | panneaux et fenêtres : rayon de 24 px. | remplacé par décision | Supplanté par la refonte industrielle demandée par l'utilisateur le 16/11 (ruban, menus, palette et formes de `industrial-ui.css`) ; preuves de la nouvelle cible : tests_web/test_design_industriel.py, test_geometrie_resolutions.py. |
-| V1-4-18 (L92) | Jamais de carte dans une carte. | partiel | Règle de composition non vérifiée automatiquement. |
+| V1-4-18 (L92) | Jamais de carte dans une carte. | fait | Test navigateur sur 11 écrans : aucun conteneur de type carte imbriqué dans un autre, détecteur vérifié par une carte intruse : tests_web/test_geometrie_resolutions.py::test_jamais_de_carte_dans_une_carte. |
 | V1-4-19 (L93) | **Typographie :** | partiel | Typographie de la refonte (Inter, JetBrains Mono embarquées : tests_web/test_ressources_embarquees.py) ; échelle du cahier remplacée (voir V1-4-21). |
 | V1-4-20 (L94) | Inter et JetBrains Mono, embarquées ; | fait | Polices WOFF2 locales et licences OFL, tests_web/test_ressources_embarquees.py ; chargement réel avec accès extérieur refusé, chasse fixe mesurée. Captures comparées : validation/interface_v2/maquettes/README.md. |
 | V1-4-21 (L95) | échelle 12 / 13 / 14 / 16 / 20 / 32 px ; | remplacé par décision | Supplanté par la refonte industrielle demandée par l'utilisateur le 16/11 (ruban, menus, palette et formes de `industrial-ui.css`) ; preuves de la nouvelle cible : tests_web/test_design_industriel.py, test_geometrie_resolutions.py. |
 | V1-4-22 (L96) | noms de variables, repères et adresses en police à chasse fixe. | fait | Noms, repères et adresses en chasse fixe (classe `mono`, JetBrains Mono embarquée) : tests_web/test_ressources_embarquees.py, test_design_industriel.py. |
-| V1-4-23 (L97) | **Icônes :** Lucide (licence ISC), embarquées. Jamais d'emoji. | partiel | 19 géométries Lucide ISC embarquées pour V31.icon, rendu SVG, empreintes et licence testés dans tests_web/test_ressources_embarquees.py ; autres surfaces historiques et glyphes à vérifier. Comparaison : validation/interface_v2/maquettes/. |
+| V1-4-23 (L97) | **Icônes :** Lucide (licence ISC), embarquées. Jamais d'emoji. | partiel | Aucun émoji ni pictogramme dans l'interface et les textes livrés (✓ ✕ ◇ ▣ remplacés par des icônes) : tests/test_aucun_emoji.py ; 19 géométries Lucide ISC embarquées pour V31.icon (tests_web/test_ressources_embarquees.py) ; les icônes dessinées de la coque (ogias-coque.js) ne sont pas des Lucide : à trancher. |
 | V1-4-24 (L98) | **Transitions :** 180 ms, sans animation décorative. | remplacé par décision | Supplanté par la refonte industrielle demandée par l'utilisateur le 16/11 (ruban, menus, palette et formes de `industrial-ui.css`) ; preuves de la nouvelle cible : tests_web/test_design_industriel.py, test_geometrie_resolutions.py. |
 | V1-4-25 (L102) | Barre latérale de 80 px : Accueil, Ouvrages, Référentiel, Paramètres, À propos. | remplacé par décision | Supplanté par la refonte industrielle demandée par l'utilisateur le 16/11 (ruban, menus, palette et formes de `industrial-ui.css`) ; preuves de la nouvelle cible : tests_web/test_design_industriel.py, test_geometrie_resolutions.py. |
 | V1-4-26 (L103) | Aucun menu horizontal, ruban ou onglet de documents. | remplacé par décision | Supplanté par la refonte industrielle demandée par l'utilisateur le 16/11 (ruban, menus, palette et formes de `industrial-ui.css`) ; preuves de la nouvelle cible : tests_web/test_design_industriel.py, test_geometrie_resolutions.py. |

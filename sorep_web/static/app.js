@@ -477,7 +477,7 @@ function rubanVariables(action, exportable=false) {
   return `<div class="v29-ruban" aria-label="Ruban : variables et adressage">
     <div class="v29-ruban-tabs"><b>Général</b><span>Affichage</span><span>Outils</span><span>Variables</span></div>
     <div class="v29-ruban-commands">
-      <div class="v29-group"><button type="button" class="v29-action" id="v29-apercu" title="Calcul de prévisualisation sans écriture"><strong>◇</strong> Proposer l'adressage</button><button type="button" class="v29-action" id="v29-controle"><strong>✓</strong> Contrôler</button><small>Ingénierie</small></div>
+      <div class="v29-group"><button type="button" class="v29-action" id="v29-apercu" title="Calcul de prévisualisation sans écriture"><strong aria-hidden="true">${V31.icon("spark", 14)}</strong> Proposer l'adressage</button><button type="button" class="v29-action" id="v29-controle"><strong aria-hidden="true">${V31.icon("check", 14)}</strong> Contrôler</button><small>Ingénierie</small></div>
       ${exportable ? `<div class="v29-group"><button type="button" class="v29-action" id="v29-export"><strong>⇩</strong> Exporter Excel</button><small>Livrables non qualifiés</small></div>` : ""}
       <div class="v29-group"><span class="v29-ruban-hint">Aucune proposition n'est appliquée sans confirmation.</span><small>Sécurité</small></div>
     </div>
@@ -1703,7 +1703,7 @@ function modaleCharte(d, agir) {
       : `<input data-champ="longueur" inputmode="numeric" value="${esc(String(s.longueur ?? ""))}" aria-label="Longueur ${esc(noms[s.type])}" class="std-court">
          ${s.type === "numero_ouvrage" ? '<span class="aide">chiffres</span>' : `<select data-champ="caracteres" aria-label="Caractères ${esc(noms[s.type])}">${optionsCar(s.caracteres)}</select>`}`;
     return `<li class="std-seg" data-partie="${partie}" data-i="${i}"><b>${esc(noms[s.type])}</b><span class="std-seg-reglage">${reglage}</span>
-      <span class="std-seg-actions"><button type="button" class="icone" data-bouger="-1" ${i ? "" : "disabled"} aria-label="Monter ${esc(noms[s.type])}">↑</button><button type="button" class="icone" data-bouger="1" ${i < n - 1 ? "" : "disabled"} aria-label="Descendre ${esc(noms[s.type])}">↓</button><button type="button" class="icone" data-retirer aria-label="Retirer ${esc(noms[s.type])}">✕</button></span></li>`;
+      <span class="std-seg-actions"><button type="button" class="icone" data-bouger="-1" ${i ? "" : "disabled"} aria-label="Monter ${esc(noms[s.type])}">↑</button><button type="button" class="icone" data-bouger="1" ${i < n - 1 ? "" : "disabled"} aria-label="Descendre ${esc(noms[s.type])}">↓</button><button type="button" class="icone" data-retirer aria-label="Retirer ${esc(noms[s.type])}">${V31.icon("close", 14)}</button></span></li>`;
   };
   const partie = (cle, titre, noms) => `<fieldset class="std-partie"><legend>${titre}</legend><ol>${etat[cle].map((s, i) => ligne(cle, s, i, etat[cle].length)).join("")}</ol>
     <div class="boutons-ligne"><select data-ajout="${cle}" aria-label="Segment à ajouter (${titre})">${Object.entries(noms).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("")}</select><button type="button" data-ajouter="${cle}">Ajouter le segment</button></div></fieldset>`;
@@ -3341,7 +3341,7 @@ function vueES() {
       <div class="es-ruban-actions"><div class="es-ruban-groupe"><button type="button" id="x-val-tout" ${visibles.some(x => !x.contenu_valide) ? "" : "disabled"} title="Valider les E/S visibles après contrôle">${V31.icon("check",14)} Valider les affichées</button>
         <button type="button" id="x-val" class="prim" disabled>${V31.icon("check",14)} Valider la sélection</button><span>Validation du contenu</span></div>
         <div class="es-ruban-groupe"><button type="button" id="es-export">⇩ Exporter la liste</button><span>Échanges de données</span></div>
-        <div class="es-ruban-groupe"><button type="button" id="es-materiel" data-nav="#/materiel" ${invalides ? "disabled title=\"Validez le contenu avant le calcul du matériel\"" : ""}>▣ Matériel</button><span>Étape suivante</span></div></div>
+        <div class="es-ruban-groupe"><button type="button" id="es-materiel" data-nav="#/materiel" ${invalides ? "disabled title=\"Validez le contenu avant le calcul du matériel\"" : ""}><span aria-hidden="true">${V31.icon("cpu", 14)}</span> Matériel</button><span>Étape suivante</span></div></div>
     </div>
     <div class="es-compteurs" role="group" aria-label="Filtres par nature et par validation">
       ${compteurs.map(([code, nb, label, grav]) => pastille(code, nb, label, grav, E.filtreES)).join("")}</div>
