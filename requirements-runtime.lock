@@ -1,6 +1,11 @@
 # Dépendances applicatives figées ; les outils CI ne sont pas distribués.
+# Analyse PDF : pdfminer.six (MIT) et ses dépendances, en remplacement de PyMuPDF (AGPL-3.0) depuis le 23/11/2026.
+cffi==2.1.1
+charset-normalizer==3.5.2
+cryptography==50.0.1
 et_xmlfile==2.0.0
 openpyxl==3.1.5
-pymupdf==1.28.2
+pdfminer.six==20260107
+pycparser==3.0
 PySide6_Essentials==6.12.0
 shiboken6==6.12.0

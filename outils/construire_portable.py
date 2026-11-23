@@ -63,7 +63,7 @@ def build(output: Path) -> Path:
             "industrial_formats_qualified": False,
         }, indent=2) + "\n", encoding="utf-8")
         subprocess.run([str(runtime / "python.exe"), "-I", "-c",
-                        'import openpyxl, fitz; from PySide6 import QtCore; print("Runtime portable disponible")'],
+                        'import openpyxl, pdfminer, cryptography; from PySide6 import QtCore; print("Runtime portable disponible")'],
                        check=True, cwd=staging)
         name = f"OGIAS-{VERSION}-windows-x64.zip"
         archive = output / name

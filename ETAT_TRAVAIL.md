@@ -39,9 +39,8 @@ industrielle du 16/11) et sortent du calcul.
 Écarts nets relevés (absents), traitables sans attendre l'utilisateur : duplication et
 réordonnancement de variables (V1-5-02), notes de version 1.0 (V1-9-11), version 1.0.0 et étiquettes (V1-10-19 à 21), compte rendu V1.0 (V1-10-28 à 34).
 
-Décision requise : **licences** (V1-11-05). `requirements-runtime.lock` livre PyMuPDF (AGPL-3.0, ou licence
-commerciale Artifex ; analyse des PDF PL7) et PySide6 (LGPL-3.0 ; ancienne interface Qt), hors de la liste
-MIT / BSD / Apache / ISC du cahier.
+Décision requise : **licences** (V1-11-05). PyMuPDF (AGPL-3.0) a été remplacé par pdfminer.six (MIT) le 23/11 ;
+reste PySide6 (LGPL-3.0), qui ne sert qu'à l'ancienne interface Qt : proposition de ne plus la livrer.
 
 ## Checkpoint — session Claude du 22/11/2026
 
@@ -427,7 +426,7 @@ le défaut démontré et obtenir une CI verte. Codex reste actif sur ce point.
 | V1-11-02 (L244) | Ne supprimer aucune fonction opérationnelle. Ne pas modifier les projets originaux. Préserver les anciens repères et les anciennes adresses. | fait | Aucune commande disparue depuis le lot 0 (tests_web/test_registre_commandes.py) ; fichiers d'ouvrage inchangés à l'octet par les aperçus et rapports (tests/test_adoption_controlee.py, test_formats_appris.py::TestApi::test_ouvrage_inchange). |
 | V1-11-03 (L245) | Aucune donnée de démonstration dans une installation vierge. Aucune intelligence artificielle embarquée. | fait | Accueil vierge vérifié par l'essai portable (outils/tester_portable.py) ; aucune dépendance d'intelligence artificielle (requirements-runtime.lock). |
 | V1-11-04 (L246) | N'inventer aucune caractéristique constructeur, aucun format industriel, aucune adresse pour un projet existant. Ne jamais déclarer un export compatible sans essai qui le prouve. | fait | Gamme non décrite refusée (tests/test_materiel_gamme_non_decrite.py), aucune adresse S4W inventée (test_variables_v029.py), exports déclarés non qualifiés sans essai réel (test_formats_appris*.py, test_generation_groupee.py). |
-| V1-11-05 (L247) | Toute bibliothèque ajoutée a une licence compatible avec une vente commerciale (MIT, BSD, Apache, ISC). | partiel | Écart : requirements-runtime.lock contient PyMuPDF (AGPL-3.0, ou licence commerciale Artifex ; analyse PDF PL7) et PySide6 (LGPL-3.0 ; ancienne interface Qt), hors liste MIT / BSD / Apache / ISC. openpyxl et et_xmlfile : MIT. Décision utilisateur requise. |
+| V1-11-05 (L247) | Toute bibliothèque ajoutée a une licence compatible avec une vente commerciale (MIT, BSD, Apache, ISC). | partiel | Écart restant : PySide6 (LGPL-3.0 ; ancienne interface Qt), décision utilisateur attendue. PyMuPDF (AGPL-3.0) retiré du programme livré le 23/11 : remplacé par pdfminer.six (MIT), inventaires identiques sur les PDF de référence (tests/test_analyse_pdf_pl7.py::TestEquivalenceMoteurs, TestAucunPyMuPDFLivre) ; nouvelles dépendances MIT / Apache / BSD (LICENCES_TIERCES.md). |
 
 ## Vérification du lot et décisions prudentes
 

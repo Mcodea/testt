@@ -330,74 +330,86 @@ def tracer_origines(resultat: InventairePDF, destination: str, profondeur_max: i
     return chemins[:chemins_max]
 
 
-def analyser_pdf(fichier: str | Path) -> InventairePDF:
+def _pages_pdfminer(chemin: Path) -> list[str]:
+    """Texte de chaque page dans l'ordre de lecture (blocs de haut en bas, puis de gauche à droite).
+
+    pdfminer.six (MIT) remplace PyMuPDF (AGPL-3.0) depuis le 23/11/2026 : inventaires identiques sur les PDF de
+    référence (tests/test_analyse_pdf_pl7.py::TestEquivalenceMoteurs)."""
+    from pdfminer.high_level import extract_pages
+    from pdfminer.layout import LTTextContainer
+    from pdfminer.pdfdocument import PDFEncryptionError, PDFPasswordIncorrect
     try:
-        import fitz
-    except ImportError as e:
-        raise RuntimeError("Analyse PDF indisponible : installer PyMuPDF (py -m pip install PyMuPDF).") from e
+        pages = list(extract_pages(str(chemin), maxpages=MAX_PAGES + 1))
+    except (PDFEncryptionError, PDFPasswordIncorrect):
+        raise ValueError('PDF chiffré : fournir une version lisible autorisée.') from None
+    if len(pages) > MAX_PAGES:
+        raise ValueError(f'PDF trop long : plus de {MAX_PAGES} pages.')
+    textes = []
+    for page in pages:
+        blocs = sorted((e for e in page if isinstance(e, LTTextContainer)), key=lambda e: (-e.y1, e.x0))
+        textes.append(''.join(b.get_text() for b in blocs))
+    return textes
+
+
+def analyser_pdf(fichier: str | Path, extraire=_pages_pdfminer) -> InventairePDF:
+    """Inventaire documentaire d'un PDF PL7. `extraire(chemin) -> [texte par page]` (pdfminer.six par défaut)."""
     chemin = Path(fichier).expanduser().resolve()
     if not chemin.exists():
         raise FileNotFoundError(str(chemin))
     if chemin.stat().st_size > MAX_BYTES:
         raise ValueError('PDF dépassant la limite de sécurité 200 Mo.')
     digest = hashlib.sha256(chemin.read_bytes()).hexdigest()
-    doc = fitz.open(str(chemin))
     try:
-        if doc.is_encrypted:
-            raise ValueError('PDF chiffré : fournir une version lisible autorisée.')
-        if len(doc) > MAX_PAGES:
-            raise ValueError(f'PDF trop long : {len(doc)} pages (maximum {MAX_PAGES}).')
-        result = InventairePDF(chemin.name, digest, len(doc), 0)
-        for i in range(len(doc)):
-            page_document = doc.load_page(i)
-            texte = page_document.get_text('text', sort=True)
-            if len(texte.strip()) >= 30:
-                result.pages_texte += 1
-            rubrique = _rubrique(texte)
-            lignes = texte.splitlines()
-            if rubrique == 'Références croisées (indice de rubrique)':
-                result.pages_references_croisees.append(i+1)
-            section_page = next((x for l in lignes[:25] for x in RE_SECTION.findall(l)), '')
-            result.affectations_documentaires.extend(affectations_depuis_texte(texte, i+1, rubrique, section_page))
-            result.indices_symboles.extend(symboles_depuis_texte(texte, i+1, rubrique))
-            precedente_ld = None
-            for ligne in lignes:
-                if not ligne.strip():
-                    continue
-                # Prudence : uniquement deux instructions IL isolées ET consécutives.
-                # Un commentaire, un AND/OR, une temporisation ou une autre instruction
-                # rompt la paire ; pas de reconstruction de Ladder ou FBD ici.
-                match_il = RE_SIMPLE_IL.fullmatch(ligne)
-                if rubrique == 'Programme (indice de rubrique)' and match_il:
-                    operation, adresse_il = match_il.group(1).upper(), match_il.group(2).upper()
-                    if operation == 'ST' and precedente_ld and precedente_ld != adresse_il:
-                        result.liens_il_simples.append(LienDocumentaire(precedente_ld, adresse_il, i+1))
-                    precedente_ld = adresse_il if operation == 'LD' else None
-                else:
-                    precedente_ld = None
-                if len(ligne) > 800:
-                    ligne = ligne[:800]
-                for m in RE_ADDR.finditer(ligne):
-                    adr = m.group().upper()
-                    usages = list(RE_USAGE.finditer(ligne))
-                    # R/W est un usage possible, mais il peut apparaître dans un commentaire.
-                    # Il est affiché comme indice documentaire, jamais comme preuve de sens causal.
-                    usage = usages[-1].group('mode').upper() if usages else ''
-                    sections = RE_SECTION.findall(ligne)
-                    result.occurrences.append(Occurrence(adr, i+1, ligne.strip()[:300], rubrique, usage,
-                                                         sections[-1] if sections else (section_page if rubrique == 'Programme (indice de rubrique)' else ''),
-                                                         _symbole_sur_ligne(ligne, adr)))
-        result.adresses_uniques = sorted(set(o.adresse for o in result.occurrences))
-        result.zones_memoires_candidates = _grouper_mw(result.adresses_uniques)
-        if result.pages_texte == 0:
-            result.avertissements.append('PDF sans couche texte exploitable : document probablement scanné. Extraction automatique refusée, pas d’OCR implicite.')
-        elif result.pages_texte < result.pages // 2:
-            result.avertissements.append('Moins de la moitié des pages possèdent du texte : inventaire probablement incomplet.')
-        if not result.pages_references_croisees:
-            result.avertissements.append('Aucune rubrique de références croisées clairement détectée.')
-        result.avertissements.append('Les indices R/W, les symboles, les commentaires et les sections sont extraits au mieux de la mise en page ; vérification visuelle nécessaire.')
-        result.avertissements.append('Les liens LD/ST et les affectations OPERATE sont des dépendances syntaxiques documentaires, pas une interprétation Ladder/FBD ni une preuve d’acquisition TOPKAPI.')
-        result.avertissements.append('Une proximité de mots %MW ne démontre ni une table d’échanges ni une liaison TOPKAPI.')
-        return result
-    finally:
-        doc.close()
+        textes = extraire(chemin)
+    except ImportError as e:
+        raise RuntimeError("Analyse PDF indisponible : installer pdfminer.six (py -m pip install pdfminer.six).") from e
+    result = InventairePDF(chemin.name, digest, len(textes), 0)
+    for i, texte in enumerate(textes):
+        if len(texte.strip()) >= 30:
+            result.pages_texte += 1
+        rubrique = _rubrique(texte)
+        lignes = texte.splitlines()
+        if rubrique == 'Références croisées (indice de rubrique)':
+            result.pages_references_croisees.append(i+1)
+        section_page = next((x for l in lignes[:25] for x in RE_SECTION.findall(l)), '')
+        result.affectations_documentaires.extend(affectations_depuis_texte(texte, i+1, rubrique, section_page))
+        result.indices_symboles.extend(symboles_depuis_texte(texte, i+1, rubrique))
+        precedente_ld = None
+        for ligne in lignes:
+            if not ligne.strip():
+                continue
+            # Prudence : uniquement deux instructions IL isolées ET consécutives.
+            # Un commentaire, un AND/OR, une temporisation ou une autre instruction
+            # rompt la paire ; pas de reconstruction de Ladder ou FBD ici.
+            match_il = RE_SIMPLE_IL.fullmatch(ligne)
+            if rubrique == 'Programme (indice de rubrique)' and match_il:
+                operation, adresse_il = match_il.group(1).upper(), match_il.group(2).upper()
+                if operation == 'ST' and precedente_ld and precedente_ld != adresse_il:
+                    result.liens_il_simples.append(LienDocumentaire(precedente_ld, adresse_il, i+1))
+                precedente_ld = adresse_il if operation == 'LD' else None
+            else:
+                precedente_ld = None
+            if len(ligne) > 800:
+                ligne = ligne[:800]
+            for m in RE_ADDR.finditer(ligne):
+                adr = m.group().upper()
+                usages = list(RE_USAGE.finditer(ligne))
+                # R/W est un usage possible, mais il peut apparaître dans un commentaire.
+                # Il est affiché comme indice documentaire, jamais comme preuve de sens causal.
+                usage = usages[-1].group('mode').upper() if usages else ''
+                sections = RE_SECTION.findall(ligne)
+                result.occurrences.append(Occurrence(adr, i+1, ligne.strip()[:300], rubrique, usage,
+                                                     sections[-1] if sections else (section_page if rubrique == 'Programme (indice de rubrique)' else ''),
+                                                     _symbole_sur_ligne(ligne, adr)))
+    result.adresses_uniques = sorted(set(o.adresse for o in result.occurrences))
+    result.zones_memoires_candidates = _grouper_mw(result.adresses_uniques)
+    if result.pages_texte == 0:
+        result.avertissements.append('PDF sans couche texte exploitable : document probablement scanné. Extraction automatique refusée, pas d’OCR implicite.')
+    elif result.pages_texte < result.pages // 2:
+        result.avertissements.append('Moins de la moitié des pages possèdent du texte : inventaire probablement incomplet.')
+    if not result.pages_references_croisees:
+        result.avertissements.append('Aucune rubrique de références croisées clairement détectée.')
+    result.avertissements.append('Les indices R/W, les symboles, les commentaires et les sections sont extraits au mieux de la mise en page ; vérification visuelle nécessaire.')
+    result.avertissements.append('Les liens LD/ST et les affectations OPERATE sont des dépendances syntaxiques documentaires, pas une interprétation Ladder/FBD ni une preuve d’acquisition TOPKAPI.')
+    result.avertissements.append('Une proximité de mots %MW ne démontre ni une table d’échanges ni une liaison TOPKAPI.')
+    return result

@@ -62,4 +62,42 @@ class TestAnalysePDFPL7(unittest.TestCase):
             analyser_pdf(self.pdf)
 
 
+def _pages_pymupdf_reference(chemin):
+    """Lecture de référence par PyMuPDF (outil de développement, AGPL-3.0, NON livré) : ancien comportement."""
+    doc = fitz.open(str(chemin))
+    try:
+        return [doc.load_page(i).get_text('text', sort=True) for i in range(len(doc))]
+    finally:
+        doc.close()
+
+
+@unittest.skipIf(fitz is None, 'PyMuPDF (référence de développement) non installé')
+class TestEquivalenceMoteurs(unittest.TestCase):
+    """23/11/2026 : pdfminer.six (MIT) remplace PyMuPDF (AGPL-3.0) dans le programme livré. L'inventaire produit
+    doit rester identique à celui de l'ancien lecteur sur les PDF de référence fictifs."""
+
+    def test_inventaires_identiques_sur_les_pdf_de_reference(self):
+        from dataclasses import asdict
+        racine = Path(__file__).resolve().parents[1] / 'validation' / 'pdf_pl7'
+        pdfs = sorted(racine.glob('*.pdf'))
+        self.assertGreaterEqual(len(pdfs), 2)
+        for f in pdfs:
+            with self.subTest(pdf=f.name):
+                self.assertEqual(asdict(analyser_pdf(f)), asdict(analyser_pdf(f, extraire=_pages_pymupdf_reference)))
+
+
+class TestAucunPyMuPDFLivre(unittest.TestCase):
+    def test_programme_livre_sans_pymupdf(self):
+        racine = Path(__file__).resolve().parents[1]
+        for dossier in ('genvar', 'sorep_web'):
+            for f in (racine / dossier).rglob('*.py'):
+                texte = f.read_text(encoding='utf-8')
+                with self.subTest(fichier=str(f.relative_to(racine))):
+                    self.assertNotIn('import fitz', texte)
+                    self.assertNotIn('import pymupdf', texte.lower())
+        verrou = (racine / 'requirements-runtime.lock').read_text(encoding='utf-8').lower()
+        self.assertNotIn('pymupdf==', verrou)
+        self.assertIn('pdfminer.six==', verrou)
+
+
 if __name__=='__main__': unittest.main()
