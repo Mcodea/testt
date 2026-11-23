@@ -63,8 +63,7 @@ def main(argv: list[str] | None = None) -> int:
     output.mkdir(parents=True, exist_ok=True)
     env = dict(os.environ, PYTHONUTF8="1")
     with tempfile.TemporaryDirectory(prefix="ogias-ci-") as temporary:
-        env.update(SOREP_DATA_DIR=temporary, QT_QPA_PLATFORM="offscreen",
-                   XDG_CONFIG_HOME=str(Path(temporary) / "config"),
+        env.update(SOREP_DATA_DIR=temporary, XDG_CONFIG_HOME=str(Path(temporary) / "config"),
                    XDG_CACHE_HOME=str(Path(temporary) / "cache"),
                    COVERAGE_FILE=str(output / ".coverage"))
         if args.suite in ("python", "web"):
@@ -75,7 +74,7 @@ def main(argv: list[str] | None = None) -> int:
             if args.suite == "python":
                 coverage = output / "coverage.json"
                 coverage.unlink(missing_ok=True)
-                command += ["tests", "tests_qt", "--cov=genvar", f"--cov-report=json:{coverage}",
+                command += ["tests", "--cov=genvar", f"--cov-report=json:{coverage}",
                             f"--cov-report=xml:{output / 'coverage.xml'}", "--cov-report=term:skip-covered"]
             else:
                 command += ["tests_web"]

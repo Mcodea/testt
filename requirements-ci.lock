@@ -38,13 +38,11 @@ pyee==13.0.1
 Pygments==2.21.0
 pymupdf==1.28.2
 pyparsing==3.3.3
-PySide6_Essentials==6.12.0
 pytest-cov==7.1.0
 pytest==9.2.0
 requests==2.34.2
 rich==15.0.0
 ruff==0.17.4
-shiboken6==6.12.0
 sortedcontainers==2.4.0
 tomli==2.5.0
 tomli_w==1.2.0

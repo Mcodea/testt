@@ -1,6 +1,6 @@
 """Session de travail sur un ouvrage : toutes les opérations, sans aucune interface graphique.
 
-Les interfaces (Tkinter actuelle, PySide6 en cours) appellent ces fonctions ; elles
+Les interfaces (interface web locale) appellent ces fonctions ; elles
 n'implémentent elles-mêmes aucune règle métier. Une opération refusée lève
 `RegleMetier` avec un message à afficher tel quel.
 """

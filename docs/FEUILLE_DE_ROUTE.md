@@ -72,4 +72,4 @@ Principes retenus de ces outils, et ce qu'OGIAS en fait :
 
 - Automates : Schneider et Siemens pour l'instant (22/11). Supervisions employées : à préciser.
 - A1 / R1 / D5-b (référentiel).
-- Licences : PyMuPDF remplacé par pdfminer.six (MIT) le 23/11 ; reste PySide6 (LGPL-3.0, ancienne interface Qt).
+- Licences : PyMuPDF remplacé par pdfminer.six (MIT) le 23/11 ; PySide6 retiré avec l'ancienne interface Qt (23/11) : plus d'écart de licence.

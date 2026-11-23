@@ -47,9 +47,8 @@ def build(output: Path) -> Path:
                             ignore=shutil.ignore_patterns("site-packages", "__pycache__", "*.pyc", "test", "tests"))
         subprocess.run([sys.executable, "-m", "pip", "install", "--no-deps", "--no-compile", "--target",
                         str(runtime / "Lib/site-packages"), "-r", str(ROOT / "requirements-runtime.lock")], check=True)
-        for name in ("genvar", "genvar_qt", "sorep_web"):
+        for name in ("genvar", "sorep_web"):
             shutil.copytree(ROOT / name, staging / name, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
-        shutil.copy2(ROOT / "lancer_qt.py", staging / "lancer_qt.py")
         (staging / "lancer_portable.py").write_text(
             'from pathlib import Path\nimport runpy, sys\n'
             'sys.path.insert(0, str(Path(__file__).resolve().parent))\n'
@@ -63,7 +62,7 @@ def build(output: Path) -> Path:
             "industrial_formats_qualified": False,
         }, indent=2) + "\n", encoding="utf-8")
         subprocess.run([str(runtime / "python.exe"), "-I", "-c",
-                        'import openpyxl, pdfminer, cryptography; from PySide6 import QtCore; print("Runtime portable disponible")'],
+                        'import openpyxl, pdfminer, cryptography; print("Runtime portable disponible")'],
                        check=True, cwd=staging)
         name = f"OGIAS-{VERSION}-windows-x64.zip"
         archive = output / name

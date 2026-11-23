@@ -3,7 +3,7 @@
 Pas d'OCR ni de raisonnement automatique sur les schémas Ladder/FBD.
 Les références R/W prouvent des occurrences documentées, pas des liens causaux.
 Les adresses repérées ne sont JAMAIS déclarées accessibles à la supervision.
-Ce module est indépendant de PySide6 et des fichiers d'ouvrage SOREP.
+Ce module est indépendant de l'interface et des fichiers d'ouvrage SOREP.
 """
 from __future__ import annotations
 

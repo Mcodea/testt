@@ -21,13 +21,12 @@ matériel et ses formats.
 - **Ordre d'export** des variables par équipement, sans jamais modifier une adresse.
 - **Sécurité du travail** : annuler / rétablir, copies de sauvegarde, verrou d'ouvrage, journal technique.
 - **Indices de livraison** et liste des modifications entre deux indices.
-- **Licences** : aucune bibliothèque AGPL livrée (lecture des PDF par pdfminer.six).
+- **Licences** : plus aucune bibliothèque AGPL ni LGPL livrée (PDF par pdfminer.six ; ancienne interface Qt retirée).
 
 ## Limites connues à la livraison
 
 - Les exports **TIA Portal, Control Expert et TOPKAPI** n'ont pas encore été essayés sur les logiciels réels :
   `COMPATIBILITE.md` ne déclare donc aucune compatibilité. Un fichier d'exemple réel de chaque logiciel est attendu.
-- **PySide6 (LGPL)** : l'ancienne interface Qt reste à retirer de la version vendue (décision attendue).
 - Le tableau de conformité (`ETAT_TRAVAIL.md`) n'est pas entièrement « fait » : il fait foi de l'avancement.
 - Protection de la branche principale et exécutions GitHub Windows / Linux : à vérifier côté GitHub.
 

@@ -2,7 +2,7 @@
 
 OGIAS est distribué sous licence propriétaire, tous droits réservés (`LICENCE.md`). Il embarque les composants
 suivants. Le cahier des charges (V1-11-05) n'admet que des licences compatibles avec une vente commerciale (MIT, BSD,
-Apache, ISC) : les écarts sont signalés ci-dessous et **attendent une décision**.
+Apache, ISC) : tous les composants livrés les respectent.
 
 ## Bibliothèques Python livrées (`requirements-runtime.lock`)
 
@@ -15,15 +15,13 @@ Apache, ISC) : les écarts sont signalés ci-dessous et **attendent une décisio
 | cryptography | 50.0.1 | Apache-2.0 ou BSD-3-Clause | Dépendance de pdfminer.six (PDF chiffrés) | Conforme |
 | cffi | 2.1.1 | MIT-0 | Dépendance de cryptography | Conforme |
 | pycparser | 3.0 | BSD-3-Clause | Dépendance de cffi | Conforme |
-| PySide6_Essentials | 6.12.0 | LGPL-3.0, ou licence commerciale Qt | Ancienne interface Qt (`genvar_qt`) | **Écart à décider** |
-| shiboken6 | 6.12.0 | LGPL-3.0, ou licence commerciale Qt | Dépendance de PySide6 | **Écart à décider** |
 
 **PyMuPDF (AGPL-3.0) n'est plus livré** depuis le 23/11/2026 : remplacé par pdfminer.six, qui produit des
 inventaires identiques sur les PDF de référence (`tests/test_analyse_pdf_pl7.py::TestEquivalenceMoteurs`). Il reste
 un outil de développement (`requirements-ci.lock`) pour fabriquer les PDF d'essai, non distribué.
 
-**PySide6** ne sert qu'à l'ancienne interface Qt, remplacée par l'interface actuelle. Proposition : ne plus la livrer
-dans la version vendue (décision de l'utilisateur attendue).
+**PySide6 (LGPL-3.0) n'est plus livré** depuis le 23/11/2026 : l'ancienne interface Qt (`genvar_qt`, `lancer_qt.py`) a été
+retirée sur décision de l'utilisateur. OGIAS s'ouvre uniquement par son interface web locale.
 
 ## Ressources de l'interface (`sorep_web/static/assets/`)
 

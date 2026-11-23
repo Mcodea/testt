@@ -6,11 +6,11 @@ les adresses du scénario de confirmation proviennent uniquement du moteur
 existant. Aucun fichier de production ni fixture DDT manquante n'est utilisé.
 
 Dans un environnement Python de développement disposant des dépendances de
-`requirements-qt.txt`, installer Playwright (version vérifiée : 1.62.0) et un
+`requirements-ci.lock`, installer Playwright (version vérifiée : 1.62.0) et un
 Chromium compatible, puis lancer depuis la racine du dépôt :
 
 ```bash
-python -m pip install -r requirements-qt.txt playwright==1.62.0
+python -m pip install -r requirements-ci.lock playwright==1.62.0
 python -m unittest discover -s tests_web -v
 ```
 
@@ -30,7 +30,7 @@ python3 -m unittest discover -s tests_web -v
 ```
 
 Cette recette complémentaire s'exécute séparément de `python -m pytest`, dont
-les chemins configurés restent `tests` et `tests_qt`. Elle doit être exécutée
+les chemins configurés restent `tests`. Elle doit être exécutée
 après une modification de l'interface. Elle couvre aussi le lexique, le dictionnaire,
 les correspondances, l'archivage et l'adoption contrôlée (sauvegarde téléchargeable,
 retour arrière exact, confirmation individuelle, aperçu périmé et refus affichés).

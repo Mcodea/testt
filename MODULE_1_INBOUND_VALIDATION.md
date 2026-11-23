@@ -65,7 +65,7 @@ Depuis la racine OGIAS :
 
 ```bash
 python -m pytest -q tests/inbound/test_inbound.py
-python -m pytest -q tests tests_qt
+python -m pytest -q tests
 ```
 
 Les tests créent uniquement des sources fictives temporaires. Ils vérifient les doublons, lignes vides, fichiers altérés, réimport, repères historiques, champs manquants, formules Excel, conflits, réapplication et rollback.

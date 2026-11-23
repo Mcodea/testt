@@ -1,7 +1,7 @@
 """Recette Chromium de la vue Variables, avec serveur et API réels.
 
 Exécution : python -m unittest discover -s tests_web -v
-Dépendances : requirements-qt.txt et Playwright (voir tests_web/README.md).
+Dépendances : requirements-ci.lock et Playwright (voir tests_web/README.md).
 Tous les ouvrages sont fictifs et stockés dans un dossier temporaire.
 """
 from pathlib import Path
