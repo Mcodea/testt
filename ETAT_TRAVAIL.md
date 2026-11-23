@@ -34,7 +34,7 @@ industrielle du 16/11) et sortent du calcul.
 | En attente de preuves utilisateur (section 8) | 10 |
 | Remplacé par décision | 25 |
 
-**Avancement : 53 % au sens strict (80 / 150), 68 % en comptant un « partiel » pour moitié.**
+**Avancement : 54 % au sens strict (81 / 150), 69 % en comptant un « partiel » pour moitié.**
 
 Écarts nets relevés (absents), traitables sans attendre l'utilisateur : version 1.0.0 et étiquettes (V1-10-19 à 21), compte rendu V1.0 (V1-10-28 à 34).
 
@@ -328,7 +328,7 @@ le défaut démontré et obtenir une CI verte. Codex reste actif sur ce point.
 | V1-4-40 (L120) | « Table d'échange » et « Télétransmission » sont des préréglages de cette table, pas des écrans séparés. | partiel | Préréglages de la table Variables (tests_web/test_variables_v031.py) ; à vérifier contre le libellé exact du cahier. |
 | V1-4-41 (L121) | Le bouton principal « Valider les propositions · n » est dans la table. | partiel | Validation des propositions dans l'écran Variables (tests_web/test_variables_v031.py) ; libellé « Valider les propositions · n » non vérifié. |
 | V1-4-42 (L122) | Le panneau de détail propose : Valider, Saisir (avec contrôle immédiat), Déverrouiller (avec motif), Réserver. | partiel | Validation, saisie contrôlée et déverrouillage avec confirmation (Session.definir_adresses, deverrouiller) ; réservation non vérifiée dans le panneau. |
-| V1-4-43 (L123) | Un blocage (référentiel non publié, propositions non décidées, conflit) laisse le bouton visible mais désactivé, avec la raison et un lien vers la correction. | partiel | Boutons désactivés avec motif dans la Recette (motifs des livrables) ; non vérifié pour chaque blocage de l'écran Variables. |
+| V1-4-43 (L123) | Un blocage (référentiel non publié, propositions non décidées, conflit) laisse le bouton visible mais désactivé, avec la raison et un lien vers la correction. | partiel | Bouton « Valider les propositions » visible mais désactivé avec la raison affichée et un lien : conflits (lien Recette), aucune variable parce que les propositions ne sont pas retenues (lien équipements), tout déjà validé (tests_web/test_variables_v031.py::test_blocage_du_bouton_principal_garde_sa_raison_et_son_lien) ; le cas « référentiel non publié » n'est pas un blocage de cet écran et n'y est pas traité. |
 | V1-4-44 (L124) | Projet existant : les adresses importées sont validées et protégées. Aucune n'est recalculée. | fait | Adresses historiques importées conservées, aucune adresse nouvelle sans disponibilité vérifiée, jamais sur un mot historique : tests/test_moteur_adressage.py::ScenarioD_Existant, tests/test_adoption_controlee.py. |
 | V1-4-45 (L128) | Accessibilité WCAG AA et navigation complète au clavier. | fait | Audit de chaque écran, clair et sombre : contraste AA, noms accessibles, accès clavier (tests_web/test_registre_commandes.py, lot 7b) ; formulaires : tests_web/test_formulaires_industriels.py. |
 | V1-4-46 (L129) | Affichage correct de 1366×768 à 2560×1440. | fait | Chaque écran à 1366×768, 1440×900, 1920×1080 et 2560×1440 : tests_web/test_geometrie_resolutions.py. |
@@ -377,7 +377,7 @@ le défaut démontré et obtenir une CI verte. Codex reste actif sur ce point.
 | V1-9-01 (L187) | **Installation :** | partiel | Titre de groupe : voir V1-9-02 et V1-9-03. |
 | V1-9-02 (L188) | version portable Windows 10 / 11, hors ligne, sans droits administrateur, avec un Python embarqué et un lanceur ; | partiel | Archive portable construite et testée en CI (outils/construire_portable.py, tester_portable.py, tests/test_ci.py::test_portable_archive_is_reproducible) ; essai sur Windows propre non fait. |
 | V1-9-03 (L189) | script de construction reproductible. | fait | tests/test_ci.py::test_portable_archive_is_reproducible. |
-| V1-9-04 (L190) | **Données :** séparées du programme. Une mise à jour (y compris depuis la V0.30 ou la V0.31) ne touche jamais aux ouvrages. | partiel | Données dans un dossier distinct (SOREP_DATA_DIR, chemins.dossier_donnees) ; mise à jour depuis V0.30 / V0.31 sans test dédié. |
+| V1-9-04 (L190) | **Données :** séparées du programme. Une mise à jour (y compris depuis la V0.30 ou la V0.31) ne touche jamais aux ouvrages. | fait | Données dans un dossier distinct du programme ; un ouvrage au format des versions 0.30 / 0.31 (sans indices, ordre d'export, zones de fin, référentiel figé) s'ouvre, garde noms et adresses validées et n'est jamais réécrit par la seule ouverture : tests/test_mise_a_jour_donnees.py. |
 | V1-9-05 (L191) | **Installation vierge :** sans donnée de démonstration. Un ouvrage d'exemple fictif est fourni à part. | partiel | Accueil vierge vérifié par l'essai portable ; ouvrage d'exemple fictif fourni à part (outils/interface_demo.py). |
 | V1-9-06 (L192) | **Documentation en français, avec captures de l'interface finale :** | fait | Documentation en français avec captures de l'interface actuelle, prises sur l'ouvrage fictif par outils/construire_manuel.py : tests/test_documentation.py. |
 | V1-9-07 (L193) | MANUEL_UTILISATEUR (PDF et Markdown) ; | fait | MANUEL_UTILISATEUR.md et MANUEL_UTILISATEUR.pdf (généré par outils/construire_manuel.py) : tests/test_documentation.py::test_documents_attendus, test_captures_du_manuel_presentes. |

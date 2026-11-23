@@ -62,6 +62,29 @@ class TestVariablesV031(ServeurNavigateur):
                 self.assertEqual(self.api("/api/variables")["lignes"], before)
                 self.page.locator("#v31-close-detail").click()
 
+    def test_blocage_du_bouton_principal_garde_sa_raison_et_son_lien(self):
+        """V1-4-43 : bouton visible mais désactivé, avec la raison affichée et un lien vers la correction."""
+        self.assertTrue(self.page.locator("#v31-validate-proposed").is_enabled())
+        self.assertEqual(self.page.locator("#v31-blocage").count(), 0)
+        self.page.locator("#v31-validate-proposed").click()
+        self.page.locator("#m-ok").click()
+        self.page.wait_for_function("document.querySelector('#v31-blocage')")
+        bouton = self.page.locator("#v31-validate-proposed")
+        self.assertTrue(bouton.is_visible())
+        self.assertTrue(bouton.is_disabled())
+        self.assertIn("Toutes les adresses sont validées", self.page.locator("#v31-blocage").inner_text())
+        # Sans variable : la raison renvoie vers les équipements.
+        for e in self.api("/api/ouvrage")["equipements"]:
+            self.api("/api/equipement/supprimer", {"idents": [e["ident"]]})
+        self.assertEqual(self.api("/api/variables")["lignes"], [])
+        self.page.reload(wait_until="networkidle")
+        self.page.wait_for_function("document.querySelector('#v31-blocage')")
+        self.assertTrue(self.page.locator("#v31-validate-proposed").is_disabled())
+        lien = self.page.locator('#v31-blocage [data-nav="#/inventaire"]')
+        self.assertIn("retenez d'abord", self.page.locator("#v31-blocage").inner_text())
+        lien.click()
+        self.page.wait_for_function("location.hash === '#/inventaire'")
+
     def test_sens_des_variables_affiche_et_filtrable(self):
         """V1-5-03 : le sens (lecture, commande, consigne, retour) s'affiche au détail et se filtre."""
         lignes = self.api("/api/variables")["lignes"]
