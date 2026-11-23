@@ -824,6 +824,23 @@ class TestCoqueBureau(ServeurNavigateur):
         self.assertEqual(len(eqs), avant + 1)
         self.assertTrue(any(e['pcf'].endswith('HV02') for e in eqs))
 
+    def test_recherche_globale_repere_variable_adresse_libelle(self):
+        """V1-5-06 : Ctrl K cherche par repère, variable, adresse et libellé ; un résultat mène à son écran."""
+        self.ouvrir('#/dashboard')
+        eq = self.api('/api/ouvrage')['equipements'][0]
+        self.page.keyboard.press('Control+k')
+        champ = self.page.locator('#v31-query')
+        champ.wait_for()
+        champ.fill(eq['pcf'][-4:])
+        self.page.locator('#v31-results .v31-result[data-nature="equipement"]').first.wait_for()
+        champ.fill('TS_')
+        self.page.locator('#v31-results .v31-result[data-nature="variable"]').first.wait_for()
+        premiere = self.page.locator('#v31-results .v31-result[data-nature="variable"]').first
+        nom = premiere.locator('b').inner_text()
+        premiere.click()
+        self.page.locator('.v31-variable-row[data-variable="%s"]' % nom).wait_for()
+        self.assertEqual(self.page.evaluate('location.hash'), '#/variables')
+
     def test_onglet_apprentissage_des_formats(self):
         """L'apprentissage des formats a son onglet : explorateur, menu Outils, parcours en quatre étapes."""
         self.ouvrir('#/dashboard')

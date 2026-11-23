@@ -1040,6 +1040,33 @@ class Application:
             sortie["lignes"] = lignes
         return sortie
 
+    def recherche_globale(self, q):
+        """V1-5-06 : recherche par repère, variable, adresse ou libellé (équipements et variables de l'ouvrage ouvert)."""
+        texte = " ".join(str((q or {}).get("q") or "").split()).lower()
+        if not self.ouvert or len(texte) < 2:
+            return {"resultats": [], "q": texte, "complet": True}
+        o = self.s.ouvrage
+        trouves = []
+
+        def vise(*champs):
+            return next((nom for nom, valeur in champs if texte in str(valeur or "").lower()), "")
+        for e in o.equipements:
+            critere = vise(("repère", o.repere(e)), ("libellé", e.libelle), ("type", e.type), ("désignation", self.s.catalogue.type(e.type) and self.s.catalogue.type(e.type).get("designation")))
+            if critere:
+                trouves.append({"nature": "equipement", "ident_eq": e.ident, "titre": o.repere(e), "detail": e.libelle, "critere": critere})
+        variables = (self.s.variables() if o.mode != "Existant" else [])
+        for v in variables:
+            critere = vise(("variable", v.nom), ("libellé", v.libelle_topkapi or v.commentaire), ("adresse", v.adresse),
+                           ("voie physique", v.adresse_es), ("repère", v.repere))
+            if critere:
+                trouves.append({"nature": "variable", "ident_eq": v.ident_eq, "cle": v.cle, "titre": v.nom,
+                                "detail": v.adresse or v.libelle_topkapi or v.commentaire or "", "critere": critere})
+        for v in (o.existantes if o.mode == "Existant" else []):
+            critere = vise(("variable", v.nom), ("libellé", v.commentaire), ("adresse", v.adresse))
+            if critere:
+                trouves.append({"nature": "variable", "ident_eq": "", "cle": "", "titre": v.nom, "detail": v.adresse or "", "critere": critere})
+        return {"resultats": trouves[:30], "total": len(trouves), "q": texte, "complet": len(trouves) <= 30}
+
     def variables_web(self, _):
         if not self.ouvert:
             raise RegleMetier("Ouvrez d'abord un ouvrage.")
@@ -2493,7 +2520,7 @@ class Application:
 
 
 ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle": "referentiel_cycle", "/api/referentiel/vue": "referentiel_vue", "/api/accueil": "accueil", "/api/ouvrage": "ouvrage", "/api/equipement": "equipement",
-              "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre",
+              "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre", "/api/recherche": "recherche_globale",
               "/api/es": "es", "/api/numero-ouvrage": "numero_ouvrage_suggere",
               "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page",
               "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/grille": "grille_web", "/api/attributs": "attributs_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/formats-appris": "formats_appris_web", "/api/gammes-materiel": "gammes_materiel_web", "/api/revisions": "revisions_web", "/api/journal": "journal_web", "/api/equipement/ordre-export": "ordre_export_web", "/api/historique": "historique_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",

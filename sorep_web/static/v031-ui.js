@@ -46,13 +46,22 @@ const V31 = (() => {
  }
  function globalSearch(){
   document.querySelector('#v31-search-dialog')?.remove();const overlay=document.createElement('div');overlay.id='v31-search-dialog';overlay.className='v31-overlay';overlay.innerHTML=`<div class="v31-search-box" role="dialog" aria-modal="true" aria-label="Rechercher dans OGIAS">
-   <label for="v31-query">Rechercher un repère, une variable ou un équipement</label><input id="v31-query" autocomplete="off" placeholder="Nom, repère ou mot-clé…">
+   <label for="v31-query">Rechercher un repère, une variable, une adresse ou un libellé</label><input id="v31-query" autocomplete="off" placeholder="Nom, repère ou mot-clé…">
    <div id="v31-results"></div><button type="button" id="v31-search-close">Fermer</button></div>`;
   document.body.append(overlay);overlay.onclick=e=>{if(e.target===overlay)overlay.remove();};overlay.querySelector('#v31-search-close').onclick=()=>overlay.remove();
   const input=overlay.querySelector('input');input.focus();
-  input.oninput=()=>{const q=input.value.toLocaleLowerCase('fr');const eqs=((typeof E !== "undefined" ? E.ouvrage?.equipements : [])||[]);const matches=q.length>1?eqs.filter(x=>`${x.pcf} ${x.libelle} ${x.type}`.toLocaleLowerCase('fr').includes(q)).slice(0,20):[];
-   overlay.querySelector('#v31-results').innerHTML=matches.map(x=>`<button type="button" class="v31-result" data-id="${esc(x.ident)}"><b>${esc(x.pcf)}</b> ${esc(x.libelle)}</button>`).join('')||'<p class="v31-muted">Saisissez deux caractères pour chercher dans les équipements de l’ouvrage courant.</p>';
-   overlay.querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{overlay.remove();allerOuvrage({nature:'eq',valeur:b.dataset.id});});};
+  // V1-5-06 : la recherche porte sur les repères, les variables, les adresses et les libellés (serveur, ouvrage ouvert).
+  const zone=overlay.querySelector('#v31-results');let seq=0;
+  zone.innerHTML='<p class="v31-muted">Saisissez deux caractères pour chercher un repère, une variable, une adresse ou un libellé.</p>';
+  input.oninput=async()=>{const q=input.value.trim();const mon=++seq;
+   if(q.length<2){zone.innerHTML='<p class="v31-muted">Saisissez deux caractères pour chercher un repère, une variable, une adresse ou un libellé.</p>';return;}
+   let r;try{r=await api('/api/recherche?q='+encodeURIComponent(q));}catch(e){if(mon===seq)zone.innerHTML=`<p class="v31-muted">${esc(e.message)}</p>`;return;}
+   if(mon!==seq)return;
+   zone.innerHTML=(r.resultats.map((x,i)=>`<button type="button" class="v31-result" data-i="${i}" data-nature="${x.nature}"><b>${esc(x.titre)}</b> <span class="v31-muted">${esc(x.detail||'')}</span> <small>${x.nature==='equipement'?'équipement':'variable'} · ${esc(x.critere)}</small></button>`).join('')||'<p class="v31-muted">Aucun résultat.</p>')
+    +(r.complet?'':`<p class="v31-muted">${r.total} résultats : précisez la recherche.</p>`);
+   zone.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{const x=r.resultats[+b.dataset.i];overlay.remove();
+    if(x.nature==='equipement')return allerOuvrage({nature:'eq',valeur:x.ident_eq});
+    E.v31Selected=x.titre;E.v31VarDetail=true;E.v31Query=x.titre;naviguer('#/variables');});};
  }
  // Barre d'état inférieure : uniquement des informations réelles de la session (ouvrage, étape, référentiel).
  function barreEtat(E,ETAPES,etatEtape,vueEtape,has){
