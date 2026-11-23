@@ -930,7 +930,7 @@ function vueOuvrage() {
 /* Lot 5a : ruban de l'écran Équipements. Les commandes de l'arborescence (ajout, UF, import) et celles de
    l'élément sélectionné (menu « ⋯ » de la fiche, commandes de l'UF) sont rangées par tâche. Boutons déplacés,
    jamais recréés : écouteurs et états restent ceux posés par l'écran. */
-const COMMANDES_SELECTION = ["e-val", "e-mod", "e-dep", "e-sup", "g-mod", "g-ren", "g-sup"];
+const COMMANDES_SELECTION = ["e-val", "e-mod", "e-dup", "e-dep", "e-sup", "g-mod", "g-ren", "g-sup"];
 function rubanEquipements() {
   const id = x => document.getElementById(x);
   const c = document.getElementById("contenu");
@@ -943,7 +943,8 @@ function rubanEquipements() {
       {el: id("b-import"), icone: "importer", libelle: "Importer une liste"},
       {el: id("b-export-eq"), icone: "importer", libelle: "Exporter la liste"}]},
     {nom: "Équipement sélectionné", commandes: [{el: fiche("e-val"), icone: "valider", grand: true},
-      {el: fiche("e-mod"), icone: "modifier", libelle: "Modifier"}, {el: fiche("e-dep"), icone: "ranger", libelle: "Ranger dans une UF"},
+      {el: fiche("e-mod"), icone: "modifier", libelle: "Modifier"}, {el: fiche("e-dup"), icone: "dupliquer", libelle: "Dupliquer"},
+      {el: fiche("e-dep"), icone: "ranger", libelle: "Ranger dans une UF"},
       {el: fiche("e-sup"), icone: "supprimer", libelle: "Supprimer", danger: true}]},
     {nom: "Unité fonctionnelle", commandes: [{el: fiche("g-mod"), icone: "modifier", libelle: "Modifier l'UF"},
       {el: fiche("g-ren"), icone: "modifier", libelle: "Renommer le groupe"},
@@ -2105,7 +2106,7 @@ function detailEquipement(e) {
        <div class="sous">${esc(e.libelle || "libellé à renseigner")} · ${esc(e.designation)} · modèle ${esc(e.modele) || "aucun"} · SE ${esc(e.se)}${se.libelle ? " " + esc(se.libelle) : ""} · ${esc(e.domaine || "non classé")} · ${e.nb_es} E/S
        ${e.alerte_modele ? ` · <button class="lien alerte-modele" data-nav="#/referentiel" title="${esc(e.alerte_modele)}">Référentiel à contrôler</button>` : ""}</div></div>
      <details class="menu-eq"><summary title="Autres commandes de l'équipement" aria-label="Autres commandes de l'équipement">⋯</summary><div class="menu-eq-liste" role="menu">
-       <button id="e-mod" role="menuitem">Modifier type, modèle, numéro…</button><button id="e-dep" role="menuitem">Ranger dans une UF…</button>
+       <button id="e-mod" role="menuitem">Modifier type, modèle, numéro…</button><button id="e-dup" role="menuitem" title="Même paramétrage, numéro libre suivant ; aucune adresse ni voie n'est reprise">Dupliquer l'équipement</button><button id="e-dep" role="menuitem">Ranger dans une UF…</button>
        ${e.valide ? '<button id="e-val" data-v="0" role="menuitem">Repasser à contrôler</button>' : '<button id="e-val" data-v="1" role="menuitem">Valider le paramétrage</button>'}
        <button class="danger" id="e-sup" role="menuitem">Supprimer l'équipement</button></div></details></div></div>
    ${!e.modele_a_jour ? `<div class="avert">Le modèle « ${esc(e.modele)} » a changé dans le référentiel depuis l'ajout de cet équipement. <button class="lien" id="e-act">Reprendre la nouvelle version</button></div>` : ""}
@@ -2187,6 +2188,11 @@ function detailEquipement(e) {
   $("#e-val").onclick = async () => { const v = $("#e-val").dataset.v === "1";
     await agir(api("/api/equipement/valider", {idents: [e.ident], valide: v}), v ? "Équipement validé." : "Équipement repassé à valider."); recharge(); };
   $("#e-mod").onclick = () => modaleEquipement(eqParIdent(e.ident));
+  $("#e-dup").onclick = async () => {        // V1-5-01 : même paramétrage, numéro libre, aucune adresse reprise
+    try { const r = await api("/api/equipement/dupliquer", {ident: e.ident});
+      toast(`${r.repere} créé à partir de ${e.pcf} : sans adresse ni voie, à valider.`); E.sel = {nature: "eq", valeur: r.ident}; await recharger(); }
+    catch (err) { toast(err.message, true); }
+  };
   $("#e-sup").onclick = () => confirmer(`Supprimer ${e.pcf} ?`, "L'équipement est retiré de l'ouvrage avec ses lignes.", "Supprimer",
     async () => { await agir(api("/api/equipement/supprimer", {idents: [e.ident]}), "Équipement supprimé."); E.sel = {nature: "ouvrage", valeur: ""}; recharger(); });
   $("#e-dep").onclick = () => modaleChoix("Ranger dans une UF", `UF de ${e.pcf}`,

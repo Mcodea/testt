@@ -1101,11 +1101,18 @@ class Session:
         self._change()
 
     def copie_pour_duplication(self, ident):
-        """Copie d'un équipement avec le premier numéro libre ; ses adresses ne sont pas reprises."""
+        """Copie d'un équipement avec le premier numéro libre (V1-5-01). Aucune adresse n'est reprise : ni adresse
+        d'échange, ni adresse, carte ou voie physique, ni validation, ni trace d'adressage ; la copie est « à valider ».
+        Paramétrage, désignations, libellés saisis, attributs et signaux propres sont repris."""
         eq = self.ouvrage.equipement(ident)
+        if eq is None:
+            raise RegleMetier("Équipement introuvable.")
         nouveau = copy.deepcopy(eq)
         nouveau.ident = uuid.uuid4().hex[:8]
         nouveau.adresses, nouveau.adresses_es = {}, {}
+        nouveau.validees, nouveau.traces, nouveau.valide = [], {}, False
+        nouveau.es_meta = {cle: {k: v for k, v in meta.items() if k not in ("module", "voie", "validee", "adresse")}
+                           for cle, meta in (eq.es_meta or {}).items()}
         pris = {int(e.numero) for e in self.ouvrage.equipements
                 if e.type == eq.type and (not self.ouvrage.se_dans_repere() or e.sous_ensemble == eq.sous_ensemble)
                 and e.numero.isdigit()}

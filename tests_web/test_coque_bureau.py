@@ -356,7 +356,7 @@ class TestCoqueBureau(ServeurNavigateur):
         cible = self.api('/api/ouvrage')['chemin']
         self.api('/api/nouveau', {'mode': 'Neuf'})
         self.api('/api/fiche-ouvrage', {'action': 'creer', 'identification': {
-            'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': f'{40 + self.numero:02d}',
+            'lieu': 'XTST', 'code_ouvrage': 'SP', 'numero_ouvrage': f'{40 + self.numero:02d}',
             'libelle': 'Source fictive des réglages', 'automate': 'Sch - M340', 'revision': 'A'}})
         self.api('/api/outils/action', {'supervision': ''})
         plages = self.api('/api/adressage')['plages_defaut'] | {'TS': [8000, 8999]}
@@ -394,7 +394,7 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.wait_for_function("() => document.querySelector('#standard-choix')?.value === 'standard-initial'")
         with self.assertRaisesRegex(RuntimeError, 'Standard d.ingénierie introuvable'):
             self.api('/api/fiche-ouvrage', {'action': 'creer', 'standard': 'client-inexistant', 'identification': {
-                'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': f'{20 + self.numero:02d}',
+                'lieu': 'XTST', 'code_ouvrage': 'SR', 'numero_ouvrage': f'{20 + self.numero:02d}',
                 'libelle': 'Standard inconnu', 'automate': 'Sch - M340', 'revision': 'A'}})
         # Bloc Outils de l'ouvrage existant : mention du standard puis écart local signalé
         self.api('/api/ouvrir', {'chemin': str(self.projet)})
@@ -708,7 +708,7 @@ class TestCoqueBureau(ServeurNavigateur):
         self.api('/api/listes-ouvrage/action', {'action': 'ajouter', 'groupe': 'automates', 'code': automate, 'regie': 'Automate'})
         self.api('/api/nouveau', {'mode': 'Neuf'})
         self.api('/api/fiche-ouvrage', {'action': 'creer', 'identification': {
-            'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': f'{40 + self.numero:02d}',
+            'lieu': 'XTST', 'code_ouvrage': 'CV', 'numero_ouvrage': f'{40 + self.numero:02d}',
             'libelle': 'Automate fictif', 'automate': automate, 'revision': 'A'}})
         ident = self.api('/api/equipement/ajouter', {'type': 'HV', 'numero': '01', 'se': '00'})['ident']
         self.api('/api/equipement/proposition', {'ident_eq': ident, 'decision': 'retenir'})
@@ -810,6 +810,17 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.locator('.o-menu').get_by_role('menuitem', name='Annuler').click()
         self.page.wait_for_function("() => [...document.querySelectorAll('#toasts .toast')].filter(t => t.textContent.includes('Annulé')).length >= 2")
         self.assertEqual(len(self.api('/api/ouvrage')['equipements']), avant)
+
+    def test_dupliquer_un_equipement_depuis_le_ruban(self):
+        """V1-5-01 : « Dupliquer » au ruban crée l'équipement au numéro libre suivant, sans adresse, et le sélectionne."""
+        avant = len(self.api('/api/ouvrage')['equipements'])
+        self.ouvrir('#/inventaire')
+        self.page.locator('#vue [data-v]', has_text='HV01').first.click()
+        self.page.locator('#o-ruban #e-dup').click()
+        self.page.wait_for_function("() => [...document.querySelectorAll('#toasts .toast')].some(t => t.textContent.includes('créé à partir de'))")
+        eqs = self.api('/api/ouvrage')['equipements']
+        self.assertEqual(len(eqs), avant + 1)
+        self.assertTrue(any(e['pcf'].endswith('HV02') for e in eqs))
 
     def test_indices_de_livraison(self):
         """22/11 : livrer l'indice A, passer à B, modifier un équipement : la Recette liste la modification."""

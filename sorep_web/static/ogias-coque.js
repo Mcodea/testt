@@ -34,6 +34,7 @@ const Coque = (() => {
   importer: '<path d="M12 4v11M8 11l4 4 4-4M5 20h14"/>',
   valider: '<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>',
   modifier: '<path d="m4 20 1-4L16 5l3 3L8 19z"/><path d="m14 7 3 3"/>',
+  dupliquer: '<rect x="8" y="8" width="14" height="14" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
   ranger: '<path d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11H3z"/><path d="M9 13h6M12 10v6"/>',
   supprimer: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
   groupe: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 13h8M8 16h5"/>',
