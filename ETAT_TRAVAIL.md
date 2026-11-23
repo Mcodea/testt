@@ -20,7 +20,7 @@ Les critères de sortie demeurent bloquants hors preuves utilisateur de section 
 « Remplacé par décision » : exigence du cahier supplantée par une décision ultérieure de l'utilisateur (refonte
 industrielle du 16/11) ; elle sort du calcul d'avancement et sa ligne cite la nouvelle cible et ses preuves.
 
-## Avancement mesuré au 23/11/2026 (réévaluation ligne par ligne, mis à jour après le verrou et le journal)
+## Avancement mesuré au 23/11/2026 (réévaluation ligne par ligne, mis à jour après le verrou, le journal et Ctrl+Z)
 
 Les 176 exigences du cahier ont été réévaluées une à une avec les preuves des lots du 16 au 22/11 ; plus aucune
 ligne ne porte la mention générique « à vérifier ». 25 exigences sont « remplacées par décision » (refonte
@@ -28,15 +28,15 @@ industrielle du 16/11) et sortent du calcul.
 
 | État | Nombre |
 | --- | --- |
-| Fait (prouvé par un test) | 59 |
+| Fait (prouvé par un test) | 60 |
 | Partiel | 59 |
-| Absent | 23 |
+| Absent | 22 |
 | En attente de preuves utilisateur (section 8) | 10 |
 | Remplacé par décision | 25 |
 
-**Avancement : 39 % au sens strict (59 / 151), 59 % en comptant un « partiel » pour moitié.**
+**Avancement : 40 % au sens strict (60 / 151), 59 % en comptant un « partiel » pour moitié.**
 
-Écarts nets relevés (absents), traitables sans attendre l'utilisateur : annulation Ctrl+Z (V1-4-47), duplication d'équipement (V1-5-01), duplication et
+Écarts nets relevés (absents), traitables sans attendre l'utilisateur : duplication d'équipement (V1-5-01), duplication et
 réordonnancement de variables (V1-5-02), documentation utilisateur et administrateur, CHANGELOG, notes de version
 (V1-9-06 à 11), version 1.0.0 et étiquettes (V1-10-19 à 21), compte rendu V1.0 (V1-10-28 à 34).
 
@@ -335,7 +335,7 @@ le défaut démontré et obtenir une CI verte. Codex reste actif sur ce point.
 | V1-4-44 (L124) | Projet existant : les adresses importées sont validées et protégées. Aucune n'est recalculée. | partiel | Noms et adresses d'un existant conservés (tests/test_adoption_controlee.py) ; « aucune adresse recalculée » sans test dédié du moteur d'adressage. |
 | V1-4-45 (L128) | Accessibilité WCAG AA et navigation complète au clavier. | fait | Audit de chaque écran, clair et sombre : contraste AA, noms accessibles, accès clavier (tests_web/test_registre_commandes.py, lot 7b) ; formulaires : tests_web/test_formulaires_industriels.py. |
 | V1-4-46 (L129) | Affichage correct de 1366×768 à 2560×1440. | fait | Chaque écran à 1366×768, 1440×900, 1920×1080 et 2560×1440 : tests_web/test_geometrie_resolutions.py. |
-| V1-4-47 (L130) | Annulation (Ctrl+Z) des modifications de l'ouvrage. | absent | Aucune annulation (Ctrl+Z) des modifications de l'ouvrage ; seules existent les copies horodatées et l'annulation de lots (rapprochement, adoption). |
+| V1-4-47 (L130) | Annulation (Ctrl+Z) des modifications de l'ouvrage. | fait | Ctrl+Z / Ctrl+Y et menu Édition : 30 pas, seulement les commandes qui modifient l'ouvrage, fichier enregistré, tout ou rien si l'enregistrement échoue, indices livrés jamais annulés, saisie dans un champ laissée au navigateur : tests/test_annulation.py, tests_web/test_coque_bureau.py::test_annuler_et_retablir_au_clavier. |
 | V1-4-48 (L131) | Chaque action a un retour visible : chargement, succès, erreur avec la cause et la solution. | partiel | Messages d'erreur métier avec cause et correction ; retour de chargement non vérifié écran par écran. |
 | V1-5-01 (L135) | Dupliquer un équipement : aucune adresse recopiée, nouveau numéro proposé. | absent | Pas de duplication d'équipement (seule la duplication de modèles du référentiel existe). |
 | V1-5-02 (L136) | Dupliquer, réordonner et déplacer des lignes de variables, avec un ordre stable dans les exports. | absent | Pas de duplication ni de réordonnancement de lignes de variables. |

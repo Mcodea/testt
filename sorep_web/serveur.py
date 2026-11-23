@@ -108,6 +108,8 @@ class Application:
         self._inbound_pending = None  # aperçu éphémère, lié à la session courante
         self.dernier_bilan_groupe = None  # génération groupée (lot 6) : produits / non produits, pour l'en-tête
         self.dernier_statut_format = ""   # formats appris (22/11) : statut du dernier export (qualifié ou non)
+        self.historique: list[tuple[str, str]] = []   # annulation (V1-4-47) : (état avant, libellé), le plus récent à la fin
+        self.refaire: list[tuple[str, str]] = []
 
     # ------------------------------------------------------------------ verrou d'ouvrage (V1-7-04)
     def _garde_verrou(self, chemin):
@@ -129,6 +131,98 @@ class Application:
         if self.chemin_verrouille:
             verrou.liberer(self.chemin_verrouille, self.jeton)
         self.chemin_verrouille = ""
+
+    # ------------------------------------------------------------------ annulation Ctrl+Z (V1-4-47)
+    HISTORIQUE_MAX = 30
+    SANS_HISTORIQUE = {"nouveau", "ouvrir", "fermer", "annuler", "retablir", "supprimer_ouvrage"}
+    LIBELLES_ANNULATION = {
+        "ajouter_equipement": "ajout d'équipement", "modifier_equipement": "modification d'équipement",
+        "supprimer_equipements": "suppression d'équipements", "deplacer": "déplacement d'équipements",
+        "valider_equipements": "validation d'équipements", "decider_proposition": "décision sur une proposition",
+        "configurer_equipement": "configuration d'équipement", "ligne_equipement": "modification d'équipement",
+        "fiche_ouvrage": "fiche de l'ouvrage", "definir": "modification de l'ouvrage", "es_definir": "modification d'E/S",
+        "es_valider": "validation d'E/S", "materiel_action": "matériel", "modules": "cartes d'E/S",
+        "variables_action": "variables", "adressage_action": "adressage", "grille_appliquer": "grille d'ingénierie",
+        "equipement_attribut": "attribut d'équipement", "revisions_action": "indice de l'ouvrage",
+    }
+
+    def _annulable(self):
+        return self.ouvert and not self.creation_en_attente and bool(self.s.chemin)
+
+    def _etat_annulable(self):
+        """État comparable de l'ouvrage, sans les indices livrés (jamais annulés) ni la date d'enregistrement."""
+        d = self.s.ouvrage.vers_dict()
+        d.pop("indices", None)
+        d.pop("modifie_le", None)
+        d["catalogue_snapshot"] = self.s.catalogue_fige()
+        return json.dumps(d, ensure_ascii=False, sort_keys=True)
+
+    def appeler(self, nom, donnees):
+        """Exécute une commande de l'interface ; si elle a modifié l'ouvrage, l'état d'avant rejoint l'historique."""
+        if nom in self.SANS_HISTORIQUE or not self._annulable():
+            if nom in ("nouveau", "ouvrir", "fermer"):
+                self.historique.clear()
+                self.refaire.clear()
+            return getattr(self, nom)(donnees)
+        cle, avant = (self.s.chemin, self.s.ouvrage.ident_projet), self._etat_annulable()
+        resultat = getattr(self, nom)(donnees)
+        if self._annulable() and (self.s.chemin, self.s.ouvrage.ident_projet) == cle:
+            if self._etat_annulable() != avant:
+                self.historique.append((avant, self.LIBELLES_ANNULATION.get(nom, "modification")))
+                del self.historique[:-self.HISTORIQUE_MAX]
+                self.refaire.clear()
+        return resultat
+
+    def _restaurer_etat(self, etat):
+        from genvar.catalogue import Catalogue
+        from genvar.modele import Ouvrage
+        d = json.loads(etat)
+        o = Ouvrage.depuis_dict(d)
+        o.indices = self.s.ouvrage.indices                 # un indice livré ne change plus, même par Ctrl+Z
+        o.modifie_le = self.s.ouvrage.modifie_le
+        precedent = (self.s.ouvrage, self.s.catalogue, self.s.modifie)
+        self.s.ouvrage = o
+        self.s.catalogue = Catalogue(**o.catalogue_snapshot) if o.catalogue_snapshot \
+            else copy.deepcopy(self.s._catalogue_commun)
+        self.s.modifie = True
+        try:
+            self._sauver()
+        except Exception:                                  # tout ou rien : la mémoire reste égale au fichier
+            self.s.ouvrage, self.s.catalogue, self.s.modifie = precedent
+            raise
+        self.s._oublier_adoption()
+
+    def historique_web(self, _=None):
+        return {"annuler": self.historique[-1][1] if self.historique else "",
+                "retablir": self.refaire[-1][1] if self.refaire else "",
+                "pas": len(self.historique), "max": self.HISTORIQUE_MAX}
+
+    def annuler(self, _):
+        if not self._annulable() or not self.historique:
+            raise RegleMetier("Rien à annuler.")
+        etat, libelle = self.historique.pop()
+        courant = self._etat_annulable()
+        try:
+            self._restaurer_etat(etat)
+        except Exception:
+            self.historique.append((etat, libelle))
+            raise
+        self.refaire.append((courant, libelle))
+        evenement("Annulation (Ctrl+Z).")
+        return {"annule": libelle, **self.historique_web()}
+
+    def retablir(self, _):
+        if not self._annulable() or not self.refaire:
+            raise RegleMetier("Rien à rétablir.")
+        etat, libelle = self.refaire.pop()
+        courant = self._etat_annulable()
+        try:
+            self._restaurer_etat(etat)
+        except Exception:
+            self.refaire.append((etat, libelle))
+            raise
+        self.historique.append((courant, libelle))
+        return {"retabli": libelle, **self.historique_web()}
 
     # ------------------------------------------------------------------ outils
     def _sauver(self):
@@ -2367,14 +2461,14 @@ ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle":
               "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre",
               "/api/es": "es", "/api/numero-ouvrage": "numero_ouvrage_suggere",
               "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page",
-              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/grille": "grille_web", "/api/attributs": "attributs_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/formats-appris": "formats_appris_web", "/api/gammes-materiel": "gammes_materiel_web", "/api/revisions": "revisions_web", "/api/journal": "journal_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
+              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/grille": "grille_web", "/api/attributs": "attributs_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/formats-appris": "formats_appris_web", "/api/gammes-materiel": "gammes_materiel_web", "/api/revisions": "revisions_web", "/api/journal": "journal_web", "/api/historique": "historique_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
               "/api/referentiel/synchronisation": "synchronisation_referentiel", "/api/ouvrage/copies": "copies_ouvrage",
               "/api/referentiel/impact": "rapport_impact", "/api/referentiel/propagation": "apercu_propagation",
               "/api/referentiel/apercu-modele": "apercu_modele"}
 ROUTES_POST = {"/api/nouveau": "nouveau", "/api/ouvrir": "ouvrir", "/api/fermer": "fermer",
                "/api/supprimer_ouvrage": "supprimer_ouvrage", "/api/definir": "definir",
                "/api/fiche-ouvrage": "fiche_ouvrage",
-               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/grille/appliquer": "grille_appliquer", "/api/attributs/action": "attributs_action", "/api/equipement/attribut": "equipement_attribut", "/api/essais/reporter": "essais_reporter", "/api/modeles-livrables/action": "modeles_livrables_action", "/api/formats-appris/action": "formats_appris_action", "/api/gammes-materiel/action": "gammes_materiel_action", "/api/revisions/action": "revisions_action", "/api/standards/appliquer": "appliquer_standard", "/api/standards/charte-apercu": "apercu_charte", "/api/reglages/reprendre": "reprendre_reglages",
+               "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/grille/appliquer": "grille_appliquer", "/api/attributs/action": "attributs_action", "/api/equipement/attribut": "equipement_attribut", "/api/essais/reporter": "essais_reporter", "/api/modeles-livrables/action": "modeles_livrables_action", "/api/formats-appris/action": "formats_appris_action", "/api/gammes-materiel/action": "gammes_materiel_action", "/api/revisions/action": "revisions_action", "/api/annuler": "annuler", "/api/retablir": "retablir", "/api/standards/appliquer": "appliquer_standard", "/api/standards/charte-apercu": "apercu_charte", "/api/reglages/reprendre": "reprendre_reglages",
                "/api/identification/type": "identifier_type",
                "/api/identification/selection": "identifier_selection", "/api/uf": "uf",
                "/api/equipement/ajouter": "ajouter_equipement", "/api/equipement/modifier": "modifier_equipement",
@@ -2437,7 +2531,7 @@ def fabriquer_gestionnaire(app):
         def _appeler(self, nom, donnees):
             try:
                 with VERROU:
-                    self._json(200, getattr(app, nom)(donnees))
+                    self._json(200, app.appeler(nom, donnees))
             except (RegleMetier, InboundError, ValueError, KeyError) as ex:
                 from genvar.verrou import VerrouPris
                 if isinstance(ex, VerrouPris):          # ouvrage ouvert ailleurs : l'interface peut proposer la reprise

@@ -56,7 +56,7 @@ Principes retenus de ces outils, et ce qu'OGIAS en fait :
 
 ### 3 bis. Écarts nets du cahier, sans attendre l'utilisateur
 - [x] Verrou d'ouvrage et journal technique tournant (23/11).
-- [ ] Annulation Ctrl+Z.
+- [x] Annulation Ctrl+Z / Ctrl+Y (23/11).
 - [ ] Duplication d'équipement ; duplication et réordonnancement de variables.
 - [ ] Documentation utilisateur et administrateur, CHANGELOG, notes de version.
 

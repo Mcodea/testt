@@ -62,7 +62,9 @@ const Coque = (() => {
                ["Nouvel ouvrage neuf…", "", () => nouveau("Neuf")],
                ["Reprendre un projet existant…", "", () => nouveau("Existant")], "-",
                ["Fermer l'ouvrage", "", () => fermer(), () => !!E.ouvrage?.ouvert]]],
-  ["Édition", [["Rechercher…", "Ctrl K", () => document.getElementById("v31-global-search")?.click()]]],
+  ["Édition", [["Annuler", "Ctrl Z", () => window.ogiasAnnuler && window.ogiasAnnuler(), () => !!E.ouvrage?.ouvert],
+               ["Rétablir", "Ctrl Y", () => window.ogiasRetablir && window.ogiasRetablir(), () => !!E.ouvrage?.ouvert], "-",
+               ["Rechercher…", "Ctrl K", () => document.getElementById("v31-global-search")?.click()]]],
   ["Affichage", [["Thème clair ou sombre", "", () => document.getElementById("v31-settings")?.click()],
                  ["Afficher ou masquer l'explorateur", "Ctrl B", () => basculerExplorateur()]]],
   ["Ouvrage", [["Tableau de bord", "", () => naviguer("#/dashboard"), () => !!E.ouvrage?.ouvert],
@@ -187,6 +189,13 @@ const Coque = (() => {
     ev.preventDefault(); ouvrirMenu(+ev.target.closest("[data-o-menu]").dataset.oMenu, true); return;
    }
    if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "b") { ev.preventDefault(); basculerExplorateur(); }
+   // Ctrl+Z / Ctrl+Y (V1-4-47) : hors d'un champ de saisie, qui garde sa propre annulation de frappe
+   const champ = ev.target.closest?.("input, textarea, select, [contenteditable='true']");
+   if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && !champ && !document.querySelector(".boite")) {
+    const k = ev.key.toLowerCase();
+    if (k === "z" && !ev.shiftKey) { ev.preventDefault(); window.ogiasAnnuler && window.ogiasAnnuler(); }
+    else if (k === "y" || (k === "z" && ev.shiftKey)) { ev.preventDefault(); window.ogiasRetablir && window.ogiasRetablir(); }
+   }
    if (ev.key === "F1") { ev.preventDefault(); window.open("aide.html", "_blank", "noopener"); }
   });
   docs.addEventListener("click", ev => {

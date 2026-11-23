@@ -277,6 +277,7 @@ const Composants = (() => {
  // ------------------------------------------------------------------ raccourcis clavier
  const RACCOURCIS = [
   ["Général", [["Ctrl K", "Rechercher un repère, un équipement"], ["Ctrl B", "Afficher ou masquer l'explorateur"],
+               ["Ctrl Z", "Annuler la dernière modification de l'ouvrage"], ["Ctrl Y", "Rétablir"],
                ["F1", "Aide d'OGIAS"], ["Ctrl /", "Liste des raccourcis clavier"], ["Échap", "Fermer un menu ou une fenêtre"]]],
   ["Menus", [["Flèches", "Parcourir les menus et leurs commandes"], ["Entrée", "Exécuter la commande"]]],
   ["Tableaux", [["Clic, Ctrl clic, Maj clic", "Sélectionner une ligne, en ajouter, une plage"],

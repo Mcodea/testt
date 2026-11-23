@@ -16,7 +16,9 @@ class TestCoqueBureau(ServeurNavigateur):
             self.api('/api/listes-ouvrage/action', {'action': 'ajouter', 'groupe': 'lieux',
                                                    'code': 'XTST', 'libelle': 'Lieu fictif'})
         self.api('/api/fiche-ouvrage', {'action': 'creer', 'identification': {
-            'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': f'{70 + self.numero:02d}',
+            # codes uniques sur le serveur partagé : RV71 à RV98, puis SS71… (numéros de 01 à 99)
+            'lieu': 'XTST', 'code_ouvrage': 'RV' if self.numero <= 28 else 'SS',
+            'numero_ouvrage': f'{70 + (self.numero if self.numero <= 28 else self.numero - 28):02d}',
             'libelle': 'Coque de bureau fictive', 'automate': 'Sch - M340', 'revision': 'A'}})
         ident = self.api('/api/equipement/ajouter', {'type': 'HV', 'numero': '01', 'se': '00'})['ident']
         self.api('/api/equipement/proposition', {'ident_eq': ident, 'decision': 'retenir'})
@@ -790,6 +792,24 @@ class TestCoqueBureau(ServeurNavigateur):
         boite.get_by_role('button', name="Reprendre l'ouvrage").click()
         self.page.wait_for_function("() => location.hash === '#/dashboard'")
         self.assertIn('repris_de', Path(chemin + '.verrou').read_text(encoding='utf-8'))
+
+    def test_annuler_et_retablir_au_clavier(self):
+        """V1-4-47 : Ctrl+Z annule la dernière modification de l'ouvrage (fichier compris), Ctrl+Y la rétablit ;
+        dans un champ de saisie, Ctrl+Z reste l'annulation de frappe du navigateur."""
+        avant = len(self.api('/api/ouvrage')['equipements'])
+        self.api('/api/equipement/ajouter', {'type': 'PM', 'numero': '09', 'se': '00'})
+        self.ouvrir('#/dashboard')
+        self.page.locator('body').click(position={'x': 5, 'y': 5})
+        self.page.keyboard.press('Control+z')
+        self.page.wait_for_function("() => [...document.querySelectorAll('#toasts .toast')].some(t => t.textContent.includes('Annulé'))")
+        self.assertEqual(len(self.api('/api/ouvrage')['equipements']), avant)
+        self.page.keyboard.press('Control+y')
+        self.page.wait_for_function("() => [...document.querySelectorAll('#toasts .toast')].some(t => t.textContent.includes('Rétabli'))")
+        self.assertEqual(len(self.api('/api/ouvrage')['equipements']), avant + 1)
+        self.page.locator('#o-menus > button', has_text='Édition').click()
+        self.page.locator('.o-menu').get_by_role('menuitem', name='Annuler').click()
+        self.page.wait_for_function("() => [...document.querySelectorAll('#toasts .toast')].filter(t => t.textContent.includes('Annulé')).length >= 2")
+        self.assertEqual(len(self.api('/api/ouvrage')['equipements']), avant)
 
     def test_indices_de_livraison(self):
         """22/11 : livrer l'indice A, passer à B, modifier un équipement : la Recette liste la modification."""

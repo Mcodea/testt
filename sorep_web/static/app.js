@@ -16,6 +16,16 @@ async function api(chemin, donnees) {
   if (!r.ok) { const e = new Error(j.erreur || "Erreur"); e.donnees = j; throw e; }
   return j;
 }
+/* Annulation (V1-4-47) : l'état d'avant chaque modification de l'ouvrage est gardé (30 pas) ; un indice livré
+   n'est jamais annulé. L'écran courant est redessiné après l'annulation. */
+async function ogiasHistorique(route, verbe) {
+  if (!E.ouvrage?.ouvert) return;
+  if (E.ficheDirty || E.esFormDirty) return toast("Enregistrez ou abandonnez d'abord la saisie en cours.", true);
+  try { const r = await api(route, {}); toast(`${verbe} : ${r.annule || r.retabli}.`); await afficher(); }
+  catch (e) { toast(e.message, true); }
+}
+window.ogiasAnnuler = () => ogiasHistorique("/api/annuler", "Annulé");
+window.ogiasRetablir = () => ogiasHistorique("/api/retablir", "Rétabli");
 /* Journal technique (V1-7-06) : démarrages, ouvertures, exports, reprises de verrou et erreurs inattendues. */
 window.afficherJournalTechnique = async () => {
   let d; try { d = await api("/api/journal"); } catch (e) { return toast(e.message, true); }
