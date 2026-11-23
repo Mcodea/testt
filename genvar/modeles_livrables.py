@@ -308,7 +308,7 @@ def _ecrire_index(modeles: list[dict]) -> None:
 
 
 def _fichier(ident: str) -> str:
-    if not re.fullmatch(r"[0-9a-f]{12}", ident or ""):
+    if not isinstance(ident, str) or not re.fullmatch(r"[0-9a-f]{12}", ident):
         raise ModeleRefuse("Modèle introuvable.")
     return os.path.join(dossier(), ident + ".modele")
 

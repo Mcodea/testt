@@ -1091,6 +1091,37 @@ class Session:
         self._change()
         return eq
 
+    def ajouter_equipements_en_serie(self, modele_eq, quantite, depart=None):
+        """V1-5-05 : crée `quantite` équipements d'un même type (même modèle, UF, sous-ensemble, libellé), aux premiers
+        numéros libres à partir de `depart` (1 par défaut). Tout ou rien : un refus n'en crée aucun."""
+        if not isinstance(quantite, int) or isinstance(quantite, bool) or not 1 <= quantite <= 50:
+            raise RegleMetier("La quantité va de 1 à 50 équipements.")
+        o = self.ouvrage
+        if depart is None:
+            depart = 1
+        if not isinstance(depart, int) or isinstance(depart, bool) or not 1 <= depart <= 99:
+            raise RegleMetier("Le numéro de départ va de 01 à 99.")
+        pris = {o.repere(e) for e in o.equipements}
+        crees: list = []
+        n = depart
+        while len(crees) < quantite:
+            if n > 99:
+                raise RegleMetier(f"Pas assez de numéros libres pour {quantite} équipements de ce type "
+                                  f"(il n'en reste que {len(crees)} à partir de {depart:02d}) : aucun équipement créé.")
+            eq = copy.deepcopy(modele_eq)
+            eq.ident = uuid.uuid4().hex[:8]
+            eq.numero = f"{n:02d}"
+            if o.repere(eq) not in pris:
+                self.verifier_equipement(eq)
+                pris.add(o.repere(eq))
+                crees.append(eq)
+            n += 1
+        for eq in crees:
+            self._figer_modele(eq)
+            o.equipements.append(eq)
+        self._change()
+        return crees
+
     def remplacer_equipement(self, ident, eq):
         self.verifier_equipement(eq, ident)
         self._figer_modele(eq)

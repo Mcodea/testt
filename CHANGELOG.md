@@ -15,6 +15,10 @@ Le numéro de version (`genvar/__init__.py`) est encore 0.32 ; il passera à 1.0
   ouvert sur un autre poste, qui ne peut alors plus enregistrer.
 - **Journal technique** tournant, consultable par Aide › Journal technique.
 - **Dupliquer un équipement** au ruban : numéro libre suivant, aucune adresse ni voie reprise.
+- **REGLES_DE_NOMMAGE.md** générée depuis le référentiel et le code (`outils/documenter_regles_nommage.py`), vérifiée à jour
+  par un test.
+- **Création en série** : le champ « Quantité » de la fenêtre Nouvel équipement crée n équipements d'un même type aux
+  numéros libres (tout ou rien, annulable en un pas).
 - **Onglet « Apprentissage des formats »** (menu Outils, explorateur) : exporter depuis l'outil du constructeur, importer
   le fichier, dire de quel format il s'agit, qualifier. Les formats appris n'apparaissent plus dans Standards.
 - **Ordre d'export des variables** par équipement (ruban › Ordre d'export) : suivi par toutes les tables exportées,
@@ -26,6 +30,7 @@ Le numéro de version (`genvar/__init__.py`) est encore 0.32 ; il passera à 1.0
 - Documentation : guide de l'administrateur, manuel de l'utilisateur, licences tierces, ce journal.
 
 ### Corrigé
+- Un identifiant de format ou de modèle qui n'était pas du texte provoquait une erreur interne au lieu d'un refus.
 - La duplication d'un équipement reprenait la carte et la voie de chaque E/S : deux équipements pouvaient revendiquer
   les mêmes voies physiques.
 - Une valeur nulle (décalage Modbus 0) apparaissait vide dans la photo d'un indice.

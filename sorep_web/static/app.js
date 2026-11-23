@@ -2723,6 +2723,7 @@ function modaleEquipement(eq, ufDefaut, depuisCatalogue) {
       <label>Sous-ensemble</label><input id="q-se" maxlength="2" list="liste-se2" style="text-transform:uppercase" placeholder="${o.format_repere === "12" ? "facultatif" : "ex. P1"}">
       ${o.format_repere === "12" ? '<span class="aide">Regroupement dans l’inventaire : n’entre pas dans le repère (charte ESB / RESO).</span>' : ""}
       <label>Numéro</label><input id="q-num" maxlength="2" placeholder="01">
+      ${eq ? "" : `<label for="q-qte">Quantité</label><input id="q-qte" type="number" min="1" max="50" value="1" aria-describedby="q-qte-aide"><span class="aide" id="q-qte-aide">Plus de 1 : crée plusieurs équipements du même type, à partir de ce numéro (ou du premier libre), avec le même libellé.</span>`}
       <label>Libellé</label><input id="q-lib" maxlength="32" placeholder="32 caractères au plus">
       <label>Repère</label><div class="mono" id="q-rep" style="font-size:15px;font-weight:600"></div>
     </div><datalist id="liste-se2">${o.sous_ensembles.map(x => `<option value="${esc(x.code)}">${esc(x.libelle)}</option>`).join("")}</datalist>
@@ -2767,6 +2768,15 @@ function modaleEquipement(eq, ufDefaut, depuisCatalogue) {
     const d = {type: q("#q-type").value, modele: q("#q-modele").value, uf: q("#q-uf").value, se: q("#q-se").value.toUpperCase(),
                numero: q("#q-num").value, libelle: q("#q-lib").value};
     if (!d.type) return q("#m-err").textContent = "Choisissez le type.";
+    const qte = eq ? 1 : parseInt(q("#q-qte").value, 10) || 1;
+    if (qte > 1) {
+      try {
+        const r = await api("/api/equipement/ajouter-serie", {...d, quantite: qte, depart: d.numero});
+        fermerModale(); toast(`${r.idents.length} équipements créés : ${r.reperes[0]} à ${r.reperes[r.reperes.length - 1]}.`);
+        E.sel = {nature: "eq", valeur: r.idents[0]}; recharger();
+      } catch (e) { q("#m-err").textContent = e.message; }
+      return;
+    }
     try {
       const r = await api(eq ? "/api/equipement/modifier" : "/api/equipement/ajouter", eq ? {...d, ident: eq.ident} : d);
       fermerModale(); toast(eq ? "Équipement modifié." : "Équipement ajouté.");

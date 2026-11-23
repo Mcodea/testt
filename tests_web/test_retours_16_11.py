@@ -245,6 +245,24 @@ class TestPosteDeTravailEquipementsEtES(ServeurNavigateur):
     setUp = TestRetours1611.setUp
     tearDown = TestRetours1611.tearDown
 
+    def test_creation_en_serie_d_equipements_d_un_meme_type(self):
+        """V1-5-05 : un champ « Quantité » crée plusieurs équipements du même type, aux numéros libres."""
+        avant = {e['pcf'] for e in self.api('/api/ouvrage')['equipements']}
+        self.page.goto(self.url + '#/inventaire', wait_until='networkidle')
+        self.page.locator('#b-eq').click()
+        self.page.locator('.choix-modele').first.wait_for()
+        self.page.locator('.choix-modele:visible[data-eq-type="PM"]').first.click()
+        self.page.locator('.cm-choisi').wait_for()
+        self.page.wait_for_function('() => /^\\d{2}$/.test(document.querySelector("#q-num").value)')
+        self.page.locator('#q-qte').fill('3')
+        self.page.locator('#q-lib').fill('Pompe en série')
+        self.page.locator('#m-ok').click()
+        self.page.wait_for_function("() => [...document.querySelectorAll('#toasts .toast')].some(t => t.textContent.includes('3 équipements créés'))")
+        nouveaux = [e for e in self.api('/api/ouvrage')['equipements'] if e['pcf'] not in avant]
+        self.assertEqual(len(nouveaux), 3)
+        self.assertEqual(len({e['pcf'] for e in nouveaux}), 3)
+        self.assertTrue(all(e['libelle'] == 'Pompe en série' and e['type'] == 'PM' for e in nouveaux))
+
     def test_ajout_en_deux_temps_modele_puis_libelle(self):
         self.page.goto(self.url + '#/inventaire', wait_until='networkidle')
         self.page.locator('#b-eq').click()

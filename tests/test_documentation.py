@@ -9,10 +9,19 @@ RACINE = Path(__file__).resolve().parents[1]
 class TestDocumentation(unittest.TestCase):
     def test_documents_attendus(self):
         for nom in ("MANUEL_UTILISATEUR.md", "MANUEL_UTILISATEUR.pdf", "GUIDE_ADMINISTRATEUR.md", "CHANGELOG.md",
-                    "LICENCES_TIERCES.md", "COMPATIBILITE.md", "LICENCE.md", "NOTES_DE_VERSION_1.0.md"):
+                    "LICENCES_TIERCES.md", "COMPATIBILITE.md", "LICENCE.md", "NOTES_DE_VERSION_1.0.md", "REGLES_DE_NOMMAGE.md"):
             with self.subTest(nom=nom):
                 self.assertTrue((RACINE / nom).is_file(), nom)
         self.assertTrue((RACINE / "MANUEL_UTILISATEUR.pdf").read_bytes().startswith(b"%PDF"))
+
+    def test_regles_de_nommage_generees_et_a_jour(self):
+        """V1-9-09 : REGLES_DE_NOMMAGE.md est générée depuis le référentiel et le code, jamais écrite à la main."""
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("documenter_regles_nommage", RACINE / "outils" / "documenter_regles_nommage.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.assertEqual((RACINE / "REGLES_DE_NOMMAGE.md").read_text(encoding="utf-8"), module.generer(),
+                         "REGLES_DE_NOMMAGE.md périmé : py outils/documenter_regles_nommage.py")
 
     def test_captures_du_manuel_presentes(self):
         texte = (RACINE / "MANUEL_UTILISATEUR.md").read_text(encoding="utf-8")

@@ -136,7 +136,7 @@ class Application:
     HISTORIQUE_MAX = 30
     SANS_HISTORIQUE = {"nouveau", "ouvrir", "fermer", "annuler", "retablir", "supprimer_ouvrage"}
     LIBELLES_ANNULATION = {
-        "ajouter_equipement": "ajout d'équipement", "modifier_equipement": "modification d'équipement",
+        "ajouter_equipement": "ajout d'équipement", "ajouter_equipements_serie": "création en série d'équipements", "modifier_equipement": "modification d'équipement",
         "supprimer_equipements": "suppression d'équipements", "dupliquer_equipement": "duplication d'équipement", "definir_ordre_export": "ordre d'export", "deplacer": "déplacement d'équipements",
         "valider_equipements": "validation d'équipements", "decider_proposition": "décision sur une proposition",
         "configurer_equipement": "configuration d'équipement", "ligne_equipement": "modification d'équipement",
@@ -2040,6 +2040,20 @@ class Application:
         self._sauver()
         return {"ident": e.ident}
 
+    def ajouter_equipements_serie(self, d):
+        """V1-5-05 : n équipements d'un même type aux numéros libres suivants (tout ou rien)."""
+        if not (self.s.ouvrage.lieu and self.s.ouvrage.code_ouvrage):
+            raise RegleMetier("Renseignez d'abord le lieu et le code de l'ouvrage (identification).")
+        try:
+            quantite = int(d.get("quantite"))
+            depart = int(d["depart"]) if str(d.get("depart") or "").strip() else None
+        except (TypeError, ValueError) as exc:
+            raise RegleMetier("Quantité et numéro de départ : des nombres entiers.") from exc
+        modele = self._equipement_depuis({**d, "numero": "01"})
+        crees = self.s.ajouter_equipements_en_serie(modele, quantite, depart)
+        self._sauver()
+        return {"idents": [e.ident for e in crees], "reperes": [self.s.ouvrage.repere(e) for e in crees]}
+
     def modifier_equipement(self, d):
         base = self._eq(d["ident"])
         self.s.remplacer_equipement(base.ident, self._equipement_depuis(d, base))
@@ -2492,7 +2506,7 @@ ROUTES_POST = {"/api/nouveau": "nouveau", "/api/ouvrir": "ouvrir", "/api/fermer"
                "/api/listes-ouvrage/action": "listes_ouvrage_action", "/api/outils/action": "outils_action", "/api/standards/action": "standards_action", "/api/grille/appliquer": "grille_appliquer", "/api/attributs/action": "attributs_action", "/api/equipement/attribut": "equipement_attribut", "/api/essais/reporter": "essais_reporter", "/api/modeles-livrables/action": "modeles_livrables_action", "/api/formats-appris/action": "formats_appris_action", "/api/gammes-materiel/action": "gammes_materiel_action", "/api/revisions/action": "revisions_action", "/api/annuler": "annuler", "/api/retablir": "retablir", "/api/standards/appliquer": "appliquer_standard", "/api/standards/charte-apercu": "apercu_charte", "/api/reglages/reprendre": "reprendre_reglages",
                "/api/identification/type": "identifier_type",
                "/api/identification/selection": "identifier_selection", "/api/uf": "uf",
-               "/api/equipement/ajouter": "ajouter_equipement", "/api/equipement/modifier": "modifier_equipement",
+               "/api/equipement/ajouter": "ajouter_equipement", "/api/equipement/ajouter-serie": "ajouter_equipements_serie", "/api/equipement/modifier": "modifier_equipement",
                "/api/equipement/supprimer": "supprimer_equipements", "/api/equipement/dupliquer": "dupliquer_equipement", "/api/equipement/ordre-export/definir": "definir_ordre_export", "/api/equipement/deplacer": "deplacer", "/api/equipement/valider": "valider_equipements",
                "/api/equipement/proposition": "decider_proposition",
                "/api/referentiel/adopter": "adopter_referentiel", "/api/referentiel/revenir-au-standard": "revenir_au_standard", "/api/referentiel/adopter-modele": "adopter_modele", "/api/referentiel/accepter-propagation": "accepter_propagation", "/api/referentiel/refuser-mise-a-jour": "refuser_mise_a_jour", "/api/referentiel/annuler-adoption": "annuler_adoption", "/api/ouvrage/restaurer-copie": "restaurer_copie", "/api/adressage/action": "adressage_action",

@@ -702,7 +702,7 @@ def trouver(ident: str) -> dict | None:
 
 
 def _gabarit_chemin(ident: str) -> str:
-    if not re.fullmatch(r"[0-9a-f]{12}", ident or ""):
+    if not isinstance(ident, str) or not re.fullmatch(r"[0-9a-f]{12}", ident):
         raise FormatRefuse("Format introuvable.")
     return os.path.join(dossier(), ident + ".xlsx")
 
