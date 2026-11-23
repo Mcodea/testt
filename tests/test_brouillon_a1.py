@@ -58,10 +58,10 @@ class TestBrouillonA1(unittest.TestCase):
             self.assertIn((a["type"], a["nature"], a["nouvelle"].split("_", 1)[1]), actuels, a)
             self.assertNotIn((a["type"], a["nature"], a["ancienne"].split("_", 1)[1]), actuels, a)
 
-    def test_un_seul_cas_a_examiner_documente(self):
-        self.assertEqual(len(self.rapport["ecarts"]), 1)
-        self.assertIn("PD.SA.TAUX", self.rapport["ecarts"][0])
-        self.assertIn("suffixe_es", self.rapport["ecarts"][0])
+    def test_aucun_ecart_et_exceptions_d4_decidees(self):
+        self.assertEqual(self.rapport["ecarts"], [])
+        self.assertEqual({x["ident"]: x["suffixe_es"] for x in self.rapport["exceptions_d4"]},
+                         {"PD.SA.TAUX": "CONS_TAU", "PM.SA.CONS_FREQ": "CONS_FRQ"})
 
     def test_controles_du_depot_sans_erreur_ni_doublon_et_regles_a_jour(self):
         c = self.outil.controler(self.candidat)
@@ -73,13 +73,10 @@ class TestBrouillonA1(unittest.TestCase):
                 if "*" not in k:                                   # « RTR_* » : motif générique, pas une clé
                     self.assertIn((r["type"], k), cles, (r["id"], k))
 
-    def test_noms_physiques_conformes_a_la_bibliotheque_sauf_suffixe_explicite(self):
-        """Seul un suffixe `suffixe_es` (décision D4) peut garder un nom physique différent de la bibliothèque ; il est listé."""
-        divergents = self.rapport["physiques_divergents"]
-        self.assertEqual([x["ident"] for x in divergents], ["PM.SA.CONS_FREQ"])
-        self.assertTrue(all(x["cause"].startswith("suffixe_es") for x in divergents))
+    def test_noms_physiques_conformes_a_la_bibliotheque(self):
+        self.assertEqual(self.rapport["physiques_divergents"], [])
         for a in self.rapport["appliques"]:
-            if a["physique_propose"] == "—" or a["nouvelle"].split("_", 1)[0] == "RTR" or a["ident"] in {x["ident"] for x in divergents}:
+            if a["physique_propose"] == "—" or a["nouvelle"].split("_", 1)[0] == "RTR":
                 continue
             signal = next(s for s in self.candidat["catalogue"]["signaux"] if s["type"] == a["type"] and s["es"] == a["nature"]
                           and f"{s['famille']}_{s['code']}" == a["nouvelle"])

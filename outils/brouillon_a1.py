@@ -26,6 +26,10 @@ SORTIE = RACINE / "validation" / "referentiel" / "brouillon_a1"
 MOTIF = "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
 
 
+def code_nouveau_de(cle):
+    return cle.split("_", 1)[1]
+
+
 def construire():
     """(donnees du candidat, rapport) : renommages approuvés appliqués à une COPIE du référentiel livré."""
     decision = json.loads(DECISION.read_text(encoding="utf-8"))
@@ -36,7 +40,7 @@ def construire():
     apercu = apercu_a1.calculer()
     candidat = {"catalogue": copy.deepcopy(catalogue), "modeles": copy.deepcopy(modeles)}
     signaux = candidat["catalogue"]["signaux"]
-    appliques, ecarts = [], []
+    appliques, ecarts, exceptions_d4 = [], [], []
     for r in apercu["renommages"]:
         ident = f"{r['type']}.{r['nature']}.{r['code_actuel']}"
         if ident in refuses:
@@ -50,12 +54,6 @@ def construire():
             famille_nouvelle, code_nouveau = nouvelle.split("_", 1)
             cible = next((x for x in signaux if (x["type"], x["famille"], x["code"]) == (r["type"], famille_nouvelle, r["code_actuel"])
                           and (x["es"] == r["nature"] or x["es"] == "Interne")), None)
-            if cible is not None and code_nouveau != r["code_propose"]:
-                ecarts.append(f"{ident} : le code physique proposé {r['code_propose']} diffère du code fonctionnel {code_nouveau} ({tele}) ; "
-                              "les rapprocher exigerait un `suffixe_es`, que la décision D4 réserve à 5 collisions de clé : non appliqué, "
-                              "décision à prendre.")
-                ok = False
-                break
             if cible is None:
                 ecarts.append(f"{ident} : aucun signal du catalogue pour la clé {nouvelle} (non appliqué, à examiner).")
                 ok = False
@@ -67,7 +65,12 @@ def construire():
             cible = next(x for x in signaux if (x["type"], x["famille"], x["code"]) == (r["type"], famille_nouvelle, r["code_actuel"])
                          and (x["es"] == r["nature"] or x["es"] == "Interne"))
             ancienne = f"{cible['famille']}_{cible['code']}"
-            cible["code"] = r["code_propose"]
+            cible["code"] = code_nouveau_de(nouvelle)
+            if cible["es"] == r["nature"]:                       # E/S physique : le nom physique suit la bibliothèque V1
+                attendu = r["physique_propose"].split("_", 2)[2]
+                if suffixe_physique(cible) != attendu:
+                    cible["suffixe_es"] = attendu                # exception D4 décidée le 23/11/2026 (CONS_TAU, CONS_FRQ)
+                    exceptions_d4.append({"ident": ident, "cle": nouvelle, "suffixe_es": attendu})
             appliques.append({"ident": ident, "type": r["type"], "nature": cible["es"], "ancienne": ancienne, "nouvelle": nouvelle,
                               "physique_propose": r["physique_propose"] if cible["es"] == r["nature"] else "—"})
     renommes = {(a["type"], a["ancienne"]): a["nouvelle"] for a in appliques}
@@ -90,7 +93,7 @@ def construire():
         if suffixe_physique(signal) != attendu:
             physiques_divergents.append({"ident": a["ident"], "candidat": suffixe_physique(signal), "bibliotheque": attendu,
                                          "cause": "suffixe_es explicite (décision D4)" if signal.get("suffixe_es") else "autre"})
-    return candidat, {"appliques": appliques, "ecarts": ecarts, "physiques_divergents": physiques_divergents, "refuses": sorted(refuses), "decision": decision,
+    return candidat, {"appliques": appliques, "ecarts": ecarts, "exceptions_d4": exceptions_d4, "physiques_divergents": physiques_divergents, "refuses": sorted(refuses), "decision": decision,
                       "ajouts_non_appliques": len(apercu["ajouts"])}
 
 
@@ -123,6 +126,11 @@ def _rapport(candidat, rapport, c) -> str:
     for a in rapport["appliques"]:
         l.append(f"| {a['type']} | {a['nature']} | `{a['ancienne']}` → `{a['nouvelle']}` | `{a['physique_propose']}` |")
     l += ["", "## Renommages refusés (conservés tels quels)", "", ", ".join(f"`{x}`" for x in rapport["refuses"]), ""]
+    if rapport["exceptions_d4"]:
+        l += ["## Exceptions D4 décidées le 23/11/2026", "",
+              "Le nom physique de la bibliothèque V1 diffère du code fonctionnel : il est porté par `suffixe_es`.", "",
+              "| Renommage | Clé fonctionnelle | Suffixe d'E/S |", "| --- | --- | --- |"]
+        l += [f"| `{x['ident']}` | `{x['cle']}` | `{x['suffixe_es']}` |" for x in rapport["exceptions_d4"]] + [""]
     if rapport["physiques_divergents"]:
         l += ["## Noms physiques qui restent différents de la bibliothèque", "",
               "Le renommage change la clé fonctionnelle ; le nom de l'E/S physique garde son suffixe explicite (`suffixe_es`, décision D4). "

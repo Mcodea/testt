@@ -10168,6 +10168,20 @@
    "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
   },
   {
+   "type": "PD",
+   "ancienne": "TR_TAUX",
+   "type_nouveau": "PD",
+   "nouvelle": "TR_TAU",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "PD",
+   "ancienne": "RTR_TAUX",
+   "type_nouveau": "PD",
+   "nouvelle": "RTR_TAU",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
    "type": "PM",
    "ancienne": "ES_FREQ",
    "type_nouveau": "PM",

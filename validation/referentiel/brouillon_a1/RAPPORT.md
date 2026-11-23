@@ -2,7 +2,7 @@
 
 Généré par `outils/brouillon_a1.py` : ne pas modifier à la main. **Candidat non publié** : le référentiel livré (`genvar/data/`) est inchangé, aucun ajout n'est appliqué, aucun ouvrage n'est touché.
 
-- Clés de signaux renommées dans le candidat : **37** (pour les 38 renommages approuvés sur 57 ; refusés : 19).
+- Clés de signaux renommées dans le candidat : **39** (pour les 38 renommages approuvés sur 57 ; refusés : 19).
 - Ajouts : **49 non appliqués** (aucune réponse de l'utilisateur).
 - Contrôles du dépôt de référentiel : 0 erreur(s), 19 alerte(s) ; 0 clé(s) en double.
 
@@ -33,6 +33,8 @@ Généré par `outils/brouillon_a1.py` : ne pas modifier à la main. **Candidat 
 | LS | ET | `TS_TH` → `TS_NIV_TH` | `ET_SR02LS01_NIV_TH` |
 | OD | ET | `TS_SBAT` → `TS_SUR_BAT` | `ET_SR02OD01_SUR_BAT` |
 | PD | EA | `TM_TAUX` → `TM_TAU` | `EA_SR02PD01_TAU` |
+| PD | SA | `TR_TAUX` → `TR_TAU` | `SA_SR02PD01_CONS_TAU` |
+| PD | Interne | `RTR_TAUX` → `RTR_TAU` | `—` |
 | PM | EA | `ES_FREQ` → `ES_FRQ` | `EA_SR02PM01_FRQ` |
 | PM | ET | `ES_DEFTH` → `ES_DEF_TH` | `ET_SR02PM01_DEF_TH` |
 | PM | ET | `ES_DEFVAR` → `ES_DEF_VAR` | `ET_SR02PM01_DEF_VAR` |
@@ -52,17 +54,14 @@ Généré par `outils/brouillon_a1.py` : ne pas modifier à la main. **Candidat 
 
 `EV.ST.FER`, `EV.ST.OUV`, `GA.ET.INTR`, `GE.ST.AR`, `GE.ST.MA`, `KM.ST.AR`, `KM.ST.MA`, `MV.ST.FER`, `MV.ST.OUV`, `PD.ST.AR`, `PD.ST.MA`, `SP.ST.AR`, `SP.ST.MA`, `SV.ST.AR`, `SV.ST.FER`, `SV.ST.OUV`, `XV.ST.AR`, `XV.ST.FER`, `XV.ST.OUV`
 
-## Noms physiques qui restent différents de la bibliothèque
+## Exceptions D4 décidées le 23/11/2026
 
-Le renommage change la clé fonctionnelle ; le nom de l'E/S physique garde son suffixe explicite (`suffixe_es`, décision D4). La bibliothèque V1 proposait un autre suffixe : à confirmer.
+Le nom physique de la bibliothèque V1 diffère du code fonctionnel : il est porté par `suffixe_es`.
 
-| Renommage | Suffixe physique du candidat | Suffixe de la bibliothèque |
+| Renommage | Clé fonctionnelle | Suffixe d'E/S |
 | --- | --- | --- |
-| `PM.SA.CONS_FREQ` | `FREQ` | `CONS_FRQ` |
-
-## À examiner
-
-- PD.SA.TAUX : le code physique proposé CONS_TAU diffère du code fonctionnel TAU (TR_TAU / RTR_TAU) ; les rapprocher exigerait un `suffixe_es`, que la décision D4 réserve à 5 collisions de clé : non appliqué, décision à prendre.
+| `PD.SA.TAUX` | `TR_TAU` | `CONS_TAU` |
+| `PM.SA.CONS_FREQ` | `ES_CONS_FRQ` | `CONS_FRQ` |
 
 ## Effet sur les ouvrages
 

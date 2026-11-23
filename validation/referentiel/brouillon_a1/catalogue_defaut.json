@@ -1,5 +1,5 @@
 {
- "version": "2026-11-11 référentiel V2 (noms physiques, CT consolidé dans FT, règles documentaires, profil VANNE_MV) + A1 (37 renommages approuvés)",
+ "version": "2026-11-11 référentiel V2 (noms physiques, CT consolidé dans FT, règles documentaires, profil VANNE_MV) + A1 (39 renommages approuvés)",
  "types": [
   {
    "code": "AP",
@@ -1955,7 +1955,7 @@
    "type": "PD",
    "information": "Consigne de taux",
    "famille": "TR",
-   "code": "TAUX",
+   "code": "TAU",
    "type_logique": "REAL",
    "unite": "%",
    "es": "SA",
@@ -1966,13 +1966,14 @@
    "remarque": "",
    "organe": "",
    "source": "",
-   "logique": ""
+   "logique": "",
+   "suffixe_es": "CONS_TAU"
   },
   {
    "type": "PD",
    "information": "Retour de consigne de taux",
    "famille": "RTR",
-   "code": "TAUX",
+   "code": "TAU",
    "type_logique": "REAL",
    "unite": "%",
    "es": "Interne",
@@ -4436,7 +4437,7 @@
    "organe": "",
    "source": "",
    "logique": "",
-   "suffixe_es": "FREQ"
+   "suffixe_es": "CONS_FRQ"
   },
   {
    "type": "PM",
