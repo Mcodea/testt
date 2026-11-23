@@ -236,7 +236,10 @@ def remplir(texte: str, session, echappement: str = "aucun", seulement=None) -> 
     eqs = sorted((e for e in o.equipements if seulement is None or e.ident in seulement), key=o.repere)
     par_ident = {e.ident: e for e in eqs}
     rang = {e.ident: i for i, e in enumerate(eqs)}
-    variables = sorted(session.variables(), key=lambda v: (rang.get(v.ident_eq, 0), v.nom))
+    def cle_variable(v):
+        r = session.rang_export(v)                      # ordre d'export choisi pour l'équipement (V1-5-02)
+        return (rang.get(v.ident_eq, 0), r, "") if r is not None else (rang.get(v.ident_eq, 0), -1, v.nom)
+    variables = sorted(session.variables(), key=cle_variable)
     points = sorted(session.points(), key=lambda p: (rang.get(p.ident_eq, 0), p.nom))
     esc = (lambda s: _xml(s, {'"': "&quot;", "'": "&apos;"})) if echappement == "xml" else (lambda s: s)
     sortie: list[str] = []

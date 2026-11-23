@@ -16,6 +16,31 @@ async function api(chemin, donnees) {
   if (!r.ok) { const e = new Error(j.erreur || "Erreur"); e.donnees = j; throw e; }
   return j;
 }
+/* Ordre d'export des variables d'un équipement (V1-5-02, option B) : il ne vaut que pour les tables exportées
+   (XSY, Excel, table d'études, formats appris, modèles) ; les adresses ne changent jamais. */
+async function modaleOrdreExport(ident) {
+  let d; try { d = await api("/api/equipement/ordre-export?ident=" + encodeURIComponent(ident)); } catch (e) { return toast(e.message, true); }
+  let liste = d.variables.slice();
+  const m = ouvrirModale(`<div class="boite-tete"><h2>Ordre d'export — ${esc(d.repere)}</h2><p>Ordre des variables de cet équipement dans les tables exportées (XSY, Excel, table d'études, formats appris, modèles). <b>Les adresses ne changent pas.</b> La table TOPKAPI garde l'ordre des registres.</p></div>
+    <div class="boite-corps"><ol class="ordre-export" id="oe-liste"></ol></div>
+    <div class="boite-pied"><button type="button" class="gauche" id="oe-ref">Ordre du référentiel</button><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="oe-ok">Enregistrer l'ordre</button></div>`, true);
+  const dessiner = focus => {
+    m.querySelector("#oe-liste").innerHTML = liste.map((v, i) => `<li><span class="tag">${esc(v.famille)}</span> <span class="mono">${esc(v.nom)}</span> <span class="aide">${esc(v.libelle || "")}</span>
+      <span class="oe-actions"><button type="button" data-oe="${i}" data-sens="-1" aria-label="Monter ${esc(v.nom)}" ${i ? "" : "disabled"}>↑</button><button type="button" data-oe="${i}" data-sens="1" aria-label="Descendre ${esc(v.nom)}" ${i < liste.length - 1 ? "" : "disabled"}>↓</button></span></li>`).join("");
+    m.querySelectorAll("[data-oe]").forEach(b => b.onclick = () => {
+      const i = +b.dataset.oe, j = i + +b.dataset.sens; [liste[i], liste[j]] = [liste[j], liste[i]];
+      dessiner(`[data-oe="${j}"][data-sens="${b.dataset.sens}"]`);
+    });
+    if (focus) (m.querySelector(focus) || m.querySelector(`[data-oe]:not([disabled])`))?.focus();
+  };
+  dessiner();
+  const enregistrer = async cles => {
+    try { await api("/api/equipement/ordre-export/definir", {ident, cles}); fermerModale(); toast(cles.length ? "Ordre d'export enregistré : les adresses n'ont pas changé." : "Ordre du référentiel rétabli."); }
+    catch (e) { toast(e.message, true); }
+  };
+  m.querySelector("#oe-ok").onclick = () => enregistrer(liste.map(v => v.cle));
+  m.querySelector("#oe-ref").onclick = () => enregistrer([]);
+}
 /* Annulation (V1-4-47) : l'état d'avant chaque modification de l'ouvrage est gardé (30 pas) ; un indice livré
    n'est jamais annulé. L'écran courant est redessiné après l'annulation. */
 async function ogiasHistorique(route, verbe) {
@@ -945,7 +970,7 @@ function vueOuvrage() {
 /* Lot 5a : ruban de l'écran Équipements. Les commandes de l'arborescence (ajout, UF, import) et celles de
    l'élément sélectionné (menu « ⋯ » de la fiche, commandes de l'UF) sont rangées par tâche. Boutons déplacés,
    jamais recréés : écouteurs et états restent ceux posés par l'écran. */
-const COMMANDES_SELECTION = ["e-val", "e-mod", "e-dup", "e-dep", "e-sup", "g-mod", "g-ren", "g-sup"];
+const COMMANDES_SELECTION = ["e-val", "e-mod", "e-dup", "e-ordre", "e-dep", "e-sup", "g-mod", "g-ren", "g-sup"];
 function rubanEquipements() {
   const id = x => document.getElementById(x);
   const c = document.getElementById("contenu");
@@ -959,6 +984,7 @@ function rubanEquipements() {
       {el: id("b-export-eq"), icone: "importer", libelle: "Exporter la liste"}]},
     {nom: "Équipement sélectionné", commandes: [{el: fiche("e-val"), icone: "valider", grand: true},
       {el: fiche("e-mod"), icone: "modifier", libelle: "Modifier"}, {el: fiche("e-dup"), icone: "dupliquer", libelle: "Dupliquer"},
+      {el: fiche("e-ordre"), icone: "variable", libelle: "Ordre d'export"},
       {el: fiche("e-dep"), icone: "ranger", libelle: "Ranger dans une UF"},
       {el: fiche("e-sup"), icone: "supprimer", libelle: "Supprimer", danger: true}]},
     {nom: "Unité fonctionnelle", commandes: [{el: fiche("g-mod"), icone: "modifier", libelle: "Modifier l'UF"},
@@ -2121,7 +2147,7 @@ function detailEquipement(e) {
        <div class="sous">${esc(e.libelle || "libellé à renseigner")} · ${esc(e.designation)} · modèle ${esc(e.modele) || "aucun"} · SE ${esc(e.se)}${se.libelle ? " " + esc(se.libelle) : ""} · ${esc(e.domaine || "non classé")} · ${e.nb_es} E/S
        ${e.alerte_modele ? ` · <button class="lien alerte-modele" data-nav="#/referentiel" title="${esc(e.alerte_modele)}">Référentiel à contrôler</button>` : ""}</div></div>
      <details class="menu-eq"><summary title="Autres commandes de l'équipement" aria-label="Autres commandes de l'équipement">⋯</summary><div class="menu-eq-liste" role="menu">
-       <button id="e-mod" role="menuitem">Modifier type, modèle, numéro…</button><button id="e-dup" role="menuitem" title="Même paramétrage, numéro libre suivant ; aucune adresse ni voie n'est reprise">Dupliquer l'équipement</button><button id="e-dep" role="menuitem">Ranger dans une UF…</button>
+       <button id="e-mod" role="menuitem">Modifier type, modèle, numéro…</button><button id="e-dup" role="menuitem" title="Même paramétrage, numéro libre suivant ; aucune adresse ni voie n'est reprise">Dupliquer l'équipement</button><button id="e-ordre" role="menuitem" title="Ordre des variables de l'équipement dans les exports ; les adresses ne changent pas">Ordre d'export des variables…</button><button id="e-dep" role="menuitem">Ranger dans une UF…</button>
        ${e.valide ? '<button id="e-val" data-v="0" role="menuitem">Repasser à contrôler</button>' : '<button id="e-val" data-v="1" role="menuitem">Valider le paramétrage</button>'}
        <button class="danger" id="e-sup" role="menuitem">Supprimer l'équipement</button></div></details></div></div>
    ${!e.modele_a_jour ? `<div class="avert">Le modèle « ${esc(e.modele)} » a changé dans le référentiel depuis l'ajout de cet équipement. <button class="lien" id="e-act">Reprendre la nouvelle version</button></div>` : ""}
@@ -2203,6 +2229,7 @@ function detailEquipement(e) {
   $("#e-val").onclick = async () => { const v = $("#e-val").dataset.v === "1";
     await agir(api("/api/equipement/valider", {idents: [e.ident], valide: v}), v ? "Équipement validé." : "Équipement repassé à valider."); recharge(); };
   $("#e-mod").onclick = () => modaleEquipement(eqParIdent(e.ident));
+  $("#e-ordre").onclick = () => modaleOrdreExport(e.ident);
   $("#e-dup").onclick = async () => {        // V1-5-01 : même paramétrage, numéro libre, aucune adresse reprise
     try { const r = await api("/api/equipement/dupliquer", {ident: e.ident});
       toast(`${r.repere} créé à partir de ${e.pcf} : sans adresse ni voie, à valider.`); E.sel = {nature: "eq", valeur: r.ident}; await recharger(); }

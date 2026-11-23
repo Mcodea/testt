@@ -887,3 +887,9 @@ html[data-theme] .ri-sup, html[data-theme] tr.ri-sup td:nth-child(3) { color: va
 html[data-theme] .ri-mod, html[data-theme] tr.ri-mod td:nth-child(3) { color: var(--o-alerte); }
 html[data-theme] .ri-detail summary { cursor: pointer; font-weight: 600; }
 html[data-theme] pre.journal-technique { max-height: 60vh; }
+
+/* Ordre d'export des variables (V1-5-02) */
+html[data-theme] ol.ordre-export { margin: 0; padding-left: var(--o-e-5); display: grid; gap: 2px; }
+html[data-theme] ol.ordre-export li { display: flex; align-items: center; gap: var(--o-e-2); padding: 2px 0; border-bottom: 1px solid var(--o-ligne); }
+html[data-theme] ol.ordre-export .oe-actions { margin-left: auto; display: flex; gap: 4px; }
+html[data-theme] ol.ordre-export .oe-actions button { min-width: 2.2em; }

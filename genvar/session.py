@@ -2075,6 +2075,54 @@ class Session:
         from .export_xlsx import ecrire_xlsx
         ecrire_xlsx(chemin, revisions.feuilles_xlsx(self.ouvrage, self.comparer_indices(depuis, vers)))
 
+    # ================================================================== ordre d'export (V1-5-02, option B)
+    def rang_export(self, v):
+        """Rang d'une variable dans l'ordre d'export choisi pour son équipement, ou None (ordre du référentiel)."""
+        eq = self.ouvrage.equipement(v.ident_eq)
+        ordre = getattr(eq, "ordre_export", None) or []
+        if not ordre:
+            return None
+        return ordre.index(v.cle) if v.cle in ordre else len(ordre)
+
+    def variables_export(self):
+        """Variables dans l'ordre des exports : celui de `variables()`, sauf que les variables d'un équipement qui a
+        un ordre d'export choisi sont rangées selon lui, AUX MÊMES PLACES dans la liste. Lecture seule ; l'adressage
+        n'utilise jamais cet ordre."""
+        variables = self.variables()
+        places: dict[str, list[int]] = {}
+        for i, v in enumerate(variables):
+            places.setdefault(v.ident_eq, []).append(i)
+        sortie = list(variables)
+        for ident, indices in places.items():
+            eq = self.ouvrage.equipement(ident)
+            if not getattr(eq, "ordre_export", None):
+                continue
+            rangees = sorted((variables[i] for i in indices), key=lambda v: self.rang_export(v))  # tri stable
+            for i, v in zip(indices, rangees):
+                sortie[i] = v
+        return sortie
+
+    def ordre_export_equipement(self, ident_eq):
+        """[{cle, nom, famille, libelle}] des variables de l'équipement, dans l'ordre d'export actuel."""
+        if self.ouvrage.equipement(ident_eq) is None:
+            raise RegleMetier("Équipement introuvable.")
+        return [{"cle": v.cle, "nom": v.nom, "famille": v.famille, "libelle": v.libelle_topkapi}
+                for v in self.variables_export() if v.ident_eq == ident_eq]
+
+    def definir_ordre_export(self, ident_eq, cles):
+        """Fixe l'ordre d'export des variables d'un équipement ; liste vide = retour à l'ordre du référentiel.
+        Les adresses ne changent jamais ; l'équipement ne repasse pas « à valider »."""
+        eq = self.ouvrage.equipement(ident_eq)
+        if eq is None:
+            raise RegleMetier("Équipement introuvable.")
+        cles = [str(c) for c in (cles or [])]
+        if cles:
+            presentes = [v.cle for v in self.variables() if v.ident_eq == ident_eq]
+            if sorted(cles) != sorted(presentes):
+                raise RegleMetier("L'ordre doit contenir chaque variable de l'équipement une fois et une seule.")
+        eq.ordre_export = cles
+        self._change(devalider=False)
+
     # ================================================================== exports
     def recap_export(self):
         variables, points = self.variables(), self.points()
@@ -2094,7 +2142,7 @@ class Session:
         if self.ouvrage.mode == "Existant":
             raise RegleMetier("Projet existant : produire la table de correspondances Excel. L'import TOPKAPI/SOFTLINK dépend du format et doit être validé séparément.")
         from .modele import TAILLE_MOTS
-        variables, points, internes = self.variables(), self.points(), self.variables_internes()
+        variables, points, internes = self.variables_export(), self.points(), self.variables_internes()
         inconnues = [v.nom for v in variables if v.type_logique not in TAILLE_MOTS]
         inconnues += [p.nom for p in points if p.type_logique not in TAILLE_MOTS]
         inconnues += [x.nom for x in internes if x.type_logique not in TAILLE_MOTS]
@@ -2112,7 +2160,7 @@ class Session:
         elif self.ouvrage.mode == "Existant":
             existant.exporter_correspondance(chemin, self.ouvrage, self.catalogue)
         else:
-            v = self.variables()
+            v = self.variables_export()
             exporter_table(chemin, self.ouvrage, self.catalogue, v, self.anomalies(v), self.points())
             self._marquer_exporte()
 

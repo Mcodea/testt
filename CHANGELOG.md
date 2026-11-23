@@ -15,6 +15,9 @@ Le numéro de version (`genvar/__init__.py`) est encore 0.32 ; il passera à 1.0
   ouvert sur un autre poste, qui ne peut alors plus enregistrer.
 - **Journal technique** tournant, consultable par Aide › Journal technique.
 - **Dupliquer un équipement** au ruban : numéro libre suivant, aucune adresse ni voie reprise.
+- **Ordre d'export des variables** par équipement (ruban › Ordre d'export) : suivi par toutes les tables exportées,
+  sans jamais changer une adresse.
+- **Licences** : la lecture des PDF PL7 passe de PyMuPDF (AGPL-3.0) à pdfminer.six (MIT), inventaires identiques.
 - **Indices de livraison** et **liste des modifications** entre deux indices (Excel, « Tous les livrables »).
 - Documentation : guide de l'administrateur, manuel de l'utilisateur, licences tierces, ce journal.
 

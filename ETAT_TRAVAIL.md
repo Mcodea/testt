@@ -34,10 +34,9 @@ industrielle du 16/11) et sortent du calcul.
 | En attente de preuves utilisateur (section 8) | 10 |
 | Remplacé par décision | 25 |
 
-**Avancement : 44 % au sens strict (67 / 151), 63 % en comptant un « partiel » pour moitié.**
+**Avancement : 44 % au sens strict (67 / 151), 64 % en comptant un « partiel » pour moitié.**
 
-Écarts nets relevés (absents), traitables sans attendre l'utilisateur : duplication et
-réordonnancement de variables (V1-5-02), notes de version 1.0 (V1-9-11), version 1.0.0 et étiquettes (V1-10-19 à 21), compte rendu V1.0 (V1-10-28 à 34).
+Écarts nets relevés (absents), traitables sans attendre l'utilisateur : notes de version 1.0 (V1-9-11), version 1.0.0 et étiquettes (V1-10-19 à 21), compte rendu V1.0 (V1-10-28 à 34).
 
 Décision requise : **licences** (V1-11-05). PyMuPDF (AGPL-3.0) a été remplacé par pdfminer.six (MIT) le 23/11 ;
 reste PySide6 (LGPL-3.0), qui ne sert qu'à l'ancienne interface Qt : proposition de ne plus la livrer.
@@ -336,7 +335,7 @@ le défaut démontré et obtenir une CI verte. Codex reste actif sur ce point.
 | V1-4-47 (L130) | Annulation (Ctrl+Z) des modifications de l'ouvrage. | fait | Ctrl+Z / Ctrl+Y et menu Édition : 30 pas, seulement les commandes qui modifient l'ouvrage, fichier enregistré, tout ou rien si l'enregistrement échoue, indices livrés jamais annulés, saisie dans un champ laissée au navigateur : tests/test_annulation.py, tests_web/test_coque_bureau.py::test_annuler_et_retablir_au_clavier. |
 | V1-4-48 (L131) | Chaque action a un retour visible : chargement, succès, erreur avec la cause et la solution. | partiel | Messages d'erreur métier avec cause et correction ; retour de chargement non vérifié écran par écran. |
 | V1-5-01 (L135) | Dupliquer un équipement : aucune adresse recopiée, nouveau numéro proposé. | fait | « Dupliquer » au ruban de l'équipement : numéro libre suivant (ou demandé), paramétrage, désignations et attributs repris ; aucune adresse d'échange ni physique, aucune carte ou voie, aucune validation ni trace reprise ; annulable : tests/test_duplication_equipement.py, tests_web/test_coque_bureau.py::test_dupliquer_un_equipement_depuis_le_ruban. Défaut corrigé : l'ancienne fonction moteur gardait carte et voie. |
-| V1-5-02 (L136) | Dupliquer, réordonner et déplacer des lignes de variables, avec un ordre stable dans les exports. | absent | Pas de duplication ni de réordonnancement de lignes de variables. |
+| V1-5-02 (L136) | Dupliquer, réordonner et déplacer des lignes de variables, avec un ordre stable dans les exports. | partiel | Ordre d'export par équipement (décision B du 23/11/2026) : ruban › Ordre d'export, appliqué aux tables XSY, Excel, études de télétransmission, formats appris et modèles de livrables, jamais aux adresses ; annulable (`tests/test_ordre_export.py`, `tests_web`). Dupliquer ou déplacer une ligne seule est sans objet : les variables sont produites par le référentiel (on duplique l'équipement). |
 | V1-5-03 (L137) | Sens de chaque variable (lecture, commande, consigne, retour, réserve), affiché et filtrable. | partiel | Famille et accès visibles ; sens lecture / commande / consigne / retour / réserve non affiché comme colonne filtrable. |
 | V1-5-04 (L138) | Profils d'import Excel enregistrés et réutilisables, avec aperçu avant import. | partiel | Aperçu avant import (aller-retour Excel, tests/inbound) et formats appris enregistrés pour l'export ; pas de profils d'import réutilisables. |
 | V1-5-05 (L139) | Création en série d'équipements d'un même type. | partiel | Grille d'ingénierie et aller-retour Excel permettent la saisie en masse ; pas de commande « créer n équipements du même type ». |

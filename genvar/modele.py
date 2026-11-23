@@ -88,6 +88,9 @@ class Equipement:
     valide: bool = False                               # équipement vérifié par l'automaticien (inventaire)
     local: str = ""                                    # lieu physique (local, armoire…)
     attributs: dict = field(default_factory=dict)      # code d'attribut de l'atelier -> valeur (19/11, lot 4)
+    # Ordre des variables dans les EXPORTS (V1-5-02, option B du 23/11) : clés FAMILLE_CODE dans l'ordre voulu ;
+    # vide = ordre du référentiel. N'influence jamais l'adressage.
+    ordre_export: list = field(default_factory=list)
 
     def code_court(self):
         from .modeles import repere_fin

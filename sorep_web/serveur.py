@@ -137,7 +137,7 @@ class Application:
     SANS_HISTORIQUE = {"nouveau", "ouvrir", "fermer", "annuler", "retablir", "supprimer_ouvrage"}
     LIBELLES_ANNULATION = {
         "ajouter_equipement": "ajout d'équipement", "modifier_equipement": "modification d'équipement",
-        "supprimer_equipements": "suppression d'équipements", "dupliquer_equipement": "duplication d'équipement", "deplacer": "déplacement d'équipements",
+        "supprimer_equipements": "suppression d'équipements", "dupliquer_equipement": "duplication d'équipement", "definir_ordre_export": "ordre d'export", "deplacer": "déplacement d'équipements",
         "valider_equipements": "validation d'équipements", "decider_proposition": "décision sur une proposition",
         "configurer_equipement": "configuration d'équipement", "ligne_equipement": "modification d'équipement",
         "fiche_ouvrage": "fiche de l'ouvrage", "definir": "modification de l'ouvrage", "es_definir": "modification d'E/S",
@@ -2046,6 +2046,18 @@ class Application:
         self._sauver()
         return {"ident": base.ident}
 
+    def ordre_export_web(self, q):
+        """V1-5-02 (option B) : variables de l'équipement dans l'ordre d'export ; cet ordre ne touche aucune adresse."""
+        eq = self._eq(str((q or {}).get("ident") or ""))
+        return {"variables": self.s.ordre_export_equipement(eq.ident), "personnalise": bool(eq.ordre_export),
+                "repere": self.s.ouvrage.repere(eq)}
+
+    def definir_ordre_export(self, d):
+        eq = self._eq(str(d.get("ident") or ""))
+        self.s.definir_ordre_export(eq.ident, d.get("cles") or [])
+        self._sauver()
+        return self.ordre_export_web({"ident": eq.ident})
+
     def dupliquer_equipement(self, d):
         """V1-5-01 : copie de l'équipement au numéro libre suivant (ou au numéro demandé), sans aucune adresse."""
         copie = self.s.copie_pour_duplication(self._eq(str(d.get("ident") or "")).ident)
@@ -2470,7 +2482,7 @@ ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle":
               "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre",
               "/api/es": "es", "/api/numero-ouvrage": "numero_ouvrage_suggere",
               "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page",
-              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/grille": "grille_web", "/api/attributs": "attributs_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/formats-appris": "formats_appris_web", "/api/gammes-materiel": "gammes_materiel_web", "/api/revisions": "revisions_web", "/api/journal": "journal_web", "/api/historique": "historique_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
+              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/grille": "grille_web", "/api/attributs": "attributs_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/formats-appris": "formats_appris_web", "/api/gammes-materiel": "gammes_materiel_web", "/api/revisions": "revisions_web", "/api/journal": "journal_web", "/api/equipement/ordre-export": "ordre_export_web", "/api/historique": "historique_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
               "/api/referentiel/synchronisation": "synchronisation_referentiel", "/api/ouvrage/copies": "copies_ouvrage",
               "/api/referentiel/impact": "rapport_impact", "/api/referentiel/propagation": "apercu_propagation",
               "/api/referentiel/apercu-modele": "apercu_modele"}
@@ -2481,7 +2493,7 @@ ROUTES_POST = {"/api/nouveau": "nouveau", "/api/ouvrir": "ouvrir", "/api/fermer"
                "/api/identification/type": "identifier_type",
                "/api/identification/selection": "identifier_selection", "/api/uf": "uf",
                "/api/equipement/ajouter": "ajouter_equipement", "/api/equipement/modifier": "modifier_equipement",
-               "/api/equipement/supprimer": "supprimer_equipements", "/api/equipement/dupliquer": "dupliquer_equipement", "/api/equipement/deplacer": "deplacer", "/api/equipement/valider": "valider_equipements",
+               "/api/equipement/supprimer": "supprimer_equipements", "/api/equipement/dupliquer": "dupliquer_equipement", "/api/equipement/ordre-export/definir": "definir_ordre_export", "/api/equipement/deplacer": "deplacer", "/api/equipement/valider": "valider_equipements",
                "/api/equipement/proposition": "decider_proposition",
                "/api/referentiel/adopter": "adopter_referentiel", "/api/referentiel/revenir-au-standard": "revenir_au_standard", "/api/referentiel/adopter-modele": "adopter_modele", "/api/referentiel/accepter-propagation": "accepter_propagation", "/api/referentiel/refuser-mise-a-jour": "refuser_mise_a_jour", "/api/referentiel/annuler-adoption": "annuler_adoption", "/api/ouvrage/restaurer-copie": "restaurer_copie", "/api/adressage/action": "adressage_action",
                "/api/referentiel/cycle/action": "referentiel_cycle_action",

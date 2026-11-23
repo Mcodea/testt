@@ -514,7 +514,7 @@ def points_exportes(session) -> list:
 
 def elements(session, nature: str) -> list:
     """Ce que le fichier énumère : E/S câblées, ou variables d'échange (télétransmission, IHM)."""
-    return points_exportes(session) if nature == "es_physiques" else list(session.variables())
+    return points_exportes(session) if nature == "es_physiques" else list(session.variables_export())
 
 
 def produire_texte(definition: dict, session, items=None) -> str:

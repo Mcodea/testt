@@ -50,8 +50,12 @@ def lignes(session):
     rang = {e.ident: i for i, e in enumerate(session.equipements_tries())}
     ordre = list(FAMILLES)
     sortie = []
-    for v in sorted(session.variables(), key=lambda v: (rang.get(v.ident_eq, 0),
-                                                       ordre.index(v.famille) if v.famille in ordre else 99, v.nom)):
+    def cle_tri(v):
+        r = session.rang_export(v)                      # ordre d'export choisi pour l'équipement (V1-5-02)
+        if r is not None:
+            return (rang.get(v.ident_eq, 0), r, 0, "")
+        return (rang.get(v.ident_eq, 0), -1, ordre.index(v.famille) if v.famille in ordre else 99, v.nom)
+    for v in sorted(session.variables(), key=cle_tri):
         a, t = auto.get((v.ident_eq, v.cle)), tele.get((v.ident_eq, v.cle))
         adresse = v.adresse or (a.proposee if a else "")
         etat = "Oui" if v.adresse and v.adresse_validee else ("Appliquée" if v.adresse else ("Proposée" if adresse else "Non"))

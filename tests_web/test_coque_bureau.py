@@ -822,6 +822,23 @@ class TestCoqueBureau(ServeurNavigateur):
         self.assertEqual(len(eqs), avant + 1)
         self.assertTrue(any(e['pcf'].endswith('HV02') for e in eqs))
 
+    def test_ordre_d_export_des_variables(self):
+        """V1-5-02 (option B) : l'ordre d'export se règle au ruban de l'équipement ; les adresses ne changent pas."""
+        self.ouvrir('#/inventaire')
+        self.page.locator('#vue [data-v]', has_text='HV01').first.click()
+        self.page.locator('#o-ruban #e-ordre').click()
+        boite = self.page.locator('.boite')
+        boite.locator('#oe-liste li').first.wait_for()
+        premier = boite.locator('#oe-liste li .mono').first.inner_text()
+        boite.locator('#oe-liste [data-sens="1"]').first.click()
+        self.assertEqual(boite.locator('#oe-liste li .mono').nth(1).inner_text(), premier)
+        boite.locator('#oe-ok').click()
+        self.page.wait_for_function("() => [...document.querySelectorAll('#toasts .toast')].some(t => t.textContent.includes('les adresses n'))")
+        ident = next(e['ident'] for e in self.api('/api/ouvrage')['equipements'] if e['pcf'].endswith('HV01'))
+        d = self.api('/api/equipement/ordre-export?ident=' + ident)
+        self.assertTrue(d['personnalise'])
+        self.assertEqual(d['variables'][1]['nom'], premier)
+
     def test_copies_de_sauvegarde_restaurables(self):
         """V1-7-03 : la copie faite avant l'adressage est listée par Fichier › Copies de sauvegarde et restaurée."""
         plan = self.api('/api/adressage')
