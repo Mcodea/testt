@@ -913,6 +913,24 @@ class TestCoqueBureau(ServeurNavigateur):
             self.page.locator('[data-rap-annuler]').first.click()
             self.page.locator('#m-ok').click()
             self.page.wait_for_function("() => !document.querySelector('[data-rap-annuler]')")
+        # Accès TOPKAPI puis information non accessible (motif obligatoire), puis réouverture.
+        ligne = self.page.locator('[data-rap-ligne]').first
+        nom = ligne.get_attribute('data-rap-ligne')
+        ligne.locator('[data-rap-acces]').click()
+        self.page.locator('#ac-adr').fill('%MW900')
+        self.page.locator('#ac-proto').select_option('Modbus TCP')
+        self.page.locator('#ac-ver').check()
+        self.page.locator('#ac-ok').click()
+        self.page.locator(f'[data-rap-ligne="{nom}"] [data-rap-acces]:has-text("Accès vérifié")').wait_for()
+        self.page.locator(f'[data-rap-ligne="{nom}"] [data-rap-nonacc]').click()
+        self.page.locator('#na-ok').click()
+        self.assertIn('motif', self.page.locator('#na-err').inner_text())
+        self.page.locator('#na-motif').fill('Absente du programme')
+        self.page.locator('#na-ok').click()
+        self.page.locator(f'[data-rap-ligne="{nom}"] [data-rap="rouvrir"]').wait_for()
+        self.page.locator(f'[data-rap-ligne="{nom}"] [data-rap="rouvrir"]').click()
+        self.page.locator(f'[data-rap-ligne="{nom}"] [data-rap-nonacc]').wait_for()
+        self.assertGreaterEqual(self.page.locator('.rap-cloture li').count(), 1)
 
     def test_activite_recente_du_tableau_de_bord(self):
         """V1-4-33 : l'activité récente du tableau de bord ne montre que des faits enregistrés (ici un indice livré)."""

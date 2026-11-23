@@ -1352,14 +1352,16 @@ function vueRapprochement() {
     : `<small class="aide">${esc(l.origine || "Association manuelle")}</small>`;
   const ligne = l => {
     const cle = `data-eq="${esc(l.ident_eq)}" data-cle="${esc(l.cle)}"`;
-    const actions = l.non_accessible ? "" : !l.variable_source
+    const actions = l.non_accessible ? `<span class="aide">${esc(l.motif_non_accessible)}</span> <button type="button" data-rap="rouvrir" ${cle}>Rouvrir</button>` : !l.variable_source
       ? (l.candidats.length ? `<select data-rap-assoc ${cle} aria-label="Associer une variable à ${esc(l.nom_standard)}"><option value="">Associer…</option>${l.candidats.map(c => `<option value="${esc(c.variable)}">${esc(c.variable)} · ${c.score}/100</option>`).join("")}</select>` : "")
       : `${l.fonction_validee ? `<button type="button" data-rap="retirer_confirmation" ${cle}>Retirer la confirmation</button>` : `<button type="button" class="prim" data-rap="confirmer" ${cle}>Confirmer</button>`}
+         <button type="button" data-rap-acces ${cle} aria-label="Accès de ${esc(l.nom_standard)}">${l.acces_verifie ? "Accès vérifié" : "Accès…"}</button>
          <button type="button" data-rap="dissocier" ${cle} aria-label="Dissocier ${esc(l.variable_source)}">Dissocier</button>`;
+    const nonAcc = l.non_accessible ? "" : `<button type="button" class="lien" data-rap-nonacc ${cle} aria-label="Déclarer ${esc(l.nom_standard)} non accessible">Non accessible…</button>`;
     return `<tr data-rap-ligne="${esc(l.nom_standard)}"><td class="mono">${esc(l.nom_standard)}<br><small class="aide">${esc(l.repere)} · ${esc(l.information)}</small></td>
       <td class="mono">${esc(l.variable_source || "—")}${l.adresse_source ? `<br><small class="aide">${esc(l.adresse_source)}</small>` : ""}</td>
       <td>${confiance(l)}</td><td><span class="badge ${classeStatut(l.statut)}" title="${esc(l.motif)}">${esc(l.fonction_validee && l.statut === "À compléter" ? "Fonction confirmée" : l.statut)}</span></td>
-      <td class="rap-actions">${actions}</td></tr>`;
+      <td class="rap-actions">${actions} ${nonAcc}</td></tr>`;
   };
   const sansEquipement = !d.equipements, sansTable = d.equipements && !d.lignes.length;
   $("#vue").innerHTML = `<section class="contenu rapprochement">
@@ -1371,6 +1373,7 @@ function vueRapprochement() {
      <button type="button" id="rap-proposer">Proposer les associations</button>
      <button type="button" class="prim" id="rap-lot" ${d.confirmables ? "" : "disabled"} title="${d.confirmables ? "Confirme en un geste les lignes de confiance élevée ; annulable" : "Aucune ligne de confiance élevée à confirmer"}">Confirmer en lot · ${d.confirmables}</button></div></div>
      <div class="compteurs" role="group" aria-label="Filtrer par état"><span class="chip ${filtre ? "" : "on"}" data-rap-etat="">Toutes<b>${d.lignes.length}</b></span>${etats.map(s => `<span class="chip ${filtre === s ? "on" : ""}" data-rap-etat="${esc(s)}">${esc(s)}<b>${b[s] || 0}</b></span>`).join("")}</div>
+     ${d.cloture.length ? `<details class="rap-cloture"><summary>Avant de valider l'ouvrage : ${d.cloture.length} point(s) à traiter</summary><ul>${d.cloture.map(x => `<li>${esc(x)}</li>`).join("")}</ul></details>` : '<p class="aide"><span class="badge b-ok">Table close</span> Toutes les informations sont validées ou déclarées non accessibles.</p>'}
      ${d.lots.length ? `<p class="aide">Confirmations en lot : ${d.lots.map(x => `n° ${x.id} (${x.n} ligne(s), ${esc(x.le.replace("T", " ").slice(0, 16))}) <button type="button" class="lien" data-rap-annuler="${x.id}">Annuler ce lot</button>`).join(" · ")}</p>` : ""}
      <table data-o-tableau="sans-selection" data-o-cle="rapprochement"><thead><tr><th>Information attendue</th><th>Variable du programme</th><th>Confiance et raison</th><th>État</th><th>Action</th></tr></thead>
       <tbody>${visibles.slice(p * PAGE, (p + 1) * PAGE).map(ligne).join("") || '<tr><td colspan="5"><div class="vide">Aucune ligne dans cet état.</div></td></tr>'}</tbody></table>
@@ -1384,7 +1387,27 @@ function vueRapprochement() {
     catch (e) { toast(e.message, true); }
   };
   document.querySelectorAll("[data-rap]").forEach(bt => bt.onclick = () => agir({action: bt.dataset.rap, ident_eq: bt.dataset.eq, cle: bt.dataset.cle},
-    {confirmer: "Fonction confirmée.", retirer_confirmation: "Confirmation retirée.", dissocier: "Variable dissociée."}[bt.dataset.rap]));
+    {confirmer: "Fonction confirmée.", retirer_confirmation: "Confirmation retirée.", dissocier: "Variable dissociée.", rouvrir: "Ligne rouverte."}[bt.dataset.rap]));
+  document.querySelectorAll("[data-rap-nonacc]").forEach(bt => bt.onclick = () => {
+    const m = ouvrirModale(`<div class="boite-tete"><h2>Information non accessible</h2><p>Décision motivée : l'information n'existe pas dans le programme (absente, non câblée, à créer lors des travaux). Aucune adresse n'est inventée.</p></div>
+      <div class="boite-corps std-formulaire"><label for="na-motif">Pourquoi n'est-elle pas accessible ?</label><input id="na-motif" maxlength="200"><div class="erreur-form" id="na-err" role="alert"></div></div>
+      <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="na-ok">Déclarer non accessible</button></div>`);
+    m.querySelector("#na-ok").onclick = () => { const motif = m.querySelector("#na-motif").value.trim(); if (!motif) return m.querySelector("#na-err").textContent = "Indiquez le motif.";
+      fermerModale(); agir({action: "non_accessible", ident_eq: bt.dataset.eq, cle: bt.dataset.cle, motif}, "Information déclarée non accessible."); };
+  });
+  document.querySelectorAll("[data-rap-acces]").forEach(bt => bt.onclick = () => {
+    const l = d.lignes.find(x => x.ident_eq === bt.dataset.eq && x.cle === bt.dataset.cle); if (!l) return;
+    const m = ouvrirModale(`<div class="boite-tete"><h2>Accès TOPKAPI · ${esc(l.nom_standard)}</h2><p>Adresse ou tag effectivement utilisé pour l'acquisition, et protocole. « Vérifié » atteste que l'accès a été essayé dans l'outil de supervision ; modifier l'adresse ou le protocole retire cette attestation.</p></div>
+      <div class="boite-corps std-formulaire"><label for="ac-adr">Adresse ou tag d'acquisition${l.adresse_source ? ` (vide : adresse de la source ${esc(l.adresse_source)})` : ""}</label><input id="ac-adr" class="mono" maxlength="80" value="${esc(l.adresse_acquisition)}">
+       <label for="ac-proto">Protocole</label><select id="ac-proto"><option value="">Celui de l'ouvrage</option>${d.protocoles.map(x => `<option ${x === l.protocole ? "selected" : ""}>${esc(x)}</option>`).join("")}</select>
+       <label><input type="checkbox" id="ac-ver" ${l.acces_verifie ? "checked" : ""}> Accès vérifié dans l'outil de supervision</label><div class="erreur-form" id="ac-err" role="alert"></div></div>
+      <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="ac-ok">Enregistrer</button></div>`);
+    m.querySelector("#ac-ok").onclick = async () => {
+      try { E.rapprochement = await api("/api/rapprochement/action", {action: "acces", ident_eq: l.ident_eq, cle: l.cle, adresse_acquisition: m.querySelector("#ac-adr").value,
+              protocole: m.querySelector("#ac-proto").value, verifie: m.querySelector("#ac-ver").checked}); fermerModale(); toast("Accès enregistré."); vueRapprochement(); }
+      catch (e) { m.querySelector("#ac-err").textContent = e.message; }
+    };
+  });
   document.querySelectorAll("[data-rap-assoc]").forEach(s => s.onchange = () => s.value && agir({action: "associer", ident_eq: s.dataset.eq, cle: s.dataset.cle, variable: s.value}, "Variable associée : à confirmer."));
   document.querySelectorAll("[data-rap-etat]").forEach(c => c.onclick = () => { E.rapFiltre = c.dataset.rapEtat; E.rapPage = 0; vueRapprochement(); });
   document.querySelectorAll("[data-rap-annuler]").forEach(bt => bt.onclick = () => confirmer("Annuler cette confirmation en lot ?", "Chaque ligne encore confirmée avec la même source redevient « à confirmer ».", "Annuler le lot",
@@ -2962,9 +2985,10 @@ function modaleImport(natureInitiale = "inventaire", reprise = null) {
   let profils = {profils: [], champs: {}};
   const chargerProfils = async (choisi = "") => {
     try { profils = await api("/api/profils-import"); } catch (_) { profils = {profils: [], champs: {}}; }
+    const garde = choisi || profilSel.value;          // un profil déjà choisi n'est pas perdu par un rechargement de la liste
     const propres = profils.profils.filter(p => p.nature === select.value);
     profilSel.innerHTML = '<option value="">Reconnaissance automatique</option>' + propres.map(p => `<option value="${esc(p.ident)}">${esc(p.nom)}</option>`).join("");
-    profilSel.value = propres.some(p => p.ident === choisi) ? choisi : "";
+    profilSel.value = propres.some(p => p.ident === garde) ? garde : "";
     profilSup.hidden = !profilSel.value;
   };
   let sourceReprise = reprise ? reprise.source : null;     // fichier déjà lu : on revient ici après avoir décrit ses colonnes

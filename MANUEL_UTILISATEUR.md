@@ -140,6 +140,9 @@ Pour un ouvrage en mode **Existant**, Ouvrage › **Rapprochement** relit le pro
 à télétransmettre, puis **propose** la variable du programme qui la porte. Chaque proposition affiche son niveau de
 confiance (« élevée » ou « à rapprocher manuellement ») et sa raison. Rien n'est appliqué sans votre geste : *Confirmer*
 une ligne, ou *Confirmer en lot* pour les seules confiances élevées (le lot est tracé et peut être annulé).
+Chaque ligne a aussi son **accès** (adresse ou tag d'acquisition, protocole, « vérifié » une fois essayé dans l'outil de
+supervision) et peut être déclarée **non accessible** avec un motif obligatoire. Le bandeau « Avant de valider l'ouvrage »
+liste ce qui reste à traiter.
 
 ## 6. Référentiel métier
 

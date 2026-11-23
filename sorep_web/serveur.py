@@ -1090,7 +1090,8 @@ class Application:
                 "nom_standard": v.nom_standard, "famille": v.famille, "sens": v.sens, "statut": v.statut, "motif": v.motif,
                 "variable_source": v.variable_source, "type_source": v.type_source, "adresse_source": v.adresse_source,
                 "registre": v.registre, "fonction_validee": l.fonction_validee, "acces_verifie": l.acces_verifie,
-                "non_accessible": l.non_accessible, "origine": l.origine_association,
+                "adresse_acquisition": l.adresse_acquisition, "protocole": l.protocole, "protocole_effectif": v.protocole,
+                "non_accessible": l.non_accessible, "motif_non_accessible": l.motif_non_accessible, "origine": l.origine_association,
                 "confiance": courante.confiance if courante else "", "raison": courante.raison if courante else "",
                 "score": courante.score if courante else None,
                 "candidats": [{"variable": p.variable_nom, "score": p.score, "confiance": p.confiance, "raison": p.raison,
@@ -1101,10 +1102,12 @@ class Application:
                      "numero": d.numero, "se": d.sous_ensemble, "noms": list(d.variables[:3])}
                     for d in self.s.equipements_detectes()]
         return {"lignes": lignes, "bilan": tt.bilan(o, self.s.catalogue), "confirmables": len(self.s.confirmables_en_lot()),
-                "lots": lots, "detectes": detectes, "variables": len(o.existantes), "equipements": len(o.equipements)}
+                "lots": lots, "detectes": detectes, "variables": len(o.existantes), "equipements": len(o.equipements),
+                "cloture": tt.verifier_cloture(o, self.s.catalogue), "protocoles": [x for x in tt.PROTOCOLES if x]}
 
     def rapprochement_action(self, d):
-        """construire, detectes, proposer, associer, dissocier, confirmer, retirer_confirmation, lot, annuler_lot."""
+        """construire, detectes, proposer, associer, dissocier, confirmer, retirer_confirmation, acces, non_accessible, rouvrir,
+        lot, annuler_lot."""
         self._ouvrage_existant()
         d = d or {}
         action, ident, cle = d.get("action"), str(d.get("ident_eq") or ""), str(d.get("cle") or "")
@@ -1127,6 +1130,14 @@ class Application:
             self.s.valider_fonction(ident, cle, True)
         elif action == "retirer_confirmation":
             self.s.valider_fonction(ident, cle, False)
+        elif action == "acces":
+            verifie = d.get("verifie")
+            self.s.definir_acces(ident, cle, adresse_acquisition=str(d.get("adresse_acquisition") or ""),
+                                 protocole=str(d.get("protocole") or ""), verifie=None if verifie is None else bool(verifie))
+        elif action == "non_accessible":
+            self.s.declarer_non_accessible(ident, cle, str(d.get("motif") or ""))
+        elif action == "rouvrir":
+            self.s.reouvrir(ident, cle)
         elif action == "lot":
             if self.s.confirmer_en_lot() is None:
                 raise RegleMetier("Aucune ligne de confiance élevée à confirmer.")

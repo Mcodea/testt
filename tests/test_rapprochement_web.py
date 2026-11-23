@@ -22,7 +22,7 @@ def _neuf(dossier):
     return app
 
 
-class TestRapprochementWeb(unittest.TestCase):
+class _Base(unittest.TestCase):
     def setUp(self):
         self.ancien = os.environ.get("SOREP_DATA_DIR")
         self.a = tempfile.TemporaryDirectory(prefix="ogias-rap-a-")
@@ -56,6 +56,8 @@ class TestRapprochementWeb(unittest.TestCase):
         self.app.appeler("rapprochement_action", {"action": "detectes", "cles": [x["cle"] for x in d["detectes"]]})
         return self.app.appeler("rapprochement_action", {"action": "proposer"})
 
+
+class TestRapprochementWeb(_Base):
     def test_reserve_aux_projets_existants(self):
         neuf = Application()
         neuf.appeler("nouveau", {"mode": "Neuf"})
@@ -119,3 +121,40 @@ class TestRapprochementWeb(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestAccesEtCloture(_Base):
+    """Accès TOPKAPI, information non accessible et points restant avant la clôture."""
+
+    def test_acces_verifie_exige_adresse_et_protocole_et_se_retire_si_modifie(self):
+        d = self.preparer()
+        l = next(x for x in d["lignes"] if x["variable_source"])
+        cle = {"ident_eq": l["ident_eq"], "cle": l["cle"]}
+        with self.assertRaisesRegex(RegleMetier, "protocole"):
+            self.app.appeler("rapprochement_action", {"action": "acces", **cle, "adresse_acquisition": "%MW500", "verifie": True})
+        r = self.app.appeler("rapprochement_action", {"action": "acces", **cle, "adresse_acquisition": "%MW500",
+                                                       "protocole": "Modbus TCP", "verifie": True})
+        c = next(x for x in r["lignes"] if x["cle"] == l["cle"] and x["ident_eq"] == l["ident_eq"])
+        self.assertTrue(c["acces_verifie"])
+        self.assertEqual((c["adresse_acquisition"], c["protocole"]), ("%MW500", "Modbus TCP"))
+        r = self.app.appeler("rapprochement_action", {"action": "acces", **cle, "adresse_acquisition": "%MW501", "protocole": "Modbus TCP"})
+        c = next(x for x in r["lignes"] if x["cle"] == l["cle"] and x["ident_eq"] == l["ident_eq"])
+        self.assertFalse(c["acces_verifie"])                       # modifier l'accès retire l'attestation
+
+    def test_non_accessible_exige_un_motif_et_se_rouvre(self):
+        d = self.preparer()
+        l = next(x for x in d["lignes"] if x["variable_source"])
+        cle = {"ident_eq": l["ident_eq"], "cle": l["cle"]}
+        with self.assertRaisesRegex(RegleMetier, "pourquoi"):
+            self.app.appeler("rapprochement_action", {"action": "non_accessible", **cle, "motif": "  "})
+        r = self.app.appeler("rapprochement_action", {"action": "non_accessible", **cle, "motif": "Absente du programme"})
+        c = next(x for x in r["lignes"] if x["cle"] == l["cle"] and x["ident_eq"] == l["ident_eq"])
+        self.assertEqual((c["statut"], c["variable_source"], c["motif_non_accessible"]), ("Non accessible", "", "Absente du programme"))
+        r = self.app.appeler("rapprochement_action", {"action": "rouvrir", **cle})
+        c = next(x for x in r["lignes"] if x["cle"] == l["cle"] and x["ident_eq"] == l["ident_eq"])
+        self.assertFalse(c["non_accessible"])
+
+    def test_cloture_liste_les_points_restants(self):
+        d = self.preparer()
+        self.assertTrue(d["cloture"])
+        self.assertTrue(any("ligne(s)" in x for x in d["cloture"]), d["cloture"])
