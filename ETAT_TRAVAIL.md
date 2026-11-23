@@ -36,7 +36,7 @@ industrielle du 16/11) et sortent du calcul.
 
 **Avancement : 44 % au sens strict (67 / 151), 64 % en comptant un « partiel » pour moitié.**
 
-Écarts nets relevés (absents), traitables sans attendre l'utilisateur : notes de version 1.0 (V1-9-11), version 1.0.0 et étiquettes (V1-10-19 à 21), compte rendu V1.0 (V1-10-28 à 34).
+Écarts nets relevés (absents), traitables sans attendre l'utilisateur : version 1.0.0 et étiquettes (V1-10-19 à 21), compte rendu V1.0 (V1-10-28 à 34).
 
 Décision requise : **licences** (V1-11-05). PyMuPDF (AGPL-3.0) a été remplacé par pdfminer.six (MIT) le 23/11 ;
 reste PySide6 (LGPL-3.0), qui ne sert qu'à l'ancienne interface Qt : proposition de ne plus la livrer.
@@ -384,7 +384,7 @@ le défaut démontré et obtenir une CI verte. Codex reste actif sur ce point.
 | V1-9-08 (L194) | GUIDE_ADMINISTRATEUR ; | fait | GUIDE_ADMINISTRATEUR.md (installation, sécurité, données, sauvegarde, verrou, journal, mise à jour) : tests/test_documentation.py::test_guide_administrateur_coherent_avec_le_code. |
 | V1-9-09 (L195) | REGLES_DE_NOMMAGE, générées depuis le référentiel ; | partiel | outils/documenter_referentiel.py génère la documentation du référentiel ; fichier REGLES_DE_NOMMAGE non produit. |
 | V1-9-10 (L196) | CHANGELOG.md, au format Keep a Changelog ; | fait | CHANGELOG.md au format Keep a Changelog : tests/test_documentation.py::test_journal_des_modifications_au_format_keep_a_changelog. |
-| V1-9-11 (L197) | NOTES_DE_VERSION_1.0 ; | absent | NOTES_DE_VERSION_1.0 absentes. |
+| V1-9-11 (L197) | NOTES_DE_VERSION_1.0 ; | partiel | NOTES_DE_VERSION_1.0.md rédigées (nouveautés, limites connues) : tests/test_documentation.py::test_documents_attendus ; à finaliser avec le numéro 1.0.0 à la livraison. |
 | V1-9-12 (L198) | COMPATIBILITE.md ; | partiel | COMPATIBILITE.md présent ; aucune compatibilité déclarée faute d'essai réel (conforme). |
 | V1-9-13 (L199) | LICENCES_TIERCES.md. | fait | LICENCES_TIERCES.md : chaque bibliothèque livrée et chaque ressource embarquée avec sa licence (tests/test_documentation.py::test_chaque_bibliotheque_livree_a_sa_licence) ; les écarts au cahier sont suivis par V1-11-05. |
 | V1-10-01 (L203) | **Intégration continue GitHub Actions**, à chaque push et chaque pull request, sous Windows et Linux : | partiel | .github/workflows/ci.yml ; Actionlint 1.7.7 valide ; exécutions GitHub Windows/Linux encore à observer. |

@@ -9,7 +9,7 @@ RACINE = Path(__file__).resolve().parents[1]
 class TestDocumentation(unittest.TestCase):
     def test_documents_attendus(self):
         for nom in ("MANUEL_UTILISATEUR.md", "MANUEL_UTILISATEUR.pdf", "GUIDE_ADMINISTRATEUR.md", "CHANGELOG.md",
-                    "LICENCES_TIERCES.md", "COMPATIBILITE.md", "LICENCE.md"):
+                    "LICENCES_TIERCES.md", "COMPATIBILITE.md", "LICENCE.md", "NOTES_DE_VERSION_1.0.md"):
             with self.subTest(nom=nom):
                 self.assertTrue((RACINE / nom).is_file(), nom)
         self.assertTrue((RACINE / "MANUEL_UTILISATEUR.pdf").read_bytes().startswith(b"%PDF"))
