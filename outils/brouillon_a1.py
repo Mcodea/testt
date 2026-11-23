@@ -34,8 +34,8 @@ def construire():
     """(donnees du candidat, rapport) : renommages approuvés appliqués à une COPIE du référentiel livré."""
     decision = json.loads(DECISION.read_text(encoding="utf-8"))
     refuses = set(decision["renommages_refuses"])
-    catalogue = json.loads((RACINE / "genvar/data/catalogue_defaut.json").read_text(encoding="utf-8"))
-    modeles = json.loads((RACINE / "genvar/data/referentiel_modeles.json").read_text(encoding="utf-8"))
+    catalogue = json.loads((RACINE / "validation/referentiel/avant_a1/catalogue_defaut.json").read_text(encoding="utf-8"))
+    modeles = json.loads((RACINE / "validation/referentiel/avant_a1/referentiel_modeles.json").read_text(encoding="utf-8"))
     cat, sig, _, bibliotheque, _ = apercu_a1._donnees()
     apercu = apercu_a1.calculer()
     candidat = {"catalogue": copy.deepcopy(catalogue), "modeles": copy.deepcopy(modeles)}
@@ -116,8 +116,8 @@ def controler(candidat) -> dict:
 
 def _rapport(candidat, rapport, c) -> str:
     l = ["# Brouillon A1 : renommages approuvés", "",
-         "Généré par `outils/brouillon_a1.py` : ne pas modifier à la main. **Candidat non publié** : le référentiel livré "
-         "(`genvar/data/`) est inchangé, aucun ajout n'est appliqué, aucun ouvrage n'est touché.", "",
+         "Généré par `outils/brouillon_a1.py` : ne pas modifier à la main. **Publié le 23/11/2026** (autorisation de l'utilisateur) : "
+         "`genvar/data/` reprend ce candidat ; l'état d'avant est conservé dans `validation/referentiel/avant_a1/`. Aucun ajout n'est appliqué, aucun ouvrage n'est touché.", "",
          f"- Clés de signaux renommées dans le candidat : **{len(rapport['appliques'])}** (pour les 38 renommages approuvés sur 57 ; refusés : {len(rapport['refuses'])}).",
          f"- Ajouts : **{rapport['ajouts_non_appliques']} non appliqués** (aucune réponse de l'utilisateur).",
          f"- Contrôles du dépôt de référentiel : {len(c['erreurs'])} erreur(s), {len(c['alertes'])} alerte(s) ; "

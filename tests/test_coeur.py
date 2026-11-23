@@ -46,13 +46,13 @@ class TestCoeur(unittest.TestCase):
         self.assertEqual(x.type_es, "EBOOL")
         pts = {p.nom: p for p in generer_points(self.o, self.cat)}
         self.assertIn("ET_XT25RV11PM01_MA", pts)              # organe MA : pas de répétition
-        self.assertIn("ET_XT25RV11PM01_DEFTH", pts)
+        self.assertIn("ET_XT25RV11PM01_DEF_TH", pts)
         self.assertIn("ST_XT25RV11MV03_OUV", pts)             # sortie : pas de code d'organe
         self.assertIn("EA_XT25RV11LT01_NIV", pts)
         self.assertEqual(pts["ET_XT25RV11MV03_FER"].commentaire, "Vanne motorisée MV03 – ET Fin de course fermée")
         # sens fonctionnel : la mesure remonte par une EA, la consigne descend par une SA
-        self.assertEqual(pts["EA_XT25RV11PM01_FREQ"].variable, "TM_XT25RV11PM01_FREQ")
-        self.assertEqual(pts["SA_XT25RV11PM01_FREQ"].variable, "TR_XT25RV11PM01_FREQ")   # E/S distincte de la TR (référentiel V1)
+        self.assertEqual(pts["EA_XT25RV11PM01_FRQ"].variable, "TM_XT25RV11PM01_FREQ")
+        self.assertEqual(pts["SA_XT25RV11PM01_CONS_FRQ"].variable, "TR_XT25RV11PM01_FREQ")   # E/S distincte de la TR (référentiel V1)
 
     def test_sens_fonctionnel(self):
         from genvar.catalogue import sens_incoherent

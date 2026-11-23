@@ -1,6 +1,6 @@
 # Règles de nommage OGIAS
 
-Document généré par `outils/documenter_regles_nommage.py` depuis le code et le référentiel livrés (« 2026-11-11 référentiel V2 (noms physiques, CT consolidé dans FT, règles documentaires, profil VANNE_MV) ») : ne pas modifier à la main. Les exemples sont fictifs (lieu XTST).
+Document généré par `outils/documenter_regles_nommage.py` depuis le code et le référentiel livrés (« 2026-11-11 référentiel V2 (noms physiques, CT consolidé dans FT, règles documentaires, profil VANNE_MV) + A1 (39 renommages approuvés) ») : ne pas modifier à la main. Les exemples sont fictifs (lieu XTST).
 
 ## 1. Repères
 

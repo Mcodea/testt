@@ -97,7 +97,7 @@ class TestCartesES(unittest.TestCase):
         s.implanter_es()
         apres = {p.nom: p.adresse for p in self.es().values()}
         self.assertTrue(all(apres[k] == v for k, v in avant.items()))
-        self.assertTrue(apres["ET_S2E0AR01_MQU"])
+        self.assertTrue(apres["ET_S2E0AR01_MQ_U"])
         # libérer les voies proposées : la validée reste
         s.liberer_voies_proposees()
         es = self.es()

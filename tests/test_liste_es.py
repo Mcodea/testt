@@ -55,10 +55,10 @@ class TestListeES(unittest.TestCase):
         es = self.es()
         for nom in ("ET_F999RV11MV03_OUV", "ET_F999RV11MV03_FER", "ET_F999RV11MV03_BP_OUV",
                     "ET_F999RV11MV03_BP_FER", "ST_F999RV11MV03_OUV", "ST_F999RV11MV03_FER",
-                    "EA_F999RV11CU01_NIV", "ET_F999RV11CU01_PH", "EA_F999RV11PM02_FREQ", "SA_F999RV11PM02_FREQ",
+                    "EA_F999RV11CU01_NIV", "ET_F999RV11CU01_NIV_H", "EA_F999RV11PM02_FRQ", "SA_F999RV11PM02_CONS_FRQ",
                     "ET_F999RV11FT01_IMP", "EA_F999RV11PT01_PRE"):
             self.assertIn(nom, es)
-        self.assertNotIn("EA_F999RV11PM01_FREQ", es)               # pompe directe : pas de variateur
+        self.assertNotIn("EA_F999RV11PM01_FRQ", es)               # pompe directe : pas de variateur
         self.assertNotIn("ET_F999RV11CU01_TP", es)                 # option trop-plein non choisie
         self.assertEqual(es["ET_F999RV11MV03_BP_OUV"].variable, "")  # bouton local : E/S locale
         self.assertEqual(es["ET_F999RV11MV03_OUV"].variable, "TS_F999RV11MV03_OUV")
@@ -80,10 +80,10 @@ class TestListeES(unittest.TestCase):
         with self.assertRaises(RegleMetier):
             s.definir_es(r.ident_eq, r.cle, type_logique="REAL")   # type impossible pour une ET
         # information par communication : distinguée du câblé, sans adresse exigée
-        f = es["EA_F999RV11PM02_FREQ"]
+        f = es["EA_F999RV11PM02_FRQ"]
         s.definir_es(f.ident_eq, f.cle, raccordement="Communication", validee=True)
-        self.assertEqual(self.es()["EA_F999RV11PM02_FREQ"].raccordement, "Communication")
-        self.assertFalse(any("EA_F999RV11PM02_FREQ : adresse physique" in a.message for a in s.anomalies()))
+        self.assertEqual(self.es()["EA_F999RV11PM02_FRQ"].raccordement, "Communication")
+        self.assertFalse(any("EA_F999RV11PM02_FRQ : adresse physique" in a.message for a in s.anomalies()))
         # 7. équipement personnalisé + E/S ajoutée à la main
         s.ajouter_equipement(Equipement("11", "KM", "01", uf="UF02"))
         cle = s.ajouter_es(self.mv.ident, "ET", "DEF_COUPLE", "Défaut couple actionneur")

@@ -85,7 +85,7 @@ class TestFT(Base):
 
     def test_combine_defaut_et_sens(self):
         _, _, points, noms = self.ft([OPT_IMP, OPT_DEF, OPT_SENS])
-        self.assertEqual(sorted(points), ["EA_RV01FT01_DEB", "ET_RV01FT01_DEF_EXT", "ET_RV01FT01_IMP",
+        self.assertEqual(sorted(points), ["EA_RV01FT01_DEB", "ET_RV01FT01_DEF", "ET_RV01FT01_IMP",
                                           "ET_RV01FT01_SENS"])
         self.assertEqual(noms.count("CP_RV01FT01_VOL"), 1)        # FT-03 et FT-04 : un seul volume
         self.assertIn("TS_RV01FT01_DEF", noms)

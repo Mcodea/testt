@@ -1,6 +1,6 @@
 # Brouillon A1 : renommages approuvés
 
-Généré par `outils/brouillon_a1.py` : ne pas modifier à la main. **Candidat non publié** : le référentiel livré (`genvar/data/`) est inchangé, aucun ajout n'est appliqué, aucun ouvrage n'est touché.
+Généré par `outils/brouillon_a1.py` : ne pas modifier à la main. **Publié le 23/11/2026** (autorisation de l'utilisateur) : `genvar/data/` reprend ce candidat ; l'état d'avant est conservé dans `validation/referentiel/avant_a1/`. Aucun ajout n'est appliqué, aucun ouvrage n'est touché.
 
 - Clés de signaux renommées dans le candidat : **39** (pour les 38 renommages approuvés sur 57 ; refusés : 19).
 - Ajouts : **49 non appliqués** (aucune réponse de l'utilisateur).

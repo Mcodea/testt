@@ -30,7 +30,7 @@ class TestApercuA1(unittest.TestCase):
 
     def test_aucun_ajout_n_est_deja_dans_le_catalogue_et_chaque_renommage_part_d_un_signal_existant(self):
         d = _outil().calculer()
-        catalogue = json.loads((RACINE / "genvar/data/catalogue_defaut.json").read_text(encoding="utf-8"))
+        catalogue = json.loads((RACINE / "validation/referentiel/avant_a1/catalogue_defaut.json").read_text(encoding="utf-8"))
         existants = {(s["type"], s["es"], s["code"]) for s in catalogue["signaux"]}
         for a in d["ajouts"]:
             self.assertNotIn((a["type"], a["nature"], a["code"]), existants, a["id"])
@@ -39,7 +39,7 @@ class TestApercuA1(unittest.TestCase):
             self.assertNotEqual(r["code_actuel"], r["code_propose"])
 
     def test_la_generation_ne_modifie_pas_le_catalogue_livre(self):
-        chemin = RACINE / "genvar/data/catalogue_defaut.json"
+        chemin = RACINE / "validation/referentiel/avant_a1/catalogue_defaut.json"
         avant = hashlib.sha256(chemin.read_bytes()).hexdigest()
         _outil().calculer()
         self.assertEqual(hashlib.sha256(chemin.read_bytes()).hexdigest(), avant)

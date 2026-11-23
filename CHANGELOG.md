@@ -15,8 +15,9 @@ Le numéro de version (`genvar/__init__.py`) est encore 0.32 ; il passera à 1.0
   ouvert sur un autre poste, qui ne peut alors plus enregistrer.
 - **Journal technique** tournant, consultable par Aide › Journal technique.
 - **Dupliquer un équipement** au ruban : numéro libre suivant, aucune adresse ni voie reprise.
-- **Brouillon A1** : les 38 renommages approuvés le 23/11 sont appliqués à un référentiel candidat (`validation/referentiel/brouillon_a1/`),
-  non publié ; aucun ajout appliqué (sans réponse).
+- **Publication A1 (23/11/2026)** : les 38 renommages approuvés (39 clés) sont publiés dans le référentiel livré ; PD.SA.TAUX devient
+  `CONS_TAU` et PM.SA.CONS_FREQ `CONS_FRQ` (suffixe_es). Les ouvrages existants gardent leur référentiel figé et adoptent la révision
+  volontairement, adresses conservées. Les 49 ajouts, sans réponse, ne sont pas publiés. État d'avant : `validation/referentiel/avant_a1/`.
 - **Aperçu A1** des 57 renommages et 49 ajouts du référentiel à approuver (`docs/APERCU_A1_A_APPROUVER.md` et `.xlsx`, générés par
   `outils/apercu_a1.py`) : rien n'est appliqué sans accord.
 - **Ouvrage d'exemple fictif** livré à part (`exemples/`, généré par `outils/generer_exemple.py`).

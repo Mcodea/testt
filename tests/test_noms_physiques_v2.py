@@ -8,7 +8,9 @@ from genvar.modele import Equipement, generer, generer_points, suffixe_physique
 from genvar.session import Session
 
 SUFFIXES = {"MV.ES_FDC_OUV": "OUV", "MV.ES_FDC_FER": "FER", "MV.ES_CONS_POS": "POS", "PM.ES_CMD_MA": "MA",
-            "PM.ES_CONS_FREQ": "FREQ"}
+            "PM.ES_CONS_FRQ": "CONS_FRQ"}
+# Exceptions décidées par l'utilisateur le 23/11/2026 (décision A1) : nom physique de la bibliothèque V1 ≠ code fonctionnel.
+EXCEPTIONS_A1 = {"PD.TR_TAU": "CONS_TAU"}
 FDC = {"CL.TS_OUV", "DJ.TS_FER", "EV.TS_OUV", "EV.TS_FER", "IS.TS_FER", "SV.TS_OUV", "SV.TS_FER", "XV.TS_OUV",
        "XV.TS_FER"}
 
@@ -21,8 +23,8 @@ class TestReferentielLivre(unittest.TestCase):
     def setUp(self):
         self.cat = Catalogue.charger(chemins.fichier_catalogue_origine())
 
-    def test_suffixe_es_seulement_sur_les_cinq_collisions(self):
-        self.assertEqual({_cle(s): s["suffixe_es"] for s in self.cat.signaux if s.get("suffixe_es")}, SUFFIXES)
+    def test_suffixe_es_seulement_sur_les_collisions_et_les_exceptions_a1(self):
+        self.assertEqual({_cle(s): s["suffixe_es"] for s in self.cat.signaux if s.get("suffixe_es")}, {**SUFFIXES, **EXCEPTIONS_A1})
 
     def test_organe_fdc_retire_des_neuf_signaux_uniques(self):
         restants = {_cle(s) for s in self.cat.signaux if s.get("organe") == "FDC"}

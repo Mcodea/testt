@@ -10005,6 +10005,279 @@
    "type_nouveau": "FT",
    "nouvelle": "TS_ABSIMP",
    "motif": "D2 : CT consolidé dans FT."
+  },
+  {
+   "type": "AR",
+   "ancienne": "TM_TEMP",
+   "type_nouveau": "AR",
+   "nouvelle": "TM_TMP",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "AR",
+   "ancienne": "TS_ISOL",
+   "type_nouveau": "AR",
+   "nouvelle": "TS_DEF_ISOL",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "AR",
+   "ancienne": "TS_MQ24",
+   "type_nouveau": "AR",
+   "nouvelle": "TS_MQ_24V",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "AR",
+   "ancienne": "TS_MQU",
+   "type_nouveau": "AR",
+   "nouvelle": "TS_MQ_U",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "AR",
+   "ancienne": "TS_PARAF",
+   "type_nouveau": "AR",
+   "nouvelle": "TS_DEF_PARAF",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "AR",
+   "ancienne": "TS_VENTIL",
+   "type_nouveau": "AR",
+   "nouvelle": "TS_DEF_VENT",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "CU",
+   "ancienne": "ES_PB",
+   "type_nouveau": "CU",
+   "nouvelle": "ES_NIV_B",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "CU",
+   "ancienne": "ES_PH",
+   "type_nouveau": "CU",
+   "nouvelle": "ES_NIV_H",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "CU",
+   "ancienne": "ES_PTB",
+   "type_nouveau": "CU",
+   "nouvelle": "ES_NIV_TB",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "CU",
+   "ancienne": "ES_PTH",
+   "type_nouveau": "CU",
+   "nouvelle": "ES_NIV_TH",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "CU",
+   "ancienne": "ES_TP",
+   "type_nouveau": "CU",
+   "nouvelle": "ES_NIV_TP",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "EL",
+   "ancienne": "TS_DALIM",
+   "type_nouveau": "EL",
+   "nouvelle": "TS_DEF_ALIM",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "FT",
+   "ancienne": "ES_DEF_EXT",
+   "type_nouveau": "FT",
+   "nouvelle": "ES_DEF",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "IV",
+   "ancienne": "TS_POSN",
+   "type_nouveau": "IV",
+   "nouvelle": "TS_POS_RES",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "IV",
+   "ancienne": "TS_POSS",
+   "type_nouveau": "IV",
+   "nouvelle": "TS_POS_SEC",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "LS",
+   "ancienne": "TS_ARP",
+   "type_nouveau": "LS",
+   "nouvelle": "TS_NIV_ARP",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "LS",
+   "ancienne": "TS_H",
+   "type_nouveau": "LS",
+   "nouvelle": "TS_NIV_H",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "LS",
+   "ancienne": "TS_MAP1",
+   "type_nouveau": "LS",
+   "nouvelle": "TS_NIV_MAP1",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "LS",
+   "ancienne": "TS_MAP2",
+   "type_nouveau": "LS",
+   "nouvelle": "TS_NIV_MAP2",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "LS",
+   "ancienne": "TS_TB",
+   "type_nouveau": "LS",
+   "nouvelle": "TS_NIV_TB",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "LS",
+   "ancienne": "TS_TH",
+   "type_nouveau": "LS",
+   "nouvelle": "TS_NIV_TH",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "OD",
+   "ancienne": "TS_SBAT",
+   "type_nouveau": "OD",
+   "nouvelle": "TS_SUR_BAT",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "PD",
+   "ancienne": "TM_TAUX",
+   "type_nouveau": "PD",
+   "nouvelle": "TM_TAU",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "PD",
+   "ancienne": "TR_TAUX",
+   "type_nouveau": "PD",
+   "nouvelle": "TR_TAU",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "PD",
+   "ancienne": "RTR_TAUX",
+   "type_nouveau": "PD",
+   "nouvelle": "RTR_TAU",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "PM",
+   "ancienne": "ES_FREQ",
+   "type_nouveau": "PM",
+   "nouvelle": "ES_FRQ",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "PM",
+   "ancienne": "ES_DEFTH",
+   "type_nouveau": "PM",
+   "nouvelle": "ES_DEF_TH",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "PM",
+   "ancienne": "ES_DEFVAR",
+   "type_nouveau": "PM",
+   "nouvelle": "ES_DEF_VAR",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "PM",
+   "ancienne": "ES_CONS_FREQ",
+   "type_nouveau": "PM",
+   "nouvelle": "ES_CONS_FRQ",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "RP",
+   "ancienne": "TM_PAM",
+   "type_nouveau": "RP",
+   "nouvelle": "TM_PRE_AM",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "RP",
+   "ancienne": "TM_PAV",
+   "type_nouveau": "RP",
+   "nouvelle": "TM_PRE_AV",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "SP",
+   "ancienne": "TS_MQEAU",
+   "type_nouveau": "SP",
+   "nouvelle": "TS_MQ_EAU",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "SV",
+   "ancienne": "TS_DEFCPL",
+   "type_nouveau": "SV",
+   "nouvelle": "TS_DEF_CPL",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "TR",
+   "ancienne": "TS_DEFTEMP",
+   "type_nouveau": "TR",
+   "nouvelle": "TS_DEF_TMP",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "TR",
+   "ancienne": "TS_STEN",
+   "type_nouveau": "TR",
+   "nouvelle": "TS_PRES_U",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "TT",
+   "ancienne": "ES_TEMP",
+   "type_nouveau": "TT",
+   "nouvelle": "ES_TMP",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "VE",
+   "ancienne": "TS_MAGV",
+   "type_nouveau": "VE",
+   "nouvelle": "TS_MA_GV",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "VE",
+   "ancienne": "TS_MAPV",
+   "type_nouveau": "VE",
+   "nouvelle": "TS_MA_PV",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
+  },
+  {
+   "type": "XV",
+   "ancienne": "TS_DEFCPL",
+   "type_nouveau": "XV",
+   "nouvelle": "TS_DEF_CPL",
+   "motif": "A1 approuvé le 23/11/2026 : renommage pour harmoniser le code de l'E/S avec la bibliothèque V1."
   }
  ]
 }

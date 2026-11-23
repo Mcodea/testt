@@ -140,7 +140,7 @@ class TestPompes(Base):
         for nom in ("TM_F999RV11PM01_FREQ", "TR_F999RV11PM01_FREQ", "RTR_F999RV11PM01_FREQ", "TS_F999RV11PM01_DEFVAR",
                     "TC_F999RV11PM01_MA"):
             self.assertIn(nom, n)
-        self.assertEqual(n["TR_F999RV11PM01_FREQ"].nom_es, "SA_F999RV11PM01_FREQ")
+        self.assertEqual(n["TR_F999RV11PM01_FREQ"].nom_es, "SA_F999RV11PM01_CONS_FRQ")
         self.assertEqual(n["TM_F999RV11PM01_FREQ"].type_logique, "REAL")
         p = self.props(pm)
         self.assertEqual(p["RTR_FREQ"].etat, "retenu")
@@ -165,7 +165,7 @@ class TestMesures(Base):
         self.assertEqual(p["TS_DISCMES"].etat, "proposé")
         self.assertEqual(p["TS_INCOH"].etat, "proposé")
         n = self.noms(cu)
-        self.assertEqual(n["TS_F999RV11CU01_H"].nom_es, "ET_F999RV11CU01_PH")
+        self.assertEqual(n["TS_F999RV11CU01_H"].nom_es, "ET_F999RV11CU01_NIV_H")
         self.assertEqual(n["TM_F999RV11CU01_NIV"].nom_es, "EA_F999RV11CU01_NIV")
         # cuve avec mesure seule : seuils calculés proposés, pas de contact
         cu2 = self.eq("CU", "02", options=["Mesure de niveau"])

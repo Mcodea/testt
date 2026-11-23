@@ -111,7 +111,7 @@ class TestElectrovanne(Base):
 
 
 class TestPompe(Base):
-    ES_BASE = {"ES_MA", "ES_DEFTH", "ES_LOC"}
+    ES_BASE = {"ES_MA", "ES_DEF_TH", "ES_LOC"}
 
     def test_pompe_non_commandee(self):
         s = session()

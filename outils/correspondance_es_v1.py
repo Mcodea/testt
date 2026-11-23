@@ -35,6 +35,7 @@ def charger():
 def rapprocher(signaux, bibliotheque):
     criteres = (
         ("code", lambda s: s["code"], lambda x: x["Code"]),
+        ("suffixe d'E/S", lambda s: s.get("suffixe_es") or "", lambda x: x["Code"]),
         ("code d'origine", lambda s: s["code"], lambda x: x["Code d'origine"]),
         ("télétransmission", lambda s: f"{s['famille']}_{s['code']}", lambda x: x["Télétransmission"]),
     )

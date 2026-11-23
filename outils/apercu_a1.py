@@ -29,7 +29,7 @@ DECISIONS = "Approuvé,Refusé,À discuter"
 
 
 def _donnees():
-    catalogue = json.loads((RACINE / "genvar/data/catalogue_defaut.json").read_text(encoding="utf-8"))
+    catalogue = json.loads((RACINE / "validation/referentiel/avant_a1/catalogue_defaut.json").read_text(encoding="utf-8"))
     signaux = {(s["type"], s["es"], s["code"]): s for s in catalogue["signaux"]}
     types = {t["code"]: t for t in catalogue["types"]}
     classeur = load_workbook(RACINE / "docs/referentiel/OGIAS_V031_bibliotheque_ES_physiques.xlsx", read_only=True, data_only=True)

@@ -118,7 +118,7 @@ class TestCorrespondances(Base):
         f = os.path.join(self.dossier, "ref.xlsx")
         self.s.exporter_referentiel(f)
         nouveau, _, _ = rx.lire(f)
-        self.assertEqual({(c["type"], c["ancienne"]) for c in nouveau["correspondances"]},
+        self.assertEqual({(c["type"], c["ancienne"]) for c in nouveau["correspondances"] if not c.get("motif", "").startswith("A1")},
                          {("CT", "CP_VOL"), ("CT", "TS_ABSIMP")})
         _, ref = rx.construire(nouveau, self.s._catalogue_commun, self.s.modeles)
         self.assertEqual(ref["correspondances"], self.s.modeles["correspondances"])

@@ -7,7 +7,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from genvar import chemins
 from genvar.catalogue import Catalogue
 from genvar.modele import Equipement, suffixe_physique
 from genvar.referentiel_depot import Depot
@@ -15,6 +14,7 @@ from genvar.session import Session
 
 RACINE = Path(__file__).resolve().parents[1]
 LIVRE = RACINE / "genvar" / "data"
+AVANT = RACINE / "validation" / "referentiel" / "avant_a1"
 
 
 def _outil():
@@ -29,15 +29,16 @@ class TestBrouillonA1(unittest.TestCase):
     def setUpClass(cls):
         cls.outil = _outil()
         cls.candidat, cls.rapport = cls.outil.construire()
-        cls.livre = json.loads((LIVRE / "catalogue_defaut.json").read_text(encoding="utf-8"))
+        cls.livre = json.loads((AVANT / "catalogue_defaut.json").read_text(encoding="utf-8"))
 
     def test_candidat_a_jour(self):
         self.assertEqual(self.outil.main(["--verifier"]), 0, "py outils/brouillon_a1.py")
 
-    def test_referentiel_livre_jamais_modifie(self):
-        for nom in ("catalogue_defaut.json", "referentiel_modeles.json"):
-            f = LIVRE / nom
-            self.assertNotIn("A1", f.read_text(encoding="utf-8")[:2000] if nom == "catalogue_defaut.json" else "")
+    def test_referentiel_livre_est_le_candidat_publie(self):
+        """Publication autorisée le 23/11/2026 : le référentiel livré est exactement le candidat (renommages approuvés, sans ajout)."""
+        for nom, cle in (("catalogue_defaut.json", "catalogue"), ("referentiel_modeles.json", "modeles")):
+            self.assertEqual(json.loads((LIVRE / nom).read_text(encoding="utf-8")), self.candidat[cle], nom)
+        self.assertIn("A1 (", json.loads((LIVRE / "catalogue_defaut.json").read_text(encoding="utf-8"))["version"])
         self.assertNotIn("A1 (", self.livre["version"])
         self.assertNotEqual(self.candidat["catalogue"]["signaux"], self.livre["signaux"])
 
@@ -104,7 +105,7 @@ class TestAdoptionDuCandidat(unittest.TestCase):
 
     def test_adresses_voies_et_commentaires_reportes(self):
         candidat, _ = _outil().construire()
-        s = Session(Catalogue.charger(chemins.fichier_catalogue_origine()))
+        s = Session(Catalogue.charger(AVANT / "catalogue_defaut.json"))   # ouvrage créé avant la publication
         s.nouveau(False)
         s.definir("lieu", "XTST")
         s.definir("code_ouvrage", "RV")

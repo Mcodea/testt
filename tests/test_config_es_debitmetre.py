@@ -38,8 +38,8 @@ class TestConfigurationDebitmetre(unittest.TestCase):
         self.session.choisir_option_es(self.eq.ident,'Contact défaut TOR', True)
         self.session.choisir_option_es(self.eq.ident,'Sens d’écoulement TOR', True)
         pts={p.cle:p for p in self.session.points()}
-        self.assertEqual({k:pts[k].point for k in ('ES_DEB','ES_IMP','ES_DEF_EXT','ES_SENS')},
-                         {'ES_DEB':'EA','ES_IMP':'ET','ES_DEF_EXT':'ET','ES_SENS':'ET'})
+        self.assertEqual({k:pts[k].point for k in ('ES_DEB','ES_IMP','ES_DEF','ES_SENS')},
+                         {'ES_DEB':'EA','ES_IMP':'ET','ES_DEF':'ET','ES_SENS':'ET'})
         self.assertFalse(self.eq.valide)
         self.session.choisir_option_es(self.eq.ident,'Sens d’écoulement TOR',False)
         self.assertNotIn('ES_SENS',{p.cle for p in self.session.points()})
