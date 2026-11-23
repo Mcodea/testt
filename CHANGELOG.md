@@ -15,6 +15,8 @@ Le numéro de version (`genvar/__init__.py`) est encore 0.32 ; il passera à 1.0
   ouvert sur un autre poste, qui ne peut alors plus enregistrer.
 - **Journal technique** tournant, consultable par Aide › Journal technique.
 - **Dupliquer un équipement** au ruban : numéro libre suivant, aucune adresse ni voie reprise.
+- **Aperçu A1** des 57 renommages et 49 ajouts du référentiel à approuver (`docs/APERCU_A1_A_APPROUVER.md` et `.xlsx`, générés par
+  `outils/apercu_a1.py`) : rien n'est appliqué sans accord.
 - **Ouvrage d'exemple fictif** livré à part (`exemples/`, généré par `outils/generer_exemple.py`).
 - Installation vierge : le référentiel livré est publié comme révision R0001 dès le premier démarrage.
 - Avancement de la recette au tableau de bord : « n règle(s) respectée(s) sur N ».
