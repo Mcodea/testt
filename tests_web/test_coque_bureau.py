@@ -745,7 +745,7 @@ class TestCoqueBureau(ServeurNavigateur):
         exemple.write_text('// Export fictif\n"Name","Data Type","Logical Address","Comment"\n'
                            '"Marche","Bool","%I4.0","Marche"\n"Niveau","Int","%IW64","Niveau"\n', encoding='utf-8')
         nom = f'Liste E/S fictive {self.numero}'
-        self.ouvrir('#/standards')
+        self.ouvrir('#/apprentissage')
         self.page.locator('#fa-apprendre').click()
         boite = self.page.locator('.boite')
         boite.locator('#fa-fichier').set_input_files(str(exemple))
@@ -824,6 +824,22 @@ class TestCoqueBureau(ServeurNavigateur):
         self.assertEqual(len(eqs), avant + 1)
         self.assertTrue(any(e['pcf'].endswith('HV02') for e in eqs))
 
+    def test_onglet_apprentissage_des_formats(self):
+        """L'apprentissage des formats a son onglet : explorateur, menu Outils, parcours en quatre étapes."""
+        self.ouvrir('#/dashboard')
+        self.page.locator('#o-explorateur a[href="#/apprentissage"]').click()
+        self.page.locator('.apprentissage .ap-etapes li').nth(3).wait_for()
+        self.assertEqual(self.page.locator('.apprentissage .ap-etapes li').count(), 4)
+        self.assertEqual(self.page.locator('#v31-title').inner_text(), 'Apprentissage des formats')
+        self.assertEqual(self.page.locator('#fa-apprendre').count(), 1)
+        self.assertEqual(self.page.locator('.std-formats').count(), 1)
+        self.page.locator('#fa-apprendre').click()
+        self.assertIn('De quel format', self.page.locator('.boite label[for="fa-nature"]').inner_text())
+        self.page.keyboard.press('Escape')
+        self.ouvrir('#/standards')
+        self.page.locator('.std-renvoi a[href="#/apprentissage"]').wait_for()
+        self.assertEqual(self.page.locator('.std-formats').count(), 0)
+
     def test_ordre_d_export_des_variables(self):
         """V1-5-02 (option B) : l'ordre d'export se règle au ruban de l'équipement ; les adresses ne changent pas."""
         self.ouvrir('#/inventaire')
@@ -896,7 +912,7 @@ class TestCoqueBureau(ServeurNavigateur):
         exemple = Path(tempfile.mkdtemp()) / 'PLCTags_fictif.xlsx'
         wb.save(exemple)
         nom = f'Table TIA fictive {self.numero}'
-        self.ouvrir('#/standards')
+        self.ouvrir('#/apprentissage')
         self.page.locator('#fa-apprendre').click()
         boite = self.page.locator('.boite')
         boite.locator('#fa-fichier').set_input_files(str(exemple))
@@ -922,7 +938,7 @@ class TestCoqueBureau(ServeurNavigateur):
         import tempfile
         exemple = Path(tempfile.mkdtemp()) / 'supervision_fictive.csv'
         exemple.write_text('Tag;Address;DataType;Alarm\nP1;%MW100.0;BOOL;1\nNIV;%MW300;REAL;0\n', encoding='utf-8')
-        self.ouvrir('#/standards')
+        self.ouvrir('#/apprentissage')
         self.page.locator('#fa-apprendre').click()
         boite = self.page.locator('.boite')
         boite.locator('#fa-fichier').set_input_files(str(exemple))

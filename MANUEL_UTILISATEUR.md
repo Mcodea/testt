@@ -110,16 +110,28 @@ Menu Outils › **Standards d'ingénierie**.
   déjà créé.
 - **Gammes de matériel** : pour un automate hors des gammes livrées, déclarez sa gamme une fois (texte qui la reconnaît
   dans la fiche de l'ouvrage, racks, cartes). Les listes se collent depuis Excel.
-- **Formats d'export appris** : pour la liste des E/S, la télétransmission ou l'IHM, donnez une fois un fichier
-  exporté par l'outil du client (CSV, TXT ou classeur Excel, par exemple une table de variables TIA Portal). OGIAS
-  apprend ses colonnes, la forme des adresses et les valeurs attendues, puis exporte chaque ouvrage dans ce format et
-  relit chaque fichier produit. Après un premier import réel réussi dans l'outil, confirmez-le dans la fiche du format :
-  il devient **qualifié**.
-
-![Apprendre un format](docs/manuel/captures/10_format_appris.png)
-
+- **Formats d'export appris** : voir l'onglet **Apprentissage des formats** ci-dessous.
 - **Modèles de livrables** : un fichier de votre outil où les valeurs sont remplacées par des variables `<#…#>` ;
   « Créer depuis un export » le prépare à partir de l'export d'un seul équipement.
+
+### Apprentissage des formats
+
+Menu Outils › **Apprentissage des formats** (ou l'explorateur). OGIAS n'est lié à aucun constructeur : il apprend le
+format de chaque outil à partir d'un fichier que vous exportez. Trois fichiers seulement sont concernés : la liste des
+E/S physiques de chaque automate, la télétransmission de chaque supervision et l'IHM.
+
+1. **Exportez**, depuis le logiciel du constructeur (Control Expert, TIA Portal, TOPKAPI…), la table de variables d'un
+   projet quelconque.
+2. **Importez** le fichier dans OGIAS (CSV, TXT ou classeur Excel) avec « Importer un fichier et apprendre son
+   format… ». Rien n'est enregistré à ce stade.
+3. **Dites de quel format il s'agit** : nature du fichier, logiciel cible, contenu de chaque colonne, forme des
+   adresses. OGIAS vérifie sur l'ouvrage ouvert qu'il relit exactement son propre fichier.
+4. **Qualifiez** : après un premier import réel réussi dans l'outil, confirmez-le dans la fiche du format. Le format
+   devient **qualifié** et chaque export suivant est contrôlé automatiquement.
+
+![Apprentissage des formats](docs/manuel/captures/11_apprentissage.png)
+
+![Apprendre un format](docs/manuel/captures/10_format_appris.png)
 
 ## 6. Référentiel métier
 

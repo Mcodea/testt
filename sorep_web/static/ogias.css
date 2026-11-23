@@ -893,3 +893,10 @@ html[data-theme] ol.ordre-export { margin: 0; padding-left: var(--o-e-5); displa
 html[data-theme] ol.ordre-export li { display: flex; align-items: center; gap: var(--o-e-2); padding: 2px 0; border-bottom: 1px solid var(--o-ligne); }
 html[data-theme] ol.ordre-export .oe-actions { margin-left: auto; display: flex; gap: 4px; }
 html[data-theme] ol.ordre-export .oe-actions button { min-width: 2.2em; }
+
+/* Onglet « Apprentissage des formats » : parcours en quatre étapes */
+html[data-theme] .ap-etapes { list-style: none; margin: 0 0 var(--o-e-3); padding: 0; display: grid; gap: var(--o-e-2); grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+html[data-theme] .ap-etapes li { display: flex; gap: var(--o-e-2); align-items: flex-start; padding: var(--o-e-2); border: 1px solid var(--o-ligne); border-radius: var(--o-r-m); background: var(--o-surface-2); }
+html[data-theme] .ap-etapes p { margin: 2px 0 0; color: var(--o-texte-2); font-size: var(--o-t-s); }
+html[data-theme] .ap-num { flex: none; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; background: var(--o-action-plein); color: #fff; }
+html[data-theme] .ap-action { align-items: center; gap: var(--o-e-3); margin-bottom: var(--o-e-3); }

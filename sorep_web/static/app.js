@@ -209,6 +209,14 @@ async function _standards(j) {
   if (perime(j)) return;
   rendre();
 }
+async function _apprentissage(j) {
+  E.ouvrage = await api("/api/ouvrage");
+  if (perime(j)) return;
+  E.vue = "apprentissage";
+  E.formatsAppris = await api("/api/formats-appris");
+  if (perime(j)) return;
+  rendre();
+}
 async function _referentiel(j) {
   E.ouvrage = await api("/api/ouvrage");
   if (perime(j)) return;
@@ -225,7 +233,7 @@ async function chargerReferentiel() {
 }
 /* Navigation par adresse (#/…) : chaque écran a son adresse, le bouton « Retour » du navigateur fonctionne,
    et la barre du haut donne accès à tous les écrans depuis n'importe où. */
-const ROUTES = {"#/ouvrages": _accueil, "#/dashboard": _dashboard, "#/inventaire": _ouvrage, "#/es": _es, "#/materiel": _materiel, "#/referentiel": _referentiel, "#/standards": _standards, "#/grille": _grille,
+const ROUTES = {"#/ouvrages": _accueil, "#/dashboard": _dashboard, "#/inventaire": _ouvrage, "#/es": _es, "#/materiel": _materiel, "#/referentiel": _referentiel, "#/standards": _standards, "#/apprentissage": _apprentissage, "#/grille": _grille,
                 "#/variables": j => _aVenir("variables", j), "#/supervision": j => _aVenir("supervision", j), "#/adressage": j => _aVenir("adressage", j), "#/recette": j => _aVenir("recette", j),
                 "#/controles": j => _aVenir("recette", j), "#/exports": j => _aVenir("recette", j)};
 async function naviguer(route) {
@@ -335,6 +343,7 @@ function rendre() {
   if (E.vue === "dashboard") return vueDashboardV31();
   if (E.vue === "referentiel") return vueReferentiel();
   if (E.vue === "standards") return vueStandards();
+  if (E.vue === "apprentissage") return vueApprentissage();
   if (E.vue === "grille") return vueGrille();
   if (E.vue === "es") return vueES();
   if (E.vue === "materiel") return vueMateriel();
@@ -1219,7 +1228,7 @@ function vueStandards() {
     ${biblio("outils", "Chaînes d'outils", "Nouvelle chaîne d'outils…")}
    </div>
    ${blocGammesMateriel(E.gammesMateriel)}
-   ${blocFormatsAppris(E.formatsAppris)}
+   <p class="aide std-renvoi">Les formats d'export des outils des constructeurs s'apprennent dans l'onglet <a href="#/apprentissage">Apprentissage des formats</a>.</p>
    ${blocModelesLivrables(E.modelesLivrables)}
    ${blocAttributsAtelier(E.attributsAtelier)}</section>`;
   document.querySelectorAll("[data-std]").forEach(r => { r.onclick = () => { E.standardSel = r.dataset.std; vueStandards(); };
@@ -1236,7 +1245,6 @@ function vueStandards() {
   if ($("#std-reactiver")) $("#std-reactiver").onclick = () => agir({action: "statut", ident: sel.ident, statut: "actif"}, `« ${sel.nom} » réactivé.`);
   document.querySelectorAll("[data-nouvelle-brique]").forEach(b => b.onclick = () => modaleBrique(d, b.dataset.nouvelleBrique, agir));
   brancherGammesMateriel();
-  brancherFormatsAppris();
   brancherModelesLivrables();
   brancherAttributsAtelier();
 }
@@ -1314,13 +1322,30 @@ function blocFormatsAppris(d) {
   const lignes = d.formats.map(f => `<tr class="cliquable" data-fa="${esc(f.ident)}" tabindex="0"><td><b>${esc(f.nom)}</b></td><td>${esc(f.nature_libelle)}</td><td><b>${esc(f.logiciel)}</b></td><td class="mono">${esc(f.fichier_origine || "—")}</td><td>${faQualif(f)}</td>
     <td>${!d.ouvert ? "—" : !f.retenu ? `<span class="badge b-al" title="${esc(f.motif_non_retenu)}">Autre logiciel</span>` : f.controle?.pret ? '<span class="badge b-ok">Contrôle réussi</span>' : `<span class="badge b-err" title="${esc(f.controle?.statut || "")}">Export impossible</span>`}</td></tr>`).join("");
   const livres = d.livres.map(f => `<tr><td><b>${esc(f.nom)}</b></td><td>${esc(d.natures[f.nature])}</td><td><b>${esc(f.logiciel)}</b></td><td colspan="2"><span class="aide">Format livré avec OGIAS</span></td><td>—</td></tr>`).join("");
-  return `<div class="bloc std-formats"><div class="bloc-tete"><h2>Formats d'export appris</h2>
-    <div class="boutons-ligne"><button type="button" class="prim" id="fa-apprendre" title="Donner un fichier exporté par l'outil du constructeur : OGIAS apprend son format et exportera ensuite chaque ouvrage dans ce format">Apprendre un format…</button></div></div>
+  return `<div class="bloc std-formats"><div class="bloc-tete"><h2>Formats d'export appris</h2></div>
     <p class="aide">OGIAS n'est lié à aucun constructeur. Pour la <b>liste des E/S physiques</b> (automate), la <b>télétransmission</b> (supervision) et l'<b>IHM</b>, donnez une fois un fichier exporté par l'outil (n'importe quel projet) : OGIAS apprend ses colonnes, la forme des adresses et les valeurs attendues, puis exporte chaque ouvrage dans ce format. Chaque export est relu et contrôlé ; après un premier essai réel confirmé, le format est <b>qualifié</b>.</p>
     <table data-o-tableau="sans-selection" data-o-cle="formats-appris"><thead><tr><th>Format</th><th>Fichier</th><th>Logiciel cible</th><th>Exemple d'origine</th><th>Qualification</th><th>Pour l'ouvrage ouvert</th></tr></thead><tbody>${lignes}${livres}</tbody></table></div>`;
 }
+/* Onglet « Apprentissage des formats » : on exporte depuis l'outil du constructeur, on importe le fichier ici, on dit
+   de quel format il s'agit ; OGIAS exporte ensuite chaque ouvrage dans ce format. */
+function vueApprentissage() {
+  Coque.ruban(null);
+  const d = E.formatsAppris || {formats: [], livres: [], natures: {}};
+  const q = d.formats.filter(f => f.qualifie).length;
+  $("#vue").innerHTML = `<section class="contenu apprentissage">
+   <div class="std-intro"><p>OGIAS n'est lié à aucun constructeur : il apprend le format de chaque outil à partir d'un fichier que <b>vous</b> exportez. Seuls trois fichiers sont concernés : la <b>liste des E/S physiques</b> de chaque automate, la <b>télétransmission</b> de chaque supervision et l'<b>IHM</b>.</p></div>
+   <ol class="ap-etapes" aria-label="Parcours d'apprentissage">
+    <li><span class="ap-num">1</span><div><b>Exportez</b><p>Dans le logiciel du constructeur (Control Expert, TIA Portal, TOPKAPI…), exportez la table de variables d'un projet quelconque.</p></div></li>
+    <li><span class="ap-num">2</span><div><b>Importez</b><p>Déposez ce fichier dans OGIAS (CSV, TXT ou classeur Excel). Rien n'est enregistré à ce stade.</p></div></li>
+    <li><span class="ap-num">3</span><div><b>Dites de quel format il s'agit</b><p>Nature du fichier, logiciel cible, contenu de chaque colonne, forme des adresses : vous confirmez, OGIAS apprend.</p></div></li>
+    <li><span class="ap-num">4</span><div><b>Qualifiez</b><p>Après un premier essai réel dans l'outil, le format est « qualifié » : chaque export suivant est contrôlé automatiquement.</p></div></li></ol>
+   <div class="boutons-ligne ap-action"><button type="button" class="prim" id="fa-apprendre">Importer un fichier et apprendre son format…</button>
+    <span class="aide">${d.formats.length} format(s) appris dont ${q} qualifié(s)</span></div>
+   ${blocFormatsAppris(d)}</section>`;
+  brancherFormatsAppris();
+}
 function brancherFormatsAppris() {
-  const recharger = (r, message) => { E.formatsAppris = r; toast(message); vueStandards(); };
+  const recharger = (r, message) => { E.formatsAppris = r; toast(message); vueApprentissage(); };
   const action = async (corps, message) => { try { const r = await api("/api/formats-appris/action", corps); fermerModale(); recharger(r, message); } catch (e) { toast(e.message, true); } };
   if ($("#fa-apprendre")) $("#fa-apprendre").onclick = () => modaleApprendreFormat(recharger);
   document.querySelectorAll("[data-fa]").forEach(r => { r.onkeydown = ev => { if (ev.key === "Enter") r.click(); };
@@ -1351,7 +1376,7 @@ function modaleApprendreFormat(recharger) {
   const m = ouvrirModale(`<div class="boite-tete"><h2>Apprendre un format d'export</h2>
     <p>Donnez un fichier exporté par l'outil du constructeur (un projet quelconque suffit). OGIAS en apprend la structure ; vous confirmez ce que contient chaque colonne et la forme des adresses. Rien n'est enregistré avant votre accord.</p></div>
     <div class="boite-corps std-formulaire">
-     <label for="fa-nature">Nature du fichier</label><select id="fa-nature">${Object.entries(d.natures).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("")}</select>
+     <label for="fa-nature">De quel format s'agit-il ? (nature du fichier)</label><select id="fa-nature">${Object.entries(d.natures).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("")}</select>
      <label for="fa-fichier">Fichier exemple exporté par l'outil (CSV, TXT ou classeur Excel .xlsx, ex. table de variables TIA Portal)</label><input type="file" id="fa-fichier">
      <div class="boutons-ligne"><button type="button" id="fa-analyser">Analyser le fichier</button></div>
      <div id="fa-resultat" class="as-resultat" aria-live="polite"></div></div>

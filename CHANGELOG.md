@@ -15,6 +15,8 @@ Le numéro de version (`genvar/__init__.py`) est encore 0.32 ; il passera à 1.0
   ouvert sur un autre poste, qui ne peut alors plus enregistrer.
 - **Journal technique** tournant, consultable par Aide › Journal technique.
 - **Dupliquer un équipement** au ruban : numéro libre suivant, aucune adresse ni voie reprise.
+- **Onglet « Apprentissage des formats »** (menu Outils, explorateur) : exporter depuis l'outil du constructeur, importer
+  le fichier, dire de quel format il s'agit, qualifier. Les formats appris n'apparaissent plus dans Standards.
 - **Ordre d'export des variables** par équipement (ruban › Ordre d'export) : suivi par toutes les tables exportées,
   sans jamais changer une adresse.
 - **Ancienne interface Qt retirée** (`genvar_qt`, `lancer_qt.py`, PySide6) : OGIAS s'ouvre par `OGIAS.bat` ou

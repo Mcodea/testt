@@ -85,6 +85,7 @@ def captures(url: str, travail: Path) -> None:
         page.wait_for_timeout(300)
         page.screenshot(path=str(CAPTURES / "08_indices.png"))
         ecran("#/standards", "09_standards", ".std-gammes")
+        ecran("#/apprentissage", "11_apprentissage", ".ap-etapes")
         page.locator("#fa-apprendre").click()
         boite = page.locator(".boite")
         boite.locator("#fa-fichier").set_input_files(str(exemple))
