@@ -71,6 +71,7 @@ const Coque = (() => {
   ["Outils", [["Référentiel métier", "", () => naviguer("#/referentiel")], ["Standards d'ingénierie", "", () => naviguer("#/standards")]]],
   ["Aide", [["Aide d'OGIAS", "F1", () => window.open("aide.html", "_blank", "noopener")],
             ["Raccourcis clavier", "Ctrl /", () => Composants.aideRaccourcis()],
+            ["Journal technique", "", () => window.afficherJournalTechnique && window.afficherJournalTechnique()],
             ["À propos d'OGIAS", "", () => document.getElementById("v31-about")?.click()]]],
  ];
  function nouveau(mode) {

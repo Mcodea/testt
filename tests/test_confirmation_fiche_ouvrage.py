@@ -100,6 +100,9 @@ class TestConfirmationFicheOuvrage(unittest.TestCase):
     def test_mise_a_jour_apres_validation_explicite_seulement(self):
         fin = self.save("creer")
         app2 = Application()
+        with self.assertRaisesRegex(ValueError, "déjà ouvert"):        # verrou d'ouvrage (V1-7-04)
+            app2.ouvrir({"chemin": fin["chemin"]})
+        self.app.fermer({})
         app2.ouvrir({"chemin": fin["chemin"]})
         self.assertEqual(app2.ouvrage({})["identification"]["libelle"], donnees()["libelle"])
         # La simple consultation ne modifie pas le fichier.

@@ -886,3 +886,4 @@ html[data-theme] .ri-aj, html[data-theme] tr.ri-aj td:nth-child(3) { color: var(
 html[data-theme] .ri-sup, html[data-theme] tr.ri-sup td:nth-child(3) { color: var(--o-erreur); }
 html[data-theme] .ri-mod, html[data-theme] tr.ri-mod td:nth-child(3) { color: var(--o-alerte); }
 html[data-theme] .ri-detail summary { cursor: pointer; font-weight: 600; }
+html[data-theme] pre.journal-technique { max-height: 60vh; }

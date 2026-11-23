@@ -34,7 +34,7 @@ function vueDashboardV31(){
  <section class="v31-card v31-dash-activity"><h2>E/S par nature</h2><p class="v31-muted">${!esConnues?'Répartition E/S indisponible':points.length?`${points.length} E/S physiques renseignées`:'Aucune E/S physique renseignée'}</p>
  ${!esConnues?'<div class="v31-blank">Ouvrez la liste des E/S pour consulter les contrôles à résoudre.</div>':points.length? `<div class="v31-stack">${counts.map(([name,n]) => n ? `<div class="v31-stack-piece v31-f-${name}" title="${name}: ${n}" style="width:${(n / total) * 100}%"></div>` : "").join("")}</div><div class="v31-stack-legend">${counts.filter(x=>x[1]).map(([name,n]) => `<span>${name} ${n}</span>`).join("")}</div>` : `<div class="v31-blank">Aucune E/S affectée à l’ouvrage.</div>`}
  <h3>Accès rapides</h3><div class="v31-quick"><button data-nav="#/inventaire">Équipements ${V31.icon('chevron',14)}</button><button data-nav="#/es">Liste des E/S ${V31.icon('chevron',14)}</button><button data-nav="#/variables">Variables ${V31.icon('chevron',14)}</button><button data-nav="#/recette">Recette ${V31.icon('chevron',14)}</button></div></section></div></section>`;
- document.querySelectorAll('[data-open]').forEach(b=>b.onclick=async()=>{try{await agir(api('/api/ouvrir',{chemin:b.dataset.open}));E.ficheDraft=null;E.ficheDirty=false;naviguer('#/dashboard');}catch(e){}});
+ document.querySelectorAll('[data-open]').forEach(b=>b.onclick=async()=>{try{await agir(apiOuvrir(b.dataset.open));E.ficheDraft=null;E.ficheDirty=false;naviguer('#/dashboard');}catch(e){}});
  // Lot 5g : les accès rapides deviennent le groupe « Parcours » du ruban (mêmes boutons, mêmes destinations)
  const icones={'#/inventaire':'equipement','#/es':'es','#/variables':'variable','#/recette':'recette'};
  Coque.ruban([{nom:'Parcours',commandes:[...document.querySelectorAll('#vue .v31-quick [data-nav]')].map(b=>({el:b,icone:icones[b.dataset.nav],grand:true,libelle:b.textContent.trim()}))}]);
@@ -211,7 +211,7 @@ function vueAccueilV31(){
  document.querySelector('#v31-first-project')?.addEventListener('click',()=>create('Neuf'));
  document.querySelector('#v31-import-project').onclick=()=>create('Existant');
  document.querySelector('#v31-ref-open').onclick=()=>allerReferentiel();
- const open=async f=>{try{await agir(api('/api/ouvrir',{chemin:f}));E.ficheDraft=null;E.ficheDirty=false;naviguer('#/dashboard');}catch(_){}};
+ const open=async f=>{try{await agir(apiOuvrir(f));E.ficheDraft=null;E.ficheDirty=false;naviguer('#/dashboard');}catch(_){}};
  document.querySelectorAll('[data-project]').forEach(c=>{c.onclick=e=>{if(!e.target.closest('[data-delete]'))open(c.dataset.project);};c.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();open(c.dataset.project);}};});
  document.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>confirmer(`Supprimer ${b.dataset.repere} ?`,'L’ouvrage sera placé dans la corbeille du dossier Projets.','Déplacer à la corbeille',async()=>{await agir(api('/api/supprimer_ouvrage',{chemin:b.dataset.delete}),'Ouvrage déplacé vers la corbeille.');allerAccueil();}));
  document.querySelector('#v31-filter-projects')?.addEventListener('input',e=>{const q=e.target.value.toLocaleLowerCase('fr');document.querySelectorAll('[data-project]').forEach(card=>{card.hidden=!card.textContent.toLocaleLowerCase('fr').includes(q);});});

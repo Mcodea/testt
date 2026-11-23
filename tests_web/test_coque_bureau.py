@@ -769,6 +769,28 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.wait_for_function("t => [...document.querySelectorAll('[data-fa]')].some(r => r.innerText.includes(t) && r.innerText.includes('Qualifié'))", arg=nom)
         self.assertEqual(self.projet.read_bytes(), avant, "Apprendre un format ne modifie pas l'ouvrage")
 
+    def test_journal_technique_et_reprise_d_un_ouvrage_verrouille(self):
+        """V1-7-06 : journal technique consultable depuis l'aide. V1-7-04 : un ouvrage ouvert sur un autre poste
+        (verrou FICTIF) n'est repris qu'après confirmation explicite."""
+        import json as _json
+        self.ouvrir('#/dashboard')
+        self.page.locator('#o-menus > button', has_text='Aide').click()
+        self.page.locator('.o-menu').get_by_role('menuitem', name='Journal technique').click()
+        self.assertIn('Démarrage', self.page.locator('.journal-technique').inner_text())
+        self.page.locator('.boite [data-fermer]').click()
+        chemin = str(self.projet)
+        self.api('/api/fermer', {})
+        Path(chemin + '.verrou').write_text(_json.dumps({'jeton': 'autre', 'hote': 'POSTE-FICTIF', 'utilisateur': 'dupont',
+                                                          'pid': 1, 'depuis': '2026-11-22T10:00:00+00:00'}), encoding='utf-8')
+        self.ouvrir('#/ouvrages')
+        self.page.locator(f'[data-project="{chemin}"]').first.click()
+        boite = self.page.locator('.boite')
+        boite.wait_for()
+        self.assertIn('dupont sur POSTE-FICTIF', boite.inner_text())
+        boite.get_by_role('button', name="Reprendre l'ouvrage").click()
+        self.page.wait_for_function("() => location.hash === '#/dashboard'")
+        self.assertIn('repris_de', Path(chemin + '.verrou').read_text(encoding='utf-8'))
+
     def test_indices_de_livraison(self):
         """22/11 : livrer l'indice A, passer à B, modifier un équipement : la Recette liste la modification."""
         self.ouvrir('#/recette')

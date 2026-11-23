@@ -20,7 +20,7 @@ Les critères de sortie demeurent bloquants hors preuves utilisateur de section 
 « Remplacé par décision » : exigence du cahier supplantée par une décision ultérieure de l'utilisateur (refonte
 industrielle du 16/11) ; elle sort du calcul d'avancement et sa ligne cite la nouvelle cible et ses preuves.
 
-## Avancement mesuré au 23/11/2026 (réévaluation ligne par ligne)
+## Avancement mesuré au 23/11/2026 (réévaluation ligne par ligne, mis à jour après le verrou et le journal)
 
 Les 176 exigences du cahier ont été réévaluées une à une avec les preuves des lots du 16 au 22/11 ; plus aucune
 ligne ne porte la mention générique « à vérifier ». 25 exigences sont « remplacées par décision » (refonte
@@ -28,16 +28,15 @@ industrielle du 16/11) et sortent du calcul.
 
 | État | Nombre |
 | --- | --- |
-| Fait (prouvé par un test) | 56 |
-| Partiel | 60 |
-| Absent | 25 |
+| Fait (prouvé par un test) | 59 |
+| Partiel | 59 |
+| Absent | 23 |
 | En attente de preuves utilisateur (section 8) | 10 |
 | Remplacé par décision | 25 |
 
-**Avancement : 37 % au sens strict (56 / 151), 57 % en comptant un « partiel » pour moitié.**
+**Avancement : 39 % au sens strict (59 / 151), 59 % en comptant un « partiel » pour moitié.**
 
-Écarts nets relevés (absents), traitables sans attendre l'utilisateur : verrou d'ouvrage (V1-7-04), annulation
-Ctrl+Z (V1-4-47), journal applicatif tournant (V1-7-06), duplication d'équipement (V1-5-01), duplication et
+Écarts nets relevés (absents), traitables sans attendre l'utilisateur : annulation Ctrl+Z (V1-4-47), duplication d'équipement (V1-5-01), duplication et
 réordonnancement de variables (V1-5-02), documentation utilisateur et administrateur, CHANGELOG, notes de version
 (V1-9-06 à 11), version 1.0.0 et étiquettes (V1-10-19 à 21), compte rendu V1.0 (V1-10-28 à 34).
 
@@ -352,11 +351,11 @@ le défaut démontré et obtenir une CI verte. Codex reste actif sur ce point.
 | V1-7-01 (L152) | **Données :** | partiel | Titre de groupe : voir V1-7-02 à V1-7-05 (verrou d'ouvrage absent). |
 | V1-7-02 (L153) | écriture atomique et sauvegarde automatique ; | partiel | Écriture atomique avec fsync (Ouvrage.enregistrer) et enregistrement automatique avec .bak ; pas de test d'arrêt brutal. |
 | V1-7-03 (L154) | copies horodatées avant chaque opération lourde, restaurables depuis l'interface ; | partiel | Moteur et API faits : `genvar/copies.py`, `Session.copies_horodatees` / `restaurer_copie`, `GET /api/ouvrage/copies`, `POST /api/ouvrage/restaurer-copie` ; copie de l'état d'avant (non enregistré compris) pour adressage, plan historique, implantation, matériel, inventaire, confirmation en lot, import, adoption ; refus ou sans effet → aucune copie ; copie impossible → opération annulée ; restauration réversible : tests/test_copies_horodatees.py (17). Reste : écran de liste et bouton « Restaurer » (Codex). |
-| V1-7-04 (L155) | verrou d'ouvrage ; | absent | Aucun verrou d'ouvrage : deux instances peuvent ouvrir le même fichier (seul le dépôt du référentiel est verrouillé). |
+| V1-7-04 (L155) | verrou d'ouvrage ; | fait | Verrou `<fichier>.verrou` posé à l'ouverture et à la création, repris automatiquement s'il est abandonné sur ce poste, repris sur l'autre poste seulement sur demande explicite ; le poste qui l'a perdu ne peut plus enregistrer : tests/test_verrou_ouvrage.py, tests_web/test_coque_bureau.py::test_journal_technique_et_reprise_d_un_ouvrage_verrouille. |
 | V1-7-05 (L156) | reprise sans perte après un arrêt brutal. | partiel | Fichier jamais à moitié écrit (remplacement atomique) ; reprise après arrêt brutal non testée. |
-| V1-7-06 (L157) | **Journal :** fichier tournant, sans donnée sensible, consultable dans l'interface. Aucune exception brute n'est affichée à l'utilisateur. | absent | Aucun journal applicatif en fichier tournant ; seuls des journaux métier (adressage, référentiel, rapprochement) existent. |
+| V1-7-06 (L157) | **Journal :** fichier tournant, sans donnée sensible, consultable dans l'interface. Aucune exception brute n'est affichée à l'utilisateur. | fait | journal.log tournant (1 Mo, 2 anciens fichiers), événements et erreurs sans donnée d'ouvrage, consultable par Aide › Journal technique ; erreurs affichées sans exception brute : tests/test_journal_technique.py, tests_web/test_coque_bureau.py::test_journal_technique_et_reprise_d_un_ouvrage_verrouille. |
 | V1-7-07 (L158) | **Sécurité :** | partiel | Titre de groupe : voir V1-7-08 à V1-7-13. |
-| V1-7-08 (L159) | le serveur n'écoute que sur 127.0.0.1 ; | partiel | Écoute sur 127.0.0.1 et contrôle de l'hôte (anti-rebinding, audit du 16/11, sorep_web/serveur.py) ; sans test dédié. |
+| V1-7-08 (L159) | le serveur n'écoute que sur 127.0.0.1 ; | fait | tests/test_journal_technique.py::TestEcouteLocale::test_serveur_ecoute_sur_127_0_0_1_seulement ; contrôle de l'hôte contre le rebinding DNS (audit du 16/11). |
 | V1-7-09 (L160) | aucun appel réseau sortant ; | partiel | Aucune bibliothèque réseau dans genvar / sorep_web (vérifié par recherche) ; sans test automatique. |
 | V1-7-10 (L161) | toutes les entrées sont échappées ; | fait | Échappement XML et HTML testé : tests/test_relecture_exports.py, test_modeles_livrables.py::test_echappement_xml, tests_web/test_referentiel_codes.py::test_texte_saisi_echappe_dans_la_table_et_le_detail. |
 | V1-7-11 (L162) | aucun chemin hors des dossiers autorisés ; | partiel | Identifiants contrôlés avant tout accès disque (copies, modèles, formats, gabarits) ; sans test de chemin hors dossier dédié. |

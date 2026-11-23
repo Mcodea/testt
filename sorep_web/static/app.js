@@ -13,8 +13,25 @@ async function api(chemin, donnees) {
   const opt = donnees === undefined ? {} : {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(donnees)};
   const r = await fetch(chemin, opt);
   const j = await r.json().catch(() => ({erreur: "Réponse illisible du serveur."}));
-  if (!r.ok) throw new Error(j.erreur || "Erreur");
+  if (!r.ok) { const e = new Error(j.erreur || "Erreur"); e.donnees = j; throw e; }
   return j;
+}
+/* Journal technique (V1-7-06) : démarrages, ouvertures, exports, reprises de verrou et erreurs inattendues. */
+window.afficherJournalTechnique = async () => {
+  let d; try { d = await api("/api/journal"); } catch (e) { return toast(e.message, true); }
+  ouvrirModale(`<div class="boite-tete"><h2>Journal technique</h2><p>Fichier <span class="mono">journal.log</span> du dossier de données (${esc(d.dossier)}), renouvelé au-delà de ${Math.round(d.taille_max / 1e6)} Mo ; ${d.anciens} fichiers précédents gardés. À joindre à une demande d'assistance.</p></div>
+    <div class="boite-corps"><pre class="ml-apercu journal-technique">${esc(d.lignes.join("\n") || "Journal vide.")}</pre></div>
+    <div class="boite-pied"><button type="button" data-fermer>Fermer</button></div>`, true);
+};
+/* Verrou d'ouvrage (V1-7-04) : un ouvrage ouvert sur un autre poste n'est repris que sur demande explicite ;
+   le poste qui le perd ne peut plus enregistrer. */
+async function apiOuvrir(chemin) {
+  try { return await api("/api/ouvrir", {chemin}); }
+  catch (e) {
+    if (!e.donnees || !e.donnees.verrou) throw e;
+    return new Promise((ok, ko) => confirmer("Ouvrage déjà ouvert", `${e.message} Si vous le reprenez, l'autre poste ne pourra plus enregistrer ses modifications : prévenez son utilisateur.`,
+      "Reprendre l'ouvrage", async () => { try { ok(await api("/api/ouvrir", {chemin, forcer: true})); } catch (x) { ko(x); } }));
+  }
 }
 function toast(texte, err) {
   if (typeof Coque !== "undefined") Coque.journal(texte, err);     // lot 2b : chaque message reste au journal
@@ -867,7 +884,7 @@ function vueAccueil() {
     E.ficheDraft = null; E.ficheDirty = false;
     allerOuvrage({nature: "ouvrage", valeur: ""});
   });
-  const ouvrir = async chemin => { await agir(api("/api/ouvrir", {chemin})); E.ficheDraft = null; E.ficheDirty = false; naviguer("#/dashboard"); };
+  const ouvrir = async chemin => { await agir(apiOuvrir(chemin)); E.ficheDraft = null; E.ficheDirty = false; naviguer("#/dashboard"); };
   document.querySelectorAll("tr[data-chemin]").forEach(tr => tr.onclick = ev => { if (!ev.target.closest("button")) ouvrir(tr.dataset.chemin); });
   document.querySelectorAll("[data-ouvrir]").forEach(b => b.onclick = () => ouvrir(b.dataset.ouvrir));
   document.querySelectorAll("[data-supprimer]").forEach(b => b.onclick = () => confirmer(
@@ -1967,7 +1984,7 @@ function detailOuvrage(c) {
             ouvrir.onclick = async () => {
               if (!window.confirm("Abandonner la fiche non enregistrée et ouvrir l’ouvrage existant ?")) return;
               try {
-                await api("/api/ouvrir", {chemin: existant.chemin});
+                await apiOuvrir(existant.chemin);
                 E.ficheDraft = null; E.ficheDirty = false;
                 E.sel = {nature: "ouvrage", valeur: ""};
                 await recharger();

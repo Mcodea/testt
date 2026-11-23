@@ -108,6 +108,8 @@ class Session:
         self.sauvegarde_annulation_adoption = ""
         self._chemin_adoption = ""
         self.derniere_copie = ""                         # dernière copie horodatée (V1-7-03)
+        # Garde appelée avant toute écriture du fichier de l'ouvrage (verrou d'ouvrage V1-7-04, posé par l'application)
+        self.garde_enregistrement = None
 
     def _oublier_adoption(self):
         self._avant_adoption = None
@@ -206,6 +208,8 @@ class Session:
         chemin = chemin or self.chemin
         if not chemin:
             raise RegleMetier("Aucun fichier : choisissez où enregistrer l'ouvrage.")
+        if self.garde_enregistrement is not None:
+            self.garde_enregistrement(chemin)          # refuse si un autre OGIAS détient l'ouvrage
         if self.ouvrage.statut == "Validé":
             self._verifier_pret_pour_validation()
         # Le catalogue retenu pour ce projet est figé dans son fichier : une évolution du

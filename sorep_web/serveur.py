@@ -35,14 +35,45 @@ STATIQUE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 VERROU = threading.Lock()
 
 
-def journal(texte):
+JOURNAL_TAILLE_MAX = 1_000_000          # octets : au-delà, journal.log devient journal.1.log (V1-7-06)
+JOURNAL_ANCIENS = 2                     # journal.1.log et journal.2.log gardés
+
+
+def _fichier_journal(n=0):
+    return os.path.join(chemins.dossier_donnees(), "journal.log" if not n else f"journal.{n}.log")
+
+
+def journal(texte, niveau="ERREUR"):
+    """Journal technique tournant (dossier de données) : démarrages, ouvertures, exports, reprises de verrou et
+    erreurs inattendues. Aucune donnée d'ouvrage n'y est écrite volontairement (ni repère, ni nom de fichier)."""
     try:
-        f = os.path.join(chemins.dossier_donnees(), "journal.log")
+        f = _fichier_journal()
         os.makedirs(os.path.dirname(f), exist_ok=True)
+        if os.path.exists(f) and os.path.getsize(f) > JOURNAL_TAILLE_MAX:
+            for n in range(JOURNAL_ANCIENS, 0, -1):
+                ancien = _fichier_journal(n - 1)
+                if os.path.exists(ancien):
+                    os.replace(ancien, _fichier_journal(n))
         with open(f, "a", encoding="utf-8") as fh:
-            fh.write(f"--- {datetime.now():%Y-%m-%d %H:%M:%S}\n{texte}\n")
+            fh.write(f"{datetime.now():%Y-%m-%d %H:%M:%S} [{niveau}] {texte.rstrip()}\n")
     except OSError:
         pass
+
+
+def evenement(texte):
+    journal(texte, "INFO")
+
+
+def lire_journal(n=300):
+    """Dernières lignes du journal (le plus récent en dernier), anciens fichiers compris si besoin."""
+    lignes = []
+    for k in range(JOURNAL_ANCIENS, -1, -1):
+        try:
+            with open(_fichier_journal(k), encoding="utf-8", errors="replace") as fh:
+                lignes += fh.read().splitlines()
+        except OSError:
+            continue
+    return lignes[-n:]
 
 
 def _charte_client(standard):
@@ -65,12 +96,39 @@ class Application:
     """État de l'interface : une Session, l'ouvrage ouvert, l'enregistrement automatique."""
 
     def __init__(self):
+        import atexit
+        from genvar import verrou
+        self.jeton = verrou.nouveau_jeton()          # identité de cet OGIAS pour le verrou d'ouvrage (V1-7-04)
+        self.chemin_verrouille = ""
         self.s = Session()
+        self.s.garde_enregistrement = self._garde_verrou
+        atexit.register(self._liberer_verrou)
         self.ouvert = False
         self.creation_en_attente = False  # session provisoire non enregistrée
         self._inbound_pending = None  # aperçu éphémère, lié à la session courante
         self.dernier_bilan_groupe = None  # génération groupée (lot 6) : produits / non produits, pour l'en-tête
         self.dernier_statut_format = ""   # formats appris (22/11) : statut du dernier export (qualifié ou non)
+
+    # ------------------------------------------------------------------ verrou d'ouvrage (V1-7-04)
+    def _garde_verrou(self, chemin):
+        """Avant toute écriture : le fichier doit être verrouillé par cet OGIAS. Un nouveau fichier est verrouillé,
+        l'ancien libéré ; un verrou repris par un autre poste interdit l'écriture."""
+        from genvar import verrou
+        ch = os.path.abspath(chemin)
+        if ch == self.chemin_verrouille:
+            if not verrou.detient(ch, self.jeton):
+                raise RegleMetier(f"Ouvrage repris par {verrou.description(verrou.lire(ch) or {})} : vos "
+                                  "modifications ne sont pas enregistrées. Rouvrez l'ouvrage pour continuer.")
+            return
+        verrou.prendre(ch, self.jeton)
+        self._liberer_verrou()
+        self.chemin_verrouille = ch
+
+    def _liberer_verrou(self):
+        from genvar import verrou
+        if self.chemin_verrouille:
+            verrou.liberer(self.chemin_verrouille, self.jeton)
+        self.chemin_verrouille = ""
 
     # ------------------------------------------------------------------ outils
     def _sauver(self):
@@ -624,6 +682,7 @@ class Application:
     def exporter(self, q):
         """(nom de fichier, octets) d'un export Excel."""
         quoi = q.get("quoi")
+        evenement(f"Export demandé : {str(quoi)[:40]}.")
         if quoi in ("sauvegarde_adoption", "sauvegarde_annulation_adoption"):
             fichier = getattr(self.s, quoi)
             if not fichier or not os.path.isfile(fichier):
@@ -1249,6 +1308,11 @@ class Application:
             raise RegleMetier(str(exc)) from None
         raise RegleMetier("Action inconnue.")
 
+    def journal_web(self, _):
+        """Journal technique, consultable depuis l'aide (V1-7-06)."""
+        return {"lignes": lire_journal(), "dossier": chemins.dossier_donnees(), "taille_max": JOURNAL_TAILLE_MAX,
+                "anciens": JOURNAL_ANCIENS}
+
     def revisions_web(self, q):
         """Indices livrés de l'ouvrage et modifications depuis le dernier (ou entre deux indices choisis)."""
         from genvar import revisions
@@ -1651,6 +1715,7 @@ class Application:
     # ------------------------------------------------------------------ actions
     def nouveau(self, d):
         self._clear_inbound()
+        self._liberer_verrou()
         self.s.nouveau(lieu_dans_le_nom=(d.get("mode") == "Existant"))   # règle R2 : sans lieu en projet neuf
         self.s.definir("mode", d.get("mode", "Neuf"))
         self.s.definir("automate", "")  # aucun matériel supposé pour un nouvel ouvrage
@@ -1659,14 +1724,30 @@ class Application:
         return {}
 
     def ouvrir(self, d):
+        from genvar import verrou
         self._clear_inbound()
-        self.s.ouvrir(d["chemin"])
+        ch = os.path.abspath(str(d["chemin"]))
+        verrou.prendre(ch, self.jeton, forcer=bool(d.get("forcer")))    # VerrouPris : ouvert par un autre OGIAS
+        try:
+            self.s.ouvrir(d["chemin"])
+        except Exception:
+            if ch != self.chemin_verrouille:
+                verrou.liberer(ch, self.jeton)
+            raise
+        if ch != self.chemin_verrouille:
+            self._liberer_verrou()
+            self.chemin_verrouille = ch
+        evenement("Ouvrage ouvert" + (" après reprise explicite du verrou d'un autre poste" if d.get("forcer") else "")
+                  + f" (mode {self.s.ouvrage.mode}).")
         self.ouvert = True
         self.creation_en_attente = False
         return {}
 
     def fermer(self, _):
         self._clear_inbound()
+        if self.ouvert:
+            evenement("Ouvrage fermé.")
+        self._liberer_verrou()
         self.ouvert = False
         self.creation_en_attente = False
         self.s.nouveau()
@@ -1677,6 +1758,10 @@ class Application:
         connus = {os.path.realpath(f.chemin) for f in projets.lister()}
         if os.path.realpath(str(d.get("chemin", ""))) not in connus:
             raise RegleMetier("Ce fichier n'est pas un ouvrage de « Mes ouvrages » : rien n'a été déplacé.")
+        from genvar import verrou
+        autre = verrou.detenu_par_autre(os.path.abspath(str(d["chemin"])), self.jeton)
+        if autre is not None:
+            raise RegleMetier(f"Ouvrage ouvert par {verrou.description(autre)} : il ne peut pas aller à la corbeille.")
         if self.s.chemin and os.path.abspath(self.s.chemin) == os.path.abspath(d["chemin"]):
             self.ouvert = False
             self.creation_en_attente = False
@@ -1795,6 +1880,8 @@ class Application:
             self.s.ouvrage, self.s.chemin, self.s.modifie = ancien, chemin_initial, modifie_initial
             raise
         self.creation_en_attente = False
+        if action == "creer":
+            evenement("Ouvrage créé.")
         # Conversion brouillon -> ouvrage : l'ancien fichier reste récupérable en corbeille.
         if action == "creer" and chemin_initial and chemin_initial != self.s.chemin:
             projets.supprimer(chemin_initial)
@@ -2259,6 +2346,7 @@ class Application:
             original.creer_copie("import")       # V1-7-03 : état d'avant l'import, restaurable
             replacement = staged.session
             replacement.chemin = original.chemin
+            replacement.garde_enregistrement = self._garde_verrou
             self.s = replacement
             try:
                 self._sauver()
@@ -2279,7 +2367,7 @@ ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle":
               "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre",
               "/api/es": "es", "/api/numero-ouvrage": "numero_ouvrage_suggere",
               "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page",
-              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/grille": "grille_web", "/api/attributs": "attributs_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/formats-appris": "formats_appris_web", "/api/gammes-materiel": "gammes_materiel_web", "/api/revisions": "revisions_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
+              "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/grille": "grille_web", "/api/attributs": "attributs_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/formats-appris": "formats_appris_web", "/api/gammes-materiel": "gammes_materiel_web", "/api/revisions": "revisions_web", "/api/journal": "journal_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",
               "/api/referentiel/synchronisation": "synchronisation_referentiel", "/api/ouvrage/copies": "copies_ouvrage",
               "/api/referentiel/impact": "rapport_impact", "/api/referentiel/propagation": "apercu_propagation",
               "/api/referentiel/apercu-modele": "apercu_modele"}
@@ -2351,6 +2439,10 @@ def fabriquer_gestionnaire(app):
                 with VERROU:
                     self._json(200, getattr(app, nom)(donnees))
             except (RegleMetier, InboundError, ValueError, KeyError) as ex:
+                from genvar.verrou import VerrouPris
+                if isinstance(ex, VerrouPris):          # ouvrage ouvert ailleurs : l'interface peut proposer la reprise
+                    return self._json(409, {"erreur": str(ex), "verrou": {k: ex.detail.get(k) for k in
+                                                                         ("hote", "utilisateur", "depuis", "meme_poste")}})
                 self._json(400, {"erreur": str(ex) if not isinstance(ex, KeyError) else f"Donnée manquante : {ex}"})
             except Exception:                                   # noqa: BLE001 — jamais d'échec silencieux
                 journal(traceback.format_exc())
@@ -2472,6 +2564,10 @@ class ServeurLocal(ThreadingHTTPServer):
 
 
 def demarrer(ouvrir_navigateur=True, port=None):
+    import platform
+    from genvar import VERSION
+    evenement(f"Démarrage d'OGIAS {VERSION} (Python {platform.python_version()}, {platform.system()} "
+              f"{platform.release()}).")
     app = Application()
     port = port or port_libre()
     serveur = ServeurLocal(("127.0.0.1", port), fabriquer_gestionnaire(app))
