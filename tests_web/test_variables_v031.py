@@ -62,6 +62,26 @@ class TestVariablesV031(ServeurNavigateur):
                 self.assertEqual(self.api("/api/variables")["lignes"], before)
                 self.page.locator("#v31-close-detail").click()
 
+    def test_sens_des_variables_affiche_et_filtrable(self):
+        """V1-5-03 : le sens (lecture, commande, consigne, retour) s'affiche au détail et se filtre."""
+        lignes = self.api("/api/variables")["lignes"]
+        self.assertTrue(all(l["sens"] for l in lignes))
+        attendu = {"TS": "lecture", "TM": "lecture", "CP": "lecture", "TC": "commande", "TR": "consigne", "RTR": "retour"}
+        for l in lignes:
+            if l["famille"] in attendu:
+                self.assertEqual(l["sens"], attendu[l["famille"]], l["nom"])
+        puces = self.page.locator("[data-var-sens]")
+        self.assertGreaterEqual(puces.count(), 1)
+        sens = puces.first.get_attribute("data-var-sens")
+        combien = len([l for l in lignes if l["sens"] == sens])
+        puces.first.click()
+        self.page.wait_for_function("n => document.querySelectorAll('.v31-variable-row').length === Math.min(n, 150)", arg=combien)
+        familles = set(self.page.locator(".v31-variable-row .v31-family").evaluate_all("els => els.map(e => e.title)"))
+        self.assertEqual(familles, {"Sens : " + sens})
+        self.page.locator(".v31-variable-row").first.click()
+        self.page.locator(".v31-variable-detail").wait_for()
+        self.assertIn(sens, self.page.locator(".v31-variable-detail").inner_text())
+
     def test_checkbox_space_keeps_native_selection(self):
         checkbox = self.page.locator(".v31-choose").first
         checkbox.focus()

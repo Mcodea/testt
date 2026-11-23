@@ -128,6 +128,7 @@ async function _dashboard(j) {
   try { E.recetteDashboard = await api("/api/recette"); } catch (_) { E.recetteDashboard = null; }
   try { E.esDashboard = await api("/api/es"); } catch (_) { E.esDashboard = null; }
   try { E.variablesDashboard = await api("/api/variables"); } catch (_) { E.variablesDashboard = null; }
+  try { E.activiteDashboard = await api("/api/activite"); } catch (_) { E.activiteDashboard = null; }
   if (perime(j)) return;
   E.vue = "dashboard"; rendre();
 }

@@ -25,6 +25,7 @@ from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
 from genvar import chemins, projets, VERSION
+from genvar.catalogue import sens_variable
 from genvar.modele import Equipement
 from genvar.session import Session, RegleMetier
 from genvar.inbound import InputKind, InboundError, preview_import, stage_import
@@ -1040,6 +1041,32 @@ class Application:
             sortie["lignes"] = lignes
         return sortie
 
+    def activite_recente(self, _):
+        """V1-4-33 : faits enregistrés de l'ouvrage ouvert, du plus récent au plus ancien (aucun fait inventé) :
+        indices livrés, copies horodatées avant une opération lourde, validations d'adresses (regroupées par instant)."""
+        if not self.ouvert:
+            raise RegleMetier("Ouvrez d'abord un ouvrage.")
+        from genvar import revisions
+        o = self.s.ouvrage
+        faits = []
+        for x in revisions.indices(o):
+            faits.append({"quand": str(x.get("le", "")).replace("T", " ")[:19], "nature": "indice",
+                          "texte": f"Indice {x['indice']} livré : {x.get('motif', '')}"})
+        for c in self.s.copies_horodatees():
+            faits.append({"quand": c["le"], "nature": "copie", "texte": c["libelle"]})
+        validations: dict = {}
+        for e in o.equipements:
+            for cle, t in (e.traces or {}).items():
+                if t.get("validee_le"):
+                    validations.setdefault(t["validee_le"], {"n": 0, "par": t.get("validee_par", ""), "niveau": cle.split(":")[0]})
+                    validations[t["validee_le"]]["n"] += 1
+        libelle_niveau = {"physique": "voie(s) physique(s)", "automate": "adresse(s) automate"}
+        for quand, v in validations.items():
+            faits.append({"quand": quand, "nature": "validation",
+                          "texte": f"{v['n']} {libelle_niveau.get(v['niveau'], 'adresse(s)')} validée(s)" + (f" par {v['par']}" if v["par"] else "")})
+        faits.sort(key=lambda f: f["quand"], reverse=True)
+        return {"faits": faits[:8], "total": len(faits)}
+
     def recherche_globale(self, q):
         """V1-5-06 : recherche par repère, variable, adresse ou libellé (équipements et variables de l'ouvrage ouvert)."""
         texte = " ".join(str((q or {}).get("q") or "").split()).lower()
@@ -1088,7 +1115,7 @@ class Application:
         for v in self.s.variables():
             adr = plan.get((v.ident_eq, v.cle))
             lignes.append({"ident_eq": v.ident_eq, "cle": v.cle, "nom": v.nom,
-                           "famille": v.famille, "type": v.type_logique,
+                           "famille": v.famille, "sens": sens_variable(v.famille), "type": v.type_logique,
                            "largeur": self._largeur_variable(v.type_logique),
                            "adresse": v.adresse, "adresse_proposee": adr.proposee if adr else "",
                            "etat_adressage": adr.etat if adr else "non résolue",
@@ -2520,7 +2547,7 @@ class Application:
 
 
 ROUTES_GET = {"/api/session-locale": "session_locale", "/api/referentiel/cycle": "referentiel_cycle", "/api/referentiel/vue": "referentiel_vue", "/api/accueil": "accueil", "/api/ouvrage": "ouvrage", "/api/equipement": "equipement",
-              "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre", "/api/recherche": "recherche_globale",
+              "/api/referentiel": "referentiel", "/api/listes-ouvrage": "listes_ouvrage", "/api/modele": "modele", "/api/numero": "numero_libre", "/api/recherche": "recherche_globale", "/api/activite": "activite_recente",
               "/api/es": "es", "/api/numero-ouvrage": "numero_ouvrage_suggere",
               "/api/lieu-proposition": "lieu_proposition", "/api/inbound/lignes": "inbound_page",
               "/api/variables": "variables_web", "/api/adressage": "adressage_web", "/api/materiel": "materiel", "/api/supervision": "supervision_web", "/api/recette": "recette_web", "/api/parcours": "parcours_web", "/api/fil": "fil_web", "/api/regles": "regles_web", "/api/outils": "outils_web", "/api/standards": "standards_web", "/api/grille": "grille_web", "/api/attributs": "attributs_web", "/api/essais": "essais_web", "/api/modeles-livrables": "modeles_livrables_web", "/api/formats-appris": "formats_appris_web", "/api/gammes-materiel": "gammes_materiel_web", "/api/revisions": "revisions_web", "/api/journal": "journal_web", "/api/equipement/ordre-export": "ordre_export_web", "/api/historique": "historique_web", "/api/modeles-livrables/texte": "modeles_livrables_texte", "/api/reglages/sources": "reglages_sources",

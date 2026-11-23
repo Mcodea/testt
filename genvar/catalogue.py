@@ -31,6 +31,17 @@ SIGNIFICATION_FAMILLES = {
 }
 
 
+# Sens d'échange d'une variable selon sa famille (V1-5-03) : vu de la supervision, ce que la variable fait.
+SENS_FAMILLES = {"TS": "lecture", "TM": "lecture", "CP": "lecture", "TC": "commande", "TR": "consigne",
+                 "RTR": "retour", "ES": "E/S locale", **{f: "interne" for f in FAMILLES_INTERNES}}
+SENS = ("lecture", "commande", "consigne", "retour")
+
+
+def sens_variable(famille):
+    """lecture (TS, TM, CP), commande (TC), consigne (TR), retour (RTR) ; E/S locale ou interne sinon."""
+    return SENS_FAMILLES.get(famille, "interne")
+
+
 def est_interne(famille):
     """Vrai pour une variable interne déclarée (BI, EI, MI, RI)."""
     return famille in FAMILLES_INTERNES

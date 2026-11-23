@@ -900,3 +900,7 @@ html[data-theme] .ap-etapes li { display: flex; gap: var(--o-e-2); align-items: 
 html[data-theme] .ap-etapes p { margin: 2px 0 0; color: var(--o-texte-2); font-size: var(--o-t-s); }
 html[data-theme] .ap-num { flex: none; width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; background: var(--o-action-plein); color: var(--o-sur-action); }
 html[data-theme] .ap-action { align-items: center; gap: var(--o-e-3); margin-bottom: var(--o-e-3); }
+
+/* Tableau de bord : activité récente (faits enregistrés) */
+html[data-theme] .v31-activite { list-style: none; margin: 0 0 var(--o-e-3); padding: 0; display: grid; gap: var(--o-e-1); font-size: var(--o-t-s); }
+html[data-theme] .v31-activite time { color: var(--o-texte-3); margin-right: var(--o-e-1); }

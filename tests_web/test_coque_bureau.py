@@ -841,6 +841,14 @@ class TestCoqueBureau(ServeurNavigateur):
         self.page.locator('.v31-variable-row[data-variable="%s"]' % nom).wait_for()
         self.assertEqual(self.page.evaluate('location.hash'), '#/variables')
 
+    def test_activite_recente_du_tableau_de_bord(self):
+        """V1-4-33 : l'activité récente du tableau de bord ne montre que des faits enregistrés (ici un indice livré)."""
+        self.api('/api/revisions/action', {'action': 'livrer', 'motif': 'Diffusion pour essai'})
+        self.ouvrir('#/dashboard')
+        ligne = self.page.locator('.v31-activite li[data-nature="indice"]').first
+        ligne.wait_for()
+        self.assertIn('Diffusion pour essai', ligne.inner_text())
+
     def test_onglet_apprentissage_des_formats(self):
         """L'apprentissage des formats a son onglet : explorateur, menu Outils, parcours en quatre étapes."""
         self.ouvrir('#/dashboard')

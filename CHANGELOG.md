@@ -15,6 +15,8 @@ Le numéro de version (`genvar/__init__.py`) est encore 0.32 ; il passera à 1.0
   ouvert sur un autre poste, qui ne peut alors plus enregistrer.
 - **Journal technique** tournant, consultable par Aide › Journal technique.
 - **Dupliquer un équipement** au ruban : numéro libre suivant, aucune adresse ni voie reprise.
+- **Activité récente** au tableau de bord (indices livrés, copies avant opérations lourdes, validations d'adresses) et
+  **sens des variables** (lecture, commande, consigne, retour) affiché et filtrable dans la table Variables.
 - **Recherche globale** (Ctrl K) étendue aux variables, aux adresses et aux libellés, en plus des repères.
 - **REGLES_DE_NOMMAGE.md** générée depuis le référentiel et le code (`outils/documenter_regles_nommage.py`), vérifiée à jour
   par un test.

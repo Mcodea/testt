@@ -33,6 +33,7 @@ function vueDashboardV31(){
  <h3>Points à traiter</h3>${issues.length?issues.map(c=>`<button type="button" data-nav="#/recette" class="v31-issue"><span class="v31-pill ${c.niveau==='Erreur'?'error':'warning'}">${V31.esc(c.niveau)}</span><span>${V31.esc(c.message)}</span></button>`).join(''):`<div class="v31-muted">${!recetteConnue?'Bilan indisponible tant que la recette ne peut pas être consultée.':anomalies===0?'Aucune anomalie détectée par la recette actuelle.':'Des points restent à traiter : ouvrez la recette pour consulter leur détail.'}</div>`}</section>
  <section class="v31-card v31-dash-activity"><h2>E/S par nature</h2><p class="v31-muted">${!esConnues?'Répartition E/S indisponible':points.length?`${points.length} E/S physiques renseignées`:'Aucune E/S physique renseignée'}</p>
  ${!esConnues?'<div class="v31-blank">Ouvrez la liste des E/S pour consulter les contrôles à résoudre.</div>':points.length? `<div class="v31-stack">${counts.map(([name,n]) => n ? `<div class="v31-stack-piece v31-f-${name}" title="${name}: ${n}" style="width:${(n / total) * 100}%"></div>` : "").join("")}</div><div class="v31-stack-legend">${counts.filter(x=>x[1]).map(([name,n]) => `<span>${name} ${n}</span>`).join("")}</div>` : `<div class="v31-blank">Aucune E/S affectée à l’ouvrage.</div>`}
+ ${(()=>{const f=E.activiteDashboard?.faits||[];return f.length?`<h3>Activité récente</h3><ul class="v31-activite">${f.map(x=>`<li data-nature="${V31.esc(x.nature)}"><time class="mono">${V31.esc(x.quand)}</time> ${V31.esc(x.texte)}</li>`).join('')}</ul>`:'';})()}
  <h3>Accès rapides</h3><div class="v31-quick"><button data-nav="#/inventaire">Équipements ${V31.icon('chevron',14)}</button><button data-nav="#/es">Liste des E/S ${V31.icon('chevron',14)}</button><button data-nav="#/variables">Variables ${V31.icon('chevron',14)}</button><button data-nav="#/recette">Recette ${V31.icon('chevron',14)}</button></div></section></div></section>`;
  document.querySelectorAll('[data-open]').forEach(b=>b.onclick=async()=>{try{await agir(apiOuvrir(b.dataset.open));E.ficheDraft=null;E.ficheDirty=false;naviguer('#/dashboard');}catch(e){}});
  // Lot 5g : les accès rapides deviennent le groupe « Parcours » du ruban (mêmes boutons, mêmes destinations)
@@ -41,8 +42,8 @@ function vueDashboardV31(){
  document.querySelectorAll('#vue .v31-quick').forEach(x=>{if(!x.querySelector('button')){x.previousElementSibling?.remove();x.remove();}});
 }
 function v31Status(t){const kind=t==='validée'?'success':t==='en conflit'||t==='non résolue'?'error':t==='à valider'?'warning':'info';return `<span class="v31-pill ${kind}">${V31.esc(t||'non résolue')}</span>`;}
-function v31VarFilter(rows){const st=E.v31Status||'',q=(E.v31Query||'').toLocaleLowerCase('fr');
- return rows.filter(v=>{if(st&&v.etat_adressage!==st)return false;if(q&&!`${v.nom} ${v.libelle||''} ${v.commentaire||''} ${v.source_es} ${v.famille} ${v.regle}`.toLocaleLowerCase('fr').includes(q))return false;
+function v31VarFilter(rows){const st=E.v31Status||'',sn=E.v31Sens||'',q=(E.v31Query||'').toLocaleLowerCase('fr');
+ return rows.filter(v=>{if(st&&v.etat_adressage!==st)return false;if(sn&&v.sens!==sn)return false;if(q&&!`${v.nom} ${v.libelle||''} ${v.commentaire||''} ${v.source_es} ${v.famille} ${v.sens||''} ${v.regle}`.toLocaleLowerCase('fr').includes(q))return false;
   return true;});}
 function v31EmptyColumns(){
  const cell=document.querySelector('.v31-table tbody td[colspan]');
@@ -91,7 +92,7 @@ function vueVariablesV31(){
  const body=pageRows.map(v=>{const t=teleMap.get(v.nom)||{};
    return `<tr class="v31-variable-row ${withDetail&&v.nom===selected?'selected':''}" tabindex="0" data-variable="${V31.esc(v.nom)}" title="Ouvrir le détail de ${V31.esc(v.nom)}">
      <td><input type="checkbox" class="v31-choose" data-ident="${V31.esc(v.ident_eq||'')}" data-cle="${V31.esc(v.cle||'')}" aria-label="Sélectionner ${V31.esc(v.nom)}" ${!neuf?'disabled':''}></td>
-     <td class="mono" title="${V31.esc(v.nom)}">${V31.esc(v.nom)}</td><td><span class="v31-family">${V31.esc(v.famille)}</span></td><td class="mono">${V31.esc(v.type||'—')}</td>
+     <td class="mono" title="${V31.esc(v.nom)}">${V31.esc(v.nom)}</td><td><span class="v31-family" title="Sens : ${V31.esc(v.sens||'—')}">${V31.esc(v.famille)}</span></td><td class="mono">${V31.esc(v.type||'—')}</td>
      <td class="v31-libelle" title="${V31.esc(v.libelle||v.commentaire||'')}">${V31.esc(v.libelle||v.commentaire||'—')}</td>
      <td class="mono" title="Adresse lue par la supervision (décalage Modbus compris)">${V31.esc(v31AdresseTele(v,t))}${v.validee?` <span title="Adresse validée et protégée">${V31.icon('shield',13)}</span>`:''}</td>
      <td>${v31Status(v.etat_adressage)}</td>
@@ -99,11 +100,13 @@ function vueVariablesV31(){
  const available=rows.filter(x=>x.etat_adressage==='proposée'&&!x.validee).length;
  const validable=rows.filter(x=>x.etat_adressage==='à valider'&&!x.validee).length;
  const blocked=!neuf||rows.some(x=>x.etat_adressage==='en conflit')||(!available&&!validable);
+ const sensCompte=['lecture','commande','consigne','retour'].map(s=>[s,rows.filter(x=>x.sens===s).length]).filter(x=>x[1]);
+ const sens=sensCompte.length?`<span class="v31-sens-groupe" role="group" aria-label="Sens de la variable">${sensCompte.map(([s,n])=>`<button type="button" class="v31-filter ${E.v31Sens===s?'active':''}" data-var-sens="${s}" aria-pressed="${E.v31Sens===s}">${s} ${n}</button>`).join('')}</span>`:'';
  const statuses=counts.map(([name,n])=>`<button type="button" class="v31-filter ${E.v31Status===name?'active':''}" data-var-status="${V31.esc(name)}">${V31.esc(name)} ${n}</button>`).join('');
  const detail=withDetail?`<aside class="v31-variable-detail" aria-label="Variable sélectionnée"><div class="v31-detail-heading"><span>Variable sélectionnée</span><button type="button" id="v31-close-detail" aria-label="Fermer le détail">${V31.icon('close',18)}</button></div>
  <h2 class="mono">${V31.esc(selectedVar.nom)}</h2><p>${V31.esc(selectedVar.commentaire||selectedVar.libelle||selectedVar.repere||'')}</p><div class="v31-detail-badges">${v31Status(selectedVar.etat_adressage)} <span class="v31-pill neutral">${V31.esc(selectedVar.famille)} · ${V31.esc(selectedVar.type)}</span></div>
  ${Composants.grille([   // lot 5d : grille de propriétés commune (mêmes valeurs qu'avant)
-  {titre:'Chaîne',proprietes:[{libelle:'E/S source',mono:true,valeur:selectedVar.source_es||'Fonction calculée'},
+  {titre:'Chaîne',proprietes:[{libelle:'Sens',valeur:selectedVar.sens||'—'},{libelle:'E/S source',mono:true,valeur:selectedVar.source_es||'Fonction calculée'},
    {libelle:'Voie physique',mono:true,valeur:selectedVar.source_es?(selectedVar.voie_es||'Non placée — Matériel'):'Sans objet'}]},
   {titre:'Adressage',proprietes:[{libelle:'Adresse télétransmission',mono:true,valeur:v31AdresseTele(selectedVar,teleMap.get(selectedVar.nom)||{})},
    {libelle:'Origine',valeur:selectedVar.origine_adressage||'—'},{libelle:'Règle appliquée',valeur:selectedVar.regle||selectedVar.motif||'Non définie'}]},
@@ -114,7 +117,7 @@ function vueVariablesV31(){
  const errCount=rows.filter(x=>['en conflit','non résolue'].includes(x.etat_adressage)).length;
  document.getElementById('vue').innerHTML=`<section class="v31-variable-screen ${withDetail?'has-detail':''}"><div class="v31-card v31-main-table">
  <div class="v31-table-toolbar"> <label class="v31-search-field">${V31.icon('search',16)}<input id="v31-var-search" value="${V31.esc(E.v31Query||'')}" aria-label="Filtrer les variables" placeholder="Filtrer"></label>
- <div class="v31-status-filters">${statuses}</div>
+ <div class="v31-status-filters">${statuses}${sens}</div>
  <div class="v31-actions"><button type="button" class="v31-secondary" id="v31-calculate" ${!neuf?'disabled':''} title="Calculer un aperçu sans appliquer les adresses">${V31.icon('spark',15)} Calculer</button>
  <button type="button" class="v31-primary" id="v31-validate-proposed" ${blocked?'disabled':''} title="${blocked?(!neuf?'Adresses historiques conservées':errCount?'Résoudre les conflits avant validation':'Aucune proposition à valider'):'Aperçu, application contrôlée puis validation explicite'}">${V31.icon('check',16)} ${available?`Valider les propositions · ${available}`:`Valider les adresses · ${validable}`}</button>
  <button type="button" id="v31-validate-selection" ${!neuf?'disabled':''} title="Valider les adresses des variables cochées">Valider la sélection</button>
@@ -130,6 +133,7 @@ function vueVariablesV31(){
  v31EmptyColumns();
  // Tri sur plusieurs pages : la liste entière est retriée et l'on revient à la première page.
  document.querySelector('table.v31-table')?.addEventListener('o-tri',()=>{if(shown.length>V31_PAGE){E.v31Page=0;vueVariablesV31();}});
+ document.querySelectorAll('[data-var-sens]').forEach(el=>el.onclick=()=>{E.v31Sens=E.v31Sens===el.dataset.varSens?'':el.dataset.varSens;E.v31Page=0;vueVariablesV31();});
  document.querySelectorAll('[data-var-status]').forEach(el=>el.onclick=()=>{E.v31Status=E.v31Status===el.dataset.varStatus?'':el.dataset.varStatus;E.v31Page=0;vueVariablesV31();});
  document.getElementById('v31-var-search').oninput=e=>{E.v31Query=e.target.value;E.v31Page=0;vueVariablesV31();const inp=document.getElementById('v31-var-search');inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length);};
  document.querySelectorAll('.v31-variable-row').forEach(row=>{const pick=()=>{E.v31Selected=row.dataset.variable;E.v31VarDetail=true;vueVariablesV31();};row.onclick=ev=>{if(!ev.target.closest('input'))pick();};row.onkeydown=ev=>{if(ev.target===row&&(ev.key==='Enter'||ev.key===' ')){ev.preventDefault();pick();}};});
