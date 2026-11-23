@@ -6,12 +6,13 @@ Les valeurs existantes des anciens ouvrages ne sont jamais modifiées par la ges
 """
 import json
 import os
-import re
 import tempfile
 from copy import deepcopy
+from typing import Any
 
 from genvar import chemins
 from genvar.session import RegleMetier
+from genvar import charte
 
 # Registre initial des lieux : les 15 communes ESB / RESO, codes obtenus par la règle de la
 # charte de codification (genvar/codification.py), validés le 9 novembre 2026 ; CACH = exception.
@@ -53,14 +54,46 @@ TYPES_DEFAUT = [
     {"code": "CL", "libelle": "Poste de chloration"},
     {"code": "QT", "libelle": "Poste de contrôle qualité"},
 ]
+# Sources d'acquisition (champ « automate » de l'ouvrage) et protocoles : liste fournie par l'utilisateur le
+# 16/11/2026 (tableau « SOURCE / PROTOCOLE »). « Sch » = Schneider Electric, « Sof » = SOFREL (Lacroix). Les
+# virgules étant interdites dans une valeur, « DL4W (LS,LT,OS) » s'écrit « DL4W (LS / LT / OS) ».
+CATEGORIES_SOURCES = ("Automate", "Télégestion", "E/S déportées", "Autres")
+SOURCES_DEFAUT = {
+    "Automate": ["Sch - Micro TSX37", "Sch - Premium TSX57", "Sch - M580", "Sch - M340", "Sch - M221",
+                 "Sch - M241", "Sch - M251", "Sie - S7-1500"],
+    "Télégestion": ["Sof - S4W Dual", "Sof - S4W Small", "Sof - S4W Medium", "Sof - S4W Large", "Sof - S500",
+                    "Sof - LogUp", "Sof - DL4W (LS / LT / OS)", "Sof - NEO", "Sof - Ydrix", "Sch - SCADAPack 474",
+                    "Sch - SCADAPack 574", "Sch - SCADAPack 300E / 500E", "Sch - SCADAPack 570",
+                    "Sch - SCADAPack 470"],
+    "E/S déportées": ["Sch - STBNIP2212", "Sch - STBNIP2311", "Sch - Edge I/O NTS", "Sch - Modicon TM3"],
+}
+PROTOCOLES_DEFAUT = ["Modbus TCP/IP", "LACBUS IP", "EtherNet/IP", "LACBUS IP / LX Connect"]
+# Outils d'ingénierie de l'ouvrage (18/11) : supervision et IHM. Seuls les outils déjà connus d'OGIAS sont proposés
+# (TOPKAPI : format d'import relevé ; Vijeo Designer : cité dans la Recette, format non décrit). L'utilisateur
+# ajoute les siens par « Gérer les listes » ; un outil ajouté n'entraîne aucune règle tant qu'OGIAS ne le décrit pas.
+SUPERVISIONS_DEFAUT = ["TOPKAPI"]
+IHM_DEFAUT = ["Vijeo Designer"]
+# Valeurs des versions précédentes : conservées (projets existants) et classées sans deviner.
+CATEGORIES_HISTORIQUES = {"M580": "Automate", "M340": "Automate", "TSX": "Automate", "SOFREL S4W": "Télégestion"}
+VERSION_SOURCES = 2                  # 2 : Siemens S7-1500 (22/11/2026), ajout sans rien retirer
+
 DEFAUT = {
     "version": VERSION,
     "lieux": COMMUNES_DEFAUT,
     "types_ouvrage": TYPES_DEFAUT,
-    "automates": ["M580", "M340", "TSX", "SOFREL S4W"],
-    "protocoles": ["Modbus TCP", "SOFREL S4W", "OPC UA", "OPC DA"],
+    "automates": [v for liste in SOURCES_DEFAUT.values() for v in liste],
+    "protocoles": list(PROTOCOLES_DEFAUT),
+    "supervisions": list(SUPERVISIONS_DEFAUT),
+    "ihm": list(IHM_DEFAUT),
+    "categories_sources": {v: c for c, liste in SOURCES_DEFAUT.items() for v in liste},
+    "version_sources": VERSION_SOURCES,
 }
-GROUPES = ("lieux", "types_ouvrage", "automates", "protocoles")
+GROUPES = ("lieux", "types_ouvrage", "automates", "protocoles", "supervisions", "ihm")
+
+
+def categorie_source(valeurs, source):
+    """Catégorie d'une source : celle enregistrée, sinon « Autres » (aucune déduction)."""
+    return (valeurs.get("categories_sources") or {}).get(source) or CATEGORIES_HISTORIQUES.get(source) or "Autres"
 
 
 def chemin():
@@ -77,7 +110,7 @@ def lire():
         if not isinstance(valeurs, dict):
             raise ValueError("Le document doit contenir un objet JSON.")
         # Conserver les valeurs enregistrées, ne jamais les remplacer par des valeurs par défaut.
-        resultat = deepcopy(DEFAUT)
+        resultat: dict[str, Any] = deepcopy(DEFAUT)
         for groupe in GROUPES:
             if groupe in valeurs:
                 if not isinstance(valeurs[groupe], list):
@@ -95,9 +128,29 @@ def lire():
                     codes.add(ville["code"].casefold())
                     noms.add(ville["libelle"].casefold())
             resultat["version"] = 2
+        resultat["categories_sources"] = dict(valeurs.get("categories_sources") or {})
+        resultat["version_sources"] = valeurs.get("version_sources", 0)
+        a_ecrire = False
         if valeurs.get("version", 1) < VERSION:
             resultat["remplaces"] = _migrer_codes_charte(resultat["lieux"])
             resultat["version"] = VERSION
+            a_ecrire = True
+        if resultat["version_sources"] < VERSION_SOURCES:
+            # Ajout des sources et protocoles du 16/11/2026, sans retirer ni renommer aucune valeur existante.
+            for categorie, liste in SOURCES_DEFAUT.items():
+                for v in liste:
+                    if v not in resultat["automates"]:
+                        resultat["automates"].append(v)
+                    resultat["categories_sources"].setdefault(v, categorie)
+            for v in resultat["automates"]:
+                if v in CATEGORIES_HISTORIQUES:
+                    resultat["categories_sources"].setdefault(v, CATEGORIES_HISTORIQUES[v])
+            for v in PROTOCOLES_DEFAUT:
+                if v not in resultat["protocoles"]:
+                    resultat["protocoles"].append(v)
+            resultat["version_sources"] = VERSION_SOURCES
+            a_ecrire = True
+        if a_ecrire:
             ecrire({k: v for k, v in resultat.items() if k != "remplaces"})
         return resultat
     except (OSError, ValueError, TypeError) as exc:
@@ -156,13 +209,14 @@ def _valider(groupe, code, libelle=""):
     code = str(code or "").strip().upper() if groupe in ("lieux", "types_ouvrage") else str(code or "").strip()
     libelle = str(libelle or "").strip()
     if groupe == "lieux":
-        if not re.fullmatch(r"[A-Z0-9]{4}", code):
-            raise RegleMetier("Un code de lieu doit contenir 4 caractères alphanumériques.")
+        # 19/11 : les listes servent à toutes les chartes ; la longueur exacte est contrôlée par la charte de l'ouvrage.
+        if not charte.conforme(charte.CODE_LISTE, code):
+            raise RegleMetier("Un code de lieu contient 1 à 8 lettres majuscules ou chiffres.")
         if not libelle or len(libelle) > 100:
             raise RegleMetier("Le lieu doit avoir un libellé de 1 à 100 caractères.")
     elif groupe == "types_ouvrage":
-        if not re.fullmatch(r"[A-Z]{2}", code):
-            raise RegleMetier("Un code d'ouvrage doit contenir exactement 2 lettres majuscules.")
+        if not charte.conforme(charte.CODE_LISTE, code):
+            raise RegleMetier("Un code d'ouvrage contient 1 à 8 lettres majuscules ou chiffres.")
         if not libelle or len(libelle) > 100:
             raise RegleMetier("Le type d'ouvrage doit avoir un libellé de 1 à 100 caractères.")
     else:
@@ -182,6 +236,10 @@ def modifier(action, groupe, code="", libelle="", ancien="", regie=""):
         regie = str(regie or "Autre").strip().upper()
         if regie not in ("ESB", "RESO", "AUTRE"):
             raise RegleMetier("La régie du lieu doit être ESB, RESO ou Autre.")
+    if groupe == "automates":
+        categorie = str(regie or "Autres").strip()
+        if categorie not in CATEGORIES_SOURCES:
+            raise RegleMetier("Catégorie de source : " + ", ".join(CATEGORIES_SOURCES) + ".")
     anciens_codes = [(x["code"] if isinstance(x, dict) else x) for x in liste]
     if action == "ajouter":
         code, libelle = _valider(groupe, code, libelle)
@@ -212,6 +270,12 @@ def modifier(action, groupe, code="", libelle="", ancien="", regie=""):
                 raise RegleMetier("Cette valeur existe déjà dans le référentiel.")
             liste[index] = ({"code": code, "libelle": libelle, "regie": regie} if groupe == "lieux"
                             else {"code": code, "libelle": libelle} if groupe == "types_ouvrage" else code)
+    if groupe == "automates":
+        cats = valeurs.setdefault("categories_sources", {})
+        if action == "supprimer" or (action == "modifier" and code != ancien):
+            cats.pop(ancien, None)
+        if action != "supprimer":
+            cats[code] = categorie
     ecrire(valeurs)
     return valeurs
 

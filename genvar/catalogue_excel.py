@@ -38,6 +38,8 @@ def _col_index(ref):
 def lire_xlsx(chemin):
     """{nom de l'onglet: [lignes]} ; chaque ligne est une liste de textes (colonne 1 = indice 0)."""
     with zipfile.ZipFile(chemin) as z:
+        from .tableur import controler_archive
+        controler_archive(z)
         noms = z.namelist()
         partages = []
         if "xl/sharedStrings.xml" in noms:

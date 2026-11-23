@@ -105,16 +105,26 @@ def _lire_ods(z):
     return feuilles
 
 
+TAILLE_DECOMPRESSEE_MAX = 200 * 1024 * 1024
+
+
+def controler_archive(z):
+    """Audit du 16/11 : un classeur piégé (archive qui gonfle à la décompression) ne doit pas saturer la mémoire."""
+    if sum(i.file_size for i in z.infolist()) > TAILLE_DECOMPRESSEE_MAX:
+        raise ValueError("Classeur trop volumineux une fois décompressé (200 Mo au plus) : fichier refusé.")
+    return z
+
+
 def lire_classeur(chemin):
     """{nom de feuille: [[cellule, …], …]}."""
     p = Path(chemin)
     ext = p.suffix.lower()
     if ext in (".xlsx", ".xlsm"):
         with zipfile.ZipFile(p) as z:
-            return _lire_xlsx(z)
+            return _lire_xlsx(controler_archive(z))
     if ext == ".ods":
         with zipfile.ZipFile(p) as z:
-            return _lire_ods(z)
+            return _lire_ods(controler_archive(z))
     if ext in (".csv", ".txt"):
         donnees = p.read_bytes()
         for enc in ("utf-8-sig", "cp1252", "latin-1"):

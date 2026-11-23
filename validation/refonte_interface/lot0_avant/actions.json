@@ -1,0 +1,1075 @@
+{
+ "ouvrages": [
+  {
+   "cle": "#v31-new-project",
+   "balise": "button",
+   "texte": "Créer un ouvrage neuf"
+  },
+  {
+   "cle": "#v31-import-project",
+   "balise": "button",
+   "texte": "Ouvrir un projet existant"
+  },
+  {
+   "cle": "#v31-ref-open",
+   "balise": "button",
+   "texte": "Référentiel métier"
+  },
+  {
+   "cle": "#v31-filter-projects",
+   "balise": "input",
+   "texte": "Rechercher parmi les ouvrages"
+  },
+  {
+   "cle": "[delete][repere]",
+   "balise": "button",
+   "texte": ""
+  }
+ ],
+ "tableau_de_bord": [
+  {
+   "cle": "[nav=#/ouvrages]",
+   "balise": "button",
+   "texte": "Tout voir"
+  },
+  {
+   "cle": "[open]",
+   "balise": "button",
+   "texte": "XT Réservoir fictif de démonstration d'interface XTSTRV01 · "
+  },
+  {
+   "cle": "[nav=#/recette]",
+   "balise": "button",
+   "texte": "Alerte Liste des E/S : 45 E/S non validée(s) dans la liste d"
+  },
+  {
+   "cle": "[nav=#/inventaire]",
+   "balise": "button",
+   "texte": "Équipements"
+  },
+  {
+   "cle": "[nav=#/es]",
+   "balise": "button",
+   "texte": "Liste des E/S"
+  },
+  {
+   "cle": "[nav=#/variables]",
+   "balise": "button",
+   "texte": "Variables"
+  }
+ ],
+ "equipements": [
+  {
+   "cle": "#recherche",
+   "balise": "input",
+   "texte": "Rechercher un repère, un libellé, un type"
+  },
+  {
+   "cle": "#b-eq",
+   "balise": "button",
+   "texte": "+ Équipement"
+  },
+  {
+   "cle": "#b-uf",
+   "balise": "button",
+   "texte": "+ UF"
+  },
+  {
+   "cle": "#b-import",
+   "balise": "button",
+   "texte": "Importer…"
+  },
+  {
+   "cle": "#gerer-listes",
+   "balise": "button",
+   "texte": "Gérer les listes…"
+  },
+  {
+   "cle": "#lieu",
+   "balise": "select",
+   "texte": "XTST"
+  },
+  {
+   "cle": "#type_ouvrage",
+   "balise": "select",
+   "texte": "RV"
+  },
+  {
+   "cle": "#libelle",
+   "balise": "input",
+   "texte": "Réservoir fictif de démonstration d'interface"
+  },
+  {
+   "cle": "#numero_ouvrage",
+   "balise": "input",
+   "texte": "01"
+  },
+  {
+   "cle": "#proposer-numero",
+   "balise": "button",
+   "texte": ""
+  },
+  {
+   "cle": "#localisation",
+   "balise": "input",
+   "texte": "Adresse, site ou précision géographique"
+  },
+  {
+   "cle": "#automate",
+   "balise": "select",
+   "texte": "Sch - M340"
+  },
+  {
+   "cle": "#communication-choix",
+   "balise": "button",
+   "texte": ""
+  },
+  {
+   "cle": "#revision",
+   "balise": "input",
+   "texte": "A"
+  },
+  {
+   "cle": "#fiche-annuler",
+   "balise": "button",
+   "texte": ""
+  },
+  {
+   "cle": "#fiche-modifier",
+   "balise": "button",
+   "texte": ""
+  },
+  {
+   "cle": "[nav=#/es]",
+   "balise": "button",
+   "texte": "Étape suivante : Liste des E/S →"
+  }
+ ],
+ "fiche_equipement": [
+  {
+   "cle": "#recherche",
+   "balise": "input",
+   "texte": "Rechercher un repère, un libellé, un type"
+  },
+  {
+   "cle": "#b-eq",
+   "balise": "button",
+   "texte": "+ Équipement"
+  },
+  {
+   "cle": "#b-uf",
+   "balise": "button",
+   "texte": "+ UF"
+  },
+  {
+   "cle": "#b-import",
+   "balise": "button",
+   "texte": "Importer…"
+  },
+  {
+   "cle": "#e-mod",
+   "balise": "button",
+   "texte": ""
+  },
+  {
+   "cle": "#e-dep",
+   "balise": "button",
+   "texte": ""
+  },
+  {
+   "cle": "#e-val",
+   "balise": "button",
+   "texte": ""
+  },
+  {
+   "cle": "#e-sup",
+   "balise": "button",
+   "texte": ""
+  },
+  {
+   "cle": "#pa-bouton",
+   "balise": "button",
+   "texte": "Liste des E/S →"
+  },
+  {
+   "cle": "#onglet-eq-es",
+   "balise": "button",
+   "texte": "1 E/S physiques 2 E/S retenue(s)"
+  },
+  {
+   "cle": "#onglet-eq-fonc",
+   "balise": "button",
+   "texte": "2 Informations fonctionnelles 4 retenue(s)"
+  },
+  {
+   "cle": "#onglet-eq-lignes",
+   "balise": "button",
+   "texte": "3 Lignes de supervision 0 ligne(s)"
+  },
+  {
+   "cle": "#e-add-es",
+   "balise": "button",
+   "texte": "+ E/S personnalisée"
+  },
+  {
+   "cle": "[cle]",
+   "balise": "input",
+   "texte": "on"
+  },
+  {
+   "cle": "[nav=#/es]",
+   "balise": "button",
+   "texte": "Étape suivante : Liste des E/S →"
+  }
+ ],
+ "liste_es": [
+  {
+   "cle": "#x-val-tout",
+   "balise": "button",
+   "texte": "Valider les affichées"
+  },
+  {
+   "cle": "#x-val",
+   "balise": "button",
+   "texte": "Valider la sélection"
+  },
+  {
+   "cle": "#es-export",
+   "balise": "button",
+   "texte": "⇩ Exporter la liste"
+  },
+  {
+   "cle": "[f]",
+   "balise": "button",
+   "texte": "45 Entrées TOR"
+  },
+  {
+   "cle": "#x-q",
+   "balise": "input",
+   "texte": "Rechercher un signal E/S"
+  },
+  {
+   "cle": "#x-uf",
+   "balise": "select",
+   "texte": "Toutes les UF Sans UF"
+  },
+  {
+   "cle": "#x-equip",
+   "balise": "select",
+   "texte": "Tous les équipements XTSTRV01HV03 XTSTRV01HV06 XTSTRV01HV09 "
+  },
+  {
+   "cle": "#es-effacer",
+   "balise": "button",
+   "texte": "Effacer les filtres"
+  },
+  {
+   "cle": "#x-coche-tout",
+   "balise": "input",
+   "texte": "on"
+  },
+  {
+   "cle": "[i]",
+   "balise": "tr",
+   "texte": "XTSTRV01HV03 ET_RV01HV03_FDC_FER ET Vanne manuelle HV03 – ET"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "0"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "1"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "2"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "3"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "4"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "5"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "6"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "7"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "8"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "9"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "10"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "11"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "12"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "13"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "14"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "15"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "16"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "17"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "18"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "19"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "20"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "21"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "22"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "23"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "24"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "25"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "26"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "27"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "28"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "29"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "30"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "31"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "32"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "33"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "34"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "35"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "36"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "37"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "38"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "39"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "40"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "41"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "42"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "43"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "44"
+  },
+  {
+   "cle": "[nav=#/inventaire]",
+   "balise": "button",
+   "texte": "← Équipements"
+  },
+  {
+   "cle": "[nav=#/materiel]",
+   "balise": "button",
+   "texte": "Étape suivante : Matériel →"
+  }
+ ],
+ "materiel": [
+  {
+   "cle": "#m-calc",
+   "balise": "button",
+   "texte": "Recalculer le matériel"
+  },
+  {
+   "cle": "#m-valider",
+   "balise": "button",
+   "texte": "Valider le matériel"
+  },
+  {
+   "cle": "#m-cartes",
+   "balise": "button",
+   "texte": ""
+  },
+  {
+   "cle": "#m-impl",
+   "balise": "button",
+   "texte": ""
+  },
+  {
+   "cle": "#x-val-tout",
+   "balise": "button",
+   "texte": ""
+  },
+  {
+   "cle": "#x-val",
+   "balise": "button",
+   "texte": ""
+  },
+  {
+   "cle": "#x-xl",
+   "balise": "button",
+   "texte": ""
+  },
+  {
+   "cle": "#x-ca",
+   "balise": "button",
+   "texte": ""
+  },
+  {
+   "cle": "#x-xsy",
+   "balise": "button",
+   "texte": ""
+  },
+  {
+   "cle": "#x-txt",
+   "balise": "button",
+   "texte": ""
+  },
+  {
+   "cle": "#pa-bouton",
+   "balise": "button",
+   "texte": "Voir les voies"
+  },
+  {
+   "cle": "[emplacement][role]",
+   "balise": "div",
+   "texte": "CPS BMX CPS 3500 alimentation"
+  },
+  {
+   "cle": "[carte]",
+   "balise": "button",
+   "texte": "2 ET BMX DDI 6402K 45/64 voies · réserve 30 %"
+  },
+  {
+   "cle": "",
+   "balise": "button",
+   "texte": "Information : Catalogue Schneider M340 / M580 établi le 12/1"
+  },
+  {
+   "cle": "#m-profil",
+   "balise": "select",
+   "texte": "64 voies TOR · 8 voies analogiques 32 voies TOR · 8 voies an"
+  },
+  {
+   "cle": "#m-reserve",
+   "balise": "input",
+   "texte": "20"
+  },
+  {
+   "cle": "#onglet-mat-voies",
+   "balise": "button",
+   "texte": "1 Voies des E/S 45 voie(s) à valider"
+  },
+  {
+   "cle": "#onglet-mat-reglages",
+   "balise": "button",
+   "texte": "2 Réglages du calcul alimentation, processeur, réserve"
+  },
+  {
+   "cle": "#onglet-mat-livrables",
+   "balise": "button",
+   "texte": "3 Nomenclature et livrables 6 référence(s)"
+  },
+  {
+   "cle": "[f]",
+   "balise": "button",
+   "texte": "45 voies à valider"
+  },
+  {
+   "cle": "#m-lib",
+   "balise": "button",
+   "texte": "Libérer les voies non validées"
+  },
+  {
+   "cle": "#x-q",
+   "balise": "input",
+   "texte": "Rechercher"
+  },
+  {
+   "cle": "#x-coche-tout",
+   "balise": "input",
+   "texte": "on"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "0"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "1"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "2"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "3"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "4"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "5"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "6"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "7"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "8"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "9"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "10"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "11"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "12"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "13"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "14"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "15"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "16"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "17"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "18"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "19"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "20"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "21"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "22"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "23"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "24"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "25"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "26"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "27"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "28"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "29"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "30"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "31"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "32"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "33"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "34"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "35"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "36"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "37"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "38"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "39"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "40"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "41"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "42"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "43"
+  },
+  {
+   "cle": "",
+   "balise": "input",
+   "texte": "44"
+  },
+  {
+   "cle": "#pt-cat-q",
+   "balise": "input",
+   "texte": "Filtrer le catalogue"
+  },
+  {
+   "cle": "[ref][type]",
+   "balise": "button",
+   "texte": "BMX CPS 2000 100-240 V CA, 20 W"
+  },
+  {
+   "cle": "[nature][ref][type][voies]",
+   "balise": "button",
+   "texte": "BMX DDI 6402K 64 entrées TOR 24 V CC"
+  },
+  {
+   "cle": "[ptOnglet=props]",
+   "balise": "button",
+   "texte": "Propriétés"
+  },
+  {
+   "cle": "[ptOnglet=controles]",
+   "balise": "button",
+   "texte": "Contrôles 5"
+  },
+  {
+   "cle": "[nav=#/es]",
+   "balise": "button",
+   "texte": "← Liste des E/S"
+  },
+  {
+   "cle": "[nav=#/variables]",
+   "balise": "button",
+   "texte": "Étape suivante : Variables →"
+  }
+ ],
+ "variables": [
+  {
+   "cle": "[varView]",
+   "balise": "button",
+   "texte": "Toutes"
+  },
+  {
+   "cle": "#v31-var-search",
+   "balise": "input",
+   "texte": "Filtrer les variables"
+  },
+  {
+   "cle": "[varStatus]",
+   "balise": "button",
+   "texte": "proposée 120"
+  },
+  {
+   "cle": "#v31-calculate",
+   "balise": "button",
+   "texte": "Calculer"
+  },
+  {
+   "cle": "#v31-validate-proposed",
+   "balise": "button",
+   "texte": "Valider les propositions · 120"
+  },
+  {
+   "cle": "#v31-var-more",
+   "balise": "button",
+   "texte": "···"
+  },
+  {
+   "cle": "#v31-select-all",
+   "balise": "input",
+   "texte": "on"
+  },
+  {
+   "cle": "[cle][ident]",
+   "balise": "input",
+   "texte": "on"
+  },
+  {
+   "cle": "#v31-prev-page",
+   "balise": "button",
+   "texte": "Précédent"
+  },
+  {
+   "cle": "#v31-next-page",
+   "balise": "button",
+   "texte": "Suivant"
+  },
+  {
+   "cle": "#v31-adr-settings",
+   "balise": "button",
+   "texte": "Paramètres d’adressage"
+  },
+  {
+   "cle": "[ppEq][ppVue]",
+   "balise": "button",
+   "texte": "120 adresse(s) de variable à valider (ex. TS_RV01PM01_MA)."
+  },
+  {
+   "cle": "[nav=#/materiel]",
+   "balise": "button",
+   "texte": "← Matériel"
+  },
+  {
+   "cle": "[nav=#/recette]",
+   "balise": "button",
+   "texte": "Étape suivante : Recette →"
+  }
+ ],
+ "recette": [
+  {
+   "cle": "#r-dossier",
+   "balise": "button",
+   "texte": "Dossier de recette complet (zip)"
+  },
+  {
+   "cle": "#r-actualiser",
+   "balise": "button",
+   "texte": "Actualiser les contrôles"
+  },
+  {
+   "cle": "[export=es_xsy]",
+   "balise": "button",
+   "texte": "Télécharger XSY ↓"
+  },
+  {
+   "cle": "[export=es_txt]",
+   "balise": "button",
+   "texte": "Télécharger TXT ↓"
+  },
+  {
+   "cle": "[export=xsy]",
+   "balise": "button",
+   "texte": "Télécharger XSY ↓"
+  },
+  {
+   "cle": "[export=topkapi]",
+   "balise": "button",
+   "texte": "Télécharger ZIP ↓"
+  },
+  {
+   "cle": "[export=es_cartes]",
+   "balise": "button",
+   "texte": "Télécharger XLSX ↓"
+  },
+  {
+   "cle": "[export=liste_es]",
+   "balise": "button",
+   "texte": "Tableau de travail (une ligne par E/S)"
+  },
+  {
+   "cle": "[export=tele_etudes]",
+   "balise": "button",
+   "texte": "Télécharger XLSX ↓"
+  },
+  {
+   "cle": "[export=nomenclature]",
+   "balise": "button",
+   "texte": "Télécharger XLSX ↓"
+  },
+  {
+   "cle": "[i]",
+   "balise": "button",
+   "texte": "Aller à l'étape"
+  },
+  {
+   "cle": "[ppEq][ppVue]",
+   "balise": "button",
+   "texte": ""
+  },
+  {
+   "cle": "[nav=#/variables]",
+   "balise": "button",
+   "texte": "← Variables"
+  },
+  {
+   "cle": "[nav=#/ouvrages]",
+   "balise": "button",
+   "texte": "Terminer et revenir à mes ouvrages"
+  }
+ ],
+ "referentiel": [
+  {
+   "cle": "#rf-hist",
+   "balise": "button",
+   "texte": "Historique des révisions"
+  },
+  {
+   "cle": "#rf-exp",
+   "balise": "button",
+   "texte": "Exporter vers Excel"
+  },
+  {
+   "cle": "#rf-creer",
+   "balise": "button",
+   "texte": "Modifier : créer un brouillon"
+  },
+  {
+   "cle": "[refObjet]",
+   "balise": "button",
+   "texte": "Types et modèles"
+  },
+  {
+   "cle": "#rf-q",
+   "balise": "input",
+   "texte": "Rechercher un type, un signal…"
+  },
+  {
+   "cle": "[f]",
+   "balise": "button",
+   "texte": "Tous 50"
+  },
+  {
+   "cle": "[t]",
+   "balise": "button",
+   "texte": "AP Source 1"
+  },
+  {
+   "cle": "[o]",
+   "balise": "button",
+   "texte": "E/S physiques"
+  }
+ ]
+}

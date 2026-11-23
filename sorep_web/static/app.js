@@ -17,6 +17,7 @@ async function api(chemin, donnees) {
   return j;
 }
 function toast(texte, err) {
+  if (typeof Coque !== "undefined") Coque.journal(texte, err);     // lot 2b : chaque message reste au journal
   const t = document.createElement("div");
   t.className = "toast" + (err ? " err" : "");
   t.textContent = texte;
@@ -76,7 +77,9 @@ function sansOuvrage(j) {
   history.replaceState(null, "", "#/ouvrages");
   return _accueil(j);
 }
-async function recharger() { E.ouvrage = await api("/api/ouvrage"); E.listes = await api("/api/listes-ouvrage"); rendre(); }
+async function recharger() { E.ouvrage = await api("/api/ouvrage"); E.listes = await api("/api/listes-ouvrage");
+  if (E.vue === "grille") E.grille = await api("/api/grille");                 // grille d'ingénierie (lot 5) après un import
+  rendre(); }
 async function _es(j) {
   E.ouvrage = await api("/api/ouvrage");
   if (!E.ouvrage.ouvert) return sansOuvrage(j);
@@ -120,6 +123,25 @@ async function _aVenir(etape, j) {
   E.detailEtape = detail; E.v31Tele = tele; E.vue = etape; rendre();
 }
 async function rechargerES() { E.es = await api("/api/es"); E.ouvrage = await api("/api/ouvrage"); rendre(); }
+async function _grille(j) {
+  E.ouvrage = await api("/api/ouvrage");
+  if (!E.ouvrage.ouvert) return _accueil(j);
+  E.grille = await api("/api/grille");
+  if (perime(j)) return;
+  E.vue = "grille"; rendre();
+}
+async function _standards(j) {
+  E.ouvrage = await api("/api/ouvrage");
+  if (perime(j)) return;
+  E.vue = "standards";
+  E.standards = await api("/api/standards");
+  E.modelesLivrables = await api("/api/modeles-livrables");
+  E.formatsAppris = await api("/api/formats-appris");
+  E.gammesMateriel = await api("/api/gammes-materiel");
+  E.attributsAtelier = await api("/api/attributs");
+  if (perime(j)) return;
+  rendre();
+}
 async function _referentiel(j) {
   E.ouvrage = await api("/api/ouvrage");
   if (perime(j)) return;
@@ -136,7 +158,7 @@ async function chargerReferentiel() {
 }
 /* Navigation par adresse (#/…) : chaque écran a son adresse, le bouton « Retour » du navigateur fonctionne,
    et la barre du haut donne accès à tous les écrans depuis n'importe où. */
-const ROUTES = {"#/ouvrages": _accueil, "#/dashboard": _dashboard, "#/inventaire": _ouvrage, "#/es": _es, "#/materiel": _materiel, "#/referentiel": _referentiel,
+const ROUTES = {"#/ouvrages": _accueil, "#/dashboard": _dashboard, "#/inventaire": _ouvrage, "#/es": _es, "#/materiel": _materiel, "#/referentiel": _referentiel, "#/standards": _standards, "#/grille": _grille,
                 "#/variables": j => _aVenir("variables", j), "#/supervision": j => _aVenir("supervision", j), "#/adressage": j => _aVenir("adressage", j), "#/recette": j => _aVenir("recette", j),
                 "#/controles": j => _aVenir("recette", j), "#/exports": j => _aVenir("recette", j)};
 async function naviguer(route) {
@@ -149,7 +171,7 @@ async function naviguer(route) {
     E.esFormDirty = false;
   }
   if (route !== "#/inventaire" && E.ouvrage?.creation_en_attente) {
-    await api("/api/fermer"); E.ouvrage = null;
+    await api("/api/fermer", {}); E.ouvrage = null;
   }
   E.apresFermeture = null; fermerModale();
   if (location.hash === route) afficher(); else location.hash = route;
@@ -185,7 +207,8 @@ document.addEventListener("click", ev => {
 /* ------------------------------------------------------------------ rendu général */
 // Pied d'étape commun : précédent / état / suivant, ajouté à chaque écran du parcours.
 function piedEtape() {
-  const o = E.ouvrage, i = ETAPES.findIndex(x => x[1] === vueEtape(E.vue)), zone = document.querySelector("#vue .contenu");
+  const o = E.ouvrage, i = ETAPES.findIndex(x => x[1] === vueEtape(E.vue));
+  const zone = document.querySelector("#vue .contenu") || document.querySelector("#vue > .v31-variable-screen");
   if (!o || !o.ouvert || i < 0 || !zone || o.en_conception) return;
   zone.querySelector(".pied-etape")?.remove();
   const prec = ETAPES[i - 1], suiv = ETAPES[i + 1], statut = etatEtape(vueEtape(E.vue), o);
@@ -210,9 +233,18 @@ const ROUTE_VUE = {ouvrage: "#/inventaire", es: "#/es", materiel: "#/materiel", 
 async function panneauParcours(vue, zone) {
   let etapes;
   try { etapes = (await api("/api/parcours")).etapes || []; } catch (e) { return; }
+  if (vueEtape(E.vue) !== vue) return;                    // écran quitté pendant la lecture du parcours
   const et = etapes.find(x => x.vue === vue);
   zone.querySelector(".parcours-points")?.remove();
-  if (!et || (!et.bloquants.length && !et.a_verifier.length)) return;
+  // Refonte, lot 2b : les contrôles de l'étape sont dans le panneau de sortie, en bas de la fenêtre.
+  const n = et ? et.bloquants.length + et.a_verifier.length : 0;
+  const cible = zone.querySelector("#pt-controles");
+  if (cible) {
+    cible.innerHTML = `<p class="pt-cat-aide">${n ? `${n} point(s) de contrôle pour cette étape : ` : "Aucun point de contrôle pour cette étape. "}ils sont listés dans le panneau de sortie, en bas de la fenêtre.</p><button type="button" class="lien" data-o-voir-sortie>Afficher les contrôles</button>`;
+    cible.querySelector("[data-o-voir-sortie]").onclick = () => Coque.sortie();
+    const t = zone.querySelector('[data-pt-onglet="controles"] .pt-compte'); if (t) t.textContent = n;
+  }
+  if (!et) return Coque.controles(null);
   const precedente = etapes.find(x => x.etape < et.etape && !x.pret);
   const ligne = p => `<li><button type="button" class="lien" data-pp-vue="${esc(p.vue)}" data-pp-eq="${esc(p.ident_eq || "")}">${esc(p.message)}</button></li>`;
   const bloc = document.createElement("div");
@@ -220,11 +252,14 @@ async function panneauParcours(vue, zone) {
   bloc.innerHTML = (et.bloquants.length ? `<div class="pp-bloquants"><h3>Pour passer à l'étape suivante (${et.bloquants.length})</h3><ul>${et.bloquants.map(ligne).join("")}</ul></div>`
       : `<div class="pp-pret"><b>${precedente ? "Cette étape est prête ; terminez d'abord l'étape « " + esc(precedente.libelle) + " »." : "Étape prête : vous pouvez passer à la suivante."}</b></div>`)
     + (et.a_verifier.length ? `<details class="pp-verifier"><summary>À vérifier (${et.a_verifier.length})</summary><ul>${et.a_verifier.map(ligne).join("")}</ul></details>` : "");
-  zone.querySelector(".pied-etape")?.before(bloc);
   bloc.querySelectorAll("[data-pp-vue]").forEach(b => b.onclick = () => {
-    if (b.dataset.ppEq) return allerOuvrage(b.dataset.ppEq);
+    if (b.dataset.ppVue === "ouvrage" && b.dataset.ppEq)
+      return allerOuvrage({nature: "eq", valeur: b.dataset.ppEq});
     naviguer(ROUTE_VUE[b.dataset.ppVue] || "#/inventaire");
   });
+  const resume = et.bloquants.length ? `${et.bloquants.length} point(s) à régler pour passer à l'étape suivante`
+    : precedente ? `Étape prête ; terminez d'abord « ${precedente.libelle} »` : "Étape prête";
+  Coque.controles(bloc, n, resume, et.bloquants.length > 0);
 }
 function rendre() {
   enTete();
@@ -232,6 +267,8 @@ function rendre() {
   if (E.vue === "accueil") return vueAccueilV31();
   if (E.vue === "dashboard") return vueDashboardV31();
   if (E.vue === "referentiel") return vueReferentiel();
+  if (E.vue === "standards") return vueStandards();
+  if (E.vue === "grille") return vueGrille();
   if (E.vue === "es") return vueES();
   if (E.vue === "materiel") return vueMateriel();
   if (E.vue === "variables") return vueVariablesV31();
@@ -313,8 +350,16 @@ function vueAdressage() {
       <input id="ad-rc" placeholder="Cible"><input id="ad-rm" placeholder="Motif"><button id="ad-res">Réserver</button></div></div>
     <div class="bloc"><div class="bloc-tete"><h2>Conventions de l'ouvrage</h2><span class="aide">déclarées par l'automaticien, jamais déduites</span></div>
      ${s4w ? `<div class="avert">SOFREL S4W : l'identification des points et des adresses dans S4W-Tools n'est pas connue. Aucun %MW ni registre Schneider n'est proposé.</div>` : `
-     <label class="case"><input type="checkbox" id="ad-proto" ${d.protocole_declare ? "checked" : ""}> Registre protocolaire = numéro du mot %MW + décalage</label>
-     <label class="case">Décalage <select id="ad-dec"><option value="0" ${d.decalage == 0 ? "selected" : ""}>0</option><option value="1" ${d.decalage == 1 ? "selected" : ""}>1</option></select></label>
+     <p class="aide">Les adresses de télétransmission (%MW lus par la supervision) reprennent l'adresse automate, décalée du nombre saisi ici (0 par défaut). Les E/S physiques ne sont jamais décalées.</p>
+     <label class="case">Décalage Modbus des adresses de télétransmission <input id="ad-dec" type="number" step="1" inputmode="numeric" value="${esc(String(d.decalage || 0))}" style="width:8em"></label>
+     ${d.mode === "Neuf" && d.plages ? `<h3 class="ad-plages-titre">Plan mémoire %MW par famille</h3>
+     <p class="aide">Convention du maître d'ouvrage. Les adresses déjà validées ne bougent pas ; les nouvelles propositions suivent ces plages.</p>
+     <table class="ad-plages"><thead><tr><th>Famille</th><th>Premier mot</th><th>Dernier mot</th><th>Par défaut</th></tr></thead><tbody>
+     ${Object.entries(d.plages).map(([f, [deb, fin]]) => `<tr><td><b>${esc(f)}</b></td>
+       <td><input class="mono" data-plage-debut="${esc(f)}" type="number" min="0" max="65535" step="1" value="${deb}" aria-label="Premier mot %MW de la famille ${esc(f)}"></td>
+       <td><input class="mono" data-plage-fin="${esc(f)}" type="number" min="0" max="65535" step="1" value="${fin}" aria-label="Dernier mot %MW de la famille ${esc(f)}"></td>
+       <td class="mono">%MW${d.plages_defaut[f][0]} à %MW${d.plages_defaut[f][1]}</td></tr>`).join("")}</tbody></table>
+     <div class="boutons-ligne"><button id="ad-plages">Enregistrer les plages</button><button class="lien" id="ad-plages-defaut">Reprendre les plages par défaut</button></div>` : ""}
      ${d.mode === "Existant" ? `<label class="case"><input type="checkbox" id="ad-dispo" ${d.disponibilite_verifiee ? "checked" : ""}> L'import couvre toute la mémoire utilisée (disponibilité vérifiée)</label>` : ""}`}
      ${d.journal.length ? `<p class="aide">Dernières applications : ${d.journal.slice(-3).reverse().map(j => `${esc(j.le)} (${esc(j.par || "?")}) : ${j.physique || 0} voie(s), ${j.automate || 0} adresse(s)`).join(" · ")}</p>` : ""}</div>
    </div></section>`;
@@ -332,8 +377,15 @@ function vueAdressage() {
     confirmer(`Valider ${paires.length} affectation(s) ?`, "Vous attestez ces adresses ; elles ne seront plus déplacées par le moteur.", "Valider", () => act({action: "valider", niveau: niv, paires}, "Affectations validées.")); };
   document.querySelectorAll(".ad-lib").forEach(b => b.onclick = () => act({action: "liberer", niveau: b.dataset.n, cible: b.dataset.c}, "Réservation libérée."));
   $("#ad-res").onclick = () => act({action: "reserver", niveau: $("#ad-rn").value, cible: $("#ad-rc").value, motif: $("#ad-rm").value}, "Réservation enregistrée.");
-  if($("#ad-proto")) $("#ad-proto").onchange = ev => act({action: "protocole", declare: ev.target.checked, decalage: $("#ad-dec").value}, "Convention enregistrée.");
-  if($("#ad-dec")) $("#ad-dec").onchange = ev => act({action: "protocole", declare: $("#ad-proto").checked, decalage: ev.target.value}, "Décalage enregistré.");
+  // Retours du 18/11 : plus de convention à déclarer ; décalage saisi par l'utilisateur (entier, 0 par défaut).
+  if($("#ad-dec")) $("#ad-dec").onchange = ev => act({action: "protocole", declare: true, decalage: ev.target.value}, "Décalage enregistré.");
+  // 18/11 : plan mémoire modifiable (convention du maître d'ouvrage), contrôlé par le moteur avant écriture
+  const lirePlages = () => Object.fromEntries(Object.keys(d.plages || {}).map(f => [f,
+    [document.querySelector(`[data-plage-debut="${f}"]`).value, document.querySelector(`[data-plage-fin="${f}"]`).value]]));
+  const enregistrerPlages = async plages => { try { const r = await api("/api/adressage/action", {action: "plages", plages});
+      toast(r.alertes?.length ? r.alertes.join(" ") : "Plan mémoire enregistré.", !!r.alertes?.length); await recharge(); } catch (e) { toast(e.message, true); } };
+  if ($("#ad-plages")) $("#ad-plages").onclick = () => enregistrerPlages(lirePlages());
+  if ($("#ad-plages-defaut")) $("#ad-plages-defaut").onclick = () => confirmer("Reprendre les plages par défaut ?", "Les adresses déjà validées ne bougent pas.", "Reprendre", () => enregistrerPlages(d.plages_defaut));
   if ($("#ad-dispo")) $("#ad-dispo").onchange = ev => act({action: "disponibilite", verifiee: ev.target.checked}, "Disponibilité enregistrée.");
   piedEtape();
 }
@@ -532,28 +584,222 @@ function vueSupervision() {
 }
 
 const ROUTE_ETAPE = {"Ouvrage": "#/inventaire", "Équipements": "#/inventaire", "Liste des E/S et matériel": "#/materiel", "Variables": "#/variables"};
+/* Recette et livrables (retour du 16/11, 16 h 32 : page « luxueuse et de très grande qualité »).
+   En tête : l'état de la livraison en une phrase et le dossier complet. Puis les livrables, groupés par
+   destination (Automate, Télégestion SOFREL, Supervision / IHM, Documents), chacun avec ses formats, son état
+   (prêt, non qualifié, à régler, non disponible) et la raison quand il n'est pas prêt — mêmes conditions que
+   l'export côté serveur. Un format qu'OGIAS ne sait pas produire est nommé, jamais simulé. Les contrôles
+   viennent ensuite, repliés quand rien ne bloque. */
+const LIVRABLES = [
+  {groupe: "automate", titre: "Automate", icone: "cpu", sous: "Fichiers à importer dans Control Expert", cartes: [
+    {titre: "Liste des entrées / sorties", texte: "Au format automate : variables d'E/S, voies de réserve comprises.", formats: [["XSY", "es_xsy"], ["TXT", "es_txt"]], qualif: true},
+    {titre: "Table de télétransmission", texte: "Table d'échange au format automate (mots %MW), prête à importer.", formats: [["XSY", "xsy"]], qualif: true}]},
+  {groupe: "sofrel", titre: "Télégestion SOFREL", icone: "bolt", sous: "Poste de télégestion", cartes: [
+    {titre: "Liste des entrées / sorties SOFREL", texte: "Au format d'import SOFREL.", formats: [], sofrel: true}]},
+  {groupe: "supervision", titre: "Supervision / IHM", icone: "pie", sous: "Fichiers à importer dans la supervision", cartes: [
+    {titre: "Table de télétransmission TOPKAPI", texte: "Fichiers d'import des variables TOPKAPI, avec le compte rendu des points exclus.", formats: [["ZIP", "topkapi"]], qualif: true},
+    {titre: "Table de télétransmission IHM Vijeo", texte: "Variables pour Vijeo Designer.", formats: [], indispo: "Format d'import Vijeo Designer pas encore décrit dans OGIAS : fournissez un export de référence pour le reproduire à l'identique."}]},
+  {groupe: "documents", titre: "Documents", icone: "clipboard", sous: "Formats d'études, pour les échanges avec les autres entreprises", cartes: [
+    {titre: "Liste des entrées / sorties", texte: "Architecture des racks, une feuille par carte, colonne de validation SAT.", formats: [["XLSX", "es_cartes"]], second: ["Tableau de travail (une ligne par E/S)", "liste_es"]},
+    {titre: "Table de télétransmission", texte: "Repère, famille, adresse, registre Modbus, alarme et priorité, libellés automate et TOPKAPI.", formats: [["XLSX", "tele_etudes"]]},
+    {titre: "Table des variables", texte: "Toutes les variables, leurs adresses et leurs anomalies ; projet existant : table de correspondance avec l'existant.", formats: [["XLSX", "variables"]]},
+    {titre: "Cartes d'E/S", texte: "Un onglet par carte, une ligne par voie, voies libres en réserve ; colonne de validation à remplir à la recette.", formats: [["XLSX", "cartes"]]},
+    {titre: "Nomenclature", texte: "Configuration matérielle : références, quantités et rôles, à confirmer à la commande.", formats: [["XLSX", "nomenclature"]]}]}];
+/* Livrables à partir des modèles de l'utilisateur (lot 1, 19/11) : chaque modèle de la bibliothèque, rempli pour
+   l'ouvrage ouvert. Un modèle à corriger est montré avec sa raison, jamais généré. */
+/* Cahiers d'essais FAT / SAT (lot 3, 19/11) : édition du cahier, report des résultats saisis (aperçu puis
+   confirmation), avancement. Un résultat n'est jamais déduit par OGIAS ; une adresse changée depuis l'essai
+   remet le point « à refaire ». */
+async function blocEssaisRecette() {
+  const zone = $("#rc-essais"); if (!zone) return;
+  let d; try { d = await api("/api/essais"); } catch (e) { zone.innerHTML = `<div class="vide-bloc">${esc(e.message)}</div>`; return; }
+  if (!document.body.contains(zone)) return;
+  const carte = (n, e) => { const c = e.compte, faits = c.Conforme + c["Non conforme"] + c["Sans objet"];
+    return `<div class="rc-essai" data-essai="${n}"><div class="rc-essai-tete"><h3>Cahier ${n}</h3><span class="aide">${esc(e.titre.split(" : ")[1] || "")}</span></div>
+      <div class="rc-jauge" role="meter" aria-label="Points essayés ${n}" aria-valuemin="0" aria-valuemax="${e.total}" aria-valuenow="${faits}"><span class="rc-jauge-barre"><i style="width:${e.total ? Math.round(faits / e.total * 100) : 0}%"></i></span><b>${faits}</b><span>/ ${e.total} essayés</span></div>
+      <p class="rc-essai-compte"><span class="badge b-ok">${c.Conforme} conforme(s)</span> <span class="badge ${c["Non conforme"] ? "b-err" : "b-n"}">${c["Non conforme"]} non conforme(s)</span> <span class="badge b-n">${c["Sans objet"]} sans objet</span> <span class="badge b-n">${c["à faire"]} à faire</span>${c["à refaire"] ? ` <span class="badge b-al">${c["à refaire"]} à refaire</span>` : ""}</p>
+      ${e.a_voir.length ? `<ul class="rc-essai-liste">${e.a_voir.slice(0, 8).map(x => `<li><span class="mono">${esc(x.nom)}</span> · ${esc(x.etat)}${x.remarque ? ` — ${esc(x.remarque)}` : ""}${x.visa ? ` <span class="aide">(${esc(x.visa)}${x.date ? `, ${esc(x.date)}` : ""})</span>` : ""}</li>`).join("")}${e.a_voir.length > 8 ? `<li class="aide">… et ${e.a_voir.length - 8} autre(s), dans le cahier.</li>` : ""}</ul>` : ""}
+      <div class="boutons-ligne"><button type="button" class="prim" data-essai-cahier="${n}" ${e.total ? "" : "disabled title=\"Aucun point à essayer\""}>Éditer le cahier ${n} (xlsx)</button><button type="button" data-essai-reporter="${n}" ${e.total ? "" : "disabled"}>Reporter un cahier rempli…</button></div></div>`; };
+  zone.innerHTML = `<div class="rc-groupe-tete"><span class="rc-icone">${V31.icon("clipboard", 16)}</span><h2>Essais FAT / SAT</h2><p>Cahier par équipement, un point par ligne ; les résultats saisis reviennent ici. OGIAS ne déduit aucun résultat.</p></div>
+    <div class="rc-essais-grille">${carte("FAT", d.FAT)}${carte("SAT", d.SAT)}</div>`;
+  zone.querySelectorAll("[data-essai-cahier]").forEach(b => b.onclick = () => telecharger("essais_" + b.dataset.essaiCahier.toLowerCase()));
+  zone.querySelectorAll("[data-essai-reporter]").forEach(b => b.onclick = () => modaleReporterEssais(b.dataset.essaiReporter));
+}
+function modaleReporterEssais(nature) {
+  const m = ouvrirModale(`<div class="boite-tete"><h2>Reporter le cahier ${nature} rempli</h2><p>OGIAS lit la colonne Résultat de chaque feuille et montre ce qui changera. Rien n'est enregistré avant « Confirmer » ; une cellule vide ne change rien.</p></div>
+    <div class="boite-corps std-formulaire"><label for="essai-fichier">Cahier rempli (.xlsx)</label><input type="file" id="essai-fichier" accept=".xlsx,.xlsm,.ods">
+     <div id="essai-apercu" aria-live="polite"></div></div>
+    <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="essai-ok" disabled>Confirmer</button></div>`, true);
+  let source = null;
+  const zone = m.querySelector("#essai-apercu"), ok = m.querySelector("#essai-ok");
+  m.querySelector("#essai-fichier").onchange = async ev => {
+    ok.disabled = true; zone.textContent = "Lecture du cahier…";
+    try { source = await lireFichier(ev.target);
+      const r = await api("/api/essais/reporter", {nature, nom: source.nom, contenu: source.contenu});
+      zone.innerHTML = `<p>${r.resultats.length} résultat(s) nouveau(x) ou modifié(s) · ${r.inchanges} inchangé(s) · ${r.vides} ligne(s) sans résultat.</p>
+        ${r.erreurs.length ? `<div class="avert"><b>À corriger dans le fichier avant de reporter :</b><ul>${r.erreurs.slice(0, 12).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+        ${r.resultats.length ? `<table><thead><tr><th>Point</th><th>Avant</th><th>Reporté</th><th>Remarque</th></tr></thead><tbody>${r.resultats.slice(0, 200).map(x => `<tr><td class="mono">${esc(x.nom)}</td><td>${esc(x.avant || "—")}</td><td><span class="badge ${x.resultat === "Conforme" ? "b-ok" : x.resultat === "Non conforme" ? "b-err" : "b-n"}">${esc(x.resultat)}</span></td><td>${esc(x.remarque || "")}</td></tr>`).join("")}</tbody></table>` : ""}`;
+      ok.disabled = !!r.erreurs.length || !r.resultats.length;
+      ok.textContent = r.resultats.length ? `Confirmer : reporter ${r.resultats.length} résultat(s)` : "Rien à reporter";
+    } catch (e) { zone.textContent = e.message; }
+  };
+  ok.onclick = async () => {
+    ok.disabled = true;
+    try { const r = await api("/api/essais/reporter", {nature, nom: source.nom, contenu: source.contenu, confirme: true});
+      fermerModale(); toast(`${r.reportes} résultat(s) reporté(s) dans le cahier ${nature}. Copie de sécurité faite avant.`); blocEssaisRecette();
+    } catch (e) { zone.insertAdjacentHTML("afterbegin", `<p class="std-erreur">${esc(e.message)}</p>`); }
+  };
+}
+async function blocFormatsRecette() {
+  const zone = $("#rc-formats"); if (!zone) return;
+  let d; try { d = await api("/api/formats-appris"); } catch (e) { zone.querySelector(".vide-bloc").textContent = e.message; return; }
+  if (!document.body.contains(zone)) return;
+  const corps = zone.querySelector(".vide-bloc"); if (!corps) return;
+  const retenus = d.formats.filter(f => f.retenu), autres = d.formats.length - retenus.length;
+  corps.outerHTML = retenus.length ? `<table class="rc-table"><colgroup><col class="rc-c-livrable"><col class="rc-c-formats"><col class="rc-c-etat"><col><col class="rc-c-actions"></colgroup><thead class="o-masque"><tr><th>Livrable</th><th>Format</th><th>État</th><th>Remarque</th><th>Téléchargement</th></tr></thead><tbody>
+    ${retenus.map(f => { const ok = f.controle?.pret; return `<tr class="rc-carte ${ok ? "pret" : "bloque"}" data-fa-recette="${esc(f.ident)}"><td class="rc-livrable"><h3>${esc(f.nom)}</h3><p class="rc-texte">${esc(f.nature_libelle)} pour ${esc(f.logiciel)}</p></td>
+      <td class="rc-formats"><span class="rc-format">${esc(f.logiciel)}</span></td>
+      <td><span class="rc-etat ${ok ? "pret" : "bloque"}">${!ok ? "Export impossible" : f.qualifie ? "Conforme au format qualifié" : "Conforme, non qualifié"}</span></td>
+      <td><p class="rc-motif">${esc(f.controle?.statut || "")}</p></td>
+      <td class="rc-carte-pied"><button class="${ok ? "prim" : ""}" data-format-appris="${esc(f.ident)}" ${ok ? "" : "disabled"}>Exporter <span aria-hidden="true">↓</span></button></td></tr>`; }).join("")}</tbody></table>`
+    : `<div class="vide-bloc">${d.formats.length ? `Aucun format appris pour les outils de cet ouvrage (${autres} format(s) pour d'autres logiciels).` : "Aucun format appris."} Apprenez celui de votre outil dans <a href="#/standards">Standards d'ingénierie › Formats d'export appris</a>.</div>`;
+  zone.querySelectorAll("[data-format-appris]").forEach(b => b.onclick = () => telecharger("format_appris&ident=" + encodeURIComponent(b.dataset.formatAppris)));
+}
+async function blocModelesRecette() {
+  const zone = $("#rc-modeles"); if (!zone) return;
+  let d; try { d = await api("/api/modeles-livrables"); } catch (e) { zone.querySelector(".vide-bloc").textContent = e.message; return; }
+  if (!document.body.contains(zone)) return;
+  const corps = zone.querySelector(".vide-bloc, .rc-table"); if (!corps) return;
+  corps.outerHTML = d.modeles.length ? `<table class="rc-table"><colgroup><col class="rc-c-livrable"><col class="rc-c-formats"><col class="rc-c-etat"><col><col class="rc-c-actions"></colgroup><thead class="o-masque"><tr><th>Livrable</th><th>Format</th><th>État</th><th>Remarque</th><th>Téléchargement</th></tr></thead><tbody>
+    ${d.modeles.map(m => { const ok = !m.erreurs.length, pour = ok && m.retenu; return `<tr class="rc-carte ${ok ? "pret" : "bloque"}" data-ml-retenu="${m.retenu ? "oui" : "non"}"><td class="rc-livrable"><h3>${esc(m.nom)}</h3><p class="rc-texte">${esc(m.description || `Modèle importé de ${m.fichier_origine || "votre outil"}`)}</p></td>
+      <td class="rc-formats"><span class="rc-format">${esc(m.extension.toUpperCase())}</span>${m.logiciel ? ` <span class="rc-format">${esc(m.logiciel)}</span>` : ""}</td>
+      <td><span class="rc-etat ${pour ? "pret" : "bloque"}">${!ok ? "Modèle à corriger" : m.retenu ? "Conforme au modèle" : "Autre logiciel"}</span></td>
+      <td>${!ok ? `<p class="rc-motif">${esc(m.erreurs[0])}</p>` : m.retenu ? "" : `<p class="rc-motif">${esc(m.motif_non_retenu)} Non inclus dans « Tous les livrables ».</p>`}</td>
+      <td class="rc-carte-pied"><button class="${pour ? "prim" : ""}" data-modele-livrable="${esc(m.ident)}" ${ok ? "" : "disabled"}>Générer ${esc(m.extension.toUpperCase())} <span aria-hidden="true">↓</span></button></td></tr>`; }).join("")}</tbody></table>`
+    : `<div class="vide-bloc">Aucun modèle pour l'instant. Déposez un fichier de votre outil avec ses variables dans <a href="#/standards">Standards d'ingénierie › Modèles de livrables</a>.</div>`;
+  if (d.manques.length) zone.querySelector(".rc-table, .vide-bloc").insertAdjacentHTML("afterend", `<div class="avert rc-manques"><b>Briques manquantes</b> (rien n'est produit à leur place) :<ul>${d.manques.map(x => `<li>${esc(x.message)}</li>`).join("")}</ul></div>`);
+  zone.querySelectorAll("[data-modele-livrable]").forEach(b => b.onclick = () => telecharger("modele_livrable&ident=" + encodeURIComponent(b.dataset.modeleLivrable)));
+}
 function vueRecette() {
-  const d = E.detailEtape, f = E.filtreRecette || "";
+  Coque.ruban(null);   // lot 5e : boutons du rendu précédent retirés du ruban
+  const d = E.detailEtape, f = E.filtreRecette || "", L = d.livrables || {};
   const etapes = [...new Set(d.controles.map(c => c.etape))];
   const nb = (et, niv) => d.controles.filter(c => c.etape === et && (!niv || c.niveau === niv)).length;
-  const vis = d.controles.filter(c => !f || c.etape === f);
-  $("#vue").innerHTML = `<section class="contenu"><div class="titre"><div><h1>Recette et livrables</h1><div class="sous">Révision ${esc(d.revision)} · ${esc(d.note)}</div></div><div class="actions"><button id="r-actualiser">Actualiser les contrôles</button><button class="prim" id="r-dossier" title="Zip : sommaire imprimable en PDF, équipements, E/S, cartes, variables et formats cibles">Dossier de recette</button></div></div>
-   <div class="chiffres">${d.erreurs?ind('ERR', d.erreurs, 'erreurs', 'err'):''}${d.alertes?ind('ALT', d.alertes, 'alertes', 'al'):''}</div>
-   <div class="bloc"><div class="bloc-tete"><h2>Contrôles consolidés</h2><span class="aide">classés par étape du parcours : chaque constat se corrige à l'endroit indiqué</span></div>
-   ${etapes.length ? `<div class="compteurs"><span class="chip ${f ? "" : "on"}" data-et="">Toutes<b>${d.controles.length}</b></span>${etapes.map(et => `<span class="chip ${f === et ? "on" : ""}" data-et="${esc(et)}">${esc(et)}<b>${nb(et)}</b>${nb(et, "Erreur") ? `<i class="pt-etat pt-err" style="margin-left:6px"></i>` : ""}</span>`).join("")}</div>` : ""}
-   ${vis.length ? `<table><thead><tr><th style="width:90px">Niveau</th><th style="width:190px">Étape</th><th>Constat</th><th style="width:110px"></th></tr></thead><tbody>${vis.map((c, i) => `<tr><td><span class="badge ${c.niveau === 'Erreur' ? 'b-err' : 'b-al'}">${esc(c.niveau)}</span></td><td>${esc(c.etape)}</td><td>${esc(c.message)}</td>
+  // 18/11 : vue « Par règle » (une ligne par règle, nombre de constats) ou « Détail » (un constat par ligne) ;
+  // une règle ouverte depuis la synthèse filtre le détail sur elle.
+  const vueRc = E.rcVue || "regles", fr = E.filtreRegle || "";
+  const vis = d.controles.filter(c => (!f || c.etape === f) && (!fr || c.regle === fr));
+  const groupes = (d.par_regle || []).filter(g => !f || g.etape === f);
+  const auto = ((E.ouvrage || {}).identification || {}).automate || "";
+  // État de chaque carte : prête, à régler (motif du serveur), non disponible (format non décrit)
+  const etatCarte = c => {
+    if (c.indispo) return {cls: "indispo", badge: "Non disponible", motif: c.indispo};
+    if (c.sofrel) return L.sofrel_configure
+      ? {cls: "indispo", badge: "Non disponible", motif: "Format d'import SOFREL pas encore décrit dans OGIAS : fournissez un export de référence (SOFTOOLS) pour le reproduire."}
+      : {cls: "sans-objet", badge: "Sans objet", motif: `Aucun poste SOFREL configuré (source d'acquisition : ${auto || "non renseignée"}).`};
+    const motifs = c.formats.map(([, q]) => (L[q] || {}).motif).filter(Boolean);
+    if (motifs.length === c.formats.length) return {cls: "bloque", badge: "À régler", motif: motifs[0]};
+    return {cls: "pret", badge: c.qualif ? "Prêt · non qualifié" : "Prêt", motif: c.qualif ? "Conforme aux exemples fournis ; import à essayer dans le logiciel cible." : ""};
+  };
+  const toutes = LIVRABLES.flatMap(g => g.cartes.map(c => ({c, e: etatCarte(c)}))).filter(x => x.e.cls !== "sans-objet");
+  const prets = toutes.filter(x => x.e.cls === "pret").length;
+  const titre = d.erreurs ? `${d.erreurs} point${d.erreurs > 1 ? "s" : ""} à régler avant la livraison` : prets === toutes.length ? "Tous les livrables sont prêts" : "Livraison presque prête";
+  /* Lot 5e : livrables en lignes denses, groupés par destination (mêmes états, motifs et boutons qu'avant) ;
+     les commandes de la livraison passent au ruban ; l'en-tête garde l'état en une phrase et la jauge. */
+  const carte = c => { const e = etatCarte(c);
+    return `<tr class="rc-carte ${e.cls}">
+      <td class="rc-livrable"><h3>${c.titre}</h3><p class="rc-texte">${c.texte}</p></td>
+      <td class="rc-formats">${c.formats.map(([fmt]) => `<span class="rc-format">${fmt}</span>`).join("") || '<span class="rc-format vide">—</span>'}</td>
+      <td><span class="rc-etat ${e.cls}">${e.badge}</span></td>
+      <td>${e.motif ? `<p class="rc-motif">${esc(e.motif)}</p>` : ""}</td>
+      <td class="rc-carte-pied">${c.formats.map(([fmt, q]) => `<button class="${(L[q] || {}).pret ? "prim" : ""}" data-export="${q}" ${(L[q] || {}).pret ? "" : `disabled title="${esc((L[q] || {}).motif || "")}"`}>Télécharger ${fmt} <span aria-hidden="true">↓</span></button>`).join("")}
+        ${c.second ? `<button class="lien" data-export="${c.second[1]}" ${(L[c.second[1]] || {}).pret ? "" : "disabled"}>${c.second[0]}</button>` : ""}</td></tr>`; };
+  const part = toutes.length ? Math.round(prets / toutes.length * 100) : 0;
+  $("#vue").innerHTML = `<section class="contenu recette-lux">
+   <header class="rc-hero ${d.erreurs ? "a-regler" : "pret"}">
+     <div class="rc-hero-texte"><span class="rc-surtitre">Recette et livrables · révision ${esc(d.revision)}</span>
+       <h1>${titre}</h1>
+       <p>${prets} livrable${prets > 1 ? "s" : ""} prêt${prets > 1 ? "s" : ""} sur ${toutes.length}${d.erreurs ? ` · ${d.erreurs} erreur(s)` : ""}${d.alertes ? ` · ${d.alertes} alerte(s)` : ""} · source d'acquisition : ${esc(auto || "non renseignée")}</p></div>
+     <div class="rc-jauge" role="meter" aria-label="Livrables prêts" aria-valuemin="0" aria-valuemax="${toutes.length}" aria-valuenow="${prets}">
+       <span class="rc-jauge-barre"><i style="width:${part}%"></i></span><b>${prets}</b><span>/ ${toutes.length} prêts</span></div>
+     <div class="rc-hero-actions"><button class="prim" id="r-dossier" title="Zip : sommaire imprimable en PDF, équipements, E/S, cartes, variables et formats cibles">Dossier de recette complet (zip)</button>
+       <button id="r-groupe" title="Un zip rangé par destination : formats automate et supervision, documents, cahiers d'essais, vos modèles, avec le journal de ce qui a été produit ou refusé">Tous les livrables (zip)</button>
+       <button id="r-actualiser">Actualiser les contrôles</button></div>
+   </header>
+   <div class="rc-groupes">${LIVRABLES.map(g => `<section class="rc-groupe" data-groupe="${g.groupe}"><div class="rc-groupe-tete"><span class="rc-icone">${V31.icon(g.icone, 16)}</span>
+       <h2>${g.titre}</h2><p>${g.sous}</p></div>
+     <table class="rc-table"><colgroup><col class="rc-c-livrable"><col class="rc-c-formats"><col class="rc-c-etat"><col><col class="rc-c-actions"></colgroup><thead class="o-masque"><tr><th>Livrable</th><th>Formats</th><th>État</th><th>Remarque</th><th>Téléchargement</th></tr></thead>
+       <tbody>${g.cartes.map(carte).join("")}</tbody></table></section>`).join("")}
+     <section class="rc-groupe" data-groupe="formats" id="rc-formats"><div class="rc-groupe-tete"><span class="rc-icone">${V31.icon("clipboard", 16)}</span>
+       <h2>Formats appris</h2><p>E/S, télétransmission et IHM au format des outils de l'ouvrage · chaque export est relu et contrôlé</p></div>
+       <div class="vide-bloc">Chargement…</div></section>
+     <section class="rc-groupe" data-groupe="modeles" id="rc-modeles"><div class="rc-groupe-tete"><span class="rc-icone">${V31.icon("clipboard", 16)}</span>
+       <h2>Vos modèles</h2><p>Fichiers de vos outils remplis par OGIAS · conformes au modèle fourni, à essayer dans l'outil cible</p></div>
+       <div class="vide-bloc">Chargement…</div></section></div>
+   <section class="rc-essais" id="rc-essais" aria-label="Cahiers d'essais"><div class="vide-bloc">Chargement des essais…</div></section>
+   <details class="rc-controles" ${d.erreurs ? "open" : ""}><summary><h2>Contrôles consolidés</h2>
+     <span class="rc-compte">${d.erreurs ? `<span class="badge b-err">${d.erreurs} erreur(s)</span>` : '<span class="badge b-ok">aucune erreur</span>'} ${d.alertes ? `<span class="badge b-al">${d.alertes} alerte(s)</span>` : ""}</span>
+     <span class="aide">chaque constat se corrige à l'endroit indiqué</span></summary>
+   ${etapes.length ? `<div class="compteurs"><span class="chip ${f ? "" : "on"}" data-et="">Toutes<b>${d.controles.length}</b></span>${etapes.map(et => `<span class="chip ${f === et ? "on" : ""}" data-et="${esc(et)}">${esc(et)}<b>${nb(et)}</b>${nb(et, "Erreur") ? `<i class="pt-err">${nb(et, "Erreur")}</i>` : ""}</span>`).join("")}</div>` : ""}
+   ${d.controles.length ? `<div class="rc-vues" role="group" aria-label="Présentation des constats"><button type="button" class="${vueRc === "regles" ? "on" : ""}" data-rc-vue="regles" aria-pressed="${vueRc === "regles"}">Par règle</button><button type="button" class="${vueRc === "detail" ? "on" : ""}" data-rc-vue="detail" aria-pressed="${vueRc === "detail"}">Détail</button>
+     ${fr && vueRc === "detail" ? `<span class="rc-filtre-regle">Règle <b class="mono">${esc(fr)}</b> <button type="button" class="lien" data-rc-regle="">Toutes les règles</button></span>` : ""}</div>` : ""}
+   ${vueRc === "regles" && groupes.length ? `<table data-o-tableau="sans-selection" data-o-cle="recette-regles" class="rc-par-regle"><thead><tr><th style="width:90px">Niveau</th><th style="width:96px">Règle</th><th>Titre et correction</th><th style="width:90px">Constats</th><th>Exemple</th><th style="width:150px"></th></tr></thead><tbody>${groupes.map(g => `<tr><td><span class="badge ${g.niveau === 'Erreur' ? 'b-err' : 'b-al'}">${esc(g.niveau)}</span></td>
+     <td class="mono rc-regle"><abbr title="${esc(g.detail?.pourquoi || "")}">${esc(g.regle || "—")}</abbr></td><td><b>${esc(g.detail?.titre || g.etape)}</b>${g.detail?.corriger ? `<div class="rc-corriger">${esc(g.detail.corriger)}</div>` : ""}</td>
+     <td class="num">${g.nombre}</td><td class="rc-exemple" title="${esc(g.exemple)}">${esc(g.exemple)}</td>
+     <td style="text-align:right"><button class="lien" data-rc-regle="${esc(g.regle)}">Voir les ${g.nombre} constat${g.nombre > 1 ? "s" : ""}</button></td></tr>`).join("")}</tbody></table>`
+   : vis.length ? `<table data-o-tableau data-o-cle="recette-controles"><thead><tr><th style="width:90px">Niveau</th><th style="width:96px">Règle</th><th style="width:190px">Étape</th><th>Constat</th><th style="width:110px"></th></tr></thead><tbody>${vis.map(c => `<tr><td><span class="badge ${c.niveau === 'Erreur' ? 'b-err' : 'b-al'}">${esc(c.niveau)}</span></td>
+     <td class="mono rc-regle">${c.regle ? `<abbr title="${esc(c.regle_detail?.titre ? `${c.regle_detail.titre}. Pourquoi : ${c.regle_detail.pourquoi} Corriger : ${c.regle_detail.corriger}` : "")}">${esc(c.regle)}</abbr>` : "—"}</td><td>${esc(c.etape)}</td><td>${esc(c.message)}${c.regle_detail?.corriger ? `<div class="rc-corriger">${esc(c.regle_detail.corriger)}</div>` : ""}</td>
      <td style="text-align:right"><button class="lien r-corr" data-i="${d.controles.indexOf(c)}">${c.ident && ["Équipements", "Ouvrage"].includes(c.etape) ? "Ouvrir la fiche" : "Aller à l'étape"}</button></td></tr>`).join('')}</tbody></table>`
      : '<div class="vide-bloc">Aucune anomalie détectée par les contrôles automatisés.</div>'}
-   ${d.tronque ? '<div class="avert">Affichage limité aux 500 premiers contrôles.</div>' : ''}</div>
-   <div class="avert">Statut industriel : NON QUALIFIÉ. Une recette locale sans erreur ne vaut pas validation des fichiers dans Control Expert, SOFREL ou TOPKAPI.</div></section>`;
+   ${d.tronque ? '<div class="avert">Affichage limité aux 500 premiers contrôles.</div>' : ''}</details>
+   <p class="rc-note">Statut industriel : NON QUALIFIÉ. Une recette sans erreur ne vaut pas validation des fichiers dans Control Expert, SOFREL, TOPKAPI ou Vijeo : chaque import reste à essayer dans le logiciel cible.</p></section>`;
+  document.querySelectorAll("[data-export]").forEach(b => b.onclick = () => telecharger(b.dataset.export));
+  blocFormatsRecette();
+  blocModelesRecette();
+  blocEssaisRecette();
   $("#r-actualiser").onclick = async () => { E.detailEtape = await api('/api/recette'); rendre(); };
+  $("#r-groupe").onclick = modaleGenerationGroupee;
   $("#r-dossier").onclick = () => confirmer("Constituer le dossier de recette ?", "Archive zip des livrables à partir des exports existants, avec un sommaire imprimable en PDF (empreintes, pièces non produites et leur motif, points restant à traiter). Exports non qualifiés : à vérifier dans les logiciels cibles.", "Télécharger le dossier", () => telecharger("dossier_recette"));
   document.querySelectorAll("[data-et]").forEach(x => x.onclick = () => { E.filtreRecette = x.dataset.et; vueRecette(); });
+  document.querySelectorAll("[data-rc-vue]").forEach(x => x.onclick = () => { E.rcVue = x.dataset.rcVue; if (E.rcVue === "regles") E.filtreRegle = ""; vueRecette(); });
+  document.querySelectorAll("[data-rc-regle]").forEach(x => x.onclick = () => { E.filtreRegle = x.dataset.rcRegle; E.rcVue = "detail"; vueRecette(); });
   document.querySelectorAll(".r-corr").forEach(b => b.onclick = () => {
     const c = d.controles[+b.dataset.i];
     if (c.ident && (c.etape === "Équipements" || c.etape === "Ouvrage")) { E.sel = {nature: "eq", valeur: c.ident}; location.hash = "#/inventaire"; }
     else location.hash = ROUTE_ETAPE[c.etape] || "#/inventaire";
   });
+  rubanRecette();
+}
+/* Génération groupée (lot 6, 19/11) : un zip rangé par destination, chaque pièce produite par l'export unitaire
+   (mêmes contrôles, mêmes refus), journal des pièces produites et non produites avec leur motif. */
+const FAMILLES_GROUPE = [
+  ["automate", "Automate", "E/S et table de télétransmission au format Control Expert, formats appris de l'automate"],
+  ["sofrel", "Télégestion SOFREL", "Format non décrit dans OGIAS : seulement signalé au journal"],
+  ["supervision", "Supervision / IHM", "Table TOPKAPI ; Vijeo signalé comme non disponible"],
+  ["documents", "Documents d'études", "E/S, télétransmission, variables, cartes, nomenclature, liste des équipements"],
+  ["essais", "Cahiers d'essais", "FAT et SAT, résultats déjà reportés compris"],
+  ["modeles", "Vos modèles", "Chaque modèle de la bibliothèque, rempli pour cet ouvrage"]];
+function modaleGenerationGroupee() {
+  const m = ouvrirModale(`<div class="boite-tete"><h2>Générer tous les livrables</h2>
+    <p>Un zip rangé par destination, avec un journal (00_journal.html, imprimable en PDF) : chaque pièce produite avec son empreinte, chaque pièce non produite avec son motif. Les contrôles sont ceux des exports unitaires : rien n'est assoupli.</p></div>
+    <div class="boite-corps"><fieldset class="gg-familles"><legend>Destinations à inclure</legend>
+    ${FAMILLES_GROUPE.map(([k, t, d]) => `<label class="gg-famille"><input type="checkbox" value="${k}" checked><span><b>${esc(t)}</b><small>${esc(d)}</small></span></label>`).join("")}
+    </fieldset><p class="gg-note">Exports Control Expert, TOPKAPI et modèles non qualifiés : à importer et vérifier dans les logiciels cibles.</p>
+    <div class="erreur-form" id="m-err"></div></div>
+    <div class="boite-pied"><button data-fermer>Annuler</button><button class="prim" id="m-ok">Générer le zip</button></div>`);
+  m.querySelector("#m-ok").onclick = async () => {
+    const choix = [...m.querySelectorAll(".gg-familles input:checked")].map(x => x.value);
+    if (!choix.length) { m.querySelector("#m-err").textContent = "Choisissez au moins une destination."; return; }
+    fermerModale();
+    await telecharger("generation_groupee&familles=" + encodeURIComponent(choix.join(",")));
+  };
+}
+function rubanRecette() {
+  const id = x => document.getElementById(x);
+  Coque.ruban([{nom: "Livraison", commandes: [{el: id("r-dossier"), icone: "dossier", grand: true, libelle: "Dossier de recette"},
+    {el: id("r-groupe"), icone: "importer", grand: true, libelle: "Tous les livrables"},
+    {el: id("r-actualiser"), icone: "valider", grand: true, libelle: "Actualiser les contrôles"}]}]);
+  document.querySelectorAll("#vue .rc-hero-actions").forEach(x => { if (!x.querySelector("button")) x.remove(); });
 }
 function enTete() { V31.render(E, ETAPES, etatEtape, vueEtape); }
 /* ------------------------------------------------------------------ accueil */
@@ -597,18 +843,74 @@ function vueOuvrage() {
     contenu();
     return;
   }
-  $("#vue").innerHTML = `<aside><div class="aside-tete"><h2>Ouvrage → UF → équipements</h2>
-      ${E.ouvrage.en_conception ? `<p class="aide-champs">Validez d’abord la création de l’ouvrage avant d’ajouter des équipements.</p>` : `<input id="recherche" placeholder="Rechercher un repère, un libellé, un type…" value="${esc(E.recherche)}">`}
-      <div class="aside-btns" ${E.ouvrage.en_conception ? "hidden" : ""}><button id="b-uf">+ Unité fonctionnelle</button><button class="prim" id="b-eq">+ Équipement</button>
-      <button id="b-import">Importer une liste…</button></div></div><div class="arbre" id="arbre"></div></aside>
+  Coque.ruban(null);                      // lot 5a : retire les anciennes commandes avant de reconstruire l'écran
+  $("#vue").innerHTML = `<aside><div class="aside-tete"><div class="aside-titre"><h2>Arborescence de l'ouvrage</h2><span class="aside-compte" title="Équipements de l'ouvrage">${E.ouvrage.equipements.length} éq.</span></div>
+      ${E.ouvrage.en_conception ? `<p class="aide-champs">Validez d’abord la création de l’ouvrage avant d’ajouter des équipements.</p>` : `<label class="aside-recherche" title="Rechercher un repère, un libellé, un type">${V31.icon("search",14)}<input id="recherche" placeholder="Filtrer : repère, libellé, type…" aria-label="Rechercher un repère, un libellé, un type" value="${esc(E.recherche)}"></label>`}
+      <div class="aside-btns" role="toolbar" aria-label="Commandes de l'arborescence" ${E.ouvrage.en_conception ? "hidden" : ""}><button class="prim" id="b-eq" title="Ajouter un équipement">+ Équipement</button><button id="b-uf" title="Ajouter une unité fonctionnelle">+ UF</button>
+      <button id="b-import" title="Importer une liste d'équipements">Importer…</button>
+      <button id="b-export-eq" title="Exporter la liste des équipements vers Excel, pour la compléter puis la réimporter (aller-retour)">Exporter la liste</button></div></div><div class="arbre" id="arbre"></div></aside>
     <section class="contenu" id="contenu"></section>`;
   if (!E.ouvrage.en_conception) {
     $("#recherche").oninput = ev => { E.recherche = ev.target.value; arbre(); };
     $("#b-uf").onclick = () => modaleUF();
-    $("#b-eq").onclick = () => modaleEquipement(null, ufSelectionnee());
-    $("#b-import").onclick = modaleImport;
+    $("#b-eq").onclick = () => choisirModele(ufSelectionnee());
+    $("#b-import").onclick = () => modaleImport(E.ouvrage.equipements.length ? "equipements_aller_retour" : "inventaire");
+    $("#b-export-eq").onclick = () => E.ouvrage.equipements.length ? telecharger("equipements") : toast("Aucun équipement à exporter.", true);
+    rubanEquipements();
   }
   arbre(); contenu();
+}
+/* Lot 5a : ruban de l'écran Équipements. Les commandes de l'arborescence (ajout, UF, import) et celles de
+   l'élément sélectionné (menu « ⋯ » de la fiche, commandes de l'UF) sont rangées par tâche. Boutons déplacés,
+   jamais recréés : écouteurs et états restent ceux posés par l'écran. */
+const COMMANDES_SELECTION = ["e-val", "e-mod", "e-dep", "e-sup", "g-mod", "g-ren", "g-sup"];
+function rubanEquipements() {
+  const id = x => document.getElementById(x);
+  const c = document.getElementById("contenu");
+  // Commande de la sélection : encore dans la fiche (premier rendu) ou déjà au ruban (rendu suivant). Les anciennes
+  // commandes sont retirées du ruban avant chaque nouvelle fiche (contenu(), detailEquipement()).
+  const fiche = x => c?.querySelector("#" + x) || document.querySelector(`#o-ruban #${x}`);
+  Coque.ruban([
+    {nom: "Inventaire", commandes: [{el: id("b-eq"), icone: "plus", grand: true, libelle: "Nouvel équipement"},
+      {el: id("b-uf"), icone: "groupe", libelle: "Unité fonctionnelle"},
+      {el: id("b-import"), icone: "importer", libelle: "Importer une liste"},
+      {el: id("b-export-eq"), icone: "importer", libelle: "Exporter la liste"}]},
+    {nom: "Équipement sélectionné", commandes: [{el: fiche("e-val"), icone: "valider", grand: true},
+      {el: fiche("e-mod"), icone: "modifier", libelle: "Modifier"}, {el: fiche("e-dep"), icone: "ranger", libelle: "Ranger dans une UF"},
+      {el: fiche("e-sup"), icone: "supprimer", libelle: "Supprimer", danger: true}]},
+    {nom: "Unité fonctionnelle", commandes: [{el: fiche("g-mod"), icone: "modifier", libelle: "Modifier l'UF"},
+      {el: fiche("g-ren"), icone: "modifier", libelle: "Renommer le groupe"},
+      {el: fiche("g-sup"), icone: "supprimer", libelle: "Supprimer l'UF", danger: true}]}]);
+  c?.querySelectorAll(".menu-eq").forEach(m => { m.hidden = true; });   // menu « ⋯ » vide : tout est au ruban
+  document.querySelectorAll("#vue .aside-btns").forEach(x => { x.style.display = x.querySelector("button") ? "" : "none"; });
+}
+/* Ajouter un équipement (retour du 16/11, 13 h 40) : deux temps. 1) choisir ce qu'on ajoute dans une liste de
+   modèles classée par domaine, avec filtre ; 2) fenêtre courte pré-remplie (type, modèle, UF, numéro libre) où il
+   ne reste que le libellé. « Saisie libre » garde l'ancien formulaire complet. */
+function choisirModele(uf) {
+  const o = E.ouvrage;
+  if (!(o.identification.lieu && o.identification.code_ouvrage)) return modaleEquipement(null, uf);
+  const parDomaine = {};
+  (o.types || []).forEach(t => (parDomaine[t.domaine || "Autres"] ||= []).push(t));
+  const domaines = Object.keys(parDomaine).sort((a, b) => a === "Autres" ? 1 : b === "Autres" ? -1 : a.localeCompare(b, "fr"));
+  const ufLib = uf ? ` dans ${esc(uf)}` : "";
+  const item = (t, m) => `<button type="button" class="choix-modele" data-eq-type="${esc(t.code)}" data-eq-modele="${esc(m || "")}"
+      data-filtre="${esc((t.code + " " + t.designation + " " + (m || "") + " " + (t.domaine || "")).toLowerCase())}">
+      <span class="tag">${esc(t.code.replace(/--$/, ""))}</span><b>${esc(m || t.designation)}</b><small>${esc(m && m !== t.designation ? t.designation : "")}</small></button>`;
+  const m = ouvrirModale(`<div class="boite-tete"><h2>Ajouter un équipement${ufLib}</h2><p>Choisissez ce que vous ajoutez. Ses E/S et ses informations viennent du modèle.</p></div>
+    <div class="boite-corps choix-modeles"><input type="search" id="cm-q" placeholder="Rechercher : vanne, pompe, débit, PM…" aria-label="Rechercher un modèle" autocomplete="off">
+      <div class="cm-liste">${domaines.map(d => `<section class="cm-domaine"><h3>${esc(d)}</h3><div class="cm-grille">
+        ${parDomaine[d].map(t => (t.modeles && t.modeles.length ? t.modeles : [""]).map(mo => item(t, mo)).join("")).join("")}</div></section>`).join("")}
+        <p class="cm-vide" hidden>Aucun modèle ne correspond. Essayez un autre mot ou utilisez la saisie libre.</p></div></div>
+    <div class="boite-pied"><button class="lien" id="cm-libre">Saisie libre…</button><span class="gauche"></span><button data-fermer>Annuler</button></div>`, true);
+  const q = m.querySelector("#cm-q");
+  q.oninput = () => { const v = q.value.trim().toLowerCase();
+    m.querySelectorAll(".choix-modele").forEach(b => b.hidden = !!v && !b.dataset.filtre.includes(v));
+    m.querySelectorAll(".cm-domaine").forEach(sct => sct.hidden = ![...sct.querySelectorAll(".choix-modele")].some(b => !b.hidden));
+    m.querySelector(".cm-vide").hidden = [...m.querySelectorAll(".choix-modele")].some(b => !b.hidden); };
+  m.querySelectorAll(".choix-modele").forEach(b => b.onclick = () => modaleEquipement(null, uf, {type: b.dataset.eqType, modele: b.dataset.eqModele}));
+  m.querySelector("#cm-libre").onclick = () => modaleEquipement(null, uf);
+  setTimeout(() => q.focus(), 0);
 }
 function ufSelectionnee() {
   const s = E.sel;
@@ -654,13 +956,738 @@ function arbre() {
     n.onclick = () => { E.sel = {nature: n.dataset.n, valeur: n.dataset.v}; E.filtreRole = "Toutes"; arbre(); contenu(); };
     if (n.dataset.n === "eq") n.ondblclick = () => modaleEquipement(eqParIdent(n.dataset.v));
   });
-  document.querySelectorAll("[data-ajout-uf]").forEach(a => a.onclick = () => modaleEquipement(null, a.dataset.ajoutUf));
+  document.querySelectorAll("[data-ajout-uf]").forEach(a => a.onclick = () => choisirModele(a.dataset.ajoutUf));
   const ajouterUF = document.querySelector("[data-ajout-uf-nouvelle]");
   if (ajouterUF) ajouterUF.onclick = () => modaleUF();
 }
 
 /* ------------------------------------------------------------------ ouvrage : détail */
-async function contenu() { await contenuDetail(); piedEtape(); }
+async function contenu() {
+  // Lot 5a : les commandes de la sélection précédente quittent le ruban AVANT le rendu de la nouvelle fiche, pour
+  // que ses écouteurs se posent sur ses propres boutons (même identifiants).
+  COMMANDES_SELECTION.forEach(x => document.querySelector(`#o-ruban #${x}`)?.remove());
+  await contenuDetail(); piedEtape();
+  if (E.vue === "ouvrage" && !E.ouvrage?.en_conception && document.getElementById("b-eq")) rubanEquipements();
+  Coque.majFil();
+}
+/* Grille d'ingénierie (lot 5, 19/11) : tous les équipements de l'ouvrage en un tableau ; désignation, UF, local et
+   attributs se modifient dans la cellule ou en masse sur une sélection (tout ou rien, confirmation). Type, numéro et
+   modèle restent sur la fiche : ils changent signaux, noms et adresses. */
+const VUES_GRILLE = {identification: "Identification", attributs: "Attributs", tout: "Tout"};
+function vueGrille() {
+  Coque.ruban(null);
+  const d = E.grille || {lignes: [], attributs: [], ufs: [], champs: {}};
+  E.grilleVue = VUES_GRILLE[E.grilleVue] ? E.grilleVue : (d.attributs.length ? "tout" : "identification");
+  E.grilleSel = E.grilleSel instanceof Set ? E.grilleSel : new Set();
+  const idents = new Set(d.lignes.map(l => l.ident));
+  [...E.grilleSel].forEach(i => { if (!idents.has(i)) E.grilleSel.delete(i); });
+  const filtre = (E.grilleFiltre || "").toLowerCase(), typeF = E.grilleType || "";
+  const lignes = d.lignes.filter(l => (!typeF || l.type === typeF) && (!filtre || [l.repere, l.libelle, l.designation, l.local, l.uf, l.modele, ...Object.values(l.attributs).filter(Boolean)].join(" ").toLowerCase().includes(filtre)));
+  const voirId = E.grilleVue !== "attributs", voirAt = E.grilleVue !== "identification" && d.attributs.length;
+  const types = [...new Set(d.lignes.map(l => l.type))].sort();
+  const optUf = v => `<option value="">— sans UF —</option>${d.ufs.map(u => `<option value="${esc(u.code)}" ${u.code === v ? "selected" : ""}>${esc(u.code)} ${esc(u.libelle)}</option>`).join("")}`;
+  const champAttr = (a, v, attrs) => {
+    if (v === null) return '<span class="g-so" title="Sans objet pour ce type">—</span>';
+    const base = `data-g-champ="attr:${esc(a.code)}" aria-label="${esc(a.nom)}"`;
+    if (a.type === "liste" || a.type === "oui_non") {
+      const vals = a.type === "oui_non" ? ["Oui", "Non"] : a.valeurs;
+      return `<select ${base} ${attrs}><option value="">—</option>${vals.map(x => `<option ${x === v ? "selected" : ""}>${esc(x)}</option>`).join("")}${v && !vals.includes(v) ? `<option selected>${esc(v)}</option>` : ""}</select>`;
+    }
+    return `<input ${base} ${attrs} value="${esc(v || "")}" ${a.type === "nombre" ? 'inputmode="decimal"' : ""} placeholder="${esc(a.defaut || "")}">`;
+  };
+  const colonnesMasse = [...(voirId ? Object.entries(d.champs) : []), ...(voirAt ? d.attributs.map(a => ["attr:" + a.code, a.nom]) : [])];
+  E.grilleColonne = colonnesMasse.some(([k]) => k === E.grilleColonne) ? E.grilleColonne : colonnesMasse[0]?.[0];
+  const toutCoche = lignes.length && lignes.every(l => E.grilleSel.has(l.ident));
+  $("#vue").innerHTML = `<section class="contenu grille-ingenierie">
+   <div class="grille-barre">
+    <input type="search" id="g-filtre" placeholder="Filtrer : repère, désignation, local, valeur…" value="${esc(E.grilleFiltre || "")}" aria-label="Filtrer les équipements">
+    <select id="g-type" aria-label="Type d'équipement"><option value="">Tous les types</option>${types.map(t => `<option ${t === typeF ? "selected" : ""}>${esc(t)}</option>`).join("")}</select>
+    <div class="o-segments" role="group" aria-label="Colonnes affichées">${Object.entries(VUES_GRILLE).map(([k, l]) => `<button type="button" data-g-vue="${k}" class="${k === E.grilleVue ? "on" : ""}" aria-pressed="${k === E.grilleVue}">${l}</button>`).join("")}</div>
+    <span class="aide">${lignes.length} / ${d.lignes.length} équipement(s)</span>
+    <span class="droite"><button type="button" id="g-export">Exporter (Excel)</button><button type="button" id="g-import">Importer une liste…</button></span>
+   </div>
+   <div class="grille-masse" ${E.grilleSel.size ? "" : "hidden"}><b>${E.grilleSel.size} sélectionné(s)</b>
+    <label for="g-m-col">Colonne</label><select id="g-m-col">${colonnesMasse.map(([k, l]) => `<option value="${esc(k)}" ${k === E.grilleColonne ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+    <label for="g-m-val">Valeur</label><span id="g-m-champ"></span>
+    <button type="button" class="prim" id="g-m-ok">Appliquer à la sélection</button><button type="button" class="lien" id="g-m-aucun">Tout désélectionner</button></div>
+   ${d.lignes.length ? `<div class="grille-cadre"><table class="grille-table"><thead><tr><th class="g-coche"><input type="checkbox" id="g-tout" ${toutCoche ? "checked" : ""} aria-label="Tout sélectionner (lignes filtrées)"></th><th>Repère</th><th>Type</th>
+     ${voirId ? "<th>Désignation</th><th>Modèle</th><th>UF</th><th>Local</th>" : ""}${voirAt ? d.attributs.map(a => `<th title="${esc(a.description || "")}">${esc(a.nom)}${a.unite ? ` <span class="aide">${esc(a.unite)}</span>` : ""}${a.obligatoire ? ' <span class="oblig">*</span>' : ""}</th>`).join("") : ""}<th>Contrôles</th></tr></thead>
+    <tbody>${lignes.map(l => { const a = `data-g-ident="${l.ident}"`; return `<tr class="${E.grilleSel.has(l.ident) ? "g-sel" : ""}"><td class="g-coche"><input type="checkbox" data-g-sel="${l.ident}" ${E.grilleSel.has(l.ident) ? "checked" : ""} aria-label="Sélectionner ${esc(l.repere)}"></td>
+      <td><button type="button" class="lien mono" data-g-fiche="${l.ident}">${esc(l.repere)}</button></td><td title="${esc(l.designation)}"><span class="tag">${esc(l.type)}</span></td>
+      ${voirId ? `<td><input data-g-champ="libelle" ${a} value="${esc(l.libelle)}" maxlength="32" aria-label="Désignation ${esc(l.repere)}"></td><td class="g-lecture">${esc(l.modele || "—")}</td>
+        <td><select data-g-champ="uf" ${a} aria-label="UF ${esc(l.repere)}">${optUf(l.uf)}</select></td><td><input data-g-champ="local" ${a} value="${esc(l.local)}" maxlength="40" aria-label="Local ${esc(l.repere)}"></td>` : ""}
+      ${voirAt ? d.attributs.map(at => `<td>${champAttr(at, l.attributs[at.code], a)}</td>`).join("") : ""}
+      <td class="g-ctrl" title="${esc(l.controles.join("\n"))}">${l.erreurs ? `<span class="badge b-err">${l.erreurs}</span> ` : ""}${l.alertes ? `<span class="badge b-al">${l.alertes}</span>` : ""}${!l.erreurs && !l.alertes ? '<span class="aide">—</span>' : ""}</td></tr>`; }).join("")}</tbody></table></div>`
+     : '<div class="vide-bloc">Aucun équipement : ajoutez-en dans Équipements, ou importez une liste.</div>'}
+  </section>`;
+  const recharger = async () => { E.grille = await api("/api/grille"); vueGrille(); };
+  $("#g-filtre").oninput = ev => { E.grilleFiltre = ev.target.value; const pos = ev.target.selectionStart; vueGrille(); const f = $("#g-filtre"); f.focus(); f.setSelectionRange(pos, pos); };
+  $("#g-type").onchange = ev => { E.grilleType = ev.target.value; vueGrille(); };
+  document.querySelectorAll("[data-g-vue]").forEach(b => b.onclick = () => { E.grilleVue = b.dataset.gVue; vueGrille(); });
+  $("#g-export").onclick = () => d.lignes.length ? telecharger("equipements") : toast("Aucun équipement à exporter.", true);
+  $("#g-import").onclick = async () => { await modaleImport(d.lignes.length ? "equipements_aller_retour" : "inventaire"); };
+  document.querySelectorAll("[data-g-fiche]").forEach(b => b.onclick = () => { E.sel = {nature: "eq", valeur: b.dataset.gFiche}; naviguer("#/inventaire"); });
+  document.querySelectorAll("[data-g-sel]").forEach(c => c.onchange = () => { c.checked ? E.grilleSel.add(c.dataset.gSel) : E.grilleSel.delete(c.dataset.gSel); vueGrille(); });
+  if ($("#g-tout")) $("#g-tout").onchange = ev => { lignes.forEach(l => ev.target.checked ? E.grilleSel.add(l.ident) : E.grilleSel.delete(l.ident)); vueGrille(); };
+  // Saisie dans la cellule : enregistrée au changement ; refusée = valeur d'avant rétablie
+  document.querySelectorAll("[data-g-champ][data-g-ident]").forEach(ch => ch.onchange = async () => {
+    const ligne = d.lignes.find(l => l.ident === ch.dataset.gIdent), champ = ch.dataset.gChamp;
+    const avant = champ.startsWith("attr:") ? (ligne.attributs[champ.slice(5)] || "") : ligne[champ];
+    try { const r = await api("/api/grille/appliquer", {idents: [ligne.ident], champ, valeur: ch.value});
+      ch.value = r.valeur; if (champ.startsWith("attr:")) ligne.attributs[champ.slice(5)] = r.valeur; else ligne[champ] = r.valeur;
+      ch.classList.add("g-ok"); setTimeout(() => ch.classList.remove("g-ok"), 900);
+      if (r.modifies) { E.grille = await api("/api/grille"); const t = E.grille.lignes.find(l => l.ident === ligne.ident); const td = ch.closest("tr").lastElementChild;
+        if (t && td) { td.title = t.controles.join("\n"); td.innerHTML = `${t.erreurs ? `<span class="badge b-err">${t.erreurs}</span> ` : ""}${t.alertes ? `<span class="badge b-al">${t.alertes}</span>` : ""}${!t.erreurs && !t.alertes ? '<span class="aide">—</span>' : ""}`; } }
+    } catch (err) { ch.value = avant; toast(err.message, true); }
+  });
+  // Modification en masse
+  const champMasse = () => {
+    const k = $("#g-m-col")?.value; if (!k) return;
+    E.grilleColonne = k;
+    const zone = $("#g-m-champ");
+    if (k === "uf") zone.innerHTML = `<select id="g-m-val">${optUf("")}</select>`;
+    else if (k.startsWith("attr:")) { const a = d.attributs.find(x => "attr:" + x.code === k); zone.innerHTML = champAttr(a, "", 'id="g-m-val"').replace(/data-g-champ="[^"]*"/, ""); }
+    else zone.innerHTML = `<input id="g-m-val" maxlength="${k === "libelle" ? 32 : 40}">`;
+  };
+  if ($("#g-m-col")) { $("#g-m-col").onchange = champMasse; champMasse(); }
+  if ($("#g-m-aucun")) $("#g-m-aucun").onclick = () => { E.grilleSel.clear(); vueGrille(); };
+  if ($("#g-m-ok")) $("#g-m-ok").onclick = () => {
+    const champ = $("#g-m-col").value, valeur = $("#g-m-val").value, n = E.grilleSel.size;
+    const nom = colonnesMasse.find(([k]) => k === champ)?.[1] || champ;
+    confirmer("Modifier en masse ?", `« ${nom} » = « ${valeur || "(vide)"} » pour ${n} équipement(s) sélectionné(s). Tout est contrôlé avant d'écrire : en cas de refus, rien n'est modifié.`, "Appliquer", async () => {
+      try { const r = await api("/api/grille/appliquer", {idents: [...E.grilleSel], champ, valeur});
+        toast(`${r.modifies} équipement(s) modifié(s)${r.inchanges ? `, ${r.inchanges} déjà à cette valeur` : ""}${r.sans_objet ? `, ${r.sans_objet} sans objet pour leur type` : ""}.`);
+        await recharger();
+      } catch (err) { toast(err.message, true); }
+    });
+  };
+}
+/* Standards d'ingénierie (19/11) : un standard par client = assemblage de briques (référentiel métier, charte,
+   plan d'adressage, chaîne d'outils). Choisi à la création de l'ouvrage, copié dans l'ouvrage. Étape 2 : bibliothèques
+   de plans d'adressage et de chaînes d'outils, création d'un standard, nouvelle version (motif), archivage. Aucune de
+   ces actions ne modifie un ouvrage ; une brique ne se modifie pas (on en crée une autre). */
+function vueStandards() {
+  Coque.ruban(null);
+  const d = E.standards || {standards: [], familles: {}, bibliotheque: {}, choisissables: []};
+  const sel = d.standards.find(s => s.ident === E.standardSel) || d.standards[0];
+  if (sel) E.standardSel = sel.ident;
+  const plagesTable = b => `<table class="std-plages"><tbody>${Object.entries(b.plages || {}).map(([fam, [deb, fin]]) =>
+      `<tr><th>${esc(fam)}</th><td class="mono">%MW${deb} à %MW${fin}</td></tr>`).join("")}<tr><th>Décalage</th><td class="mono">${esc(String(b.decalage_modbus || 0))}</td></tr></tbody></table>`;
+  const brique = (f, b) => {
+    if (f === "adressage") return plagesTable(b);
+    if (f === "outils") return `<dl class="std-dl"><dt>Supervision</dt><dd>${esc(b.supervision || "aucune")}</dd><dt>IHM</dt><dd>${esc(b.ihm || "aucune")}</dd>
+      <dt>Automate</dt><dd>choisi pour chaque ouvrage (il dépend du site)</dd></dl>`;
+    if (f === "charte") return blocCharte(b);
+    if (f === "referentiel") return `<p>Le référentiel métier publié de l'atelier, copié dans l'ouvrage à sa création. <a href="#/referentiel">Ouvrir le référentiel métier</a></p>`;
+    return "";
+  };
+  const actifs = d.standards.filter(s => s.statut === "actif").length;
+  const biblio = (f, titre, bouton) => `<div class="bloc std-biblio"><div class="bloc-tete"><h2>${titre}</h2><button type="button" data-nouvelle-brique="${f}">${bouton}</button></div>
+    <table data-o-tableau="sans-selection" data-o-cle="briques-${f}"><thead><tr><th>Brique</th><th>Contenu</th><th>Standards</th></tr></thead><tbody>
+    ${(d.bibliotheque[f] || []).map(b => `<tr><td><b>${esc(b.nom)}</b></td><td>${f === "charte"
+      ? `<span class="mono">${esc(b.exemple.equipement)}</span>${b.ogias ? "" : ' · <span class="aide">charte du client</span>'}`
+      : f === "adressage"
+      ? `<span class="mono">${Object.entries(b.plages).map(([x, [deb, fin]]) => `${esc(x)} ${deb}–${fin}`).join(" · ")}</span>${b.decalage_modbus ? ` · décalage ${esc(String(b.decalage_modbus))}` : ""}`
+      : `Supervision ${esc(b.supervision || "aucune")} · IHM ${esc(b.ihm || "aucune")}`}</td><td class="num">${b.standards}</td></tr>`).join("")}</tbody></table></div>`;
+  $("#vue").innerHTML = `<section class="contenu standards">
+   <div class="std-intro"><p>Un standard d'ingénierie réunit les réglages d'un client : référentiel métier, charte de nommage, plan d'adressage et chaîne d'outils. On le choisit à la création d'un ouvrage ; l'ouvrage en garde une copie, qui ne change pas si le standard évolue ensuite. Plusieurs standards peuvent partager une même brique.</p></div>
+   <div class="std-grille">
+    <div class="bloc std-liste"><div class="bloc-tete"><h2>Standards</h2><button type="button" class="prim" id="std-nouveau">Nouveau standard…</button></div>
+     <table data-o-tableau="sans-selection" data-o-cle="standards"><thead><tr><th>Standard</th><th>Version</th><th>État</th><th>Ouvrages</th></tr></thead><tbody>
+     ${d.standards.map(s => `<tr class="cliquable ${s.ident === E.standardSel ? "o-ligne-active" : ""}" data-std="${esc(s.ident)}" tabindex="0"><td><b>${esc(s.nom)}</b></td><td class="mono">v${esc(String(s.version))}</td><td>${esc(s.statut)}</td><td class="num">${s.ouvrages}</td></tr>`).join("")}</tbody></table>
+     ${d.anterieurs ? `<p class="aide">${d.anterieurs} ouvrage(s) créé(s) avant les standards : leurs réglages ne changent pas.</p>` : ""}</div>
+    ${sel ? `<div class="bloc std-detail"><div class="bloc-tete"><h2>${esc(sel.nom)} <span class="mono">v${esc(String(sel.version))}</span>${sel.statut !== "actif" ? ` <span class="std-archive">${esc(sel.statut)}</span>` : ""}</h2>
+      <div class="boutons-ligne"><button type="button" id="std-reviser">Nouvelle version…</button>
+      ${sel.statut === "actif" ? `<button type="button" id="std-archiver" ${actifs < 2 ? 'disabled title="Il faut garder au moins un standard actif"' : ""}>Archiver</button>` : `<button type="button" id="std-reactiver">Réactiver</button>`}</div></div>
+     <p>${esc(sel.description || "")} <span class="aide">${sel.ouvrages} ouvrage(s) créé(s) selon ce standard.</span></p>
+     ${sel.briques.charte?.ogias === false ? `<p class="std-evolue">Charte de nommage propre au client : les exports n'ont pas été qualifiés avec cette charte (aucun fichier de référence du client).</p>` : ""}
+     <div class="std-briques">${Object.entries(d.familles).map(([f, nom]) => `<section class="std-brique"><h3>${esc(nom)}</h3><p class="std-nom">${esc(sel.briques[f]?.nom || "—")}</p>${brique(f, sel.briques[f] || {})}</section>`).join("")}</div>
+     ${(sel.historique || []).length ? `<div class="std-historique"><h3>Versions précédentes</h3><ul>${sel.historique.slice().reverse().map(h => `<li><span class="mono">v${esc(String(h.version))}</span> jusqu'au ${esc(h.jusqu_au)} : ${esc(Object.values(h.briques || {}).join(" · "))} <span class="aide">— ${esc(h.motif)}</span></li>`).join("")}</ul></div>` : ""}</div>` : ""}
+   </div>
+   <div class="std-grille std-bibliotheque">
+    ${biblio("charte", "Chartes de nommage", "Nouvelle charte de nommage…")}
+    ${biblio("adressage", "Plans d'adressage", "Nouveau plan d'adressage…")}
+    ${biblio("outils", "Chaînes d'outils", "Nouvelle chaîne d'outils…")}
+   </div>
+   ${blocGammesMateriel(E.gammesMateriel)}
+   ${blocFormatsAppris(E.formatsAppris)}
+   ${blocModelesLivrables(E.modelesLivrables)}
+   ${blocAttributsAtelier(E.attributsAtelier)}</section>`;
+  document.querySelectorAll("[data-std]").forEach(r => { r.onclick = () => { E.standardSel = r.dataset.std; vueStandards(); };
+    r.onkeydown = ev => { if (ev.key === "Enter") r.click(); }; });
+  const agir = async (corps, message) => {
+    try { const r = await api("/api/standards/action", corps); E.standards = r; if (r.ident) E.standardSel = r.ident;
+      fermerModale(); toast(message + (r.alertes?.length ? " " + r.alertes.join(" ") : ""), !!r.alertes?.length); vueStandards(); return true; }
+    catch (e) { toast(e.message, true); return false; }
+  };
+  $("#std-nouveau").onclick = () => modaleStandard(d, null, agir);
+  if ($("#std-reviser")) $("#std-reviser").onclick = () => modaleStandard(d, sel, agir);
+  if ($("#std-archiver")) $("#std-archiver").onclick = () => agir({action: "statut", ident: sel.ident, statut: "archivé"},
+    `« ${sel.nom} » archivé : il n'est plus proposé à la création. Les ouvrages créés selon ce standard ne changent pas.`);
+  if ($("#std-reactiver")) $("#std-reactiver").onclick = () => agir({action: "statut", ident: sel.ident, statut: "actif"}, `« ${sel.nom} » réactivé.`);
+  document.querySelectorAll("[data-nouvelle-brique]").forEach(b => b.onclick = () => modaleBrique(d, b.dataset.nouvelleBrique, agir));
+  brancherGammesMateriel();
+  brancherFormatsAppris();
+  brancherModelesLivrables();
+  brancherAttributsAtelier();
+}
+/* Gammes de matériel de l'atelier (22/11) : chaque client a un automate différent. L'atelier déclare une fois la
+   gamme (texte de reconnaissance, racks, cartes) ; OGIAS calcule ensuite racks, cartes, nomenclature et contrôles
+   comme pour une gamme livrée. Les listes se saisissent une ligne par élément (copier-coller depuis Excel accepté). */
+function blocGammesMateriel(d) {
+  if (!d) return "";
+  const lignes = d.gammes.map(g => `<tr class="cliquable" data-gm="${esc(g.ident)}" tabindex="0"><td><b class="mono">${esc(g.code)}</b>${g.livree ? ' <span class="badge b-ok">Livrée</span>' : ""}</td><td>${esc(g.nom)}</td><td>${esc(g.constructeur)}</td><td class="mono">${esc(g.motifs.join(", "))}</td>
+    <td>${d.natures.map(n => `<span class="tag p-${n}">${n} ${g.cartes_par_nature[n]}</span>`).join(" ")}</td><td class="num">${g.racks.length}</td></tr>`).join("");
+  const ouv = d.ouvrage && d.ouvrage.automate && !d.ouvrage.gamme ? `<div class="avert" id="gm-ouvrage">L'automate de l'ouvrage ouvert, <b>${esc(d.ouvrage.automate)}</b>, n'appartient à aucune gamme décrite : déclarez sa gamme pour qu'OGIAS propose son matériel. <button type="button" class="lien" id="gm-pour-ouvrage">Déclarer cette gamme…</button></div>` : "";
+  return `<div class="bloc std-gammes"><div class="bloc-tete"><h2>Gammes de matériel</h2>
+    <div class="boutons-ligne"><button type="button" class="prim" id="gm-nouvelle">Déclarer une gamme…</button></div></div>
+    <p class="aide">Gammes livrées : ${d.livrees.map(esc).join(", ")}. Pour tout autre automate (Wago, Allen-Bradley, Omron…), déclarez une fois sa gamme : le texte qui la reconnaît dans le champ Automate de l'ouvrage, ses racks et ses cartes d'E/S. OGIAS calcule ensuite les racks, les cartes, la nomenclature et les contrôles comme pour une gamme livrée.</p>
+    ${ouv}
+    ${d.gammes.length ? `<table data-o-tableau="sans-selection" data-o-cle="gammes-materiel"><thead><tr><th>Code</th><th>Gamme</th><th>Constructeur</th><th>Reconnue par</th><th>Cartes</th><th class="num">Racks</th></tr></thead><tbody>${lignes}</tbody></table>`
+      : '<div class="vide-bloc">Aucune gamme déclarée par l\'atelier.</div>'}</div>`;
+}
+function brancherGammesMateriel() {
+  const d = E.gammesMateriel; if (!d) return;
+  if ($("#gm-nouvelle")) $("#gm-nouvelle").onclick = () => modaleGamme(null);
+  if ($("#gm-pour-ouvrage")) $("#gm-pour-ouvrage").onclick = () => modaleGamme(null, d.ouvrage.automate);
+  document.querySelectorAll("[data-gm]").forEach(r => { r.onkeydown = ev => { if (ev.key === "Enter") r.click(); };
+    r.onclick = () => modaleGamme(d.gammes.find(g => g.ident === r.dataset.gm)); });
+  if (E.gammePourAutomate) { const a = E.gammePourAutomate; E.gammePourAutomate = ""; modaleGamme(null, a); }
+}
+const gmLignes = texte => texte.split(/\r?\n/).map(l => l.split(/\t|;/).map(x => x.trim())).filter(x => x[0]);
+function modaleGamme(g, automate) {
+  const d = E.gammesMateriel;
+  const lignes = (liste, f) => (liste || []).map(f).join("\n");
+  const motifProp = automate ? automate.replace(/^[A-Za-z]{2,4}\s*-\s*/, "").toUpperCase() : "";
+  const lecture = !!g?.livree;
+  const m = ouvrirModale(`<div class="boite-tete"><h2>${g ? `Gamme ${esc(g.code)}${lecture ? " (livrée, lecture seule)" : ""}` : "Déclarer une gamme de matériel"}</h2>
+    ${lecture ? `<p>${esc(g.statut)}</p><details class="gm-sources"><summary>Sources (${g.sources.length})</summary><ul>${g.sources.map(s => `<li class="mono">${esc(s)}</li>`).join("")}</ul></details>${g.extension ? `<p class="aide">${esc(g.extension)}</p>` : ""}` : ""}
+    <p ${lecture ? "hidden" : ""}>Une ligne par élément ; colonnes séparées par un point-virgule ou une tabulation (copier-coller depuis Excel accepté). Les références et capacités sont celles de la documentation du constructeur : OGIAS ne les devine pas et les marque « à vérifier ».</p></div>
+    <div class="boite-corps std-formulaire gm-formulaire">
+     <label for="gm-code">Code de la gamme</label><input id="gm-code" maxlength="12" class="mono" value="${esc(g?.code || motifProp.slice(0, 12))}" placeholder="Ex. S7-1500">
+     <label for="gm-nom">Nom</label><input id="gm-nom" maxlength="60" value="${esc(g?.nom || "")}" placeholder="Ex. Siemens S7-1500">
+     <label for="gm-constructeur">Constructeur</label><input id="gm-constructeur" maxlength="40" value="${esc(g?.constructeur || "")}">
+     <label for="gm-motifs">Reconnue quand le champ Automate de l'ouvrage contient (un texte par ligne)</label><textarea id="gm-motifs" rows="2" class="mono">${esc(g ? g.motifs.join("\n") : motifProp)}</textarea>
+     <label for="gm-cpu">Emplacements pris par le processeur dans le rack local</label><input id="gm-cpu" type="number" min="0" max="4" value="${g ? g.emplacements_cpu : 1}">
+     <label for="gm-racks">Racks : référence ; nombre d'emplacements</label><textarea id="gm-racks" rows="3" class="mono" placeholder="Rail 160 mm ; 8">${esc(lignes(g?.racks, r => `${r.reference} ; ${r.positions}`))}</textarea>
+     <label for="gm-cartes">Cartes d'E/S : référence ; nature (ET, ST, EA, SA) ; voies ; description</label><textarea id="gm-cartes" rows="7" class="mono" placeholder="DI 32x24VDC ; ET ; 32 ; 32 entrées TOR">${esc(lignes(g?.cartes, c => `${c.reference} ; ${c.nature} ; ${c.voies}${c.description ? " ; " + c.description : ""}`))}</textarea>
+     <label for="gm-defaut">Carte par défaut quand une nature en a plusieurs : nature ; référence</label><textarea id="gm-defaut" rows="2" class="mono" placeholder="ET ; DI 32x24VDC">${esc(lignes(Object.entries(g?.defaut || {}), ([n, r]) => `${n} ; ${r}`))}</textarea>
+     <label for="gm-cpus">Processeurs (facultatif) : référence ; description</label><textarea id="gm-cpus" rows="2" class="mono">${esc(lignes(g?.processeurs, x => `${x.reference}${x.description ? " ; " + x.description : ""}`))}</textarea>
+     <label for="gm-alims">Alimentations (facultatif) : référence ; description</label><textarea id="gm-alims" rows="2" class="mono">${esc(lignes(g?.alimentations, x => `${x.reference}${x.description ? " ; " + x.description : ""}`))}</textarea>
+     <label for="gm-remarque">Remarque (source, version du catalogue…)</label><input id="gm-remarque" maxlength="300" value="${esc(g?.remarque || "")}">
+     <div class="erreur-form" id="gm-err" role="alert"></div></div>
+    <div class="boite-pied">${lecture ? '<button type="button" data-fermer>Fermer</button>' : `${g ? '<button type="button" class="danger gauche" id="gm-supprimer">Supprimer la gamme</button>' : ""}<button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="gm-ok">${g ? "Enregistrer les modifications" : "Déclarer la gamme"}</button>`}</div>`, true);
+  if (lecture) { m.querySelectorAll(".gm-formulaire input, .gm-formulaire textarea").forEach(x => { x.readOnly = true; }); return; }
+  const v = id => m.querySelector(id).value;
+  const gamme = () => ({code: v("#gm-code"), nom: v("#gm-nom"), constructeur: v("#gm-constructeur"),
+    motifs: v("#gm-motifs").split(/\r?\n|,/).map(x => x.trim()).filter(Boolean), emplacements_cpu: v("#gm-cpu"),
+    racks: gmLignes(v("#gm-racks")).map(([reference, positions]) => ({reference, positions})),
+    cartes: gmLignes(v("#gm-cartes")).map(([reference, nature, voies, description]) => ({reference, nature, voies, description})),
+    defaut: Object.fromEntries(gmLignes(v("#gm-defaut")).map(([n, r]) => [n.toUpperCase(), r])),
+    processeurs: gmLignes(v("#gm-cpus")).map(([reference, description]) => ({reference, description})),
+    alimentations: gmLignes(v("#gm-alims")).map(([reference, description]) => ({reference, description})), remarque: v("#gm-remarque")});
+  const agir = async (corps, message) => {
+    try { E.gammesMateriel = await api("/api/gammes-materiel/action", corps); fermerModale(); toast(message); vueStandards(); }
+    catch (e) { m.querySelector("#gm-err").textContent = e.message; }
+  };
+  m.querySelector("#gm-ok").onclick = () => agir({action: "enregistrer", ident: g?.ident || "", gamme: gamme()},
+    g ? "Gamme modifiée : les ouvrages gardent les cartes déjà retenues." : "Gamme déclarée : OGIAS propose désormais le matériel des ouvrages de cet automate.");
+  if (m.querySelector("#gm-supprimer")) m.querySelector("#gm-supprimer").onclick = () => confirmer("Supprimer cette gamme ?", `La gamme ${g.code} ne sera plus reconnue. Les ouvrages gardent les cartes déjà retenues ; leur matériel ne sera plus recalculé.`, "Supprimer",
+    () => agir({action: "supprimer", ident: g.ident}, "Gamme supprimée."));
+}
+/* Formats d'export appris (22/11) : OGIAS ouvert à tout constructeur. L'atelier fait apprendre une fois le format
+   d'un fichier exporté par l'outil du constructeur (liste des E/S physiques) ; OGIAS exporte ensuite chaque ouvrage
+   dans ce format, relit le fichier pour le contrôler, et le déclare conforme au format qualifié après un premier
+   essai réel confirmé. Un format appris ne se modifie pas : on en apprend un autre. */
+const faQualif = f => f.qualifie ? `<span class="badge b-ok" title="${esc(f.qualification.compte_rendu)}">Qualifié · ${esc(f.qualification.version)}</span>` : '<span class="badge b-al">Non qualifié</span>';
+function blocFormatsAppris(d) {
+  if (!d) return "";
+  const lignes = d.formats.map(f => `<tr class="cliquable" data-fa="${esc(f.ident)}" tabindex="0"><td><b>${esc(f.nom)}</b></td><td>${esc(f.nature_libelle)}</td><td><b>${esc(f.logiciel)}</b></td><td class="mono">${esc(f.fichier_origine || "—")}</td><td>${faQualif(f)}</td>
+    <td>${!d.ouvert ? "—" : !f.retenu ? `<span class="badge b-al" title="${esc(f.motif_non_retenu)}">Autre logiciel</span>` : f.controle?.pret ? '<span class="badge b-ok">Contrôle réussi</span>' : `<span class="badge b-err" title="${esc(f.controle?.statut || "")}">Export impossible</span>`}</td></tr>`).join("");
+  const livres = d.livres.map(f => `<tr><td><b>${esc(f.nom)}</b></td><td>${esc(d.natures[f.nature])}</td><td><b>${esc(f.logiciel)}</b></td><td colspan="2"><span class="aide">Format livré avec OGIAS</span></td><td>—</td></tr>`).join("");
+  return `<div class="bloc std-formats"><div class="bloc-tete"><h2>Formats d'export appris</h2>
+    <div class="boutons-ligne"><button type="button" class="prim" id="fa-apprendre" title="Donner un fichier exporté par l'outil du constructeur : OGIAS apprend son format et exportera ensuite chaque ouvrage dans ce format">Apprendre un format…</button></div></div>
+    <p class="aide">OGIAS n'est lié à aucun constructeur. Pour la <b>liste des E/S physiques</b> (automate), la <b>télétransmission</b> (supervision) et l'<b>IHM</b>, donnez une fois un fichier exporté par l'outil (n'importe quel projet) : OGIAS apprend ses colonnes, la forme des adresses et les valeurs attendues, puis exporte chaque ouvrage dans ce format. Chaque export est relu et contrôlé ; après un premier essai réel confirmé, le format est <b>qualifié</b>.</p>
+    <table data-o-tableau="sans-selection" data-o-cle="formats-appris"><thead><tr><th>Format</th><th>Fichier</th><th>Logiciel cible</th><th>Exemple d'origine</th><th>Qualification</th><th>Pour l'ouvrage ouvert</th></tr></thead><tbody>${lignes}${livres}</tbody></table></div>`;
+}
+function brancherFormatsAppris() {
+  const recharger = (r, message) => { E.formatsAppris = r; toast(message); vueStandards(); };
+  const action = async (corps, message) => { try { const r = await api("/api/formats-appris/action", corps); fermerModale(); recharger(r, message); } catch (e) { toast(e.message, true); } };
+  if ($("#fa-apprendre")) $("#fa-apprendre").onclick = () => modaleApprendreFormat(recharger);
+  document.querySelectorAll("[data-fa]").forEach(r => { r.onkeydown = ev => { if (ev.key === "Enter") r.click(); };
+    r.onclick = () => {
+      const d = E.formatsAppris, f = d.formats.find(x => x.ident === r.dataset.fa); if (!f) return;
+      const table = (titre, t) => `<tr><th>${titre}</th>${f.cles.map(n => `<td class="mono">${esc(t[n] || "—")}</td>`).join("")}</tr>`;
+      const m = ouvrirModale(`<div class="boite-tete"><h2>${esc(f.nom)}</h2><p>${esc(f.nature_libelle)} pour <b>${esc(f.logiciel)}</b> · appris le ${esc(f.cree_le)} depuis ${esc(f.fichier_origine || "un exemple")} · ${f.type_fichier === "xlsx" ? `classeur Excel, feuille « ${esc(f.feuille)} », autres feuilles : ${f.autres_feuilles === "conserver" ? "conservées" : "vidées"}` : `${esc(f.encodage)} · ${esc(f.separateur)}`}</p></div>
+        <div class="boite-corps">${d.ouvert && !f.retenu ? `<div class="avert">${esc(f.motif_non_retenu)}</div>` : ""}${f.controle && !f.controle.pret ? `<div class="avert">${esc(f.controle.statut)}</div>` : ""}
+         <h3>Colonnes</h3><table><thead><tr><th>Colonne du fichier</th><th>Contenu écrit par OGIAS</th></tr></thead><tbody>${f.colonnes.map(c => `<tr><td class="mono">${esc(c.titre)}</td><td>${esc(c.champ_libelle)}${c.champ === "fixe" ? ` : <span class="mono">${esc(c.valeur)}</span>` : ""}</td></tr>`).join("")}</tbody></table>
+         <h3>Conversions</h3><table><thead><tr><th></th>${f.cles.map(n => `<th>${n}</th>`).join("")}</tr></thead><tbody>${table("Adresse", f.adresse.gabarits)}${table("Type", f.types)}${table(esc(f.libelle_sens), f.sens)}</tbody></table>
+         ${f.nature === "es_physiques" ? `<p class="aide">Décalage ${f.adresse.decalage}, ${f.adresse.taille} octet(s) par emplacement.</p>` : `<p class="aide">Alarme : « ${esc(f.alarme.oui || "Oui")} » / « ${esc(f.alarme.oui ? f.alarme.non : "Non")} ».</p>`}
+         <h3>Qualification</h3>${f.qualifie ? `<p>${faQualif(f)} le ${esc(f.qualification.le)}${f.qualification.auteur ? ` par ${esc(f.qualification.auteur)}` : ""} : ${esc(f.qualification.compte_rendu)}</p><p class="aide">Chaque export est désormais contrôlé automatiquement contre ce format qualifié.</p>`
+          : `<p class="aide">Importez une fois un fichier produit par OGIAS dans ${esc(f.logiciel)}, puis décrivez l'essai : le format passe « qualifié » et chaque export suivant est contrôlé automatiquement.</p>
+           <div class="std-formulaire"><label for="faq-version">Version du logiciel essayée</label><input id="faq-version" maxlength="60" placeholder="Ex. V16 SP1">
+           <label for="faq-cr">Compte rendu de l'essai réel</label><input id="faq-cr" maxlength="600" placeholder="Fichier importé, nombre d'E/S créées, anomalies éventuelles">
+           <label for="faq-auteur">Essai réalisé par (facultatif)</label><input id="faq-auteur" maxlength="60">
+           <div class="boutons-ligne"><button type="button" id="faq-ok">Confirmer la qualification</button></div></div>`}</div>
+        <div class="boite-pied"><button type="button" class="danger gauche" id="fa-supprimer">Supprimer le format</button>${f.qualifie ? '<button type="button" id="faq-retirer">Retirer la qualification</button>' : ""}${d.ouvert && f.retenu && f.controle?.pret ? '<button type="button" id="fa-exporter">Exporter l\'ouvrage ouvert</button>' : ""}<button type="button" data-fermer>Fermer</button></div>`, true);
+      if (m.querySelector("#faq-ok")) m.querySelector("#faq-ok").onclick = () => action({action: "qualifier", ident: f.ident, version: m.querySelector("#faq-version").value, compte_rendu: m.querySelector("#faq-cr").value, auteur: m.querySelector("#faq-auteur").value}, "Format qualifié : les exports suivants sont contrôlés automatiquement.");
+      if (m.querySelector("#faq-retirer")) m.querySelector("#faq-retirer").onclick = () => action({action: "retirer_qualification", ident: f.ident}, "Qualification retirée.");
+      if (m.querySelector("#fa-exporter")) m.querySelector("#fa-exporter").onclick = () => telecharger("format_appris&ident=" + encodeURIComponent(f.ident));
+      m.querySelector("#fa-supprimer").onclick = () => confirmer("Supprimer ce format ?", `« ${f.nom} » sera retiré de la bibliothèque. Les fichiers déjà exportés ne changent pas.`, "Supprimer",
+        () => action({action: "supprimer", ident: f.ident}, "Format supprimé."));
+    }; });
+}
+function modaleApprendreFormat(recharger) {
+  const d = E.formatsAppris;
+  const m = ouvrirModale(`<div class="boite-tete"><h2>Apprendre un format d'export</h2>
+    <p>Donnez un fichier exporté par l'outil du constructeur (un projet quelconque suffit). OGIAS en apprend la structure ; vous confirmez ce que contient chaque colonne et la forme des adresses. Rien n'est enregistré avant votre accord.</p></div>
+    <div class="boite-corps std-formulaire">
+     <label for="fa-nature">Nature du fichier</label><select id="fa-nature">${Object.entries(d.natures).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("")}</select>
+     <label for="fa-fichier">Fichier exemple exporté par l'outil (CSV, TXT ou classeur Excel .xlsx, ex. table de variables TIA Portal)</label><input type="file" id="fa-fichier">
+     <div class="boutons-ligne"><button type="button" id="fa-analyser">Analyser le fichier</button></div>
+     <div id="fa-resultat" class="as-resultat" aria-live="polite"></div></div>
+    <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="fa-ok" disabled>Enregistrer le format</button></div>`, true);
+  let source = null, analyse = null;
+  const zone = m.querySelector("#fa-resultat");
+  const spec = () => d.specs[m.querySelector("#fa-nature").value];
+  const reglages = () => { const cles = spec().cles; return {
+    colonnes: [...zone.querySelectorAll("[data-fa-col]")].map(s => s.value),
+    adresse: {gabarits: Object.fromEntries(cles.map(n => [n, zone.querySelector(`#fa-adr-${n}`).value])),
+              decalage: zone.querySelector("#fa-decalage")?.value || 0, taille: zone.querySelector("#fa-taille")?.value || 4},
+    types: Object.fromEntries(cles.map(n => [n, zone.querySelector(`#fa-type-${n}`).value])),
+    sens: Object.fromEntries(cles.map(n => [n, zone.querySelector(`#fa-sens-${n}`).value])),
+    alarme: zone.querySelector("#fa-alarme-oui") ? {oui: zone.querySelector("#fa-alarme-oui").value, non: zone.querySelector("#fa-alarme-non").value} : null,
+    autres_feuilles: zone.querySelector("#fa-autres")?.value || "vider"}; };
+  const corps = extra => ({fichier: source.nom, contenu: source.contenu, nature: m.querySelector("#fa-nature").value, entete_index: analyse ? zone.querySelector("#fa-entete")?.value : "",
+                           feuille: analyse ? zone.querySelector("#fa-feuille")?.value || "" : "", ...extra});
+  const ligne = (id, t) => spec().cles.map(n => `<td><input id="fa-${id}-${n}" class="mono" maxlength="60" value="${esc(t[n] || "")}" aria-label="${id} ${n}"></td>`).join("");
+  const afficher = a => {
+    analyse = a;
+    const sp = spec(), es = a.nature === "es_physiques";
+    const xlsx = a.type_fichier === "xlsx";
+    zone.innerHTML = `<p class="aide">${xlsx ? `Classeur Excel · feuille « ${esc(a.feuille)} » · le classeur d'exemple sert de gabarit` : `${esc(a.encodage)} · séparateur « ${esc(a.separateur === "\t" ? "tabulation" : a.separateur)} » · ${a.guillemets ? "valeurs entre guillemets" : "sans guillemets"}`} · ${a.lignes_total} ligne(s) de données dans l'exemple</p>
+      ${xlsx ? `<label for="fa-feuille">Feuille de la table</label><select id="fa-feuille">${a.feuilles.map(f => `<option ${f === a.feuille ? "selected" : ""}>${esc(f)}</option>`).join("")}</select>
+       <label for="fa-autres">Autres feuilles du classeur (${a.feuilles.filter(f => f !== a.feuille).map(esc).join(", ") || "aucune"})</label><select id="fa-autres"><option value="vider">Vider sous leur première ligne : rien du projet d'exemple n'est livré (recommandé)</option><option value="conserver">Conserver telles quelles</option></select>` : ""}
+      <label for="fa-entete">Ligne d'en-tête</label><select id="fa-entete">${a.lignes_entete.map(l => `<option value="${l.index}" ${l.index === a.entete_index ? "selected" : ""}>${l.index + 1} : ${esc(l.texte)}</option>`).join("")}</select>
+      ${a.alertes.length ? `<div class="avert"><ul>${a.alertes.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+      <h3>Que contient chaque colonne ?</h3><table class="fa-colonnes"><thead><tr><th>Colonne de l'exemple</th><th>Valeurs de l'exemple</th><th>OGIAS y écrira</th></tr></thead><tbody>
+      ${a.colonnes.map((c, i) => `<tr><td class="mono">${esc(c.titre)}</td><td class="mono">${esc(c.exemples.join(" · ") || "(vide)")}</td><td><select data-fa-col="${i}" aria-label="Contenu de la colonne ${esc(c.titre)}">${Object.entries(sp.champs).map(([k, l]) => `<option value="${k}" ${k === c.champ ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></td></tr>`).join("")}</tbody></table>
+      <h3>Conversions par ${es ? "nature de voie" : "famille de variable"}</h3>
+      <p class="aide">Adresse : écrivez sa forme avec les jetons ${Object.entries(sp.jetons).map(([k, l]) => `<abbr class="mono" title="${esc(l)}">{${k}}</abbr>`).join(" ")}. ${a.adresse.reconnue ? `Forme reconnue : <b>${esc(a.adresse.reconnue)}</b>.` : "Forme non reconnue : à décrire."} Type et ${esc(sp.sens.toLowerCase())} : la valeur que l'outil attend (vide : celle d'OGIAS).</p>
+      <table class="fa-conversions"><thead><tr><th></th>${sp.cles.map(n => `<th>${n}</th>`).join("")}</tr></thead><tbody>
+       <tr><th>Adresse</th>${ligne("adr", a.adresse.gabarits)}</tr><tr><th>Type</th>${ligne("type", a.types)}</tr><tr><th>${esc(sp.sens)}</th>${ligne("sens", a.sens)}</tr></tbody></table>
+      ${es ? `<div class="fa-params"><label for="fa-decalage">Décalage (octets)</label><input id="fa-decalage" type="number" min="0" max="65535" value="${a.adresse.decalage}">
+       <label for="fa-taille">Octets par emplacement</label><input id="fa-taille" type="number" min="1" max="256" value="${a.adresse.taille}"></div>`
+       : `<div class="fa-params"><label for="fa-alarme-oui">Alarme : valeur pour « oui »</label><input id="fa-alarme-oui" maxlength="40" value="${esc(a.alarme.oui)}" placeholder="Oui">
+       <label for="fa-alarme-non">pour « non »</label><input id="fa-alarme-non" maxlength="40" value="${esc(a.alarme.non)}" placeholder="Non"></div>`}
+      <div class="boutons-ligne"><button type="button" id="fa-apercu">Aperçu sur l'ouvrage ouvert</button></div>
+      <div id="fa-apercu-zone"></div>
+      <label for="fa-logiciel">${es ? "Automate ou logiciel cible (comme dans la fiche de l'ouvrage, ex. Control Expert, TIA Portal)" : `${a.nature === "ihm" ? "IHM" : "Supervision"} cible (comme dans la fiche de l'ouvrage, ex. ${a.nature === "ihm" ? "Vijeo Designer" : "TOPKAPI, PcVue"})`}</label><input id="fa-logiciel" maxlength="40" value="${esc(m.querySelector("#fa-logiciel")?.value || "")}">
+      <label for="fa-nom">Nom du format</label><input id="fa-nom" maxlength="60" value="${esc(m.querySelector("#fa-nom")?.value || "")}" placeholder="Ex. Liste des E/S – TIA Portal">`;
+    m.querySelector("#fa-ok").disabled = false;
+    zone.querySelector("#fa-entete").onchange = analyser;
+    if (zone.querySelector("#fa-feuille")) zone.querySelector("#fa-feuille").onchange = () => { zone.querySelector("#fa-entete").value = ""; analyserFeuille(); };
+    zone.querySelector("#fa-apercu").onclick = apercu;
+  };
+  const analyser = async () => {
+    const f = m.querySelector("#fa-fichier");
+    if (!source) { if (!f.files.length) return toast("Choisissez le fichier exemple.", true); source = await lireFichier(f); }
+    try { afficher((await api("/api/formats-appris/action", corps({action: "analyser"}))).analyse); }
+    catch (e) { analyse = null; m.querySelector("#fa-ok").disabled = true; zone.innerHTML = `<div class="avert">${esc(e.message)}</div>`; }
+  };
+  const analyserFeuille = async () => {
+    try { afficher((await api("/api/formats-appris/action", {...corps({action: "analyser"}), entete_index: ""})).analyse); }
+    catch (e) { toast(e.message, true); }
+  };
+  const apercu = async () => {
+    const z = zone.querySelector("#fa-apercu-zone");
+    try {
+      const r = await api("/api/formats-appris/action", corps({action: "apercu", reglages: reglages()}));
+      z.innerHTML = !r.apercu ? `<p class="aide">${esc(r.motif)}</p>` : `${[...r.refus, ...r.ecarts].length ? `<div class="avert"><ul>${[...r.refus, ...r.ecarts].map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : '<p><span class="badge b-ok">Relu sans écart</span></p>'}
+        <div class="fa-comparaison"><div><h4>Exemple</h4><pre class="ml-apercu">${esc([...analyse.preambule, analyse.entete, ...analyse.lignes_exemple].join("\n"))}</pre></div>
+        <div><h4>Ouvrage ouvert dans ce format</h4><pre class="ml-apercu">${esc(r.apercu.join("\n"))}</pre></div></div>`;
+    } catch (e) { z.innerHTML = `<div class="avert">${esc(e.message)}</div>`; }
+  };
+  m.querySelector("#fa-fichier").onchange = () => { source = null; analyse = null; };
+  m.querySelector("#fa-nature").onchange = () => { if (source) { analyse = null; analyser(); } };
+  m.querySelector("#fa-analyser").onclick = analyser;
+  m.querySelector("#fa-ok").onclick = async () => {
+    if (!analyse) return;
+    try {
+      const r = await api("/api/formats-appris/action", corps({action: "enregistrer", reglages: reglages(), nature: m.querySelector("#fa-nature").value,
+        logiciel: zone.querySelector("#fa-logiciel").value, nom: zone.querySelector("#fa-nom").value}));
+      fermerModale(); recharger(r, "Format appris : il sert aux ouvrages dont l'automate correspond.");
+    } catch (e) { toast(e.message, true); }
+  };
+}
+/* Attributs d'équipement de l'atelier (lot 4, 19/11) : code et type figés à la création ; on archive, on ne
+   supprime pas (les valeurs restent sur les équipements). */
+function blocAttributsAtelier(d) {
+  if (!d) return "";
+  const types = d.types_attribut;
+  return `<div class="bloc std-attributs"><div class="bloc-tete"><h2>Attributs d'équipement</h2>
+    <div class="boutons-ligne"><button type="button" class="prim" id="at-nouveau">Nouvel attribut…</button></div></div>
+    <p class="aide">Des champs propres à votre façon de travailler (puissance, alimentation, marque…), par type d'équipement ou pour tous. Ils se saisissent sur la fiche de l'équipement ou par l'aller-retour Excel, et se reprennent dans les modèles de livrables (<span class="mono">&lt;#ATTR_CODE#&gt;</span>).</p>
+    ${d.attributs.length ? `<table data-o-tableau="sans-selection" data-o-cle="attributs-atelier"><thead><tr><th>Code</th><th>Nom</th><th>Type</th><th>Types d'équipement</th><th>Obligatoire</th><th>État</th></tr></thead><tbody>
+      ${d.attributs.map(a => `<tr class="cliquable" data-at="${esc(a.code)}" tabindex="0"><td class="mono">${esc(a.code)}</td><td><b>${esc(a.nom)}</b>${a.unite ? ` <span class="aide">(${esc(a.unite)})</span>` : ""}</td>
+        <td>${esc(types[a.type])}${a.type === "liste" ? ` <span class="aide">${esc(a.valeurs.join(" · "))}</span>` : ""}</td><td>${a.types.length ? esc(a.types.join(", ")) : "tous"}</td><td>${a.obligatoire ? "oui" : "—"}</td>
+        <td>${a.archive ? '<span class="badge b-n">archivé</span>' : '<span class="badge b-ok">actif</span>'}</td></tr>`).join("")}</tbody></table>`
+      : '<div class="vide-bloc">Aucun attribut pour l\'instant.</div>'}</div>`;
+}
+function brancherAttributsAtelier() {
+  const d = E.attributsAtelier; if (!d) return;
+  const envoyer = async (corps, message) => {
+    try { E.attributsAtelier = await api("/api/attributs/action", corps); fermerModale(); toast(message); vueStandards(); }
+    catch (err) { toast(err.message, true); }
+  };
+  const modale = a => {
+    const t = a?.type || "texte";
+    const m = ouvrirModale(`<div class="boite-tete"><h2>${a ? `Attribut ${esc(a.code)}` : "Nouvel attribut d'équipement"}</h2><p>${a ? "Le code et le type ne changent plus : les modèles et les fichiers les emploient." : "Le code et le type seront figés après la création."}</p></div>
+      <div class="boite-corps std-formulaire">
+       <label for="at-code">Code (variable <span class="mono">&lt;#ATTR_CODE#&gt;</span>)</label><input id="at-code" maxlength="20" value="${esc(a?.code || "")}" ${a ? "disabled" : ""} placeholder="Ex. PUISSANCE_KW" style="text-transform:uppercase">
+       <label for="at-nom">Nom</label><input id="at-nom" maxlength="60" value="${esc(a?.nom || "")}">
+       <label for="at-type">Type</label><select id="at-type" ${a ? "disabled" : ""}>${Object.entries(d.types_attribut).map(([k, l]) => `<option value="${k}" ${k === t ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+       <label for="at-valeurs">Valeurs de la liste (une par ligne)</label><textarea id="at-valeurs" rows="3">${esc((a?.valeurs || []).join("\n"))}</textarea>
+       <label for="at-unite">Unité (nombre)</label><input id="at-unite" maxlength="12" value="${esc(a?.unite || "")}">
+       <label for="at-types">Types d'équipement concernés (codes séparés par des virgules ; vide = tous)</label><input id="at-types" value="${esc((a?.types || []).join(", "))}" list="at-types-liste"><datalist id="at-types-liste">${d.types_equipement.map(x => `<option value="${esc(x)}">`).join("")}</datalist>
+       <label for="at-defaut">Valeur proposée à la saisie (facultative)</label><input id="at-defaut" value="${esc(a?.defaut || "")}">
+       <label class="case"><input type="checkbox" id="at-oblig" ${a?.obligatoire ? "checked" : ""}> Obligatoire (signalé par la règle R-ATT-01 s'il manque)</label>
+       <label for="at-description">Description</label><input id="at-description" maxlength="200" value="${esc(a?.description || "")}"></div>
+      <div class="boite-pied">${a ? `<button type="button" class="gauche" id="at-archiver">${a.archive ? "Réactiver" : "Archiver"}</button>` : ""}<button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="at-ok">${a ? "Enregistrer" : "Créer l'attribut"}</button></div>`);
+    const lire = () => ({code: m.querySelector("#at-code").value, nom: m.querySelector("#at-nom").value, type: m.querySelector("#at-type").value,
+      valeurs: m.querySelector("#at-valeurs").value.split("\n"), unite: m.querySelector("#at-unite").value,
+      types: m.querySelector("#at-types").value.split(",").map(x => x.trim()).filter(Boolean), defaut: m.querySelector("#at-defaut").value,
+      obligatoire: m.querySelector("#at-oblig").checked, description: m.querySelector("#at-description").value});
+    m.querySelector("#at-ok").onclick = () => a ? envoyer({action: "modifier", code: a.code, definition: lire()}, "Attribut enregistré.")
+      : envoyer({action: "creer", definition: lire()}, "Attribut créé.");
+    if (a) m.querySelector("#at-archiver").onclick = () => envoyer({action: a.archive ? "reactiver" : "archiver", code: a.code}, a.archive ? "Attribut réactivé." : "Attribut archivé : valeurs conservées.");
+  };
+  if ($("#at-nouveau")) $("#at-nouveau").onclick = () => modale(null);
+  document.querySelectorAll("[data-at]").forEach(r => { r.onclick = () => modale(d.attributs.find(x => x.code === r.dataset.at)); r.onkeydown = ev => { if (ev.key === "Enter") r.click(); }; });
+}
+/* Modèles de livrables (lot 1, 19/11) : fichiers tirés des outils du client, avec des variables <#…#> qu'OGIAS
+   remplit. Le format vient du fichier fourni ; OGIAS n'en invente aucun. */
+/* Lot 8 : chaque modèle peut déclarer sa destination et son logiciel (TOPKAPI, PcVue…) ; l'ouvrage ne retient que
+   les modèles de ses logiciels et OGIAS signale les types d'équipement sans brique, sans rien inventer. */
+const mlCible = (d, m) => m.destination ? `${esc(d.destinations[m.destination] || m.destination)} · <b>${esc(m.logiciel)}</b>` : `<span class="aide">${esc(d.destinations[""] || "Tout ouvrage")}</span>`;
+const mlTypes = m => !m.types.length ? "—" : m.types[0] === "*" ? "Tous" : m.types.map(esc).join(", ");
+function mlChampsCible(d, prefixe, m) {
+  return `<label for="${prefixe}-destination">Destination</label><select id="${prefixe}-destination">${Object.entries(d.destinations).map(([k, l]) => `<option value="${k}" ${(m?.destination || "") === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>
+    <label for="${prefixe}-logiciel">Logiciel cible (nom de votre outil, ex. TOPKAPI, PcVue, Control Expert)</label><input id="${prefixe}-logiciel" maxlength="40" value="${esc(m?.logiciel || "")}" placeholder="Laisser vide pour « Tout ouvrage »">`;
+}
+const mlCibleLue = (zone, prefixe) => ({destination: zone.querySelector(`#${prefixe}-destination`).value, logiciel: zone.querySelector(`#${prefixe}-logiciel`).value});
+function blocCouvertureModeles(d) {
+  if (!d.couverture.length && !d.manques.length) return "";
+  const lignes = d.couverture.map(g => `<tr><td>${esc(d.destinations[g.destination])}</td><td><b>${esc(g.logiciel)}</b></td><td class="num">${g.modeles}</td><td>${g.types[0] === "*" ? "Tous les types" : g.types.map(esc).join(", ") || "—"}</td><td>${g.en_erreur ? `<span class="badge b-err">${g.en_erreur} en erreur</span>` : '<span class="badge b-ok">Aucun</span>'}</td></tr>`).join("");
+  return `<h3>Couverture par logiciel</h3>
+    ${d.couverture.length ? `<table data-o-tableau="sans-selection" data-o-cle="modeles-couverture"><thead><tr><th>Destination</th><th>Logiciel</th><th class="num">Modèles</th><th>Types couverts</th><th>Modèles en erreur</th></tr></thead><tbody>${lignes}</tbody></table>` : ""}
+    ${d.manques.length ? `<div class="avert" id="ml-manques"><b>Briques manquantes pour l'ouvrage ouvert</b> (rien n'est produit à leur place) :<ul>${d.manques.map(x => `<li>${esc(x.message)}</li>`).join("")}</ul></div>` : ""}`;
+}
+function blocModelesLivrables(d) {
+  if (!d) return "";
+  return `<div class="bloc std-modeles"><div class="bloc-tete"><h2>Modèles de livrables</h2>
+    <div class="boutons-ligne"><button type="button" class="prim" id="ml-assistant" title="Partir d'un fichier exporté de votre outil pour un équipement : OGIAS y reconnaît ses valeurs et propose le modèle">Créer depuis un export…</button><button type="button" id="ml-importer">Importer un modèle…</button><button type="button" id="ml-variables">Variables disponibles</button>
+    ${d.modeles.some(m => m.nom.startsWith("Exemple - ")) ? "" : '<button type="button" class="lien" id="ml-exemple">Ajouter l\'exemple CSV</button>'}</div></div>
+    <p class="aide">Le plus simple : <b>Créer depuis un export</b>. Exportez de votre outil (supervision, automate…) le fichier d'un seul équipement déjà décrit dans l'ouvrage ouvert, par exemple une pompe : OGIAS y reconnaît le repère, les variables, les adresses et les libellés, et propose le modèle qui le reproduit pour toutes les pompes. Vous pouvez aussi écrire le modèle vous-même (variables <span class="mono">&lt;#NOM#&gt;</span>) et l'importer.</p>
+    ${d.modeles.length ? `<table data-o-tableau="sans-selection" data-o-cle="modeles-livrables"><thead><tr><th>Modèle</th><th>Pour</th><th>Types</th><th>Fichier d'origine</th><th>Encodage</th><th>Variables</th><th>État</th></tr></thead><tbody>
+      ${d.modeles.map(m => `<tr class="cliquable" data-ml="${esc(m.ident)}" tabindex="0"><td><b>${esc(m.nom)}</b></td><td>${mlCible(d, m)}</td><td>${mlTypes(m)}</td><td class="mono">${esc(m.fichier_origine || "—")}</td><td>${esc(m.encodage)}</td><td class="num">${m.variables.length}</td>
+        <td>${m.erreurs.length ? `<span class="badge b-err">${m.erreurs.length} à corriger</span>` : !m.retenu ? `<span class="badge b-al" title="${esc(m.motif_non_retenu)}">Non retenu pour cet ouvrage</span>` : '<span class="badge b-ok">Prêt</span>'}</td></tr>`).join("")}</tbody></table>`
+      : '<div class="vide-bloc">Aucun modèle. Importez un fichier de votre outil, ou ajoutez l\'exemple CSV pour essayer le principe.</div>'}
+    ${blocCouvertureModeles(d)}</div>`;
+}
+function brancherModelesLivrables() {
+  const recharger = async (r, message) => { E.modelesLivrables = r; toast(message); vueStandards(); };
+  const action = async (corps, message) => { try { const r = await api("/api/modeles-livrables/action", corps); fermerModale(); await recharger(r, message); } catch (e) { toast(e.message, true); } };
+  if ($("#ml-exemple")) $("#ml-exemple").onclick = () => action({action: "exemple"}, "Exemple ajouté : générez-le dans Recette et livrables.");
+  if ($("#ml-variables")) $("#ml-variables").onclick = () => {
+    const d = E.modelesLivrables;
+    ouvrirModale(`<div class="boite-tete"><h2>Variables disponibles</h2><p>Écrivez-les sous la forme <span class="mono">&lt;#NOM#&gt;</span>. Les blocs se répètent : <span class="mono">&lt;#DEBUT_EQUIPEMENTS#&gt; … &lt;#FIN_EQUIPEMENTS#&gt;</span> (filtre : type d'équipement, ex. <span class="mono">DEBUT_EQUIPEMENTS_PM</span>), <span class="mono">VARIABLES</span> (filtre : ${d.blocs.VARIABLES.join(", ")}, ex. <span class="mono">DEBUT_VARIABLES_TS</span>) et <span class="mono">ES</span> (filtre : ${d.blocs.ES.join(", ")}). Un bloc VARIABLES ou ES placé dans EQUIPEMENTS ne parcourt que l'équipement. Une balise de bloc seule sur sa ligne n'ajoute pas de ligne.</p></div>
+      <div class="boite-corps ml-variables">${d.variables.map(g => `<h3>${esc(g.groupe)}</h3><table><tbody>${g.liste.map(v => `<tr><td class="mono">&lt;#${esc(v.nom)}#&gt;</td><td>${esc(v.description)}</td></tr>`).join("")}</tbody></table>`).join("")}</div>
+      <div class="boite-pied"><button type="button" data-fermer>Fermer</button></div>`, true);
+  };
+  if ($("#ml-assistant")) $("#ml-assistant").onclick = () => modaleAssistantModele(recharger);
+  if ($("#ml-importer")) $("#ml-importer").onclick = () => {
+    const d = E.modelesLivrables;
+    const m = ouvrirModale(`<div class="boite-tete"><h2>Importer un modèle de livrable</h2><p>Fichier texte de votre outil (CSV, TXT, XML, SCL…, 2 Mo au plus) où les valeurs sont remplacées par des variables. L'encodage (UTF-8 ou Windows) est conservé à la génération.</p></div>
+      <div class="boite-corps std-formulaire"><label for="ml-nom">Nom du modèle</label><input id="ml-nom" maxlength="60" placeholder="Ex. Import variables supervision client B">
+       <label for="ml-fichier">Fichier modèle</label><input type="file" id="ml-fichier">
+       <label for="ml-echappement">Échappement des valeurs</label><select id="ml-echappement">${Object.entries(d.echappements).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("")}</select>
+       ${mlChampsCible(d, "ml")}
+       <label for="ml-description">Description (facultative)</label><input id="ml-description" maxlength="300"></div>
+      <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="ml-ok">Importer</button></div>`);
+    m.querySelector("#ml-ok").onclick = async () => {
+      const f = m.querySelector("#ml-fichier");
+      if (!f.files.length) return toast("Choisissez le fichier modèle.", true);
+      const source = await lireFichier(f);
+      action({action: "importer", nom: m.querySelector("#ml-nom").value, fichier: source.nom, contenu: source.contenu,
+              echappement: m.querySelector("#ml-echappement").value, description: m.querySelector("#ml-description").value, ...mlCibleLue(m, "ml")}, "Modèle importé.");
+    };
+  };
+  document.querySelectorAll("[data-ml]").forEach(r => { r.onkeydown = ev => { if (ev.key === "Enter") r.click(); };
+    r.onclick = async () => {
+      const md = E.modelesLivrables.modeles.find(x => x.ident === r.dataset.ml); if (!md) return;
+      let t = ""; try { t = (await api("/api/modeles-livrables/texte?ident=" + encodeURIComponent(md.ident))).texte; } catch (e) { t = e.message; }
+      const m = ouvrirModale(`<div class="boite-tete"><h2>${esc(md.nom)}</h2><p>${esc(md.description || "")} Importé le ${esc(md.importe_le)} · ${esc(md.fichier_origine || "")} · ${esc(md.encodage)} · échappement ${esc(md.echappement)}</p></div>
+        <div class="boite-corps">${md.erreurs.length ? `<div class="avert"><b>À corriger avant de générer :</b><ul>${md.erreurs.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+         ${!md.retenu ? `<div class="avert">${esc(md.motif_non_retenu)}</div>` : ""}
+         <h3>Pour quel logiciel</h3><div class="std-formulaire">${mlChampsCible(E.modelesLivrables, "mlc", md)}<p class="aide">Types d'équipement produits : ${mlTypes(md)}.</p>
+          <div class="boutons-ligne"><button type="button" id="mlc-ok">Enregistrer la destination</button></div></div>
+         <h3>Variables du modèle</h3><table><thead><tr><th>Variable</th><th>Portée</th><th>Emplois</th><th>Signification</th></tr></thead><tbody>${md.variables.map(v => `<tr><td class="mono">&lt;#${esc(v.nom)}#&gt;</td><td>${v.connue ? esc(v.portee) : `<span class="badge b-err">${esc(v.portee)}</span>`}</td><td class="num">${v.nombre}</td><td>${esc(v.description || "—")}</td></tr>`).join("")}</tbody></table>
+         <h3>Contenu du fichier</h3><pre class="ml-apercu">${esc(t)}</pre></div>
+        <div class="boite-pied"><button type="button" class="danger gauche" id="ml-supprimer">Supprimer le modèle</button><button type="button" data-fermer>Fermer</button></div>`, true);
+      m.querySelector("#mlc-ok").onclick = () => action({action: "cible", ident: md.ident, ...mlCibleLue(m, "mlc")}, "Destination du modèle enregistrée.");
+      m.querySelector("#ml-supprimer").onclick = () => confirmer("Supprimer ce modèle ?", `« ${md.nom} » sera retiré de la bibliothèque. Les livrables déjà téléchargés ne changent pas.`, "Supprimer",
+        () => action({action: "supprimer", ident: md.ident}, "Modèle supprimé."));
+    }; });
+}
+/* Lot 7 (19/11) : assistant « créer un modèle depuis un export ». Le fichier d'UN équipement de référence est analysé
+   côté serveur ; chaque substitution proposée peut être refusée (nouvelle analyse) ; l'enregistrement n'est possible
+   que si le modèle, rempli pour l'équipement de référence, n'est pas en erreur. */
+function modaleAssistantModele(recharger) {
+  const d = E.modelesLivrables;
+  if (!d.ouvert || !d.equipements.length) return toast("Ouvrez d'abord un ouvrage qui contient l'équipement de référence (ex. la pompe dont vous avez l'export).", true);
+  const m = ouvrirModale(`<div class="boite-tete"><h2>Créer un modèle depuis un export</h2>
+    <p>Exportez de votre outil le fichier d'<b>un seul équipement</b> déjà décrit dans cet ouvrage. OGIAS reconnaît ses valeurs (repère, variables, adresses, libellés) et propose un modèle qui produira le même fichier pour chaque équipement du même type. Rien n'est enregistré avant votre accord.</p></div>
+    <div class="boite-corps std-formulaire">
+     <label for="as-fichier">Fichier exporté (texte : CSV, TXT, XML…)</label><input type="file" id="as-fichier">
+     <label for="as-eq">Équipement de référence (celui de l'export)</label><select id="as-eq">${d.equipements.map(e => `<option value="${esc(e.ident)}">${esc(e.repere)} — ${esc(e.libelle)}</option>`).join("")}</select>
+     <label for="as-echap">Échappement des valeurs</label><select id="as-echap"><option value="">Détecter (XML si le fichier commence par une balise)</option>${Object.entries(d.echappements).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("")}</select>
+     <div class="boutons-ligne"><button type="button" id="as-analyser">Analyser l'export</button></div>
+     <div id="as-resultat" class="as-resultat" aria-live="polite"></div></div>
+    <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="as-ok" disabled>Enregistrer le modèle</button></div>`, true);
+  let source = null, refus = [], dernier = null;
+  const corps = extra => ({action: "assistant", fichier: source.nom, contenu: source.contenu, ident_eq: m.querySelector("#as-eq").value,
+                           echappement: m.querySelector("#as-echap").value, refus, ...extra});
+  const zone = m.querySelector("#as-resultat");
+  const ETATS = {identique: ["b-ok", "Reproduit à l'identique"], ordre: ["b-al", "Même contenu, autre ordre"], complete: ["b-al", "Reproduit, avec des lignes en plus"],
+                 different: ["b-err", "Différences à examiner"], erreur: ["b-err", "Modèle en erreur"]};
+  const afficher = r => {
+    dernier = r;
+    const [cl, lib] = ETATS[r.verification.etat] || ["b-al", r.verification.etat];
+    const liste = (titre, l) => l.length ? `<h4>${titre}</h4><pre class="ml-apercu">${esc(l.join("\n"))}</pre>` : "";
+    zone.innerHTML = `<div class="as-verif"><span class="badge ${cl}">${esc(lib)}</span> ${esc(r.verification.message)}</div>
+      ${liste("Lignes d'origine non reproduites", r.verification.manquantes)}${liste("Lignes produites en plus ou différentes", r.verification.en_plus)}
+      <p class="aide">Repère de référence <b class="mono">${esc(r.equipement)}</b> · ${r.lignes.entete} ligne(s) d'en-tête, ${r.lignes.corps} répétée(s) pour chaque ${esc(r.type)}, ${r.lignes.pied} de pied · blocs : ${esc(r.blocs.join(", ") || "aucun")} · échappement ${esc(r.echappement)} · ${esc(r.encodage)}</p>
+      ${r.alertes.length ? `<div class="avert"><ul>${r.alertes.map(a => `<li>${esc(a)}</li>`).join("")}</ul></div>` : ""}
+      <h3>Valeurs reconnues</h3><p class="aide">Décochez une valeur qui doit rester écrite telle quelle : le modèle est recalculé.</p>
+      <table class="as-props"><thead><tr><th></th><th>Variable</th><th>Signification</th><th class="num">Remplacements</th><th>Exemples trouvés</th></tr></thead><tbody>
+      ${r.propositions.map(p => `<tr${p.refusee ? ' class="refusee"' : ""}><td><input type="checkbox" data-as-var="${esc(p.variable)}" ${p.refusee ? "" : "checked"} aria-label="Remplacer par ${esc(p.variable)}"></td>
+        <td class="mono">&lt;#${esc(p.variable)}#&gt;</td><td>${esc(p.description || "—")}</td><td class="num">${p.refusee ? "—" : p.occurrences}</td><td class="mono">${esc(p.exemples.join(" · ") || "laissé tel quel")}</td></tr>`).join("")}</tbody></table>
+      <h3>Modèle proposé</h3><pre class="ml-apercu">${esc(r.gabarit)}</pre>
+      <label for="as-nom">Nom du modèle</label><input id="as-nom" maxlength="60" value="${esc(m.querySelector("#as-nom")?.value || "")}" placeholder="Ex. Pompe – supervision client B">
+      <div class="std-formulaire">${mlChampsCible(d, "as", {destination: m.querySelector("#as-destination")?.value || "", logiciel: m.querySelector("#as-logiciel")?.value || ""})}</div>`;
+    m.querySelector("#as-ok").disabled = r.verification.etat === "erreur";
+    zone.querySelectorAll("[data-as-var]").forEach(c => c.onchange = () => {
+      const v = c.dataset.asVar; refus = c.checked ? refus.filter(x => x !== v) : [...refus, v]; analyser();
+    });
+  };
+  const analyser = async () => {
+    const f = m.querySelector("#as-fichier");
+    if (!source) { if (!f.files.length) return toast("Choisissez le fichier exporté.", true); source = await lireFichier(f); }
+    try { afficher(await api("/api/modeles-livrables/action", corps())); }
+    catch (e) { dernier = null; m.querySelector("#as-ok").disabled = true; zone.innerHTML = `<div class="avert">${esc(e.message)}</div>`; }
+  };
+  m.querySelector("#as-fichier").onchange = () => { source = null; refus = []; };
+  m.querySelector("#as-eq").onchange = m.querySelector("#as-echap").onchange = () => { if (source) analyser(); };
+  m.querySelector("#as-analyser").onclick = analyser;
+  m.querySelector("#as-ok").onclick = async () => {
+    if (!dernier) return;
+    try {
+      const r = await api("/api/modeles-livrables/action", corps({action: "assistant_enregistrer", nom: m.querySelector("#as-nom").value, ...mlCibleLue(m, "as")}));
+      fermerModale(); recharger(r, `Modèle « ${r.modele.nom} » enregistré : générez-le dans Recette et livrables.`);
+    } catch (e) { toast(e.message, true); }
+  };
+}
+function modaleStandard(d, sel, agir) {
+  const choix = (f, nom) => `<label for="std-${f}">${esc(nom)}</label><select id="std-${f}">${(d.bibliotheque[f] || []).map(b =>
+    `<option value="${esc(b.ident)}" ${sel && sel.briques[f]?.ident === b.ident ? "selected" : ""}>${esc(b.nom)}</option>`).join("")}</select>`;
+  const m = ouvrirModale(`<div class="boite-tete"><h2>${sel ? `Nouvelle version de « ${esc(sel.nom)} »` : "Nouveau standard d'ingénierie"}</h2>
+    <p>${sel ? `La version ${esc(String(sel.version + 1))} remplace la version ${esc(String(sel.version))} pour les prochains ouvrages. Les ouvrages déjà créés gardent leurs réglages ; OGIAS leur signale l'évolution.`
+      : "Choisissez une brique par famille. Le référentiel métier n'a qu'une brique : la bibliothèque publiée de l'atelier."}</p></div>
+    <div class="boite-corps std-formulaire">
+     ${sel ? "" : `<label for="std-nom">Nom du standard</label><input id="std-nom" maxlength="60" placeholder="Ex. Client B">`}
+     <label for="std-description">Description</label><input id="std-description" maxlength="400" value="${esc(sel?.description || "")}">
+     ${choix("charte", "Charte de nommage")}${choix("adressage", "Plan d'adressage")}${choix("outils", "Chaîne d'outils")}
+     ${sel ? `<label for="std-motif">Motif de la nouvelle version</label><input id="std-motif" maxlength="200">` : ""}
+    </div>
+    <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="std-ok">${sel ? "Créer la version" : "Créer le standard"}</button></div>`);
+  m.querySelector("#std-ok").onclick = () => {
+    const corps = {choix: {charte: m.querySelector("#std-charte").value, adressage: m.querySelector("#std-adressage").value, outils: m.querySelector("#std-outils").value},
+                   description: m.querySelector("#std-description").value};
+    if (sel) agir({...corps, action: "reviser", ident: sel.ident, motif: m.querySelector("#std-motif").value}, `« ${sel.nom} » : version ${sel.version + 1} créée.`);
+    else agir({...corps, action: "creer", nom: m.querySelector("#std-nom").value}, "Standard créé.");
+  };
+}
+function modaleBrique(d, famille, agir) {
+  if (famille === "charte") return modaleCharte(d, agir);
+  const corps = famille === "adressage"
+    ? `<label for="brique-nom">Nom du plan d'adressage</label><input id="brique-nom" maxlength="60">
+       <label for="brique-depart">Partir de</label><select id="brique-depart">${(d.bibliotheque.adressage || []).map(b => `<option value="${esc(b.ident)}">${esc(b.nom)}</option>`).join("")}</select>
+       <table class="ad-plages"><thead><tr><th>Famille</th><th>Premier mot</th><th>Dernier mot</th></tr></thead><tbody>
+       ${Object.keys(d.plages_defaut).map(f => `<tr><th>${esc(f)}</th><td><input data-brique-debut="${esc(f)}" inputmode="numeric" aria-label="Premier mot ${esc(f)}"></td><td><input data-brique-fin="${esc(f)}" inputmode="numeric" aria-label="Dernier mot ${esc(f)}"></td></tr>`).join("")}</tbody></table>
+       <label for="brique-decalage">Décalage Modbus des adresses de télétransmission</label><input id="brique-decalage" inputmode="numeric" value="0">`
+    : `<label for="brique-nom">Nom de la chaîne d'outils</label><input id="brique-nom" maxlength="60">
+       <label for="brique-supervision">Supervision</label><select id="brique-supervision"><option value="">— Aucune —</option>${d.supervisions.map(x => `<option>${esc(x)}</option>`).join("")}</select>
+       <label for="brique-ihm">IHM</label><select id="brique-ihm"><option value="">— Aucune —</option>${d.ihms.map(x => `<option>${esc(x)}</option>`).join("")}</select>
+       <p class="aide">Une supervision ou une IHM absente de ces listes s'ajoute d'abord par « Gérer les listes ».</p>`;
+  const m = ouvrirModale(`<div class="boite-tete"><h2>${famille === "adressage" ? "Nouveau plan d'adressage" : "Nouvelle chaîne d'outils"}</h2>
+    <p>La brique rejoint la bibliothèque ; elle ne se modifie plus ensuite (pour changer, on en crée une autre). Aucun ouvrage n'est touché.</p></div>
+    <div class="boite-corps std-formulaire">${corps}</div>
+    <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="brique-ok">Ajouter à la bibliothèque</button></div>`);
+  if (famille === "adressage") {
+    const remplir = () => { const b = d.bibliotheque.adressage.find(x => x.ident === m.querySelector("#brique-depart").value) || {plages: d.plages_defaut, decalage_modbus: 0};
+      Object.entries(b.plages).forEach(([f, [deb, fin]]) => { m.querySelector(`[data-brique-debut="${f}"]`).value = deb; m.querySelector(`[data-brique-fin="${f}"]`).value = fin; });
+      m.querySelector("#brique-decalage").value = b.decalage_modbus || 0; };
+    m.querySelector("#brique-depart").onchange = remplir; remplir();
+  }
+  m.querySelector("#brique-ok").onclick = () => {
+    const nom = m.querySelector("#brique-nom").value;
+    const contenu = famille === "adressage"
+      ? {plages: Object.fromEntries(Object.keys(d.plages_defaut).map(f => [f, [m.querySelector(`[data-brique-debut="${f}"]`).value, m.querySelector(`[data-brique-fin="${f}"]`).value]])),
+         decalage_modbus: m.querySelector("#brique-decalage").value}
+      : {supervision: m.querySelector("#brique-supervision").value, ihm: m.querySelector("#brique-ihm").value};
+    agir({action: "brique", famille, nom, contenu}, `« ${nom.trim()} » ajouté à la bibliothèque.`);
+  };
+}
+/* Charte de nommage d'un client (19/11) : le repère est une suite de segments, dans l'ordre voulu. Aperçu fictif en
+   direct (XTST, RV, PM01) contrôlé par le serveur ; rien n'est écrit avant « Ajouter à la bibliothèque ». */
+function blocCharte(b) {
+  return `<ul class="std-segments">${(b.description || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+    <p class="std-exemple">Exemple : <span class="mono">${esc(b.exemple?.ouvrage || "")}</span> · <span class="mono">${esc(b.exemple?.equipement || "")}</span></p>
+`;
+}
+function modaleCharte(d, agir) {
+  const meta = d.charte_meta, chartes = d.bibliotheque.charte || [];
+  const copie = c => JSON.parse(JSON.stringify({ouvrage: c.ouvrage, equipement: c.equipement, separateur: c.separateur || ""}));
+  let etat = copie(chartes[0]);
+  const optionsCar = v => Object.entries(meta.caracteres).map(([k, l]) => `<option value="${k}" ${k === v ? "selected" : ""}>${esc(l)}</option>`).join("");
+  const ligne = (partie, s, i, n) => {
+    const noms = partie === "ouvrage" ? meta.segments_ouvrage : meta.segments_equipement;
+    const reglage = s.type === "texte" ? `<input data-champ="valeur" value="${esc(s.valeur || "")}" maxlength="8" aria-label="Texte fixe">`
+      : s.type === "equipement" ? `<span class="aide">motif du référentiel métier (ex. PM01)</span>`
+      : `<input data-champ="longueur" inputmode="numeric" value="${esc(String(s.longueur ?? ""))}" aria-label="Longueur ${esc(noms[s.type])}" class="std-court">
+         ${s.type === "numero_ouvrage" ? '<span class="aide">chiffres</span>' : `<select data-champ="caracteres" aria-label="Caractères ${esc(noms[s.type])}">${optionsCar(s.caracteres)}</select>`}`;
+    return `<li class="std-seg" data-partie="${partie}" data-i="${i}"><b>${esc(noms[s.type])}</b><span class="std-seg-reglage">${reglage}</span>
+      <span class="std-seg-actions"><button type="button" class="icone" data-bouger="-1" ${i ? "" : "disabled"} aria-label="Monter ${esc(noms[s.type])}">↑</button><button type="button" class="icone" data-bouger="1" ${i < n - 1 ? "" : "disabled"} aria-label="Descendre ${esc(noms[s.type])}">↓</button><button type="button" class="icone" data-retirer aria-label="Retirer ${esc(noms[s.type])}">✕</button></span></li>`;
+  };
+  const partie = (cle, titre, noms) => `<fieldset class="std-partie"><legend>${titre}</legend><ol>${etat[cle].map((s, i) => ligne(cle, s, i, etat[cle].length)).join("")}</ol>
+    <div class="boutons-ligne"><select data-ajout="${cle}" aria-label="Segment à ajouter (${titre})">${Object.entries(noms).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("")}</select><button type="button" data-ajouter="${cle}">Ajouter le segment</button></div></fieldset>`;
+  const m = ouvrirModale(`<div class="boite-tete"><h2>Nouvelle charte de nommage</h2>
+    <p>Décrivez le repère du client segment par segment, dans l'ordre. La charte rejoint la bibliothèque ; elle ne se modifie plus ensuite. Aucun ouvrage n'est touché.</p></div>
+    <div class="boite-corps std-formulaire std-charte">
+     <label for="brique-nom">Nom de la charte</label><input id="brique-nom" maxlength="60" placeholder="Ex. Charte client B">
+     <label for="charte-depart">Partir de</label><select id="charte-depart">${chartes.map(b => `<option value="${esc(b.ident)}">${esc(b.nom)}</option>`).join("")}</select>
+     <div id="charte-parties"></div>
+     <label for="charte-separateur">Séparateur entre les segments</label><select id="charte-separateur">${Object.entries(meta.separateurs).map(([k, l]) => `<option value="${esc(k)}">${esc(l)}</option>`).join("")}</select>
+     <div id="charte-apercu" class="std-apercu" aria-live="polite"></div>
+    </div>
+    <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="brique-ok">Ajouter à la bibliothèque</button></div>`, true);
+  const zoneApercu = m.querySelector("#charte-apercu");
+  let minuterie;
+  const apercu = () => { clearTimeout(minuterie); minuterie = setTimeout(async () => {
+    try { const r = await api("/api/standards/charte-apercu", {charte: etat});
+      zoneApercu.innerHTML = r.erreur ? `<p class="std-erreur">${esc(r.erreur)}</p>`
+        : `<p>Repère d'ouvrage : <span class="mono">${esc(r.exemple.ouvrage)}</span> · repère d'équipement : <span class="mono">${esc(r.exemple.equipement)}</span> <span class="aide">(${r.exemple.equipement.length} / ${meta.longueur_max} caractères, exemple fictif)</span></p>
+           ${r.ogias ? "<p class=\"aide\">Structure de la charte OGIAS.</p>" : `<p class="std-evolue">${esc(r.avis)}</p>`}`; }
+    catch (e) { zoneApercu.textContent = e.message; } }, 150); };
+  const rendreParties = () => {
+    m.querySelector("#charte-parties").innerHTML = partie("ouvrage", "Repère de l'ouvrage", meta.segments_ouvrage) + partie("equipement", "Suite du repère pour un équipement", meta.segments_equipement);
+    m.querySelector("#charte-separateur").value = etat.separateur;
+    m.querySelectorAll(".std-seg").forEach(li => {
+      const liste = etat[li.dataset.partie], i = +li.dataset.i;
+      li.querySelectorAll("[data-champ]").forEach(ch => ch.oninput = ch.onchange = () => { liste[i][ch.dataset.champ] = ch.value; apercu(); });
+      li.querySelectorAll("[data-bouger]").forEach(b => b.onclick = () => { const j = i + +b.dataset.bouger; [liste[i], liste[j]] = [liste[j], liste[i]]; rendreParties(); });
+      li.querySelector("[data-retirer]").onclick = () => { liste.splice(i, 1); rendreParties(); };
+    });
+    m.querySelectorAll("[data-ajouter]").forEach(b => b.onclick = () => {
+      const type = m.querySelector(`[data-ajout="${b.dataset.ajouter}"]`).value;
+      etat[b.dataset.ajouter].push(type === "texte" ? {type, valeur: ""} : type === "equipement" ? {type} : type === "numero_ouvrage" ? {type, longueur: 2} : {type, longueur: 2, caracteres: "lettres"});
+      rendreParties(); });
+    apercu();
+  };
+  m.querySelector("#charte-depart").onchange = ev => { etat = copie(chartes.find(b => b.ident === ev.target.value)); rendreParties(); };
+  m.querySelector("#charte-separateur").onchange = ev => { etat.separateur = ev.target.value; apercu(); };
+  rendreParties();
+  m.querySelector("#brique-ok").onclick = () => {
+    const nom = m.querySelector("#brique-nom").value;
+    agir({action: "brique", famille: "charte", nom, contenu: etat}, `« ${nom.trim()} » ajoutée à la bibliothèque.`);
+  };
+}
+async function choixStandard(c) {
+  const s = c.querySelector("#standard-choix"); if (!s) return;
+  let d; try { d = await api("/api/standards"); } catch (e) { s.innerHTML = `<option value="">${esc(e.message)}</option>`; return; }
+  const actifs = d.standards.filter(x => x.statut === "actif");
+  const garde = E.standardCreation && actifs.some(x => x.ident === E.standardCreation) ? E.standardCreation : actifs[0]?.ident;
+  s.innerHTML = actifs.map(x => `<option value="${esc(x.ident)}" ${x.ident === garde ? "selected" : ""}>${esc(x.nom)} (v${esc(String(x.version))})</option>`).join("");
+  const premiere = !E.standardsListe;
+  E.standardsListe = actifs; E.standardCreation = garde;
+  // La charte du standard choisi règle la saisie du lieu, du type et du numéro, et l'aperçu du repère (19/11).
+  s.onchange = () => { E.standardCreation = s.value; if (E.ficheDraft) E.ficheDraft.numero_ouvrage = ""; detailOuvrage(c); };
+  if (premiere && charteCourante().charte) detailOuvrage(c);
+}
+/* Appliquer un standard à un ouvrage existant (19/11) : seulement à la demande, après aperçu de ce qui change. */
+async function modaleAppliquerStandard(c, preselection) {
+  let d; try { d = await api("/api/standards"); } catch (e) { return toast(e.message, true); }
+  const actifs = d.standards.filter(x => x.statut === "actif");
+  const m = ouvrirModale(`<div class="boite-tete"><h2>Appliquer un standard d'ingénierie</h2>
+    <p>Le plan mémoire, le décalage Modbus, la supervision et l'IHM de l'ouvrage prennent les valeurs du standard. L'identification, l'automate, les équipements et les adresses déjà validées ne changent pas.</p></div>
+    <div class="boite-corps std-formulaire"><label for="appliquer-standard">Standard</label><select id="appliquer-standard">${actifs.map(x => `<option value="${esc(x.ident)}" ${x.ident === preselection ? "selected" : ""}>${esc(x.nom)} (v${esc(String(x.version))})</option>`).join("")}</select>
+     <div id="appliquer-apercu" class="std-apercu" aria-live="polite"></div></div>
+    <div class="boite-pied"><button type="button" data-fermer>Annuler</button><button type="button" class="prim" id="appliquer-ok">Appliquer</button></div>`);
+  const sel = m.querySelector("#appliquer-standard"), zone = m.querySelector("#appliquer-apercu");
+  const apercu = async () => {
+    zone.textContent = "…";
+    try { const r = await api("/api/standards/appliquer", {ident: sel.value});
+      zone.innerHTML = r.apercu.length ? `<b>Ce qui changera sur l'ouvrage :</b><ul>${r.apercu.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`
+        : "<p>Aucun réglage ne change : seule la référence au standard est mise à jour.</p>"; }
+    catch (e) { zone.textContent = e.message; }
+  };
+  sel.onchange = apercu; apercu();
+  m.querySelector("#appliquer-ok").onclick = async () => {
+    try { const r = await api("/api/standards/appliquer", {ident: sel.value, confirme: true}); fermerModale();
+      toast(`Standard « ${r.nom} » v${r.version} appliqué` + (r.applique.length ? ` : ${r.applique.length} réglage(s) modifié(s).` : ".") + (r.alertes.length ? " " + r.alertes.join(" ") : ""), !!r.alertes.length);
+      await recharger(); } catch (e) { toast(e.message, true); }
+  };
+}
+/* Outils d'ingénierie de l'ouvrage (18/11 : un logiciel universel) : l'utilisateur choisit les outils réellement
+   utilisés ; OGIAS affiche les règles qui en découlent. La source d'acquisition et la communication restent saisies
+   dans la fiche d'identification ; la supervision et l'IHM se choisissent ici, dans les listes du référentiel. */
+async function blocOutils(c) {
+  const zone = c.querySelector("#bloc-outils"); if (!zone) return;
+  let t; try { t = await api("/api/outils"); } catch (e) { zone.querySelector(".vide-bloc").textContent = e.message; return; }
+  if (!document.body.contains(zone)) return;
+  const choix = (id, libelle, valeur, liste, vide) => `<label for="${id}">${libelle}</label><select id="${id}"><option value="">${vide}</option>
+    ${[...new Set([...liste, ...(valeur ? [valeur] : [])])].map(x => `<option ${x === valeur ? "selected" : ""}>${esc(x)}</option>`).join("")}</select>`;
+  zone.innerHTML = `<div class="bloc-tete"><h2>Outils d'ingénierie</h2><span class="aide">les outils réellement utilisés sur l'ouvrage ; OGIAS applique les règles qui leur sont propres</span></div>
+   <div class="outils-grille">
+    <div class="outil"><span class="outil-cat">Automate / source d'acquisition</span><b>${esc(t.automate || "non renseigné")}</b><small>${t.gamme ? `gamme ${esc(t.gamme)}` : "gamme non décrite dans OGIAS : aucune règle propre"} · fiche d'identification</small></div>
+    <div class="outil"><span class="outil-cat">Communication</span><b>${esc(t.telegestion || "non renseignée")}</b><small>fiche d'identification</small></div>
+    <div class="outil">${choix("outil-supervision", "Supervision", t.supervision, t.supervisions, "— Aucune —")}</div>
+    <div class="outil">${choix("outil-ihm", "IHM", t.ihm, t.ihms, "— Aucune —")}</div>
+   </div>
+   <p class="outils-standard">${t.standard ? `Créé selon le standard <a href="#/standards"><b>${esc(t.standard.nom)}</b> v${esc(String(t.standard.version))}</a> le ${esc(t.standard.applique_le)}${t.standard_a_evolue ? ' · <span class="std-evolue">le standard a évolué depuis</span>' : ""}${t.standard_ecarts.length ? ` · ${t.standard_ecarts.length} réglage(s) modifié(s) sur cet ouvrage : ${t.standard_ecarts.map(esc).join(" ; ")}` : ""}` : "Ouvrage créé avant les standards d'ingénierie : ses réglages sont ceux affichés ici."}</p>
+   <div class="boutons-ligne outils-actions"><button type="button" id="outils-appliquer-standard">${t.standard_a_evolue ? `Appliquer la version ${esc(String(t.standard_version_actuelle))} du standard…` : "Appliquer un standard…"}</button><button type="button" id="outils-reprendre">Reprendre les réglages d'un autre ouvrage…</button><button type="button" class="lien" id="outils-plages">Plan mémoire %MW (Adressage)</button></div>
+   <div class="outils-regles"><b>Règles propres aux outils choisis</b>${t.contraintes.length ? `<ul>${t.contraintes.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : "<p>Aucune : les outils choisis ne sont pas décrits dans OGIAS, aucune contrainte n'est supposée.</p>"}</div>`;
+  const enregistrer = async corps => { try { await api("/api/outils/action", corps); toast("Outils de l'ouvrage enregistrés."); blocOutils(c); } catch (e) { toast(e.message, true); blocOutils(c); } };
+  zone.querySelector("#outil-supervision").onchange = ev => enregistrer({supervision: ev.target.value});
+  zone.querySelector("#outil-ihm").onchange = ev => enregistrer({ihm: ev.target.value});
+  zone.querySelector("#outils-plages").onclick = () => naviguer("#/adressage");
+  zone.querySelector("#outils-appliquer-standard").onclick = () => modaleAppliquerStandard(c, t.standard?.ident);
+  zone.querySelector("#outils-reprendre").onclick = async () => {
+    let s; try { s = await api("/api/reglages/sources"); } catch (e) { return toast(e.message, true); }
+    if (!s.ouvrages.length) return toast("Aucun autre ouvrage enregistré.", true);
+    const m = ouvrirModale(`<div class="boite-tete"><h2>Reprendre les réglages d'un autre ouvrage</h2>
+      <p>Repris : supervision, IHM, plan mémoire %MW et décalage Modbus. L'automate et la communication ne sont repris que s'ils ne sont pas encore renseignés ici. Les équipements et les adresses ne sont jamais copiés.</p></div>
+      <div class="boite-corps"><label for="reprendre-source">Ouvrage source</label><select id="reprendre-source">${s.ouvrages.map(x => `<option value="${esc(x.chemin)}">${esc(x.repere)} · ${esc(x.libelle)}${x.automate && x.automate !== "—" ? ` · ${esc(x.automate)}` : ""}</option>`).join("")}</select></div>
+      <div class="boite-pied"><button type="button" id="reprendre-annuler">Annuler</button><button type="button" class="prim" id="reprendre-ok">Reprendre</button></div>`);
+    m.querySelector("#reprendre-annuler").onclick = fermerModale;
+    m.querySelector("#reprendre-ok").onclick = async () => {
+      try { const r = await api("/api/reglages/reprendre", {chemin: m.querySelector("#reprendre-source").value}); fermerModale();
+        toast("Repris : " + r.repris.join(", ") + "." + (r.alertes.length ? " " + r.alertes.join(" ") : ""), !!r.alertes.length);
+        await recharger(); } catch (e) { toast(e.message, true); }
+    };
+  };
+}
 async function contenuDetail() {
   const c = $("#contenu"), s = E.sel;
   if (s.nature === "eq" && eqParIdent(s.valeur)) {
@@ -684,18 +1711,44 @@ function selectListe(id, label, valeur, options, vide = "— Non défini —") {
           const lignes = entries.filter(o => (o.regie || "AUTRE").toUpperCase() === code);
           return lignes.length ? `<optgroup label="${esc(nom)}">${lignes.map(opt).join("")}</optgroup>` : "";
         }).join("")
+    : id === "automate"
+    // Sources classées : automate, télégestion, E/S déportées (catégories du référentiel d'identification).
+    ? CATEGORIES_SOURCES.map(cat => {
+          const lignes = entries.filter(o => categorieSource(o.code) === cat);
+          return lignes.length ? `<optgroup label="${esc(cat === "Autres" ? "Autres sources" : cat)}">${lignes.map(opt).join("")}</optgroup>` : "";
+        }).join("")
     : entries.map(opt).join("");
   return `<label for="${id}">${esc(label)}</label><div class="select-avec-aide"><select id="${id}" data-choix="${id}">
     <option value="">${esc(vide)}</option>${choix}${ancien}</select></div>`;
 }
+/* Charte de nommage qui s'applique à la fiche (19/11) : celle de l'ouvrage ; en création, celle du standard choisi.
+   charte null : charte OGIAS (motifs, messages et aperçu d'avant). */
+function charteCourante() {
+  const o = E.ouvrage || {};
+  if (o.en_conception && E.standardsListe) {
+    const s = E.standardsListe.find(x => x.ident === E.standardCreation) || E.standardsListe[0];
+    if (s) { const ch = s.briques.charte; return {charte: ch && ch.ogias === false ? ch : null, motifs: s.motifs, nom: ch?.nom || ""}; }
+  }
+  return {charte: o.charte_client || null, motifs: o.charte_motifs, nom: o.charte_client?.nom || ""};
+}
+const selonMotif = (motif, valeur) => new RegExp(`^(?:${motif})$`).test(valeur || "");
+function repereSelon(ch, lieu, code, numero, avecEquipement) {
+  const v = s => ({lieu, type_ouvrage: code, numero_ouvrage: numero, texte: s.valeur, sous_ensemble: "00", equipement: "PM01"})[s.type];
+  return [...ch.ouvrage, ...(avecEquipement ? ch.equipement : [])].map(v).filter(Boolean).join(ch.separateur || "");
+}
 function detailOuvrage(c) {
   const o = E.ouvrage, i = E.ficheDraft || o.identification, l = E.listes || {lieux:[], types_ouvrage:[], automates:[], protocoles:[]};
-  const okLieu = /^[A-Z0-9]{4}$/.test(i.lieu), okCode = /^[A-Z]{2}$/.test(i.code_ouvrage);
+  const cc = charteCourante(), nChiffres = cc.motifs.longueur_numero;
+  const okLieu = selonMotif(cc.motifs.lieu.motif, i.lieu), okCode = selonMotif(cc.motifs.code_ouvrage.motif, i.code_ouvrage);
+  const placeNumero = cc.charte ? `${nChiffres} chiffre(s)` : "01 à 99";
   const actuelNumero = i.numero_ouvrage || "";
   const parDomaine = {};
   o.equipements.forEach(e => parDomaine[e.domaine || "Non classé"] = (parDomaine[e.domaine || "Non classé"] || 0) + 1);
   const acoder = o.equipements.filter(e => e.etat === "à coder").length;
   const typeActuel = l.types_ouvrage.find(t => t.code === i.code_ouvrage);
+  // Fiche enregistrée et complète : repliée sur une ligne de résumé pour laisser la place aux équipements.
+  // Elle reste dépliée si elle est incomplète, modifiée et non enregistrée, ou si l'utilisateur l'a ouverte.
+  const ficheOuverte = o.en_conception || E.ficheDirty || !okLieu || !okCode || E.ficheOuverte === true;
   const ancienType = i.code_ouvrage && !typeActuel ? `<option value="${esc(i.code_ouvrage)}" selected>${esc(i.code_ouvrage)} — ${esc(i.type_ouvrage || "Ancien type hors référentiel")}</option>` : "";
   c.innerHTML = `<div class="fil">${esc(o.prefixe || "Nouvel ouvrage")} · ${o.en_conception ? (o.creation_en_attente ? "Création non confirmée" : "Brouillon") : "Fiche enregistrée"}</div>
    ${(o.referentiel && o.referentiel.ecarts.length) ? `<div class="avert"><b>Référentiel figé dans cet ouvrage :</b> ${esc(o.referentiel.version_ouvrage || "version antérieure")}.
@@ -706,38 +1759,40 @@ function detailOuvrage(c) {
      <a id="ref-sauvegarde" href="/api/export?quoi=sauvegarde_adoption" download>Télécharger la sauvegarde du projet</a>
      ${o.referentiel.adoption_annulable ? `<button id="ref-annuler-adoption">Annuler l'adoption</button>` : ""}
      ${o.referentiel.sauvegarde_annulation_adoption ? `<a href="/api/export?quoi=sauvegarde_annulation_adoption" download>Télécharger l'état avant annulation</a>` : ""}</div>` : ""}
-   ${!o.en_conception && (!okLieu || !okCode) ? `<div class="avert" id="fiche-identification-avert">Pour commencer : sélectionnez un lieu (4 caractères) et un type d'ouvrage (code à 2 lettres). Vous pouvez enrichir ces listes avec « Gérer les listes ».</div>` : ""}
-   <div class="bloc"><div class="bloc-tete"><h2>Identification de l'ouvrage</h2><span class="aide">${esc(i.mode === "Existant" ? "Projet existant" : "Projet neuf")}</span><div class="droite"><button id="gerer-listes" type="button">${V31.icon("settings",14)} Gérer les listes…</button></div></div>
+   ${!o.en_conception && (!okLieu || !okCode) ? `<div class="avert" id="fiche-identification-avert">Pour commencer : sélectionnez un lieu (${cc.charte ? esc(cc.motifs.lieu.consigne) : "4 caractères"}) et un type d'ouvrage (${cc.charte ? esc(cc.motifs.code_ouvrage.consigne) : "code à 2 lettres"}). Vous pouvez enrichir ces listes avec « Gérer les listes ».</div>` : ""}
+   ${o.en_conception ? `<div class="bloc">` : `<details class="bloc fiche-ouvrage" id="fiche-ouvrage" ${ficheOuverte ? "open" : ""}>`}${o.en_conception ? `<div class="bloc-tete">` : `<summary class="bloc-tete" title="Afficher ou replier la fiche d'identification">`}<h2>Identification de l'ouvrage</h2><span class="aide">${esc(i.mode === "Existant" ? "Projet existant" : "Projet neuf")}</span>${o.en_conception ? "" : `<span class="fiche-resume"><b class="mono">${esc(o.prefixe || "")}</b> · ${esc(i.libelle || "sans libellé")} · source ${esc(i.automate || "non renseignée")} · révision ${esc(i.revision || "—")}</span>`}<div class="droite"><button id="gerer-listes" type="button">${V31.icon("settings",14)} Gérer les listes…</button></div>${o.en_conception ? `</div>` : `</summary>`}
      ${o.en_conception ? `<div class="creation-identite">
        <div class="creation-projet">${esc(i.mode === "Existant" ? "Projet existant — conservation des adresses" : "Projet neuf — génération et adressage")}</div>
        <div class="creation-grille">
         <div class="creation-champ">${selectListe("lieu", "Lieu *", i.lieu, l.lieux, "— Sélectionner un lieu —")}</div>
         <div class="creation-champ"><label for="type_ouvrage">Type d'ouvrage *</label><select id="type_ouvrage"><option value="">— Sélectionner un type —</option>${l.types_ouvrage.map(t => `<option value="${esc(t.code)}" ${t.code === i.code_ouvrage ? "selected" : ""}>${esc(t.libelle)} (${esc(t.code)})</option>`).join("")}${ancienType}</select></div>
         <div class="creation-champ">${champ("libelle", "Libellé de l'ouvrage *", i.libelle, 'placeholder="Désignation de l’ouvrage"')}</div>
-        <div class="creation-champ"><label for="numero_ouvrage">Numéro d'ouvrage *</label><div class="numero-ouvrage-choix"><input id="numero_ouvrage" data-champ="numero_ouvrage" value="${esc(E.ficheDraft?.numero_ouvrage ?? actuelNumero)}" maxlength="2" inputmode="numeric" placeholder="01 à 99" title="Proposé automatiquement et modifiable"><button type="button" id="proposer-numero">Proposer</button></div></div>
+        <div class="creation-champ"><label for="numero_ouvrage">Numéro d'ouvrage *</label><div class="numero-ouvrage-choix"><input id="numero_ouvrage" data-champ="numero_ouvrage" value="${esc(E.ficheDraft?.numero_ouvrage ?? actuelNumero)}" maxlength="${nChiffres}" inputmode="numeric" placeholder="${placeNumero}" title="Proposé automatiquement et modifiable"><button type="button" id="proposer-numero">Proposer</button></div></div>
         <div class="creation-champ"><label for="code-ouvrage-affiche">Code généré</label><div class="code-ouvrage-affiche" id="code-ouvrage-affiche" aria-live="polite"></div><input id="code_ouvrage" type="hidden" value="${esc(i.code_ouvrage)}"></div>
         <div class="creation-champ">${champ("localisation", "Localisation précise", i.localisation, 'placeholder="Adresse, site ou précision géographique"')}</div>
        </div>
        <details class="creation-avance"><summary>Paramètres du projet <span>facultatifs au démarrage</span></summary>
         <div class="creation-grille">
-          <div class="creation-champ">${selectListe("automate", "Automate / télégestion", i.automate, l.automates)}</div>
+          <div class="creation-champ">${selectListe("automate", "Source d'acquisition", i.automate, l.automates, "— Automate, télégestion ou E/S déportées —")}</div>
           <div class="creation-champ"><label for="communication-choix">Communication</label><button class="selection-multiple" id="communication-choix" data-valeur="${esc(i.communication || "")}" type="button">${esc(i.communication || "— Choisir les protocoles —")} <span aria-hidden="true">▾</span></button></div>
           <div class="creation-champ">${champ("revision", "Révision", i.revision, 'maxlength="4" title="Règle documentaire conservée"')}</div>
         </div>
        </details>
+       <div class="creation-champ creation-standard"><label for="standard-choix">Standard d'ingénierie</label><select id="standard-choix"><option value="">Chargement…</option></select>
+         <small>Réglages du client copiés dans l'ouvrage à sa création. <a href="#/standards">Voir les standards</a></small></div>
       </div>` : `<div class="formulaire formulaire-ouvrage">
        ${selectListe("lieu", "Lieu", i.lieu, l.lieux, "— Sélectionner un lieu —")}
        <label for="type_ouvrage">Type d'ouvrage</label><select id="type_ouvrage"><option value="">— Sélectionner un type —</option>${l.types_ouvrage.map(t => `<option value="${esc(t.code)}" ${t.code === i.code_ouvrage ? "selected" : ""}>${esc(t.libelle)} (${esc(t.code)})</option>`).join("")}${ancienType}</select>
        ${champ("libelle", "Libellé de l’ouvrage", i.libelle, 'placeholder="Désignation de l’ouvrage"')}
-       <label for="numero_ouvrage">Numéro d’ouvrage</label><div class="numero-ouvrage-choix"><input id="numero_ouvrage" data-champ="numero_ouvrage" value="${esc(E.ficheDraft?.numero_ouvrage ?? actuelNumero)}" maxlength="2" inputmode="numeric" placeholder="01 à 99" title="Proposé automatiquement et modifiable"><button type="button" id="proposer-numero">Proposer</button></div>
+       <label for="numero_ouvrage">Numéro d’ouvrage</label><div class="numero-ouvrage-choix"><input id="numero_ouvrage" data-champ="numero_ouvrage" value="${esc(E.ficheDraft?.numero_ouvrage ?? actuelNumero)}" maxlength="${nChiffres}" inputmode="numeric" placeholder="${placeNumero}" title="Proposé automatiquement et modifiable"><button type="button" id="proposer-numero">Proposer</button></div>
        <label for="code-ouvrage-affiche">Code généré</label><div class="code-ouvrage-affiche" id="code-ouvrage-affiche" aria-live="polite"></div>
        <input id="code_ouvrage" type="hidden" value="${esc(i.code_ouvrage)}">
        ${champ("localisation", "Localisation précise", i.localisation, 'placeholder="Adresse, site ou précision géographique"')}
-       ${selectListe("automate", "Automate", i.automate, l.automates)}
+       ${selectListe("automate", "Source d'acquisition", i.automate, l.automates, "— Automate, télégestion ou E/S déportées —")}
        <label for="communication-choix">Communication</label><button class="selection-multiple" id="communication-choix" data-valeur="${esc(i.communication || "")}" type="button">${esc(i.communication || "— Choisir les protocoles —")} <span aria-hidden="true">▾</span></button>
        ${champ("revision", "Révision", i.revision, 'maxlength="4" title="Règle documentaire à valider : non modifiée automatiquement"')}
 </div>`}
-     <p class="aide-champs">Code : lieu (4) + type (2) + numéro (2). Le numéro est proposé automatiquement et peut être modifié ; aucune modification n'est enregistrée sans confirmation.</p>
+     <p class="aide-champs">${cc.charte ? `Code selon la charte « ${esc(cc.nom)} » du standard choisi : lieu (${esc(cc.motifs.lieu.consigne)}), type (${esc(cc.motifs.code_ouvrage.consigne)}), numéro (${esc(cc.motifs.numero_ouvrage.consigne)}).` : "Code : lieu (4) + type (2) + numéro (2)."} Le numéro est proposé automatiquement et peut être modifié ; aucune modification n'est enregistrée sans confirmation.</p>
      <div id="fiche-erreur" class="erreur-form" role="alert"></div>
      <div class="fiche-actions">
        <span id="fiche-etat" class="etat-fiche">${o.creation_en_attente ? "Non enregistré — complétez puis confirmez" : (o.en_conception ? "Brouillon enregistré" : "Fiche enregistrée")}</span>
@@ -746,7 +1801,9 @@ function detailOuvrage(c) {
          : `<button type="button" class="prim" id="fiche-modifier" disabled>Enregistrer les modifications</button>`}
      </div>
      ${o.en_conception ? "" : `<div class="repere-live">${texteRepere(i.lieu || "????", i.code_ouvrage || "??", actuelNumero || "--", okLieu, okCode)}</div>`}
-   </div>
+   ${o.en_conception ? `</div>` : `</details>`}
+   ${o.en_conception ? "" : `<section class="bloc outils-ouvrage" id="bloc-outils" aria-label="Outils d'ingénierie de l'ouvrage"><div class="bloc-tete"><h2>Outils d'ingénierie</h2>
+     <span class="aide">les outils réellement utilisés sur l'ouvrage ; OGIAS applique les règles qui leur sont propres</span></div><div class="vide-bloc">Chargement…</div></section>`}
    ${o.en_conception ? "" : `   <div class="chiffres">
      <div class="chiffre"><b>${o.equipements.length}</b><span>équipements</span></div>
      <div class="chiffre"><b>${o.unites.length}</b><span>unités fonctionnelles</span></div>
@@ -755,11 +1812,11 @@ function detailOuvrage(c) {
    </div>
    ${o.equipements.some(e => !e.valide) ? `<div class="bloc"><div class="bloc-tete"><h2>Reste à faire sur les équipements</h2>
      <span class="aide">${["erreur", "incomplet", "configuré"].map(k => `${o.equipements.filter(e => e.etat_param === k).length} ${ETATS_EQ[k][1]}`).join(" · ")}</span></div>
-     <table><thead><tr><th>Repère</th><th>Libellé</th><th>État</th><th>Ce qui manque</th></tr></thead><tbody>
+     <table data-o-tableau><thead><tr><th>Repère</th><th>Libellé</th><th>État</th><th>Ce qui manque</th></tr></thead><tbody>
      ${o.equipements.filter(e => !e.valide).sort((x, y) => ["erreur", "incomplet", "configuré"].indexOf(x.etat_param) - ["erreur", "incomplet", "configuré"].indexOf(y.etat_param))
        .map(e => `<tr class="cliquable" data-eq="${e.ident}"><td class="mono">${esc(e.pcf)}</td><td>${esc(e.libelle || e.designation)}</td><td>${badgeEtat(e)}</td><td>${esc(e.detail_etat || "")}</td></tr>`).join("")}</tbody></table></div>` : ""}
    <div class="bloc"><div class="bloc-tete"><h2>Répartition par domaine</h2></div>
-     ${o.equipements.length ? `<table><thead><tr><th>Domaine</th><th>Équipements</th></tr></thead><tbody>${Object.entries(parDomaine).sort().map(([d, n]) => `<tr><td>${esc(d)}</td><td>${n}</td></tr>`).join("")}</tbody></table>`
+     ${o.equipements.length ? `<table data-o-tableau><thead><tr><th>Domaine</th><th>Équipements</th></tr></thead><tbody>${Object.entries(parDomaine).sort().map(([d, n]) => `<tr><td>${esc(d)}</td><td>${n}</td></tr>`).join("")}</tbody></table>`
        : `<div class="etat-vide"><h3>Aucun équipement pour l'instant</h3><p>Commencez l'inventaire : ajoutez le premier équipement, ou importez la liste de l'ouvrage.</p>
           <div class="boutons-ligne"><button class="prim" type="button" id="vide-ajout-eq">+ Ajouter le premier équipement</button><button type="button" id="vide-structure">Structure / ajouter…</button></div></div>`}
    </div>` }`;
@@ -780,13 +1837,13 @@ function detailOuvrage(c) {
     if (o.creation_en_attente) E.ficheDirty = true;
     c.querySelector("#fiche-etat").textContent = E.ficheDirty ? "Modifications non enregistrées" : (o.en_conception ? "Brouillon enregistré" : "Fiche enregistrée");
     const avertissement = c.querySelector("#fiche-identification-avert");
-    if (avertissement) avertissement.style.display = /^[A-Z0-9]{4}$/.test(E.ficheDraft.lieu) && /^[A-Z]{2}$/.test(E.ficheDraft.code_ouvrage) ? "none" : "";
+    if (avertissement) avertissement.style.display = selonMotif(cc.motifs.lieu.motif, E.ficheDraft.lieu) && selonMotif(cc.motifs.code_ouvrage.motif, E.ficheDraft.code_ouvrage) ? "none" : "";
     const bouton = c.querySelector("#fiche-modifier"); if (bouton) bouton.disabled = !E.ficheDirty;
     const code = E.ficheDraft.code_ouvrage || "??", lieu = E.ficheDraft.lieu || "????", numero = E.ficheDraft.numero_ouvrage || "--";
-    const numValide = /^(0[1-9]|[1-9][0-9])$/.test(numero);
-    const complet = /^[A-Z0-9]{4}$/.test(lieu) && /^[A-Z]{2}$/.test(code) && numValide;
+    const numValide = selonMotif(cc.motifs.numero_ouvrage.motif, numero);
+    const complet = selonMotif(cc.motifs.lieu.motif, lieu) && selonMotif(cc.motifs.code_ouvrage.motif, code) && numValide;
     const codeAffiche = c.querySelector("#code-ouvrage-affiche");
-    codeAffiche.textContent = complet ? lieu + code + numero : "Choisissez le lieu, le type et le numéro";
+    codeAffiche.textContent = complet ? (cc.charte ? repereSelon(cc.charte, lieu, code, numero, false) : lieu + code + numero) : "Choisissez le lieu, le type et le numéro";
     codeAffiche.classList.toggle("en-attente", !complet);
     const apercuRepere = c.querySelector(".repere-live"); if (apercuRepere) apercuRepere.innerHTML = texteRepere(lieu, code, numero, true, true);
   }
@@ -797,13 +1854,14 @@ function detailOuvrage(c) {
     const lieu = c.querySelector("#lieu").value;
     const type = c.querySelector("#code_ouvrage").value;
     const inp = c.querySelector("#numero_ouvrage");
-    if (!/^[A-Z0-9]{4}$/.test(lieu) || !/^[A-Z]{2}$/.test(type) || (!force && inp.value)) return;
+    if (!selonMotif(cc.motifs.lieu.motif, lieu) || !selonMotif(cc.motifs.code_ouvrage.motif, type) || (!force && inp.value)) return;
     const attendu = lieu + type;
     try {
-      const r = await api("/api/numero-ouvrage?lieu=" + encodeURIComponent(lieu) + "&type=" + encodeURIComponent(type));
+      const r = await api("/api/numero-ouvrage?lieu=" + encodeURIComponent(lieu) + "&type=" + encodeURIComponent(type)
+        + (o.en_conception && E.standardCreation ? "&standard=" + encodeURIComponent(E.standardCreation) : ""));
       if (c.querySelector("#lieu").value + c.querySelector("#code_ouvrage").value !== attendu) return;
       if (r.numero && (force || !inp.value)) { inp.value = r.numero; miseAJour(); }
-      else if (!r.disponible) toast("Tous les numéros de 01 à 99 sont déjà attribués pour ce lieu et ce type.", true);
+      else if (!r.disponible) toast(cc.charte ? "Plus aucun numéro libre pour ce lieu et ce type." : "Tous les numéros de 01 à 99 sont déjà attribués pour ce lieu et ce type.", true);
     } catch(e) { toast(e.message, true); }
   }
   c.querySelector("#proposer-numero").onclick = () => suggererNumero(true);
@@ -817,14 +1875,17 @@ function detailOuvrage(c) {
   };
   if (o.en_conception && !actuelNumero && !E.ficheDraft?.numero_ouvrage) suggererNumero();
   miseAJour();
-  c.querySelector("#gerer-listes").onclick = () => { E.ficheDraft = recueillir(); modaleListes("lieux"); };
+  c.querySelector("#gerer-listes").onclick = ev => { ev.preventDefault(); E.ficheDraft = recueillir(); modaleListes("lieux"); };
+  if (!o.en_conception) blocOutils(c);
+  else choixStandard(c);
+  c.querySelector("#fiche-ouvrage")?.addEventListener("toggle", ev => { E.ficheOuverte = ev.target.open; });
   c.querySelector("#communication-choix").onchange = miseAJour;
   c.querySelector("#communication-choix").onclick = ev => deroulantCommunications(ev.currentTarget, () => { E.ficheDraft = recueillir(); });
   c.querySelector("#fiche-annuler").onclick = async () => {
     if (E.ficheDirty && !window.confirm("Abandonner les modifications non enregistrées ?")) return;
     E.ficheDirty = false; E.ficheDraft = null;
     if (o.en_conception) {
-      await api("/api/fermer"); E.ouvrage = null;
+      await api("/api/fermer", {}); E.ouvrage = null;
       allerAccueil();
     } else await recharger();
   };
@@ -839,7 +1900,7 @@ function detailOuvrage(c) {
     const boutons = [...c.querySelectorAll(".fiche-actions button")];
     boutons.forEach(b => b.disabled = true);
     try {
-      await api("/api/fiche-ouvrage", {action, identification: donnees, confirmer_changement});
+      await api("/api/fiche-ouvrage", {action, identification: donnees, confirmer_changement, standard: c.querySelector("#standard-choix")?.value || ""});
       E.ficheDraft = null; E.ficheDirty = false;
       E.sel = {nature: "ouvrage", valeur: ""};
       await recharger();
@@ -853,7 +1914,8 @@ function detailOuvrage(c) {
       if (action === "creer" && e.message.includes("utilise déjà le code")) {
         try {
           const accueil = await api("/api/accueil");
-          const repere = donnees.lieu + donnees.code_ouvrage + donnees.numero_ouvrage;
+          const ccr = charteCourante();
+          const repere = ccr.charte ? repereSelon(ccr.charte, donnees.lieu, donnees.code_ouvrage, donnees.numero_ouvrage, false) : donnees.lieu + donnees.code_ouvrage + donnees.numero_ouvrage;
           const existant = (accueil.ouvrages || []).find(x => x.repere === repere &&
             x.statut !== "Brouillon" && !x.erreur);
           if (existant) {
@@ -936,7 +1998,34 @@ function detailGroupe() {
       async v => { await agir(api("/api/uf", {action: "renommer_communs", libelle: v})); recharger(); });
   }
 }
+/* Attributs de l'atelier sur la fiche d'un équipement (lot 4, 19/11) : saisie contrôlée, enregistrée à chaque
+   changement ; la valeur par défaut est proposée en exemple, jamais écrite d'office. */
+function blocAttributsEquipement(e) {
+  const liste = e.attributs || [];
+  if (!liste.length) return "";
+  const champ = a => {
+    const id = `attr-${a.code}`, v = a.valeur || "";
+    if (a.archive) return `<span class="mono">${esc(v)}</span> <span class="aide">attribut archivé</span>`;
+    if (a.type === "liste" || a.type === "oui_non") {
+      const valeurs = a.type === "oui_non" ? ["Oui", "Non"] : a.valeurs;
+      const hors = v && !valeurs.includes(v);
+      return `<select id="${id}" data-attribut="${esc(a.code)}" aria-label="${esc(a.nom)}"><option value="">—</option>${valeurs.map(x => `<option ${x === v ? "selected" : ""}>${esc(x)}</option>`).join("")}${hors ? `<option selected>${esc(v)}</option>` : ""}</select>${hors ? ' <span class="badge b-al">hors liste</span>' : ""}`;
+    }
+    return `<input id="${id}" data-attribut="${esc(a.code)}" value="${esc(v)}" ${a.type === "nombre" ? 'inputmode="decimal"' : ""} placeholder="${esc(a.defaut ? "ex. " + a.defaut : "")}" aria-label="${esc(a.nom)}">${a.unite ? ` <span class="aide">${esc(a.unite)}</span>` : ""}`;
+  };
+  return `<div class="bloc attributs-eq" id="attributs-eq"><div class="bloc-tete"><h2>Attributs</h2><span class="aide">champs déclarés par l'atelier pour ce type · variables <span class="mono">&lt;#ATTR_…#&gt;</span> des modèles de livrables</span></div>
+    <div class="attributs-grille">${liste.map(a => `<div class="attribut"><label for="attr-${esc(a.code)}">${esc(a.nom)}${a.obligatoire ? ' <span class="oblig" title="Obligatoire">*</span>' : ""}</label>
+      <span class="attribut-champ">${champ(a)}</span>${a.description ? `<small>${esc(a.description)}</small>` : ""}</div>`).join("")}</div></div>`;
+}
+function brancherAttributsEquipement(e) {
+  document.querySelectorAll("#attributs-eq [data-attribut]").forEach(ch => ch.onchange = async () => {
+    try { const r = await api("/api/equipement/attribut", {ident_eq: e.ident, code: ch.dataset.attribut, valeur: ch.value});
+      ch.value = r.valeur; toast("Attribut enregistré."); }
+    catch (err) { toast(err.message, true); ch.value = (e.attributs.find(x => x.code === ch.dataset.attribut) || {}).valeur || ""; }
+  });
+}
 function detailEquipement(e) {
+  COMMANDES_SELECTION.forEach(x => document.querySelector(`#o-ruban #${x}`)?.remove());   // lot 5a, voir contenu()
   const c = $("#contenu"), o = E.ouvrage;
   const roles = {}; e.informations.forEach(i => roles[i.role] = (roles[i.role] || 0) + 1);
   const liste = Object.keys(roles).sort((a, b) => ((ROLES_ORDRE.indexOf(a) + 99) % 99) - ((ROLES_ORDRE.indexOf(b) + 99) % 99));
@@ -945,22 +2034,20 @@ function detailEquipement(e) {
   const se = o.sous_ensembles.find(x => x.code === e.se) || {};
   const badgeOrigine = x => x === "ajoutée" ? '<span class="badge b-ok">ajoutée</span>' : x === "modifiée" ? '<span class="badge b-al">modifiée</span>' : '<span class="badge b-n">modèle</span>';
   c.innerHTML = `<div class="fil">${esc(o.prefixe)} › ${esc(uf ? uf.code : (o.unites.length ? "hors UF" : "équipements"))} › ${esc(e.pcf)}</div>
-   <div class="bloc"><div class="titre"><div><h1 class="mono">${esc(e.pcf)} ${badgeEtat(e)}</h1><div class="sous">${esc(e.libelle || "libellé à renseigner")}</div></div>
-     <div class="actions"><button id="e-dep">Ranger dans une UF…</button><button id="e-mod">Modifier…</button><button class="danger" id="e-sup">Supprimer</button>
-     ${e.valide ? '<button id="e-val" data-v="0">Repasser à contrôler</button>' : '<button class="prim" id="e-val" data-v="1">Valider le paramétrage</button>'}</div></div>
-     <div class="props">
-       <div><small>Type</small><b>${esc(e.type.replace(/--$/, ""))}</b> — ${esc(e.designation)}</div>
-       <div><small>Modèle</small><b>${esc(e.modele) || "aucun"}</b></div>
-       <div><small>Sous-ensemble</small><b>${esc(e.se)}</b>${se.libelle ? " — " + esc(se.libelle) : ""}</div>
-       <div><small>Domaine</small><b>${esc(e.domaine || "non classé")}</b> · ${e.nb_es} E/S physique(s)</div>
-     </div></div>
-   ${e.alerte_modele ? `<div class="avert"><b>Référentiel à contrôler :</b> ${esc(e.alerte_modele)} <button class="lien" data-nav="#/referentiel">Consulter le référentiel</button></div>` : ""}
+   <div class="bloc entete-eq"><div class="titre"><div class="entete-eq-texte"><h1 class="mono">${esc(e.pcf)} ${badgeEtat(e)}</h1>
+       <div class="sous">${esc(e.libelle || "libellé à renseigner")} · ${esc(e.designation)} · modèle ${esc(e.modele) || "aucun"} · SE ${esc(e.se)}${se.libelle ? " " + esc(se.libelle) : ""} · ${esc(e.domaine || "non classé")} · ${e.nb_es} E/S
+       ${e.alerte_modele ? ` · <button class="lien alerte-modele" data-nav="#/referentiel" title="${esc(e.alerte_modele)}">Référentiel à contrôler</button>` : ""}</div></div>
+     <details class="menu-eq"><summary title="Autres commandes de l'équipement" aria-label="Autres commandes de l'équipement">⋯</summary><div class="menu-eq-liste" role="menu">
+       <button id="e-mod" role="menuitem">Modifier type, modèle, numéro…</button><button id="e-dep" role="menuitem">Ranger dans une UF…</button>
+       ${e.valide ? '<button id="e-val" data-v="0" role="menuitem">Repasser à contrôler</button>' : '<button id="e-val" data-v="1" role="menuitem">Valider le paramétrage</button>'}
+       <button class="danger" id="e-sup" role="menuitem">Supprimer l'équipement</button></div></details></div></div>
    ${!e.modele_a_jour ? `<div class="avert">Le modèle « ${esc(e.modele)} » a changé dans le référentiel depuis l'ajout de cet équipement. <button class="lien" id="e-act">Reprendre la nouvelle version</button></div>` : ""}
-   ${(e.erreurs || []).length || (e.alertes || []).length ? `<div class="bloc controles-eq"><div class="bloc-tete"><h2>Contrôles de cet équipement</h2>
-     <span class="aide">${(e.erreurs || []).length} erreur(s) · ${(e.alertes || []).length} alerte(s)</span></div>
-     <ul class="liste-controles">${(e.erreurs || []).map(m => `<li class="c-err">${esc(m)}</li>`).join("")}${(e.alertes || []).map(m => `<li class="c-al">${esc(m)}</li>`).join("")}</ul></div>` : ""}
-   ${!e.valide && e.etat_param === "incomplet" ? `<div class="avert"><b>Avant validation :</b> ${esc(e.detail_etat)}</div>` : ""}`;
-  const blocLignes = `   <div class="bloc"><div class="bloc-tete"><h2>Lignes du modèle de supervision</h2><span class="aide">libellés et mnémoniques du modèle choisi · ${e.informations.length} ligne(s)${e.adapte ? " · adaptées pour cet équipement" : ""}</span>
+   ${(e.erreurs || []).length || (e.alertes || []).length ? `<details class="controles-eq" id="controles-eq" ${(e.erreurs || []).length ? "open" : ""}><summary>Contrôles de cet équipement :
+     ${(e.erreurs || []).length ? `<span class="badge b-err">${(e.erreurs || []).length} erreur(s)</span>` : ""} ${(e.alertes || []).length ? `<span class="badge b-al">${(e.alertes || []).length} alerte(s)</span>` : ""}</summary>
+     <ul class="liste-controles">${(e.erreurs || []).map(m => `<li class="c-err">${esc(m)}</li>`).join("")}${(e.alertes || []).map(m => `<li class="c-al">${esc(m)}</li>`).join("")}</ul></details>` : ""}
+   ${blocAttributsEquipement(e)}`;
+  brancherAttributsEquipement(e);
+  const blocLignes = `   <div class="bloc" id="lignes-supervision"><div class="bloc-tete"><h2>Lignes du modèle de supervision</h2><span class="aide">libellés et mnémoniques du modèle choisi · ${e.informations.length} ligne(s)${e.adapte ? " · adaptées pour cet équipement" : ""}</span>
      <div class="droite">${e.adapte ? '<button id="l-ret">Revenir au modèle</button>' : ""}<button class="danger" id="l-sup" disabled>Supprimer la sélection</button><button class="prim" id="l-add">+ Ajouter une ligne</button></div></div>
    ${e.informations.length ? `<div class="compteurs"><span class="chip ${E.filtreRole === "Toutes" ? "on" : ""}" data-r="Toutes">Toutes<b>${e.informations.length}</b></span>
      ${liste.map(r => `<span class="chip ${E.filtreRole === r ? "on" : ""}" data-r="${r}">${r}<b>${roles[r]}</b></span>`).join("")}</div>
@@ -977,9 +2064,9 @@ function detailEquipement(e) {
   c.insertAdjacentHTML('beforeend', `<div class="bloc" id="configuration-es">
     <div class="bloc-tete"><h2>Paramétrage des entrées / sorties de l'équipement</h2>
       <div class="droite"><button id="e-add-es">+ E/S personnalisée</button></div></div>
-    <p class="aide" style="padding:0 14px">Le modèle propose les E/S physiques possibles. Les contacts de défaut, de sens et les impulsions ne sont retenus que si le débitmètre ou l'équipement les possède réellement.
-      Choisissez les options, puis renseignez les échelles analogiques. La validation ci-dessus confirme ce paramétrage, pas les adresses physiques.</p>
-    ${optionsES.length ? `<div style="padding:12px 14px"><b>Options de l'équipement</b><div class="choix-protocoles" style="margin-top:8px">${optionsES.map(o => `<label><input type="checkbox" class="e-option" data-option="${esc(o.nom)}" ${o.active ? 'checked' : ''}> ${esc(o.nom)}</label>`).join('')}</div></div>` : ''}
+    <details class="aide-pliable"><summary>Comment paramétrer les E/S ?</summary><p>Le modèle propose les E/S physiques possibles. Les contacts de défaut, de sens et les impulsions ne sont retenus que si le débitmètre ou l'équipement les possède réellement.
+      Choisissez les options, puis renseignez les échelles analogiques. La validation confirme ce paramétrage, pas les adresses physiques (elles se placent à l'étape « Matériel »).</p></details>
+    ${optionsES.length ? `<div class="options-eq"><span class="options-titre">Options présentes sur cet équipement</span><div class="options-liste" role="group" aria-label="Options de l'équipement">${optionsES.map(o => `<label class="option-eq ${o.active ? 'on' : ''}"><input type="checkbox" class="e-option" data-option="${esc(o.nom)}" ${o.active ? 'checked' : ''}> ${esc(o.nom)}</label>`).join('')}</div></div>` : ''}
     ${choixES.length || portees.length ? `<table><thead><tr><th>Retenue</th><th>Point</th><th>Information physique proposée</th><th>Présence</th><th>Configuration</th></tr></thead><tbody>
      ${choixES.map(x => `<tr><td><input type="checkbox" class="e-es-choix" data-cle="${esc(x.cle)}" ${x.retenu ? 'checked' : ''} ${x.presence === 'Obligatoire' || !x.disponible ? 'disabled' : ''}></td>
      <td><span class="tag">${esc(x.point)}</span></td><td>${esc(x.information)}</td><td>${esc(x.presence === 'Option' ? x.option : x.presence)}</td>
@@ -994,6 +2081,9 @@ function detailEquipement(e) {
       <div class="droite"><button class="prim" id="e-fin-config" ${e.valide ? 'disabled' : ''}>${e.valide ? 'Paramétrage validé' : 'Valider le paramétrage'}</button></div></div>
   </div>`);
   c.insertAdjacentHTML('beforeend', blocFonctionnelles(e) + blocLignes);
+  parcoursEquipement(e, c, {
+    retenues: choixES.filter(x => x.retenu).length + extrasES.length + portees.length,
+    echelles: pointsAnal.filter(x => !x.analogique).length, options: optionsES.length});
   brancherFonctionnelles(e, c);
   c.querySelectorAll('.e-option').forEach(x => x.onchange = async () => {
     try { await api('/api/equipement/configurer', {action:'option',ident_eq:e.ident,option:x.dataset.option,active:x.checked}); await recharger(); }
@@ -1022,6 +2112,11 @@ function detailEquipement(e) {
   };
   c.querySelectorAll(".chip").forEach(ch => ch.onclick = () => { E.filtreRole = ch.dataset.r; detailEquipement(e); });
   const recharge = async () => { await recharger(); };
+  const menu = c.querySelector(".menu-eq");
+  if (menu) { menu.querySelectorAll("button").forEach(b => b.addEventListener("click", () => menu.open = false));
+  }
+  if (!E.menuEqEcoute) { E.menuEqEcoute = true;          // un seul écouteur : ferme le menu « ⋯ » au clic ailleurs
+    document.addEventListener("click", ev => document.querySelectorAll(".menu-eq[open]").forEach(x => { if (!x.contains(ev.target)) x.open = false; }), {capture: true}); }
   $("#e-val").onclick = async () => { const v = $("#e-val").dataset.v === "1";
     await agir(api("/api/equipement/valider", {idents: [e.ident], valide: v}), v ? "Équipement validé." : "Équipement repassé à valider."); recharge(); };
   $("#e-mod").onclick = () => modaleEquipement(eqParIdent(e.ident));
@@ -1048,6 +2143,78 @@ function detailEquipement(e) {
   if ($("#e-act")) $("#e-act").onclick = () => confirmer("Actualiser le modèle dans cet ouvrage ?",
     "Tous les équipements qui partagent ce modèle dans cet ouvrage seront remis à valider. Les repères et adresses restent conservés ; aucune migration automatique des anciens projets.",
     "Actualiser", async () => { await agir(api("/api/equipement/ligne", {action: "actualiser", ident_eq: e.ident}), "Modèle actualisé : équipements à revalider."); recharge(); });
+  if (document.getElementById("b-eq")) rubanEquipements();
+}
+/* Retour du 16/11 (11 h 03) : la fiche d'un équipement était une longue page sans fil conducteur. Elle
+   devient un parcours en trois onglets (E/S physiques → informations fonctionnelles → lignes de
+   supervision), chacun avec son état, et une ligne « prochaine action » unique. Rien n'est retiré : les
+   trois blocs restent dans la page (attribut hidden), avec leurs identifiants et leurs commandes. */
+function parcoursEquipement(e, c, n) {
+  const f = e.fonctionnelles || [], aDecider = f.filter(x => x.etat === "proposée").length;
+  const retenuesF = f.filter(x => x.etat === "retenue").length, nbErr = (e.erreurs || []).length;
+  const onglets = [
+    {id: "es", bloc: "#configuration-es", titre: "E/S physiques", etat: n.echelles ? `${n.echelles} échelle(s) à définir` : `${n.retenues} E/S retenue(s)`, al: n.echelles > 0},
+    {id: "fonc", bloc: "#infos-fonctionnelles", titre: "Informations fonctionnelles", etat: aDecider ? `${aDecider} à décider` : `${retenuesF} retenue(s)`, al: aDecider > 0},
+    {id: "lignes", bloc: "#lignes-supervision", titre: "Lignes de supervision", etat: `${e.informations.length} ligne(s)`, al: false},
+    // Lot 5a : vue d'ensemble en lecture seule, une ligne par information avec toute sa chaîne
+    {id: "fil", bloc: "#fil-informations", titre: "Fil des informations", etat: "vue d'ensemble", al: false, symbole: "fil"}];
+  if (!c.querySelector("#fil-informations")) c.insertAdjacentHTML("beforeend", `<div class="bloc" id="fil-informations" hidden data-ident="${esc(e.ident)}">
+     <div class="bloc-tete"><h2>Fil des informations</h2><span class="aide">chaque information de l'équipement, de son E/S physique à sa supervision · lecture seule</span></div>
+     <p class="aide fi-chargement">Chargement…</p></div>`);
+  // Prochaine action : une seule, dans l'ordre du travail
+  let action;
+  if (e.valide) action = {cls: "ok", texte: "Paramétrage validé. Les voies physiques se placent à l'étape « Matériel ».", bouton: ["Liste des E/S →", () => location.hash = "#/es"]};
+  else if (n.echelles) action = {cls: "al", texte: `Définissez ${n.echelles} échelle(s) analogique(s) 4–20 mA dans l'onglet « E/S physiques ».`, onglet: "es"};
+  else if (aDecider) action = {cls: "al", texte: `Décidez ${aDecider} information(s) fonctionnelle(s) proposée(s) : retenir ou écarter avec un motif.`, onglet: "fonc"};
+  else if (nbErr) action = {cls: "err", texte: `Corrigez ${nbErr} erreur(s) signalée(s) ci-dessus avant de valider.`};
+  else if (e.etat_param === "incomplet" && e.detail_etat) action = {cls: "al", texte: e.detail_etat};
+  else action = {cls: "info", texte: n.options ? "Cochez les options présentes sur l'équipement, vérifiez les E/S, puis validez." : "Vérifiez les E/S proposées, puis validez.",
+                 bouton: ["Valider le paramétrage", () => $("#e-val")?.click()]};
+  E.ongletEq ||= {};
+  let actif = E.ongletEq[e.ident] || action.onglet || "es";
+  if (!onglets.some(o => o.id === actif)) actif = "es";
+  const barre = document.createElement("div");
+  barre.className = "parcours-eq";
+  barre.innerHTML = `<div class="prochaine-action pa-${action.cls}" role="status"><span class="pa-etiq">${e.valide ? "Terminé" : "Prochaine action"}</span><span class="pa-texte">${esc(action.texte)}</span>
+      ${action.onglet ? `<button class="prim" data-pa-onglet="${action.onglet}">Ouvrir</button>` : action.bouton ? `<button class="${e.valide ? "" : "prim"}" id="pa-bouton">${esc(action.bouton[0])}</button>` : ""}</div>
+    <div class="onglets-eq" role="tablist" aria-label="Paramétrage de l'équipement">${onglets.map((o, i) => `<button role="tab" id="onglet-eq-${o.id}" data-onglet-eq="${o.id}" aria-selected="${o.id === actif}" aria-controls="${o.bloc.slice(1)}" class="${o.id === actif ? "on" : ""}">
+      <span class="oe-num ${o.symbole ? "oe-symbole" : ""}">${o.symbole ? Coque.symbole(o.symbole, 14) : i + 1}</span><span class="oe-titre">${o.titre}</span><span class="oe-etat ${o.al ? "al" : ""}">${esc(o.etat)}</span></button>`).join("")}</div>`;
+  c.querySelector("#configuration-es").before(barre);
+  const montrer = (id, choisi = true) => { if (choisi) E.ongletEq[e.ident] = id;
+    onglets.forEach(o => { const b = c.querySelector(o.bloc), t = barre.querySelector(`[data-onglet-eq="${o.id}"]`);
+      if (b) { b.hidden = o.id !== id; b.setAttribute("role", "tabpanel"); b.setAttribute("aria-labelledby", "onglet-eq-" + o.id); }
+      t.classList.toggle("on", o.id === id); t.setAttribute("aria-selected", String(o.id === id)); });
+    if (id === "fil") filInformations(c.querySelector("#fil-informations"), e); };
+  barre.querySelectorAll("[data-onglet-eq]").forEach(t => t.onclick = () => montrer(t.dataset.ongletEq));
+  barre.querySelector("[role=tablist]").onkeydown = ev => {
+    if (!["ArrowLeft", "ArrowRight"].includes(ev.key)) return;
+    const i = onglets.findIndex(o => o.id === barre.querySelector('[data-onglet-eq].on').dataset.ongletEq), j = (i + (ev.key === "ArrowRight" ? 1 : onglets.length - 1)) % onglets.length;
+    montrer(onglets[j].id); barre.querySelector(`[data-onglet-eq="${onglets[j].id}"]`).focus(); };
+  barre.querySelectorAll("[data-pa-onglet]").forEach(b => b.onclick = () => montrer(b.dataset.paOnglet));
+  if (barre.querySelector("#pa-bouton")) barre.querySelector("#pa-bouton").onclick = action.bouton[1];
+  montrer(actif, false);
+}
+/* Lot 5a : « Fil des informations » de la fiche équipement. Une ligne par information avec toute sa chaîne :
+   E/S physique, voie, variable automate, type, adresse posée, libellé de supervision, état. Lecture seule
+   (/api/fil?detail=1) ; tableau dense du lot 3 : tri, filtres, copie vers Excel. */
+async function filInformations(bloc, e) {
+  if (!bloc || bloc.dataset.charge === e.ident) return;
+  let f;
+  try { f = await api(`/api/fil?ident=${encodeURIComponent(e.ident)}&detail=1`); }
+  catch (err) { bloc.querySelector(".fi-chargement").textContent = err.message; return; }
+  if (!document.body.contains(bloc)) return;
+  bloc.dataset.charge = e.ident;
+  const lignes = f.lignes || [], vide = '<span class="fi-vide">—</span>';
+  const cls = {"validée": "ok", "à valider": "al", "sans adresse": "", "E/S seule": "n"};
+  const cablees = lignes.filter(x => x.es).length;
+  bloc.querySelector(".fi-chargement")?.remove();
+  bloc.insertAdjacentHTML("beforeend", lignes.length ? `<p class="aide fi-resume">${lignes.length} information(s) · ${cablees} lue(s) sur une E/S câblée, ${lignes.length - cablees} calculée(s) par l'automate · clic droit ou Ctrl C pour copier vers Excel</p>
+    <div class="fi-defile"><table data-o-tableau class="t-fil"><thead><tr><th>Information</th><th>Fam.</th><th>E/S physique</th><th>Voie</th><th>Variable automate</th><th>Type</th><th>Adresse</th><th>Libellé de supervision</th><th>État</th></tr></thead><tbody>
+    ${lignes.map(x => `<tr><td>${esc(x.information) || vide}</td><td><span class="tag">${esc(x.famille)}</span></td>
+      <td class="mono">${x.es ? esc(x.es) : '<span class="fi-vide">calculée</span>'}</td><td class="mono">${esc(x.voie) || vide}</td>
+      <td class="mono">${esc(x.variable) || vide}</td><td>${esc(x.type) || vide}</td><td class="mono">${esc(x.adresse) || vide}</td>
+      <td>${esc(x.libelle) || vide}</td><td><span class="fi-etat ${cls[x.etat] ?? ""}">${esc(x.etat)}</span></td></tr>`).join("")}</tbody></table></div>`
+    : '<div class="vide-bloc">Aucune information pour cet équipement : validez d\'abord son paramétrage.</div>');
 }
 /* Informations fonctionnelles (TS, TM, CP, TC, TR, RTR) : ce que l'automate calcule ou reçoit, distinct
    des E/S câblées. Une information proposée par une règle se retient ou s'écarte avec un motif : rien
@@ -1071,8 +2238,8 @@ function blocFonctionnelles(e) {
   return `<div class="bloc" id="infos-fonctionnelles"><div class="bloc-tete"><h2>Informations fonctionnelles</h2>
     <span class="aide">${nb("retenue")} retenue(s) · ${nb("proposée")} à décider · ${nb("écartée")} écartée(s)</span>
     <div class="droite">${nb("proposée") ? `<button id="f-tout">Retenir les ${nb("proposée")} proposée(s)</button>` : ""}</div></div>
-    <p class="aide" style="padding:0 14px">Informations calculées par l'automate ou échangées avec la supervision (TS, TM, CP, TC, TR, RTR), déduites des E/S retenues par les règles du référentiel.
-      Une information <b>proposée</b> demande une logique automate : retenez-la, ou écartez-la en écrivant pourquoi. La validation de l'équipement attend ces décisions.</p>
+    <details class="aide-pliable"><summary>À quoi servent ces informations ?</summary><p>Informations calculées par l'automate ou échangées avec la supervision (TS, TM, CP, TC, TR, RTR), déduites des E/S retenues par les règles du référentiel.
+      Une information <b>proposée</b> demande une logique automate : retenez-la, ou écartez-la en écrivant pourquoi. La validation de l'équipement attend ces décisions.</p></details>
     ${visibles.length ? `<table class="t-fonctionnelles"><thead><tr><th style="width:96px">État</th><th style="width:120px">Information</th><th>Libellé</th><th>Provenance</th><th>Justification</th><th></th></tr></thead>
       <tbody>${visibles.map(ligne).join("")}</tbody></table>` : '<div class="vide-bloc">Aucune information fonctionnelle retenue pour ce paramétrage.</div>'}
     ${autres.length ? `<details class="non-retenues"><summary>${autres.length} information(s) prévue(s) par le modèle mais non retenue(s) (option non choisie ou conditions non réunies)</summary>
@@ -1256,26 +2423,31 @@ function modaleChoix(titre, label, options, valeur, action) {
   m.querySelector("#m-ok").onclick = async () => { try { await action(m.querySelector("#m-v").value); fermerModale(); } catch (e) { m.querySelector("#m-err").textContent = e.message; } };
 }
 /* ------------------------------------------------------------------ listes d'identification, indépendantes des projets */
-const GROUPES_LISTES = [["lieux", "Lieux"], ["types_ouvrage", "Types d'ouvrages"], ["automates", "Automates"], ["protocoles", "Communications"]];
+const GROUPES_LISTES = [["lieux", "Lieux"], ["types_ouvrage", "Types d'ouvrages"], ["automates", "Sources d'acquisition"], ["protocoles", "Protocoles"], ["supervisions", "Supervisions"], ["ihm", "IHM"]];
+const CATEGORIES_SOURCES = ["Automate", "Télégestion", "E/S déportées", "Autres"];
+const categorieSource = v => (E.listes?.categories_sources || {})[v] || "Autres";
 // Explication du repère d'équipement selon le format de l'ouvrage (charte du 9 novembre : 12 caractères).
 function texteRepere(lieu, code, numero, okLieu, okCode) {
+  const cc = charteCourante();
+  if (cc.charte) return `Repère selon la charte « ${esc(cc.nom)} » : <span class="mono">${esc(repereSelon(cc.charte, lieu, code, numero, false))}</span> — repère d'un équipement, exemple : <span class="mono">${esc(repereSelon(cc.charte, lieu, code, numero, true))}</span>`;
   const charte = (E.ouvrage || {}).format_repere === "12";
   const se = charte ? "" : ` + <b>SE</b> sous-ensemble (2)`;
   const exemple = (/^[A-Z0-9]{4}$/.test(lieu) ? lieu : "XXXX") + (/^[A-Z]{2}$/.test(code) ? code : "YY") + (/^\d{2}$/.test(numero) ? numero : "01") + (charte ? "" : "11") + "HV01";
   return `Repère d'un équipement = <b class="${okLieu ? "ok" : "ko"}">${esc(lieu)}</b> lieu + <b class="${okCode ? "ok" : "ko"}">${esc(code)}</b> type d'ouvrage + <b>${esc(numero)}</b> numéro d’ouvrage${se} + <b>type et numéro</b> d'équipement (4) — exemple : <span class="mono">${esc(exemple)}</span>`;
 }
 function modaleListes(groupe = "lieux", edition = "") {
-  const l = E.listes || {lieux:[], types_ouvrage:[], automates:[], protocoles:[]};
+  const l = E.listes || {lieux:[], types_ouvrage:[], automates:[], protocoles:[], supervisions:[], ihm:[]};
   const tab = l[groupe] || [], codeLibelle = groupe === "lieux" || groupe === "types_ouvrage";
   const enEdition = tab.find(x => (codeLibelle ? x.code : x) === edition);
   const old = enEdition ? (codeLibelle ? enEdition.code : enEdition) : "";
   const m = ouvrirModale(`<div class="boite-tete"><h2>Référentiel — identification de l'ouvrage</h2><p>Les changements de liste ne modifient jamais les ouvrages déjà enregistrés.</p></div>
     <div class="boite-corps"><div class="onglets-listes">${GROUPES_LISTES.map(([id, nom]) => `<button class="${groupe === id ? "active" : ""}" data-liste="${id}">${nom}</button>`).join("")}</div>
-    <div class="liste-config">${tab.length ? `<table><thead><tr><th>${codeLibelle ? "Code" : "Valeur"}</th>${codeLibelle ? `<th>${groupe === "lieux" ? "Commune" : "Libellé"}</th>` : ""}${groupe === "lieux" ? "<th>Régie</th>" : ""}<th>Actions</th></tr></thead><tbody>
-      ${tab.map(x => { const v = codeLibelle ? x.code : x; return `<tr><td class="mono">${esc(v)}</td>${codeLibelle ? `<td>${esc(x.libelle)}</td>` : ""}${groupe === "lieux" ? `<td>${esc(x.regie || "Autre")}</td>` : ""}<td><button data-edit-ref="${esc(v)}">Modifier</button> <button class="danger" data-sup-ref="${esc(v)}">Retirer</button></td></tr>`; }).join("")}</tbody></table>` : `<div class="vide-bloc">Liste vide : ajoutez la première valeur.</div>`}</div>
+    <div class="liste-config">${tab.length ? `<table><thead><tr><th>${codeLibelle ? "Code" : "Valeur"}</th>${codeLibelle ? `<th>${groupe === "lieux" ? "Commune" : "Libellé"}</th>` : ""}${groupe === "lieux" ? "<th>Régie</th>" : ""}${groupe === "automates" ? "<th>Catégorie</th>" : ""}<th>Actions</th></tr></thead><tbody>
+      ${tab.map(x => { const v = codeLibelle ? x.code : x; return `<tr><td class="mono">${esc(v)}</td>${codeLibelle ? `<td>${esc(x.libelle)}</td>` : ""}${groupe === "lieux" ? `<td>${esc(x.regie || "Autre")}</td>` : ""}${groupe === "automates" ? `<td>${esc(categorieSource(v))}</td>` : ""}<td><button data-edit-ref="${esc(v)}">Modifier</button> <button class="danger" data-sup-ref="${esc(v)}">Retirer</button></td></tr>`; }).join("")}</tbody></table>` : `<div class="vide-bloc">Liste vide : ajoutez la première valeur.</div>`}</div>
     <h3>${enEdition ? "Modifier une valeur" : "Ajouter une valeur"}</h3><div class="champs">
       ${groupe === "lieux" ? `<label for="ref-libelle">Commune</label><input id="ref-libelle" value="${esc(enEdition ? enEdition.libelle : "")}" maxlength="100" placeholder="ex. Athis-Mons">` : ""}
-      <label for="ref-code">${codeLibelle ? "Code" : "Valeur"}</label><div class="code-lieu"><input id="ref-code" value="${esc(old)}" ${groupe === "lieux" ? 'maxlength="4" style="text-transform:uppercase" placeholder="4 lettres"' : groupe === "types_ouvrage" ? 'maxlength="2" style="text-transform:uppercase"' : 'maxlength="100"'}>${groupe === "lieux" ? '<span class="aide" id="ref-prop">Le code est proposé par la charte à partir du nom de la commune.</span>' : ""}</div>
+      <label for="ref-code">${codeLibelle ? "Code" : "Valeur"}</label><div class="code-lieu"><input id="ref-code" value="${esc(old)}" ${groupe === "lieux" ? 'maxlength="8" style="text-transform:uppercase" placeholder="4 lettres (charte OGIAS)"' : groupe === "types_ouvrage" ? 'maxlength="8" style="text-transform:uppercase" placeholder="2 lettres (charte OGIAS)"' : 'maxlength="100"'}>${groupe === "lieux" ? '<span class="aide" id="ref-prop">Le code est proposé par la charte à partir du nom de la commune.</span>' : ""}</div>
+      ${groupe === "automates" ? `<label for="ref-regie">Catégorie</label><select id="ref-regie">${CATEGORIES_SOURCES.map(c => `<option ${categorieSource(old) === c ? "selected" : ""}>${c}</option>`).join("")}</select>` : ""}
       ${groupe === "types_ouvrage" ? `<label for="ref-libelle">Libellé</label><input id="ref-libelle" value="${esc(enEdition ? enEdition.libelle : "")}" maxlength="100">` : ""}
       ${groupe === "lieux" ? `<label>Régie</label><select id="ref-regie"><option value="ESB" ${(enEdition?.regie || "AUTRE").toUpperCase() === "ESB" ? "selected" : ""}>ESB</option><option value="RESO" ${(enEdition?.regie || "AUTRE").toUpperCase() === "RESO" ? "selected" : ""}>RESO</option><option value="AUTRE" ${(enEdition?.regie || "AUTRE").toUpperCase() === "AUTRE" ? "selected" : ""}>Autre</option></select>` : ""}
     </div><div class="erreur-form" id="ref-err"></div></div>
@@ -1290,7 +2462,7 @@ function modaleListes(groupe = "lieux", edition = "") {
   if (m.querySelector("#ref-annuler")) m.querySelector("#ref-annuler").onclick = () => modaleListes(groupe);
   if (groupe === "lieux") proposerCodeLieu(m, old);
   m.querySelector("#ref-ok").onclick = async () => {
-    const payload = {action: enEdition ? "modifier" : "ajouter", groupe, ancien: old, code:m.querySelector("#ref-code").value, libelle:codeLibelle ? m.querySelector("#ref-libelle").value : "", regie:groupe === "lieux" ? m.querySelector("#ref-regie").value : ""};
+    const payload = {action: enEdition ? "modifier" : "ajouter", groupe, ancien: old, code:m.querySelector("#ref-code").value, libelle:codeLibelle ? m.querySelector("#ref-libelle").value : "", regie:(groupe === "lieux" || groupe === "automates") ? m.querySelector("#ref-regie").value : ""};
     try { await api("/api/listes-ouvrage/action", payload); await actualiser(); toast("Référentiel mis à jour."); }
     catch (e) { m.querySelector("#ref-err").textContent = e.message; }
   };
@@ -1394,7 +2566,7 @@ function modaleUF(u) {
     catch (e) { m.querySelector("#m-err").textContent = e.message; }
   };
 }
-function modaleEquipement(eq, ufDefaut) {
+function modaleEquipement(eq, ufDefaut, depuisCatalogue) {
   const o = E.ouvrage;
   if (!eq && !(o.identification.lieu && o.identification.code_ouvrage)) {
     toast("Renseignez d'abord le lieu et le code de l'ouvrage (identification).", true);
@@ -1436,6 +2608,18 @@ function modaleEquipement(eq, ufDefaut) {
     q("#q-num").value = r.numero; majRepere();
   };
   majModeles(true); majRepere();
+  if (!eq && depuisCatalogue && depuisCatalogue.type) {        // ajout depuis le catalogue des modèles
+    q("#q-type").value = depuisCatalogue.type; majModeles(false);
+    if (depuisCatalogue.modele) q("#q-modele").value = depuisCatalogue.modele;
+    // Le choix est déjà fait : il est résumé en tête, les listes type / modèle restent dans la page, masquées.
+    const t = o.types.find(x => x.code === depuisCatalogue.type) || {designation: ""};
+    ["#q-type", "#q-modele"].forEach(id => { q(id).hidden = true; q(id).previousElementSibling.hidden = true; });
+    q(".champs").insertAdjacentHTML("afterbegin", `<span class="cm-choisi-etiq">Équipement</span><div class="cm-choisi"><span class="tag">${esc(depuisCatalogue.type.replace(/--$/, ""))}</span>
+      <b>${esc(depuisCatalogue.modele || t.designation)}</b><button type="button" class="lien" id="cm-changer">Changer</button></div>`);
+    q("#cm-changer").onclick = () => choisirModele(q("#q-uf").value);
+    m.querySelector(".boite-tete p").textContent = "Il reste à donner un numéro et un libellé. Le repère se construit tout seul.";
+    numeroLibre(); setTimeout(() => q("#q-lib").focus(), 0);
+  }
   q("#q-type").onchange = () => { majModeles(false); numeroLibre(); };
   q("#q-se").oninput = numeroLibre; q("#q-num").oninput = majRepere;
   q("#q-uf").onchange = () => { const s = (o.unites.find(u => u.code === q("#q-uf").value) || {}).se; if (s && !eq) { q("#q-se").value = s; numeroLibre(); } };
@@ -1452,7 +2636,8 @@ function modaleEquipement(eq, ufDefaut) {
 }
 function modaleImport(natureInitiale = "inventaire") {
   const types = [
-    ["inventaire", "Inventaire des équipements"],
+    ["equipements_aller_retour", "Liste des équipements (aller-retour : comparer et mettre à jour)"],
+    ["inventaire", "Inventaire des équipements (ajouts seulement)"],
     ["variables_existantes", "Variables automate existantes"],
     ["liste_es_existante", "Liste d’E/S existante"]
   ];
@@ -1474,11 +2659,12 @@ function modaleImport(natureInitiale = "inventaire") {
   const dessinerLignes = lignes => lignes.map(r => {
     const id = r.donnees.repere || r.donnees.nom || "—";
     const msg = r.diagnostics.map(d => `${d.code} : ${d.message}`).join(" ; ");
-    const cls = {a_creer:"b-ok", deja_present:"b-n", refuse:"b-err", ligne_vide:"b-n"};
-    const labels = {a_creer:"À créer", deja_present:"Déjà présent", refuse:"Refusé", ligne_vide:"Vide"};
+    const cls = {a_creer:"b-ok", a_modifier:"b-al", deja_present:"b-n", refuse:"b-err", ligne_vide:"b-n"};
+    const labels = {a_creer:"À créer", a_modifier:"À modifier", deja_present: select.value === "equipements_aller_retour" ? "Inchangé" : "Déjà présent", refuse:"Refusé", ligne_vide:"Vide"};
+    const changement = r.action === "a_modifier" && r.donnees.changements ? r.donnees.changements : "";
     return `<tr><td>${r.ligne}</td><td class="mono">${esc(id)}</td>
       <td><span class="badge ${cls[r.action] || 'b-al'}">${labels[r.action] || esc(r.action)}</span></td>
-      <td>${esc(msg || "—")}</td></tr>`;
+      <td>${esc([changement, msg].filter(Boolean).join(" · ") || "—")}</td></tr>`;
   }).join("");
   let pageActive = 1;
   let pagesTotal = 1;
@@ -1515,7 +2701,12 @@ function modaleImport(natureInitiale = "inventaire") {
       pageActive = report.pagination.page;
       pagesTotal = report.pagination.pages;
       summary.textContent = `${stats.total} lignes · ${stats.erreurs} erreur(s) · ${stats.avertissements} avertissement(s)`;
-      output.innerHTML = `<div class="note">${esc(report.fichier.split(/[\\/]/).pop())} · Feuille : ${esc(report.feuille)} · ${stats.a_creer} à créer · ${stats.deja_present} inchangées · ${stats.refuse} refusées.</div>
+      const obsoletes = report.obsoletes || [];
+      const blocObsoletes = obsoletes.length ? `<div class="import-obsoletes"><h3>Absents du fichier (${obsoletes.length})</h3>
+        <p class="aide">Ces équipements de l'ouvrage ne figurent plus dans le fichier. Ils sont gardés, sauf si vous choisissez de les supprimer.</p>
+        <table><thead><tr><th>Repère</th><th>Désignation</th><th>Action</th></tr></thead><tbody>${obsoletes.map(o => `<tr><td class="mono">${esc(o.repere)}</td><td>${esc(o.libelle || "—")}</td>
+          <td>${o.protege ? `<span class="badge b-n" title="${esc(o.motif)}">Gardé · adresses validées</span>` : `<select data-obsolete="${esc(o.ident)}" aria-label="Action pour ${esc(o.repere)}"><option value="garder">Garder</option><option value="supprimer">Supprimer</option></select>`}</td></tr>`).join("")}</tbody></table></div>` : "";
+      output.innerHTML = `<div class="note">${esc(report.fichier.split(/[\\/]/).pop())} · Feuille : ${esc(report.feuille)} · ${stats.a_creer} à créer${stats.a_modifier ? ` · ${stats.a_modifier} à modifier` : ""} · ${stats.deja_present} inchangées · ${stats.refuse} refusées${obsoletes.length ? ` · ${obsoletes.length} absent(s) du fichier` : ""}.</div>
         ${report.diagnostics_globaux.map(d => `<div class="note">${esc(d.gravite)} : ${esc(d.message)}</div>`).join("")}
         <div style="max-height:340px;overflow:auto"><table><thead><tr><th>Ligne</th><th>Identifiant</th><th>État</th><th>Diagnostic</th></tr></thead>
         <tbody id="i-lignes">${dessinerLignes(report.lignes_affichees)}</tbody></table></div>
@@ -1523,24 +2714,34 @@ function modaleImport(natureInitiale = "inventaire") {
           <button type="button" id="i-prec">← Précédent</button>
           <span id="i-page-label" aria-live="polite">Page ${pageActive} / ${pagesTotal}</span>
           <button type="button" id="i-suiv">Suivant →</button></div>` : ""}
+        ${blocObsoletes}
         ${stats.erreurs ? '<div class="note" style="color:#ad3030">Import bloqué : corrigez les erreurs dans le fichier puis relancez l’analyse.</div>' : ""}`;
       if (pagesTotal > 1) {
         output.querySelector("#i-prec").onclick = () => changerPage(pageActive - 1);
         output.querySelector("#i-suiv").onclick = () => changerPage(pageActive + 1);
         etatPages();
       }
-      action.disabled = !report.integrable;
-      action.textContent = report.integrable ? `Confirmer ${stats.a_creer} ajout(s)` : "Import indisponible";
+      const libelleAction = () => {
+        const sup = output.querySelectorAll('[data-obsolete]').length ? [...output.querySelectorAll('[data-obsolete]')].filter(s => s.value === "supprimer").length : 0;
+        const parts = [stats.a_creer ? `${stats.a_creer} ajout(s)` : "", stats.a_modifier ? `${stats.a_modifier} modification(s)` : "", sup ? `${sup} suppression(s)` : ""].filter(Boolean);
+        action.disabled = !report.integrable || !parts.length;
+        action.textContent = !report.integrable ? "Import indisponible" : parts.length ? `Confirmer : ${parts.join(", ")}` : "Rien à appliquer";
+      };
+      output.querySelectorAll('[data-obsolete]').forEach(s => s.onchange = libelleAction);
+      libelleAction();
     } catch (e) { token = ""; output.innerHTML = ""; errors.textContent = e.message; }
   };
   action.onclick = async () => {
     if (!token) return;
     action.disabled = true;
     try {
-      const result = await api("/api/inbound/appliquer", {jeton:token, confirmer:true});
+      const suppressions = [...output.querySelectorAll('[data-obsolete]')].filter(s => s.value === "supprimer").map(s => s.dataset.obsolete);
+      const result = await api("/api/inbound/appliquer", {jeton:token, confirmer:true, suppressions});
       token = "";
       fermerModale();
-      toast(`${result.crees} donnée(s) intégrée(s).`);
+      toast(result.nature === "equipements_aller_retour"
+        ? `Liste appliquée : ${result.crees} ajout(s), ${result.modifies} modification(s), ${result.supprimes} suppression(s). Copie de sécurité faite avant l'import.`
+        : `${result.crees} donnée(s) intégrée(s).`);
       E.sel = {nature:"ouvrage", valeur:""};
       await recharger();
     } catch (e) { token = ""; errors.textContent = e.message + " Relancez l’analyse du fichier."; }
@@ -1574,6 +2775,7 @@ function bandeauReferentiel() {
       ${b ? '<button class="prim" id="rf-ouvrir-b">Reprendre le brouillon en cours</button>' : '<button class="prim" id="rf-creer">Modifier : créer un brouillon</button>'}</div></section>`;
 }
 async function vueReferentiel() {
+  Coque.ruban(null);   // lot 5f : boutons du rendu précédent retirés du ruban
   if (E.refEcran === "publication" && E.cycle.brouillon) return vuePublicationReferentiel();
   if (E.refEcran === "historique") return vueHistoriqueReferentiel();
   if (["lexique", "dictionnaire_es", "correspondances"].includes(E.refObjet)) return vueCodesReferentiel();
@@ -1605,11 +2807,11 @@ function detailTypeReferentiel(t, onglet, ed) {
   const marque = s => s.modifie ? ' class="modifie"' : "";
   const actionSig = s => ed ? `<td class="act"><button class="lien rf-sig" data-id="${esc(s.id)}">Modifier</button><button class="lien danger rf-sig-sup" data-id="${esc(s.id)}">Supprimer</button></td>` : "";
   let corps = "";
-  if (onglet === "es") corps = `<div class="bloc"><table><thead><tr><th>Identifiant</th><th>Nature</th><th>Information</th><th>Présence</th><th>Type</th><th>Paramètres d'installation</th>${ed ? "<th></th>" : ""}</tr></thead><tbody>
+  if (onglet === "es") corps = `<div class="bloc"><table data-o-tableau><thead><tr><th>Identifiant</th><th>Nature</th><th>Information</th><th>Présence</th><th>Type</th><th>Paramètres d'installation</th>${ed ? "<th></th>" : ""}</tr></thead><tbody>
       ${t.es.map(s => `<tr${marque(s)}><td class="mono">${esc(s.id)}</td><td><span class="tag p-${esc(s.es)}">${esc(s.es)}</span></td><td>${esc(s.information)}${s.famille !== "ES" ? ` <span class="aide">· contact câblé porté par ${esc(s.famille)}_${esc(s.code)}</span>` : ""}</td>
         <td>${presenceBadge(s.presence)}${s.option ? ` <small>${esc(s.option)}</small>` : ""}</td><td>${esc(s.type_logique)}</td><td class="aide">dans la fiche de l'équipement</td>${actionSig(s)}</tr>`).join("") || '<tr><td colspan="7" class="vide">Aucune E/S physique déclarée pour ce type.</td></tr>'}</tbody></table>
       ${ed ? '<div class="pied-bloc"><button id="rf-add-es">+ Ajouter une E/S physique</button></div>' : ""}</div>`;
-  if (onglet === "fonct") corps = `<div class="bloc"><table><thead><tr><th>Information</th><th>Famille</th><th>Libellé</th><th>Présence</th><th>Source</th><th>Logique à programmer</th>${ed ? "<th></th>" : ""}</tr></thead><tbody>
+  if (onglet === "fonct") corps = `<div class="bloc"><table data-o-tableau><thead><tr><th>Information</th><th>Famille</th><th>Libellé</th><th>Présence</th><th>Source</th><th>Logique à programmer</th>${ed ? "<th></th>" : ""}</tr></thead><tbody>
       ${t.fonctionnelles.filter(s => s.famille !== "ES").map(s => `<tr${marque(s)}><td class="mono">${esc(s.famille)}_${esc(s.code)}</td><td><span class="role">${esc(s.famille)}</span></td><td>${esc(s.information)}${s.alarme ? ' <span class="tag">alarme</span>' : ""}</td>
         <td>${presenceBadge(s.presence)}${s.option ? ` <small>${esc(s.option)}</small>` : ""}</td><td class="mono">${esc(s.source || (s.es && s.es !== "Interne" ? "câblée (" + s.es + ")" : "—"))}</td><td class="justif">${esc(s.logique || "")}</td>${actionSig(s)}</tr>`).join("")}</tbody></table>
       ${ed ? '<div class="pied-bloc"><button id="rf-add-f">+ Ajouter une information</button></div>' : ""}</div>`;
@@ -1626,7 +2828,7 @@ function detailTypeReferentiel(t, onglet, ed) {
       <table><tbody>${m.lignes.map(l => `<tr><td><span class="role">${esc(l.role)}</span></td><td>${esc(l.libelle)}</td><td class="mono">${esc(l.suffixe)}</td><td>${esc(l.format)}</td><td>${esc(l.unite || "")}</td>
         ${ed ? `<td class="act"><button class="lien rf-lmod" data-n="${esc(m.nom)}" data-id="${esc(l.id)}">Modifier</button><button class="lien danger rf-lsup" data-n="${esc(m.nom)}" data-id="${esc(l.id)}">Supprimer</button></td>` : ""}</tr>`).join("") || '<tr><td class="vide">Aucune ligne.</td></tr>'}</tbody></table></div>`).join("") || '<div class="vide-bloc">Aucun modèle pour ce type.</div>'}
       ${ed ? '<div class="pied-bloc"><button id="rf-madd">+ Nouveau modèle pour ce type</button></div>' : ""}`;
-  if (onglet === "usage") corps = `<div class="bloc"><table><thead><tr><th>Ouvrage</th><th>Équipements</th><th>Référentiel figé</th></tr></thead><tbody>
+  if (onglet === "usage") corps = `<div class="bloc"><table data-o-tableau><thead><tr><th>Ouvrage</th><th>Équipements</th><th>Référentiel figé</th></tr></thead><tbody>
       ${t.usages.map(u => `<tr><td class="mono">${esc(u.repere)}</td><td>${u.equipements}</td><td>${esc(u.revision)}</td></tr>`).join("") || '<tr><td colspan="3" class="vide">Aucun ouvrage enregistré n\'utilise ce type.</td></tr>'}</tbody></table>
       <p class="aide" style="padding:0 14px">Un ouvrage garde son référentiel figé ; il adopte une nouvelle révision depuis sa propre fiche, sur décision.</p></div>`;
   if (onglet === "audit") corps = `<div class="bloc">${t.audit.length ? `<ul class="liste-controles">${t.audit.map(x => `<li class="${x.gravite === "Erreur" ? "c-err" : "c-al"}"><b>${esc(x.code)}</b> — ${esc(x.message)}${x.cles.length ? ` <span class="mono">${esc(x.cles.join(", "))}</span>` : ""}</li>`).join("")}</ul>`
@@ -1657,6 +2859,7 @@ function brancherReferentiel(t, ed) {
   on("#rf-imp", modaleImportReferentiel);
   on("#rf-hist", () => { E.refEcran = "historique"; vueReferentiel(); });
   on("#rf-pub", () => { E.refEcran = "publication"; vueReferentiel(); });
+  rubanReferentiel();
   if (!t || !ed) return;
   on("#rf-type-mod", () => modaleTypeCatalogue(t));
   on("#rf-type-archive", () => confirmer(t.archive?'Réactiver ce type ?':'Archiver ce type ?',
@@ -1758,11 +2961,29 @@ function modaleTypeCatalogue(t) {
 const ACTION_DIFF = {ajout: ["b-ok", "ajout"], suppression: ["b-err", "suppression"], modification: ["b-n", "modification"], ordre: ["b-n", "ordre"]};
 const champsDiff = d => Object.entries(d.champs || {}).map(([c, [a, b]]) => `<div><small>${esc(c)}</small> <s>${esc(JSON.stringify(a))}</s> → <b>${esc(JSON.stringify(b))}</b></div>`).join("");
 function tableDifferences(diffs) {
-  return diffs.length ? `<table><thead><tr><th>Changement</th><th>Élément</th><th>Détail</th><th>Conséquence</th></tr></thead><tbody>${diffs.map(d => `<tr>
+  return diffs.length ? `<table data-o-tableau><thead><tr><th>Changement</th><th>Élément</th><th>Détail</th><th>Conséquence</th></tr></thead><tbody>${diffs.map(d => `<tr>
     <td><span class="badge ${(ACTION_DIFF[d.action] || ["b-n"])[0]}">${esc(d.action)}</span></td><td><small>${esc(d.objet)}</small><br><span class="mono">${esc(d.id)}</span></td>
     <td>${champsDiff(d)}</td><td class="justif">${esc(d.consequence || "")}</td></tr>`).join("")}</tbody></table>` : '<div class="vide-bloc">Aucune différence.</div>';
 }
+/* Lot 5f : commandes du bandeau au ruban. Révision publiée : Révision (créer ou reprendre le brouillon, récupérer)
+   et Consultation (historique, export) ; brouillon : Brouillon (contrôler et publier, voir la révision publiée,
+   importer, exporter, supprimer), commandes jusqu'ici cachées sous « Autres actions ». */
+function rubanReferentiel() {
+  const id = x => document.getElementById(x);
+  const groupes = E.ref.source === "brouillon"
+    ? [{nom: "Brouillon", commandes: [{el: id("rf-pub"), icone: "valider", grand: true}, {el: id("rf-voir-pub"), icone: "referentiel", grand: true},
+        {el: id("rf-imp"), icone: "importer", libelle: "Importer un classeur…"}, {el: id("rf-exp-b"), icone: "importer", libelle: "Exporter vers Excel"},
+        {el: id("rf-abandon"), icone: "supprimer", libelle: "Supprimer le brouillon"}]}]
+    : [{nom: "Révision", commandes: [{el: id("rf-creer"), icone: "modifier", grand: true, libelle: "Modifier (brouillon)"}, {el: id("rf-ouvrir-b"), icone: "modifier", grand: true, libelle: "Reprendre le brouillon"},
+        {el: id("rf-recuperer"), icone: "importer"}]},
+       {nom: "Consultation", commandes: [{el: id("rf-hist"), icone: "referentiel", grand: true, libelle: "Historique"},
+        {el: id("rf-exp"), icone: "importer", grand: true, libelle: "Exporter vers Excel"}]}];
+  Coque.ruban(groupes.map(g => ({...g, commandes: g.commandes.filter(c => c.el)})).filter(g => g.commandes.length));
+  document.querySelectorAll("#vue .bandeau-ref .v31-actions-more").forEach(x => { if (!x.querySelector("button")) x.remove(); });
+  document.querySelectorAll("#vue .bandeau-ref .actions").forEach(x => { if (!x.querySelector("button")) x.remove(); });
+}
 function vuePublicationReferentiel() {
+  Coque.ruban(null);   // lot 5f : écran sans commandes de ruban
   const c = E.cycle, b = c.brouillon, ctl = c.controles || {erreurs: [], alertes: []};
   $("#vue").innerHTML = `<section class="contenu publication-ref">
     <div class="fil"><button class="lien" id="rf-retour">Brouillon (basé sur R${String(b.base_revision).padStart(4, "0")})</button> › Contrôle et publication</div>
@@ -1806,6 +3027,7 @@ function brancherHistorique() {
     async () => { await agir(api("/api/referentiel/cycle/action", {action: "restaurer", numero: Number(b.dataset.n)}), "Brouillon créé à partir de la révision."); E.refEcran = ""; E.refSource = ""; await chargerReferentiel(); vueReferentiel(); }));
 }
 function vueHistoriqueReferentiel() {
+  Coque.ruban(null);   // lot 5f : écran sans commandes de ruban
   $("#vue").innerHTML = `<section class="contenu"><div class="fil"><button class="lien" id="rf-retour">Référentiel</button> › Historique</div><h1>Historique des révisions</h1>
     ${E.cycle.brouillon ? '<div class="avert">Un brouillon est en cours : terminez-le ou abandonnez-le avant une restauration.</div>' : ""}${blocHistorique(E.cycle.revisions)}</section>`;
   $("#rf-retour").onclick = () => { E.refEcran = ""; vueReferentiel(); };
@@ -1887,7 +3109,8 @@ function vueES() {
   if (erreurs) compteurs.push(["ERR", erreurs, "Erreurs", "err"]);
   const a = p && p.analogique;
   const analogique = p && typesANA.has(p.point);
-  $("#vue").innerHTML = `<section class="contenu es-page">
+  Coque.ruban(null);                      // lot 5b : retire les anciennes commandes avant de redessiner l'écran
+  $("#vue").innerHTML = `<section class="contenu es-page poste-travail" data-poste="es">
     <div class="titre"><div><div class="fil">Ouvrage › Étape 2 / 5</div><h1>Liste des E/S physiques</h1>
       <div class="sous">Contrôlez chaque signal avant la configuration du matériel ; la voie ne se renseigne pas ici.</div></div>
       <span class="es-progression ${invalides ? "al" : "ok"}">${invalides ? `${invalides} E/S à valider` : "Contenu validé"}</span></div>
@@ -1896,7 +3119,7 @@ function vueES() {
       <div class="es-ruban-actions"><div class="es-ruban-groupe"><button type="button" id="x-val-tout" ${visibles.some(x => !x.contenu_valide) ? "" : "disabled"} title="Valider les E/S visibles après contrôle">${V31.icon("check",14)} Valider les affichées</button>
         <button type="button" id="x-val" class="prim" disabled>${V31.icon("check",14)} Valider la sélection</button><span>Validation du contenu</span></div>
         <div class="es-ruban-groupe"><button type="button" id="es-export">⇩ Exporter la liste</button><span>Échanges de données</span></div>
-        <div class="es-ruban-groupe"><button type="button" data-nav="#/materiel" ${invalides ? "disabled title=\"Validez le contenu avant le calcul du matériel\"" : ""}>▣ Matériel</button><span>Étape suivante</span></div></div>
+        <div class="es-ruban-groupe"><button type="button" id="es-materiel" data-nav="#/materiel" ${invalides ? "disabled title=\"Validez le contenu avant le calcul du matériel\"" : ""}>▣ Matériel</button><span>Étape suivante</span></div></div>
     </div>
     <div class="es-compteurs" role="group" aria-label="Filtres par nature et par validation">
       ${compteurs.map(([code, nb, label, grav]) => pastille(code, nb, label, grav, E.filtreES)).join("")}</div>
@@ -1910,14 +3133,14 @@ function vueES() {
     </div>
     <div class="es-corps"><div class="bloc es-table"><div class="bloc-tete es-table-tete"><h2>Points physiques</h2><span class="aide">${visibles.length} / ${tous.length} E/S · ${invalides} à valider</span>
        ${p ? '<button type="button" id="es-detail-toggle">' + (E.esPanneauOuvert ? 'Masquer le détail' : 'Afficher le détail') + '</button>' : ''}</div>
-       <div class="es-scroll"><table class="t-es" aria-label="Liste des E/S physiques"><thead><tr>
+       <div class="es-scroll"><table class="t-es" data-o-tableau="sans-selection" data-o-cle="liste-es" aria-label="Liste des E/S physiques"><thead><tr>
        <th><input type="checkbox" id="x-coche-tout" aria-label="Sélectionner les E/S affichées"></th>
-       <th>Équipement / variable automate</th><th>Point</th><th>Désignation</th><th>Sens / Échelle</th><th>Raccordement</th><th>Voie</th><th>État</th></tr></thead><tbody>
+       <th>Équipement</th><th>Variable automate</th><th>Point</th><th>Désignation</th><th>Sens / Échelle</th><th>Raccordement</th><th>Voie</th><th>État</th></tr></thead><tbody>
        ${visibles.map(x => {const sid = cleVueES(x), i = indices.get(sid);return `<tr data-i="${i}" role="button" tabindex="0" aria-label="Ouvrir le détail de ${esc(x.nom)}" class="es-ligne ${p && p === x ? "es-active" : ""}">
          <td><input type="checkbox" class="x-coche" value="${i}" ${E.esSelection.has(sid) ? "checked" : ""} aria-label="Sélectionner ${esc(x.nom)}"></td>
-         <td><strong class="mono es-pc">${esc(x.pcf)}</strong><small class="mono es-nom">${esc(x.nom)}</small><small class="mono es-code">${esc(x.cle)}</small></td>
+         <td class="mono es-pc" title="${esc(x.pcf)}">${esc(x.pcf)}</td><td class="mono es-nom" title="${esc(x.nom + " · clé " + x.cle)}">${esc(x.nom)} <small class="mono es-code">${esc(x.cle)}</small></td>
          <td><span class="tag p-${esc(x.point)}">${esc(x.point)}</span></td>
-         <td>${esc(x.designation || x.commentaire || x.information)}</td><td>${texteSens(x)}</td>
+         <td class="es-des" title="${esc(x.designation || x.commentaire || x.information)}">${esc(x.designation || x.commentaire || x.information)}</td><td class="es-sens">${texteSens(x)}</td>
          <td>${esc(x.raccordement === "Communication" ? "Communication" : "Câblé")}</td><td class="es-voie">${localisationES(x)}</td>
          <td>${etatContenuES(x)}</td></tr>`;}).join("")}</tbody></table>
        ${!visibles.length ? '<div class="vide-bloc">Aucune E/S correspondant aux filtres.</div>' : ''}</div></div>
@@ -1943,7 +3166,7 @@ function vueES() {
 }
 function brancherVueES(visibles, actif) {
   const d = E.es;
-  const rerendre = () => vueES();
+  const rerendre = () => rendre();          // pied d'étape et barre de commandes reconstruits avec la liste
   const avantPerteES = () => {
     if (!E.esFormDirty) return true;
     if (!window.confirm("Les modifications du point E/S ne sont pas enregistrées. Les abandonner ?")) return false;
@@ -1954,7 +3177,9 @@ function brancherVueES(visibles, actif) {
   const majBouton = () => {
     const n = selectionActuelle().length, b = $("#x-val");
     b.disabled = !n || !selectionActuelle().some(p => !p.contenu_valide);
+    const ic = b.querySelector(".o-ico");                // icône du ruban (lot 5b) conservée
     b.textContent = n ? `Valider la sélection (${n})` : "Valider la sélection";
+    if (ic) b.prepend(ic);
     const tout = $("#x-coche-tout");
     if (tout) { tout.checked = !!visibles.length && n === visibles.length; tout.indeterminate = n > 0 && n < visibles.length; }
   };
@@ -2039,6 +3264,22 @@ function brancherVueES(visibles, actif) {
     if ($("#es-invalider")) $("#es-invalider").onclick = () => { if (avantPerteES()) validerES([actif], "contenu", false); };
   }
   majBouton();
+  rubanES();
+}
+/* Lot 5b : ruban de la Liste des E/S. Les commandes de l'ancien bandeau « es-ruban » (dont les onglets Général,
+   Affichage, Outils n'agissaient pas) passent au ruban de l'écran ; le bandeau disparaît. Boutons déplacés,
+   jamais recréés. */
+function rubanES() {
+  const id = x => document.getElementById(x);
+  // Les libellés se mettent à jour (compte de la sélection) : on garde le texte posé par l'écran, sans libellé court.
+  [id("x-val"), id("x-val-tout")].forEach(b => b && b.querySelector(".v31-icon")?.remove());
+  Coque.ruban([
+    {nom: "Validation du contenu", commandes: [{el: id("x-val"), icone: "valider", grand: true},
+      {el: id("x-val-tout"), icone: "valider", libelle: "Valider les affichées"}]},
+    {nom: "Affichage", commandes: [{el: id("es-detail-toggle"), icone: "groupe"}]},
+    {nom: "Échanges", commandes: [{el: id("es-export"), icone: "importer", libelle: "Exporter la liste (Excel)"}]},
+    {nom: "Étape suivante", commandes: [{el: id("es-materiel"), icone: "carte", grand: true, libelle: "Matériel"}]}]);
+  document.querySelector("#vue .es-ruban")?.remove();
 }
 
 // Recherche, filtres, sélection et validation : communs aux tableaux des étapes 2 et 3.
@@ -2048,7 +3289,8 @@ function brancherListeES(pts, niveau) {
   document.querySelectorAll("#vue [data-f]").forEach(x => x.onclick = () => { E.filtreES = E.filtreES === x.dataset.f ? "" : x.dataset.f; vue(); });
   if ($("#x-tout")) $("#x-tout").onclick = () => { E.filtreES = ""; vue(); };
   const coches = () => [...document.querySelectorAll(".x-coche:checked")].map(x => d.points[+x.value]);
-  const maj = () => { const n = coches().length; $("#x-val").disabled = !n; $("#x-val").textContent = n ? `Valider la sélection (${n})` : "Valider la sélection"; };
+  const maj = () => { const n = coches().length, b = $("#x-val"), ic = b.querySelector(".o-ico"); b.disabled = !n;
+    b.textContent = n ? `Valider la sélection (${n})` : "Valider la sélection"; if (ic) b.prepend(ic); };
   document.querySelectorAll(".x-coche").forEach(x => { x.onchange = maj; x.onclick = ev => ev.stopPropagation(); });
   if ($("#x-coche-tout")) $("#x-coche-tout").onchange = ev => { document.querySelectorAll(".x-coche").forEach(x => x.checked = ev.target.checked); maj(); };
   $("#x-val").onclick = () => validerES(coches(), niveau);
@@ -2066,21 +3308,146 @@ function racksAffiches(m, modules) {
   modules.forEach(x => { const [r, pos] = x.module.split(".").map(Number); parRack[r] = Math.max(parRack[r] ?? 0, pos + 1); });
   return Object.entries(parRack).map(([r, n]) => ({numero: +r, reference: "rack déclaré", positions: n, cpu: []}));
 }
-function vueRack(rack, modules) {
+function vueRack(rack, modules, plusieurs) {
   const cases = [];
+  let spans = 0;                                    // emplacements supplémentaires occupés par un module double
+  const occ = Object.fromEntries((rack.occupation || []).map(o => [o.position, o]));
+  const poste = String(rack.reference).startsWith("S4W");
+  // Rack retenu (M340 / M580) : chaque emplacement s'équipe d'un clic, selon ce qu'il peut recevoir.
+  const equipable = !poste && Array.isArray(rack.occupation);
+  const cle = pos => `${rack.numero}.${pos}`;
+  const actif = (role, pos, titre) => equipable ? ` role="button" tabindex="0" data-emplacement="${esc(cle(pos))}" data-role="${role}" title="${esc(titre)}"` : ` title="${esc(titre)}"`;
+  if (!poste && rack.alimentation !== undefined) {
+    const choisie = rack.alimentation && !/à choisir/.test(rack.alimentation);
+    cases.push(`<div class="emplacement alim ${choisie ? "" : "a-choisir"}"${actif("alimentation", "CPS", "Emplacement CPS réservé à l'alimentation — cliquer pour la choisir")}><span class="pos">CPS</span><b>${esc(choisie ? rack.alimentation : "Alimentation")}</b><small>${choisie ? "alimentation" : "à choisir"}</small></div>`);
+  }
   for (let pos = 0; pos < rack.positions; pos++) {
     const carte = modules.find(x => x.module === `${rack.numero}.${pos}`);
-    if (rack.cpu.includes(pos)) { cases.push(`<div class="emplacement cpu" title="Position ${pos} : processeur"><span class="pos">${pos}</span><b>CPU</b></div>`); continue; }
-    if (!carte) { cases.push(`<div class="emplacement libre" title="Position ${pos} libre"><span class="pos">${pos}</span><span>libre</span></div>`); continue; }
+    const o = occ[pos];
+    // Retour du 16/11 (15 h 08) : un processeur M580 (BME P58…) est UN module double largeur qui occupe les
+    // emplacements 00 et 01 (règle du catalogue). Il s'affiche comme un seul module sur deux emplacements.
+    const largeur = o && o.role === "processeur" && occ[pos + 1] && occ[pos + 1].role === "processeur"
+      && occ[pos + 1].reference === o.reference ? 2 : 1;
+    if (o) { const role = o.role === "processeur" ? "Processeur" : "Communication";
+      const libPos = largeur === 2 ? `${pos}–${pos + 1}` : pos;
+      if (largeur === 2) { spans += 1; pos += 1; }
+      cases.push(`<div class="emplacement ${o.role === "processeur" ? "cpu" : "com"} ${/à choisir/.test(o.reference) ? "a-choisir" : ""}"${largeur === 2 ? ' style="grid-column:span 2" data-double="1"' : ""}${actif(o.role, pos - largeur + 1, `Emplacement${largeur === 2 ? "s " + libPos + " : processeur double largeur (un seul module)" : " " + pos + " réservé : " + role.toLowerCase()} — cliquer pour ${o.role === "processeur" ? "choisir le processeur" : "changer ou retirer le module"}`)}><span class="pos">${libPos}</span><b>${esc(/à choisir/.test(o.reference) ? role : o.reference)}</b><small>${/à choisir/.test(o.reference) ? "à choisir" : role.toLowerCase()}</small></div>`); continue; }
+    if (rack.cpu.includes(pos)) {
+      if (rack.cpu.includes(pos + 1) && !occ[pos + 1] && !modules.some(x => x.module === `${rack.numero}.${pos + 1}`)) {
+        cases.push(`<div class="emplacement cpu" style="grid-column:span 2" data-double="1" title="Positions ${pos}–${pos + 1} : processeur double largeur"><span class="pos">${pos}–${pos + 1}</span><b>CPU</b></div>`);
+        spans += 1; pos += 1; continue;
+      }
+      cases.push(`<div class="emplacement cpu" title="Position ${pos} : processeur"><span class="pos">${pos}</span><b>CPU</b></div>`); continue; }
+    if (!carte) { cases.push(`<div class="emplacement libre"${actif("libre", pos, `Emplacement ${pos} libre — cliquer pour y installer une carte d'E/S ou un module de communication`)}><span class="pos">${pos}</span><span>libre</span>${equipable ? '<small class="ajout">+ installer</small>' : ""}</div>`); continue; }
     const taux = carte.voies ? carte.occupees / carte.voies : 0;
     const etat = carte.occupees > carte.voies ? "err" : carte.sous_seuil && carte.occupees ? "al" : "ok";
     cases.push(`<button type="button" class="emplacement carte n-${carte.nature}" data-carte="${esc(carte.module)}" title="${esc(carte.reference)} — ${carte.occupees}/${carte.voies} voies occupées, réserve ${carte.reserve}">
       <span class="pos">${pos}</span><span class="tag p-${carte.nature}">${carte.nature}</span><b>${esc(carte.reference || "carte " + carte.nature)}</b>
       <span class="jauge ${etat}"><i style="width:${Math.min(100, Math.round(taux * 100))}%"></i></span><small>${carte.occupees}/${carte.voies} voies · réserve ${Math.round(carte.taux * 100)} %</small></button>`);
   }
-  const poste = String(rack.reference).startsWith("S4W");
-  return `<div class="rack"><div class="rack-tete"><b>${poste ? "Poste de télégestion" : "Rack " + rack.numero}</b><span>${esc(rack.reference)} · ${poste ? `voies intégrées + ${Math.max(0, modules.filter(x => x.reference.startsWith("Module")).length)} module(s) d'extension` : `${rack.positions} positions${rack.numero === 0 ? " · rack local" : " · extension"}`}</span></div>
-    <div class="rack-corps" style="grid-template-columns:repeat(${rack.positions},minmax(96px,1fr))">${cases.join("")}</div></div>`;
+  if (!poste && plusieurs) cases.push(`<div class="emplacement ext" title="Emplacement XBE : module d'extension de rack"><span class="pos">XBE</span><b>BMX XBE 1000</b><small>extension</small></div>`);
+  return `<div class="rack ${poste ? "v31-platform-sofrel" : ""}"><div class="rack-tete"><b>${poste ? "Poste de télégestion" : "Rack " + rack.numero}</b><span>${esc(rack.reference)} · ${poste ? `voies intégrées + ${Math.max(0, modules.filter(x => x.reference.startsWith("Module")).length)} module(s) d'extension` : `${rack.positions} positions${rack.numero === 0 ? " · rack local" : " · extension"}`}</span></div>
+    <div class="rack-corps" style="grid-template-columns:repeat(${cases.length + spans},minmax(96px,1fr))">${cases.join("")}</div></div>`;
+}
+// Composition de l'automate (M340 / M580) : alimentation, processeur, communication, carte par nature.
+function blocComposition(m) {
+  if (!["M340", "M580"].includes(m.plateforme)) return "";
+  const c = m.config || {}, cartes = c.cartes || {};
+  const opt = (liste, val, vide) => `<option value="">${vide}</option>` + liste.map(x => `<option value="${esc(x.reference)}" ${x.reference === val ? "selected" : ""}>${esc(x.reference)} — ${esc(x.description || ((x.entree || "") + (x.puissance_w ? ", " + x.puissance_w + " W" : "") + (x.redondante ? ", redondante" : "")))}</option>`).join("");
+  const parNature = n => m.cartes_catalogue.filter(x => x.nature === n);
+  const nat = {ET: "Entrées TOR", ST: "Sorties TOR", EA: "Entrées analogiques", SA: "Sorties analogiques"};
+  return `<div class="bloc"><div class="bloc-tete"><h2>Choix par défaut du calcul automatique</h2><span class="aide">utilisés par « Recalculer le matériel » ; pour un emplacement précis, cliquez-le dans le rack. Ce qui n'est pas choisi reste « à choisir », jamais deviné.</span></div>
+    <div class="grille-compo">
+      <label>Alimentation (emplacement CPS)<select data-cfg="alimentation">${opt(m.alimentations || [], c.alimentation, "— à choisir —")}</select></label>
+      <label>Processeur<select data-cfg="processeur">${opt(m.processeurs || [], c.processeur, "— d'après la fiche ouvrage —")}</select></label>
+      <fieldset><legend>Modules de communication</legend>${(m.communications || []).length ? m.communications.map(x => `<label class="case"><input type="checkbox" data-cfg-com value="${esc(x.reference)}" ${(c.communication || []).includes(x.reference) ? "checked" : ""}> <span class="mono">${esc(x.reference)}</span> <small>${esc(x.description)}</small></label>`).join("") : '<small>Aucun module décrit pour cette gamme.</small>'}</fieldset>
+      ${["ET", "ST", "EA", "SA"].map(n => `<label>${nat[n]}<select data-cfg-carte="${n}"><option value="">Selon la densité choisie</option>${parNature(n).map(x => `<option value="${esc(x.reference)}" ${cartes[n] === x.reference ? "selected" : ""}>${esc(x.reference)} — ${esc(x.description)}</option>`).join("")}</select></label>`).join("")}
+    </div>
+    <details class="catalogue-cartes"><summary>Catalogue des cartes (${m.cartes_catalogue.length} + ${(m.cartes_speciales || []).length} spéciales)</summary>
+      <table><thead><tr><th>Référence</th><th>Nature</th><th>Voies</th><th>Signal</th><th>Raccordement</th></tr></thead><tbody>
+      ${m.cartes_catalogue.map(x => `<tr><td class="mono">${esc(x.reference)}</td><td>${esc(x.nature)}</td><td>${x.voies}</td><td>${esc(x.signal || x.description)}</td><td>${esc(x.raccordement || "")}${/à confirmer/.test(x.source || "") ? ' <span class="badge b-al">à confirmer</span>' : ""}</td></tr>`).join("")}
+      ${(m.cartes_speciales || []).map(x => `<tr><td class="mono">${esc(x.reference)}</td><td>mixte / comptage</td><td>—</td><td>${esc(x.description)}</td><td>${esc(x.raccordement || "")}</td></tr>`).join("")}</tbody></table>
+      <p class="aide-bloc">${esc(m.remarque_speciales || "")}</p></details></div>`;
+}
+function blocNomenclature(m) {
+  if (!(m.nomenclature || []).length) return "";
+  return `<div class="bloc"><div class="bloc-tete"><h2>Nomenclature de commande</h2><span class="aide">matériel retenu · références à confirmer à la commande</span><div class="droite"><button id="m-nomenclature">Exporter (Excel)</button></div></div>
+    <table data-o-tableau><thead><tr><th>Référence</th><th>Désignation</th><th class="num">Quantité</th><th>Rôle</th></tr></thead><tbody>
+    ${m.nomenclature.map(x => `<tr><td class="mono">${esc(x.reference)}</td><td>${esc(x.designation)}</td><td class="num">${x.quantite}</td><td>${esc(x.role)}</td></tr>`).join("")}</tbody></table></div>`;
+}
+// Fenêtre d'un emplacement du rack : ce que l'emplacement peut recevoir (réservé ou libre), rien d'autre.
+function modaleEmplacement(cle, role) {
+  const m = E.mat, d = E.es, [rack, pos] = cle.split(".");
+  const opt = (liste, val) => liste.map(x => `<option value="${esc(x.reference)}" ${x.reference === val ? "selected" : ""}>${esc(x.reference)} — ${esc(x.description || ((x.entree || "") + (x.puissance_w ? ", " + x.puissance_w + " W" : "") + (x.redondante ? ", redondante" : "")))}</option>`).join("");
+  const r = (m.racks || []).find(x => String(x.numero) === rack) || {};
+  const occ = (r.occupation || []).find(o => String(o.position) === pos);
+  const parNature = n => m.cartes_catalogue.filter(x => x.nature === n);
+  const NAT = {ET: "Entrées TOR", ST: "Sorties TOR", EA: "Entrées analogiques", SA: "Sorties analogiques"};
+  let titre, corps, action;
+  if (role === "alimentation") {
+    titre = `Rack ${rack} — emplacement CPS (alimentation)`;
+    corps = `<p class="aide-bloc">Emplacement réservé à l'alimentation. Le choix s'applique à l'emplacement CPS de chaque rack.</p>
+      <label for="e-ref">Alimentation</label><select id="e-ref"><option value="">— à choisir —</option>${opt(m.alimentations || [], (m.config || {}).alimentation)}</select>`;
+    action = async ref => api("/api/materiel/action", {action: "config", alimentation: ref});
+  } else if (role === "processeur") {
+    titre = `Rack ${rack} — emplacement ${pos} (processeur)`;
+    corps = `<p class="aide-bloc">Emplacement réservé au processeur (00, et 01 pour un M580).</p>
+      <label for="e-ref">Processeur</label><select id="e-ref"><option value="">— d'après la fiche ouvrage —</option>${opt(m.processeurs || [], (m.config || {}).processeur)}</select>`;
+    action = async ref => api("/api/materiel/action", {action: "config", processeur: ref});
+  } else if (role === "communication") {
+    titre = `Rack ${rack} — emplacement ${pos} (communication)`;
+    corps = `<p>Module installé : <b class="mono">${esc(occ ? occ.reference : "")}</b></p>
+      <label for="e-ref">Remplacer par</label><select id="e-ref">${opt(m.communications || [], occ && occ.reference)}</select>
+      <p class="aide-bloc">« Libérer l'emplacement » retire le module ; l'emplacement redevient libre.</p>`;
+    action = async ref => {
+      if (!occ || ref === occ.reference) return;
+      await api("/api/materiel/action", {action: "retirer_communication", rack, position: pos});
+      try { return await api("/api/materiel/action", {action: "installer_communication", rack, position: pos, reference: ref}); }
+      catch (err) { await api("/api/materiel/action", {action: "installer_communication", rack, position: pos, reference: occ.reference}); throw err; }
+    };
+  } else {
+    titre = `Rack ${rack} — emplacement ${pos} libre`;
+    corps = `<div class="choix-emplacement" role="radiogroup" aria-label="Type de module">
+        <label><input type="radio" name="e-type" value="carte" checked> Carte d'E/S</label>
+        ${(m.communications || []).length ? `<label><input type="radio" name="e-type" value="com"> Module de communication</label>` : ""}</div>
+      <div id="e-carte"><label for="e-ref">Carte</label><select id="e-ref">${["ET", "ST", "EA", "SA"].map(n => parNature(n).length ? `<optgroup label="${NAT[n]}">${parNature(n).map(x => `<option value="${esc(x.reference)}" data-nature="${x.nature}" data-voies="${x.voies}">${esc(x.reference)} — ${esc(x.signal || x.description)} · ${x.voies} voies</option>`).join("")}</optgroup>` : "").join("")}</select></div>
+      <div id="e-com" hidden><label for="e-com-ref">Module</label><select id="e-com-ref">${opt(m.communications || [], "")}</select></div>
+      <p class="aide-bloc">Les emplacements CPS (alimentation), du processeur et des modules de communication sont réservés : une carte ne peut pas y être posée.</p>`;
+    action = async () => {
+      const type = document.querySelector('input[name="e-type"]:checked')?.value;
+      if (type === "com") return api("/api/materiel/action", {action: "installer_communication", rack, position: pos, reference: $("#e-com-ref").value});
+      const o = $("#e-ref").selectedOptions[0];
+      return api("/api/modules", {action: "ajouter", rack, position: pos, nature: o.dataset.nature, voies: o.dataset.voies, reference: o.value});
+    };
+  }
+  const mod = ouvrirModale(`<div class="boite-tete"><h2>${esc(titre)}</h2><p>Toute modification remet le matériel « à valider ».</p></div>
+    <div class="boite-corps"><div class="champs-emplacement">${corps}</div><div class="erreur-form" id="m-err" role="alert"></div></div>
+    <div class="boite-pied">${role === "communication" ? '<button class="danger" id="e-liberer">Libérer l\'emplacement</button>' : ""}<span class="gauche"></span><button data-fermer>Annuler</button><button class="prim" id="e-ok">${role === "libre" ? "Installer" : "Appliquer"}</button></div>`, true);
+  mod.querySelectorAll('input[name="e-type"]').forEach(x => x.onchange = () => { const com = x.value === "com" && x.checked; mod.querySelector("#e-carte").hidden = com; mod.querySelector("#e-com").hidden = !com; });
+  const fin = async msg => { fermerModale(); toast(msg); E.es = await api("/api/es"); rechargerMateriel(); };
+  mod.querySelector("#e-ok").onclick = async () => { try { await action(mod.querySelector("#e-ref")?.value || ""); fin("Emplacement " + cle + " mis à jour : matériel à valider."); } catch (err) { mod.querySelector("#m-err").textContent = err.message; } };
+  if (mod.querySelector("#e-liberer")) mod.querySelector("#e-liberer").onclick = async () => {
+    try { await api("/api/materiel/action", {action: "retirer_communication", rack, position: pos}); fin("Emplacement " + cle + " libéré."); }
+    catch (err) { mod.querySelector("#m-err").textContent = err.message; } };
+}
+function liaisonsComposition() {
+  document.querySelectorAll("[data-emplacement]").forEach(x => {
+    const ouvrir = () => modaleEmplacement(x.dataset.emplacement, x.dataset.role);
+    // Poste de travail : un clic sélectionne (ou installe l'élément choisi dans le catalogue), le double-clic ou
+    // Entrée ouvre la fenêtre de l'emplacement.
+    const poste = !!document.querySelector("#pt-inspecteur");
+    x.onclick = () => poste ? cliquerEmplacement(x) : ouvrir();
+    x.ondblclick = () => { if (poste) ouvrir(); };
+    x.onkeydown = ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); ouvrir(); } };
+  });
+  const envoyer = corps => agir(api("/api/materiel/action", {action: "config", ...corps}), "Choix enregistré : recalculez le matériel pour l'appliquer.").then(rechargerMateriel);
+  document.querySelectorAll("[data-cfg]").forEach(x => x.onchange = () => envoyer({[x.dataset.cfg]: x.value}));
+  document.querySelectorAll("[data-cfg-com]").forEach(x => x.onchange = () => envoyer({communication: [...document.querySelectorAll("[data-cfg-com]:checked")].map(y => y.value)}));
+  document.querySelectorAll("[data-cfg-carte]").forEach(x => x.onchange = () => {
+    const cartes = {}; document.querySelectorAll("[data-cfg-carte]").forEach(y => { if (y.value) cartes[y.dataset.cfgCarte] = y.value; });
+    envoyer({cartes});
+  });
+  if ($("#m-nomenclature")) $("#m-nomenclature").onclick = () => telecharger("nomenclature");
 }
 // Îlot Advantys STB : composition dans l'ordre du logiciel Advantys (emplacement / nœud) et image d'E/S.
 function blocIlotsSTB(prop) {
@@ -2112,6 +3479,212 @@ function liaisonsRepartition() {
   document.querySelectorAll("[data-rp-refuser]").forEach(b => b.onclick = () => act({action: "refuser_groupe_secours", membres: JSON.parse(b.dataset.rpRefuser)}, "Proposition écartée."));
   document.querySelectorAll("[data-rp-retirer]").forEach(b => b.onclick = () => act({action: "retirer_groupe_secours", membres: JSON.parse(b.dataset.rpRetirer)}, "Groupe retiré."));
 }
+/* Poste de travail matériel (16/11, 12 h) — comme les logiciels d'ingénierie (TIA Portal, Control Expert) :
+   éditeur au centre (rack), catalogue à droite, inspecteur en bas (propriétés, voies, contrôles) de ce qui est
+   sélectionné. On installe un élément du catalogue par clic puis clic sur un emplacement compatible, ou par
+   glisser-déposer. Les commandes passent par les mêmes appels que la fenêtre de l'emplacement. */
+const CAT_TYPES = {alim: "Alimentations", cpu: "Processeurs", com: "Communication", ET: "Entrées TOR", ST: "Sorties TOR", EA: "Entrées analogiques", SA: "Sorties analogiques"};
+function elementsCatalogue(m) {
+  const desc = x => x.description || [x.entree, x.puissance_w ? x.puissance_w + " W" : ""].filter(Boolean).join(", ");
+  const g = [["alim", m.alimentations || []], ["cpu", m.processeurs || []], ["com", m.communications || []]]
+    .map(([t, l]) => [t, l.map(x => ({type: t, reference: x.reference, description: desc(x)}))]);
+  ["ET", "ST", "EA", "SA"].forEach(n => g.push([n, (m.cartes_catalogue || []).filter(x => x.nature === n)
+    .map(x => ({type: "carte", nature: n, voies: x.voies, reference: x.reference, description: desc(x) || `${x.voies} voies`}))]));
+  return g.filter(([, l]) => l.length);
+}
+const ROLE_CIBLE = {alim: ["alimentation"], cpu: ["processeur"], com: ["libre", "communication"], carte: ["libre"]};
+function compatible(el, item) { return !!item && !!el.dataset.emplacement && (ROLE_CIBLE[item.type] || []).includes(el.dataset.role); }
+async function installerDepuisCatalogue(el, item) {
+  const [rack, position] = el.dataset.emplacement.split(".");
+  try {
+    if (item.type === "alim") await api("/api/materiel/action", {action: "config", alimentation: item.reference});
+    else if (item.type === "cpu") await api("/api/materiel/action", {action: "config", processeur: item.reference});
+    else if (item.type === "com") {
+      const occ = el.dataset.role === "communication" ? el.querySelector("b")?.textContent : "";
+      if (occ) await api("/api/materiel/action", {action: "retirer_communication", rack, position});
+      try { await api("/api/materiel/action", {action: "installer_communication", rack, position, reference: item.reference}); }
+      catch (err) { if (occ) await api("/api/materiel/action", {action: "installer_communication", rack, position, reference: occ}); throw err; }
+    } else await api("/api/modules", {action: "ajouter", rack, position, nature: item.nature, voies: item.voies, reference: item.reference});
+    E.catArme = null; E.selMat = el.dataset.emplacement;
+    toast(`${item.reference} installé en ${el.dataset.emplacement} : matériel à valider.`);
+    E.es = await api("/api/es"); rechargerMateriel();
+  } catch (err) { toast(err.message, true); }
+}
+function cliquerEmplacement(el) {
+  if (E.catArme && compatible(el, E.catArme)) return installerDepuisCatalogue(el, E.catArme);
+  if (E.catArme) toast(`${E.catArme.reference} ne se pose pas sur cet emplacement (${el.dataset.role}).`, true);
+  E.selMat = el.dataset.emplacement || el.dataset.carte; majSelectionMateriel();
+}
+function majCibles() {
+  document.querySelectorAll(".rack .emplacement").forEach(x => x.classList.toggle("cible", compatible(x, E.catArme)));
+  document.querySelectorAll("#pt-catalogue .cat-item").forEach(b => b.setAttribute("aria-pressed", String(!!E.catArme && b.dataset.ref === E.catArme.reference && b.dataset.type === E.catArme.type)));
+  const aide = $("#pt-cat-aide");
+  if (aide) aide.textContent = E.catArme ? `${E.catArme.reference} → cliquez un emplacement en surbrillance (Échap : annuler).` : "Choisissez un élément puis un emplacement, ou glissez-le sur le rack.";
+}
+function posteMateriel() {
+  const m = E.mat, cat = $("#pt-catalogue"), ins = $("#pt-inspecteur");
+  if (!cat || !ins) return;
+  const equipable = !!document.querySelector(".rack [data-emplacement]");
+  const groupes = elementsCatalogue(m);
+  // Le rack d'abord (comme la vue des appareils) ; plateforme et réserve juste en dessous.
+  const bandeau = document.querySelector("#pt-editeur .bandeau-materiel"), onglets = $("#onglets-mat");
+  if (bandeau && onglets) onglets.before(bandeau);
+  cat.innerHTML = `<div class="pt-tete"><h2>Catalogue</h2><span class="aide">${esc(m.plateforme || "")}</span></div>
+    <label class="pt-recherche"><input type="search" id="pt-cat-q" placeholder="Filtrer : référence, description…" aria-label="Filtrer le catalogue" value="${esc(E.catQ || "")}"></label>
+    <p class="pt-cat-aide" id="pt-cat-aide"></p>
+    <div class="pt-cat-liste">${groupes.length ? groupes.map(([t, l]) => `<details class="cat-groupe" ${E.catFerme && E.catFerme[t] ? "" : "open"} data-groupe="${t}"><summary>${CAT_TYPES[t]} <span class="pt-compte">${l.length}</span></summary>
+      ${l.map(x => `<button type="button" class="cat-item" draggable="${equipable}" data-type="${x.type}" data-ref="${esc(x.reference)}" ${x.nature ? `data-nature="${x.nature}" data-voies="${x.voies}"` : ""} aria-pressed="false" title="${esc(x.reference + " — " + x.description)}">
+        <b class="mono">${esc(x.reference)}</b><small>${esc(x.description)}</small></button>`).join("")}</details>`).join("")
+      : '<div class="vide-bloc">Aucun catalogue matériel pour cette plateforme.</div>'}</div>
+    ${equipable ? "" : '<p class="pt-cat-aide">Catalogue en consultation : ce rack ne s\'équipe pas emplacement par emplacement.</p>'}`;
+  const item = b => ({type: b.dataset.type, reference: b.dataset.ref, nature: b.dataset.nature, voies: b.dataset.voies});
+  const filtrer = () => { const q = (E.catQ || "").toLowerCase();
+    cat.querySelectorAll(".cat-item").forEach(b => b.hidden = !!q && !b.title.toLowerCase().includes(q)); };
+  cat.querySelector("#pt-cat-q").oninput = ev => { E.catQ = ev.target.value; filtrer(); };
+  cat.querySelectorAll(".cat-groupe").forEach(g => g.ontoggle = () => { (E.catFerme ||= {})[g.dataset.groupe] = !g.open; });
+  cat.querySelectorAll(".cat-item").forEach(b => {
+    b.onclick = () => { if (!equipable) return; const it = item(b);
+      E.catArme = E.catArme && E.catArme.reference === it.reference && E.catArme.type === it.type ? null : it; majCibles(); };
+    b.ondragstart = ev => { E.catArme = item(b); ev.dataTransfer.setData("text/plain", b.dataset.ref); ev.dataTransfer.effectAllowed = "copy"; majCibles(); };
+    b.ondragend = () => { document.querySelectorAll(".emplacement.survol").forEach(x => x.classList.remove("survol")); };
+  });
+  document.querySelectorAll(".rack [data-emplacement]").forEach(el => {
+    el.ondragover = ev => { if (compatible(el, E.catArme)) { ev.preventDefault(); el.classList.add("survol"); } };
+    el.ondragleave = () => el.classList.remove("survol");
+    el.ondrop = ev => { ev.preventDefault(); el.classList.remove("survol"); if (compatible(el, E.catArme)) installerDepuisCatalogue(el, E.catArme); };
+  });
+  document.querySelectorAll(".rack [data-carte]").forEach(b => b.onclick = () => { E.selMat = b.dataset.carte; E.ongletInsp = "voies"; majSelectionMateriel(); });
+  if (!document.body.dataset.echapPoste) { document.body.dataset.echapPoste = "1";
+    document.addEventListener("keydown", ev => { if (ev.key === "Escape" && E.catArme && $("#modale").hidden) { E.catArme = null; majCibles(); } }); }
+  filtrer(); majCibles(); majSelectionMateriel();
+}
+function majSelectionMateriel() {
+  const ins = $("#pt-inspecteur"); if (!ins) return;
+  const m = E.mat, d = E.es, cle = E.selMat || "";
+  const el = cle ? document.querySelector(`.rack [data-emplacement="${CSS.escape(cle)}"], .rack [data-carte="${CSS.escape(cle)}"]`) : null;
+  document.querySelectorAll(".rack .emplacement.selection").forEach(x => x.classList.remove("selection"));
+  if (el) el.classList.add("selection");
+  const carte = el && el.dataset.carte ? d.modules.find(x => x.module === el.dataset.carte) : null;
+  const ligne = (k, v) => ({libelle: k, html: v});       // lot 5c : grille de propriétés (Composants.grille)
+  let titre, props, actions = "";
+  if (carte) {
+    titre = `Carte ${esc(carte.module)} — ${esc(carte.reference)}`;
+    const info = (m.cartes_catalogue || []).find(x => x.reference === carte.reference) || {};
+    props = [{titre: "Carte d'E/S", proprietes: [ligne("Emplacement", `<span class="mono">${esc(carte.module)}</span>`), ligne("Référence", `<span class="mono">${esc(carte.reference)}</span>`),
+      ligne("Nature", `<span class="tag p-${carte.nature}">${carte.nature}</span> ${carte.voies} voies`), ...(info.description ? [ligne("Description", esc(info.description))] : [])]},
+      {titre: "Occupation", proprietes: [ligne("Voies occupées", `${carte.occupees} / ${carte.voies}`), ligne("Réserve", `${carte.reserve} voie(s) · ${Math.round(carte.taux * 100)} %${carte.sous_seuil && carte.occupees ? ' <span class="badge b-al">sous le seuil</span>' : ""}`)]}];
+    actions = `<button id="pt-carte">Modifier la carte…</button>`;
+  } else if (el) {
+    const role = el.dataset.role, ref = el.querySelector("b")?.textContent || "";
+    const R = {alimentation: "Alimentation (emplacement CPS)", processeur: "Processeur", communication: "Module de communication", libre: "Emplacement libre"};
+    titre = `Rack ${esc(cle.split(".")[0])} — ${role === "alimentation" ? "CPS" : "emplacement " + esc(cle.split(".")[1])}`;
+    props = [{titre: "Emplacement", proprietes: [ligne("Rôle", R[role] || role), ...(role !== "libre" ? [ligne("Module", `<span class="mono">${esc(ref)}</span>`)] : []),
+      ligne("Peut recevoir", role === "libre" ? "carte d'E/S ou module de communication" : role === "communication" ? "module de communication (remplacement) ou rien" : R[role])]}];
+    actions = `<button class="${role === "libre" ? "prim" : ""}" id="pt-modifier">${role === "libre" ? "Installer…" : "Changer…"}</button>`;
+  } else {
+    titre = "Rack";
+    const racks = racksAffiches(m, d.modules);
+    props = [{titre: "Configuration", proprietes: [ligne("Plateforme", esc(m.plateforme || "")), ligne("Racks", racks.map(r => `<span class="mono">${esc(r.reference)}</span>`).join(", ") || "—"),
+      ligne("Cartes d'E/S", String(d.modules.length)), ligne("Matériel", m.materiel_valide ? '<span class="badge b-ok">validé</span>' : '<span class="badge b-al">à valider</span>')]}];
+  }
+  const v = carte ? voiesCarte(carte.module) : null;
+  let onglet = E.ongletInsp || "props";
+  if (onglet !== "props" && !v) onglet = "props";
+  ins.innerHTML = `<div class="pt-tete"><div class="pt-onglets" role="tablist" aria-label="Inspecteur">
+      <button role="tab" data-pt-onglet="props" aria-selected="${onglet === "props"}">Propriétés</button>
+      ${v ? `<button role="tab" data-pt-onglet="voies" aria-selected="${onglet === "voies"}">Voies et E/S</button>` : ""}
+      </div>
+      <h2 class="pt-titre">${titre}</h2><div class="droite">${actions}</div></div>
+    <div class="pt-corps">
+      <div data-pt-panneau="props" ${onglet === "props" ? "" : "hidden"}><div class="pt-props">${Composants.grille(props)}</div>
+        ${!el ? '<p class="pt-cat-aide">Sélectionnez un emplacement du rack pour voir ses propriétés et, pour une carte, ses voies.</p>' : ""}</div>
+      ${v ? `<div data-pt-panneau="voies" ${onglet === "voies" ? "" : "hidden"}><p class="pt-resume">${v.resume}</p>${v.table}<div class="erreur-form"></div></div>` : ""}
+    </div>`;
+  ins.querySelectorAll("[data-pt-onglet]").forEach(t => t.onclick = () => { E.ongletInsp = t.dataset.ptOnglet;
+    ins.querySelectorAll("[data-pt-onglet]").forEach(x => x.setAttribute("aria-selected", String(x === t)));
+    ins.querySelectorAll("[data-pt-panneau]").forEach(p => p.hidden = p.dataset.ptPanneau !== t.dataset.ptOnglet); });
+  if (v) v.brancher(ins.querySelector('[data-pt-panneau="voies"]'), null);
+  if ($("#pt-carte")) $("#pt-carte").onclick = () => modaleModules(carte.module);
+  if ($("#pt-modifier")) $("#pt-modifier").onclick = () => modaleEmplacement(el.dataset.emplacement, el.dataset.role);
+}
+/* Matériel pas encore calculé (retour du 16/11, 13 h 40 : « trop d'informations, ça fait peur ») : l'écran
+   n'affiche qu'un cadre de démarrage — besoin, plateforme, alimentation, processeur, un bouton. Rack, catalogue,
+   inspecteur et onglets n'apparaissent qu'une fois le matériel calculé. Les listes de choix sont celles du bloc
+   de composition, déplacées (mêmes éléments, mêmes événements). */
+function demarrageMateriel({m, d, prop, cables}) {
+  const section = document.querySelector("#vue > .contenu.poste-travail"), ed = $("#pt-editeur");
+  if (!section || !ed) return;
+  section.classList.add("etat-vide");
+  const nat = {ET: "entrée(s) TOR", ST: "sortie(s) TOR", EA: "entrée(s) analogique(s)", SA: "sortie(s) analogique(s)"};
+  const parNature = ["ET", "ST", "EA", "SA"].map(n => [n, cables.filter(p => p.point === n).length]).filter(x => x[1]);
+  const possible = !!(prop && prop.applicable) && !m.blocage;
+  const carte = document.createElement("div");
+  carte.className = "demarrage-materiel";
+  carte.innerHTML = `<h1>Configurer le matériel</h1>
+    <p class="dm-intro">${cables.length ? `OGIAS propose les racks et les cartes pour vos <b>${cables.length} E/S câblées</b> : ${parNature.map(([n, k]) => `${k} ${nat[n]}`).join(", ")}.` : "Aucune E/S câblée pour l'instant."}
+      Vous pourrez ensuite tout ajuster sur le rack.</p>
+    ${m.blocage ? `<div class="dm-bloque"><b>Pas encore possible :</b> ${esc(m.blocage)} <button class="lien" data-nav="#/es">Aller à la liste des E/S</button></div>` : ""}
+    <ol class="dm-etapes">
+      <li><span class="dm-num">1</span><div><b>Plateforme</b><span class="dm-valeur mono">${m.automate ? esc(m.plateforme || "—") : "—"}</span>
+        ${m.automate ? `<small>d'après la source d'acquisition « ${esc(m.automate)} »</small>`
+          : `<small class="dm-al">Source d'acquisition non renseignée : choisissez-la dans la fiche de l'ouvrage. OGIAS ne suppose aucune gamme.</small> <button class="lien" id="dm-source">Renseigner la source</button>`}</div></li>
+      <li class="dm-choix" data-dm="alimentation"><span class="dm-num">2</span><div><b>Alimentation</b><small>facultatif : sinon l'emplacement reste « à choisir »</small></div></li>
+      <li class="dm-choix" data-dm="processeur"><span class="dm-num">3</span><div><b>Processeur</b><small>facultatif : sinon d'après la fiche de l'ouvrage</small></div></li>
+      <li class="dm-choix" data-dm="reserve"><span class="dm-num">4</span><div><b>Réserve de voies par carte</b><small>20 % au moins, pour les extensions futures</small></div></li>
+    </ol>
+    <div class="dm-action"><button class="prim grand" id="m-demarrer" ${possible ? "" : "disabled"}>Calculer le matériel</button>
+      <span class="aide">Rien n'est validé tant que vous ne le décidez pas.</span></div>`;
+  ed.prepend(carte);
+  // Listes d'alimentation et de processeur : déplacées depuis le bloc de composition
+  ["alimentation", "processeur"].forEach(k => { const sel = document.querySelector(`[data-cfg="${k}"]`), li = carte.querySelector(`[data-dm="${k}"]`);
+    if (sel && li) li.appendChild(sel); else if (li) li.remove(); });
+  const res = document.querySelector("#m-reserve")?.closest(".champ-unite"), liRes = carte.querySelector('[data-dm="reserve"]');
+  if (res && liRes) liRes.appendChild(res); else if (liRes) liRes.remove();
+  // Répartition (équipements secourus, emplacements libres) : elle oriente le calcul, donc elle reste ici,
+  // repliée sauf si des groupes de secours attendent une confirmation.
+  const rp = document.querySelector("#rp-sep")?.closest(".bloc");
+  if (rp) { const det = document.createElement("details"); det.className = "dm-options";
+    const aConfirmer = (m.repartition?.groupes_secours_proposes || []).length;
+    det.open = aConfirmer > 0 || E.dmOptionsOuvert === true;
+    det.innerHTML = `<summary>Répartition des E/S${aConfirmer ? ` <span class="badge b-al">${aConfirmer} groupe(s) de secours à confirmer</span>` : " (équipements secourus, emplacements libres)"}</summary>`;
+    det.appendChild(rp); carte.querySelector(".dm-action").before(det);
+    det.ontoggle = () => { E.dmOptionsOuvert = det.open; }; }
+  carte.querySelector("#m-demarrer").onclick = () => $("#m-calc").click();
+  const src = carte.querySelector("#dm-source");
+  if (src) src.onclick = () => { E.ficheOuverte = true; E.sel = {nature: "ouvrage", valeur: ""}; naviguer("#/inventaire"); };
+}
+/* Retour du 16/11 (11 h 03) : écran matériel trop chargé. Le rack reste en tête ; une seule « prochaine
+   action » ; la suite est rangée en trois onglets (voies des E/S, réglages du calcul, nomenclature et
+   livrables). Tous les blocs, identifiants et commandes restent dans la page (attribut hidden). */
+const ONGLETS_MAT = [{id: "voies", titre: "Voies des E/S"}, {id: "reglages", titre: "Réglages du calcul"}, {id: "livrables", titre: "Nomenclature et livrables"}];
+function parcoursMateriel({m, rien, sansVoie, aValider, prop}) {
+  const ong = id => () => montrer(id, true);
+  let a;
+  if (m.blocage) a = null;
+  else if (rien) a = {cls: "info", texte: prop && prop.applicable ? "Choisissez si besoin l'alimentation et le processeur (onglet « Réglages du calcul »), puis calculez le matériel." : "Le matériel sera proposé une fois la liste des E/S validée.",
+                      bouton: prop && prop.applicable ? ["Calculer le matériel", () => $("#m-calc").click()] : null};
+  else if (sansVoie) a = {cls: "al", texte: `${sansVoie} E/S câblée(s) sans voie : implantez-les sur les cartes du rack.`, bouton: ["Implanter les E/S", () => $("#m-impl").click()], disabled: () => $("#m-impl").disabled};
+  else if (aValider) a = {cls: "al", texte: `${aValider} voie(s) proposée(s) : vérifiez-les puis validez-les.`, bouton: ["Voir les voies", ong("voies")]};
+  else if (!m.materiel_valide) a = {cls: "info", texte: "Toutes les E/S ont une voie validée : validez le matériel.", bouton: ["Valider le matériel", () => $("#m-valider").click()]};
+  else a = {cls: "ok", texte: "Matériel validé : nomenclature et livrables disponibles.", bouton: ["Nomenclature et livrables", ong("livrables")]};
+  const zone = $("#pa-materiel");
+  if (a) { zone.className = `prochaine-action pa-${a.cls}`; zone.setAttribute("role", "status");
+    zone.innerHTML = `<span class="pa-etiq">${a.cls === "ok" ? "Terminé" : "Prochaine action"}</span><span class="pa-texte">${esc(a.texte)}</span>${a.bouton ? `<button class="${a.cls === "ok" ? "" : "prim"}" id="pa-bouton">${esc(a.bouton[0])}</button>` : ""}`;
+    if (a.bouton) { $("#pa-bouton").onclick = a.bouton[1]; if (a.disabled && a.disabled()) $("#pa-bouton").disabled = true; } }
+  else zone.remove();
+  function montrer(id, choisi) {
+    if (choisi) E.ongletMat = id;
+    document.querySelectorAll("[data-panneau-mat]").forEach(p => p.hidden = p.dataset.panneauMat !== id);
+    document.querySelectorAll("[data-onglet-mat]").forEach(t => { t.classList.toggle("on", t.dataset.ongletMat === id); t.setAttribute("aria-selected", String(t.dataset.ongletMat === id)); });
+  }
+  document.querySelectorAll("[data-onglet-mat]").forEach(t => t.onclick = ong(t.dataset.ongletMat));
+  $("#onglets-mat").onkeydown = ev => {
+    if (!["ArrowLeft", "ArrowRight"].includes(ev.key)) return;
+    const i = ONGLETS_MAT.findIndex(o => o.id === document.querySelector("[data-onglet-mat].on").dataset.ongletMat);
+    const j = ONGLETS_MAT[(i + (ev.key === "ArrowRight" ? 1 : ONGLETS_MAT.length - 1)) % ONGLETS_MAT.length].id;
+    montrer(j, true); document.querySelector(`[data-onglet-mat="${j}"]`).focus(); };
+  montrer(ONGLETS_MAT.some(o => o.id === E.ongletMat) ? E.ongletMat : (rien ? "reglages" : "voies"), false);
+}
 function vueMateriel() {
   const d = E.es, m = E.mat, b = d.bilan, prop = m.proposition, f = E.filtreES, q = (E.rechercheES || "").toLowerCase();
   const cables = d.points.filter(p => p.raccordement !== "Communication");
@@ -2123,40 +3696,49 @@ function vueMateriel() {
   const besoins = prop ? prop.besoins.filter(x => x.es) : [];
   const s4w = m.plateforme === "S4W";
   const differe = prop && prop.applicable && d.modules.length && JSON.stringify(prop.modules.map(x => `${x.rack}.${x.position}:${x.reference}`)) !== JSON.stringify(d.modules.map(x => `${x.module}:${x.reference}`));
-  $("#vue").innerHTML = `<section class="contenu">
-   <div class="titre"><div><h1>Matériel automate</h1><div class="sous">Racks et cartes calculés à partir des E/S validées, avec ${Math.round(m.reserve_min * 100)} % de réserve par carte. OGIAS propose, vous ajustez et validez.</div></div>
+  Coque.ruban(null);                      // lot 5c : retire les anciennes commandes avant de redessiner l'écran
+  $("#vue").innerHTML = `<section class="contenu poste-travail" data-poste="materiel"><div class="poste-grille"><div class="poste-editeur" id="pt-editeur">
+   <div class="titre"><div><h1>Matériel automate</h1><div class="sous">Proposé à partir des E/S validées, ${Math.round(m.reserve_min * 100)} % de réserve par carte · cliquez un emplacement du rack pour l'équiper</div></div>
      <div class="actions">${m.materiel_valide ? '<span class="badge b-ok grand">Matériel validé</span><button id="m-deval">Repasser à valider</button>'
        : `<button class="${rien ? "" : "prim"}" id="m-valider" ${rien ? "disabled" : ""}>Valider le matériel</button>`}</div></div>
-   <div class="bandeau-materiel">
+   <div class="bandeau-materiel ${s4w ? "v31-platform-sofrel" : ""}">
      <div><span class="etiq">Plateforme</span><b>${esc(m.plateforme)}</b><small>${m.automate ? "fiche ouvrage : " + esc(m.automate) : "automate non renseigné"}</small></div>
      ${s4w ? `<div><span class="etiq">Poste de télégestion</span><b>${esc(prop && prop.racks[0] ? prop.racks[0].reference : "—")}</b><small>boîtier proposé</small></div>`
-       : `<div><span class="etiq">Densité des cartes</span><select id="m-profil" aria-label="Densité des cartes">${m.profils.map(x => `<option value="${esc(x.code)}" ${x.code === m.profil ? "selected" : ""}>${esc(x.libelle)}</option>`).join("")}</select></div>`}
-     <div><span class="etiq">Réserve minimale</span><b>${Math.round(m.reserve_min * 100)} %</b><small>par carte</small></div>
+       : `<div><span class="etiq" title="Modèle de carte retenu par le calcul automatique pour chaque nature d'E/S. Une carte se change ensuite en cliquant son emplacement dans le rack.">Cartes du calcul automatique</span><select id="m-profil" aria-label="Cartes utilisées par le calcul automatique">${m.profils.map(x => `<option value="${esc(x.code)}" ${x.code === m.profil ? "selected" : ""}>${esc(x.libelle)}</option>`).join("")}</select></div>`}
+     <div class="reglage-reserve"><label class="etiq" for="m-reserve">Réserve par carte</label><span class="champ-unite"><input type="number" id="m-reserve" min="20" max="90" step="5" value="${Math.round(m.reserve_min * 100)}" aria-describedby="m-reserve-aide"><span>%</span></span><small id="m-reserve-aide">20 % au moins</small></div>
      <div class="droite"><button class="${rien ? "prim" : ""}" id="m-calc" ${prop && prop.applicable ? "" : "disabled"} title="${s4w ? "Proposition indicative pour un poste S4W" : ""}">${rien ? "Calculer le matériel" : "Recalculer le matériel"}</button><button id="m-cartes">Ajuster les cartes…</button></div>
    </div>
-   ${m.remarque_plateforme ? `<div class="avert">${esc(m.remarque_plateforme)}</div>` : ""}
+   <div id="pa-materiel"></div>
+   ${m.remarque_plateforme ? `<div class="avert">${esc(m.remarque_plateforme)}${m.plateforme === "Non décrite" && m.automate ? ` <button type="button" class="lien" id="m-declarer-gamme">Déclarer la gamme de cet automate…</button>` : ""}</div>` : ""}
    ${m.blocage ? `<div class="alerte-bloc"><b>Calcul impossible :</b> ${esc(m.blocage)} <button class="lien" data-nav="#/es">Aller à la liste des E/S</button></div>` : ""}
    ${differe ? `<div class="avert">Les cartes retenues diffèrent de la proposition actuelle (densité ou E/S modifiées). « Recalculer le matériel » applique la proposition.</div>` : ""}
+   <div class="bloc"><div class="bloc-tete"><h2>Racks</h2><span class="aide">${rien ? "aucune carte retenue" : `${d.modules.length} carte(s) · cliquez un emplacement pour l'inspecter, double-cliquez pour le changer`}</span>
+     <span class="legende"><i class="l-ok"></i>réserve respectée <i class="l-al"></i>sous la réserve <i class="l-err"></i>dépassement</span></div>
+     ${s4w && prop && prop.racks.length ? `<p class="aide-bloc"><b>Proposition indicative S4W</b> — voies intégrées au boîtier puis modules d'extension (la CPU est intégrée au boîtier).</p>`
+         + prop.racks.map(r => vueRack(r, prop.modules.map(x => ({module: `${x.rack}.${x.position}`, nature: x.nature, voies: x.voies, reference: x.reference, occupees: 0, reserve: x.voies, taux: 1, sous_seuil: false})))).join("") : ""}
+     ${rien ? (s4w ? "" : `<div class="vide-bloc">${prop ? "Cliquez sur « Calculer le matériel » : OGIAS propose les racks et les cartes à partir des E/S validées." : "Le matériel sera proposé une fois la liste des E/S validée."}</div>`)
+       : (s4w ? `<p class="aide-bloc"><b>Matériel actuellement retenu</b></p>` : "") + racksAffiches(m, d.modules).map((r, _i, t) => vueRack(r, d.modules, t.length > 1)).join("")}
+     <p class="note">${esc(m.statut_catalogue)}</p></div>
+   ${m.plateforme === "STB" && prop ? blocIlotsSTB(prop) : ""}
+   <div class="onglets-ecran" role="tablist" aria-label="Suite du matériel" id="onglets-mat">
+     ${ONGLETS_MAT.map((o, i) => `<button role="tab" id="onglet-mat-${o.id}" data-onglet-mat="${o.id}" aria-controls="panneau-mat-${o.id}"><span class="oe-num">${i + 1}</span><span class="oe-titre">${o.titre}</span><span class="oe-etat ${o.id === "voies" && (cables.length > places.length || aValider.length) ? "al" : ""}">${
+       o.id === "voies" ? (cables.length > places.length ? `${cables.length - places.length} E/S sans voie` : aValider.length ? `${aValider.length} voie(s) à valider` : `${places.length} E/S placée(s)`)
+       : o.id === "reglages" ? "alimentation, processeur, réserve" : `${(m.nomenclature || []).length} référence(s)`}</span></button>`).join("")}</div>
+   <div class="panneau-mat" id="panneau-mat-reglages" data-panneau-mat="reglages" role="tabpanel" aria-labelledby="onglet-mat-reglages">
+   ${blocComposition(m)}
    <div class="grille-2">
      <div class="bloc"><div class="bloc-tete"><h2>Besoin calculé</h2><span class="aide">${cables.length} E/S câblées · ${b.communication || 0} par communication</span></div>
-     ${besoins.length ? `<table><thead><tr><th>Nature</th><th class="num">E/S</th><th>Carte proposée</th><th class="num">Voies utiles</th><th class="num">Cartes</th><th class="num">Réserve</th></tr></thead><tbody>
+     ${besoins.length ? `<table data-o-tableau><thead><tr><th>Nature</th><th class="num">E/S</th><th>Carte proposée</th><th class="num">Voies utiles</th><th class="num">Cartes</th><th class="num">Réserve</th></tr></thead><tbody>
        ${besoins.map(x => `<tr><td><span class="tag p-${x.nature}">${x.nature}</span> ${nature(x.nature)}</td><td class="num">${x.es}</td><td>${esc(x.reference)}</td><td class="num">${x.utilisables} / ${x.voies}</td><td class="num"><b>${x.cartes}</b></td><td class="num">${Math.round(x.reserve * 100)} %</td></tr>`).join("")}</tbody></table>`
        : `<div class="vide-bloc">${m.blocage ? "Validez la liste des E/S pour obtenir le besoin." : "Aucune E/S câblée."}</div>`}
      ${prop && prop.remarques.length ? `<ul class="remarques">${prop.remarques.map(r => `<li>${esc(r)}</li>`).join("")}</ul>` : ""}</div>
+     ${m.repartition ? blocRepartition(m.repartition) : ""}
+   </div></div>
+   <div class="panneau-mat" id="panneau-mat-voies" data-panneau-mat="voies" role="tabpanel" aria-labelledby="onglet-mat-voies">
      <div class="bloc"><div class="bloc-tete"><h2>Implantation</h2><span class="aide">voies et adresses des E/S câblées</span></div>
        <div class="chiffres c3">${cables.length > places.length ? pastille("PLACER", cables.length - places.length, "E/S sans voie", "al", f) : ""}${aValider.length ? pastille("VOIE", aValider.length, "voies à valider", "al", f) : ""}${places.length > aValider.length ? pastille("", places.length - aValider.length, "voies validées", "ok", "x") : ""}</div>
        <div class="boutons-ligne"><button class="prim" id="m-impl" ${rien || !(cables.length - places.length) ? "disabled" : ""}>Implanter les E/S sans voie</button><button id="m-lib" ${aValider.length ? "" : "disabled"}>Libérer les voies non validées</button></div>
        <p class="aide-bloc">Les E/S d'un même équipement restent groupées sur une carte. Une E/S validée sur sa voie ne bouge plus.</p></div>
-   </div>
-   ${m.plateforme === "STB" && prop ? blocIlotsSTB(prop) : ""}
-   ${m.repartition ? blocRepartition(m.repartition) : ""}
-   <div class="bloc"><div class="bloc-tete"><h2>Racks</h2><span class="aide">${rien ? "aucune carte retenue" : `${d.modules.length} carte(s) · cliquez une carte pour la modifier`}</span>
-     <span class="legende"><i class="l-ok"></i>réserve respectée <i class="l-al"></i>sous la réserve <i class="l-err"></i>dépassement</span></div>
-     ${s4w && prop && prop.racks.length ? `<p class="aide-bloc"><b>Proposition indicative S4W</b> — voies intégrées au boîtier puis modules d'extension (la CPU est intégrée au boîtier).</p>`
-         + prop.racks.map(r => vueRack(r, prop.modules.map(x => ({module: `${x.rack}.${x.position}`, nature: x.nature, voies: x.voies, reference: x.reference, occupees: 0, reserve: x.voies, taux: 1, sous_seuil: false})))).join("") : ""}
-     ${rien ? (s4w ? "" : `<div class="vide-bloc">${prop ? "Cliquez sur « Calculer le matériel » : OGIAS propose les racks et les cartes à partir du besoin ci-dessus." : "Le matériel sera proposé une fois la liste des E/S validée."}</div>`)
-       : (s4w ? `<p class="aide-bloc"><b>Matériel actuellement retenu</b></p>` : "") + racksAffiches(m, d.modules).map(r => vueRack(r, d.modules)).join("")}
-     <p class="note">${esc(m.statut_catalogue)}</p></div>
    <div class="bloc"><div class="bloc-tete"><h2>Liste des E/S par voie</h2><input id="x-q" type="search" placeholder="Rechercher une E/S, une adresse…" value="${esc(E.rechercheES || "")}" style="width:260px" aria-label="Rechercher">
      ${f ? '<button class="lien" id="x-tout">Tout afficher</button>' : ""}<span class="aide">${pts.length} / ${cables.length}</span>
      <div class="droite"><button id="x-val-tout" ${pts.some(p => p.adresse && !p.validee) ? "" : "disabled"}>Valider les voies affichées</button><button class="prim" id="x-val" disabled>Valider la sélection</button></div></div>
@@ -2165,17 +3747,29 @@ function vueMateriel() {
      <td><span class="tag p-${p.point}">${p.point}</span></td><td class="mono">${esc(p.nom)}</td><td class="mono">${p.module ? esc(p.module + "." + String(p.voie).padStart(2, "0")) : '<span class="vide">—</span>'}</td>
      <td class="mono">${p.adresse ? esc(p.adresse) : '<span class="vide">à placer</span>'}</td>
      <td>${!p.adresse ? '<span class="badge b-n">sans voie</span>' : p.validee ? '<span class="badge b-ok">validée</span>' : '<span class="badge b-al">proposée</span>'}</td></tr>`; }).join("")}</tbody></table></div>` : '<div class="vide-bloc">Aucune E/S câblée.</div>'}
-   </div>
-   <div class="bloc livrables"><div class="bloc-tete"><h2>Livrables matériel</h2><span class="aide">XSY et TXT au format des exports Control Expert V14.1 fournis : import dans Control Expert à essayer</span></div>
-     <div class="boutons-ligne"><button id="x-xl" ${cables.length ? "" : "disabled"}>Liste d'E/S (Excel)</button><button id="x-ca" ${rien ? "disabled" : ""}>Cartes d'E/S (Excel)</button>
-     <button id="x-xsy" ${places.length ? "" : "disabled"} title="Format de l'export des variables de Control Expert V14.1, voies de réserve comprises">E/S pour Control Expert (XSY)</button><button id="x-txt" ${places.length ? "" : "disabled"}>E/S pour Control Expert (TXT)</button>
-     <span class="aide">${places.length < cables.length ? `${cables.length - places.length} E/S n'ont pas encore de voie : elles figureront sans adresse.` : "Toutes les E/S câblées ont une voie."}</span></div></div>
+   </div></div>
+   <div class="panneau-mat" id="panneau-mat-livrables" data-panneau-mat="livrables" role="tabpanel" aria-labelledby="onglet-mat-livrables">
+   ${blocNomenclature(m) || '<div class="bloc"><div class="vide-bloc">La nomenclature de commande apparaît une fois le matériel calculé.</div></div>'}
+   <div class="bloc livrables"><div class="bloc-tete"><h2>Livrables matériel</h2></div>
+     <div class="boutons-ligne"><button id="m-livrables" type="button" data-nav="#/recette">Ouvrir les livrables (Recette)</button>
+     <span class="aide">Les fichiers (E/S par carte, liste d'E/S, cartes d'E/S, exports Control Expert) se téléchargent dans Recette et livrables, après les contrôles de la livraison.${places.length < cables.length ? ` ${cables.length - places.length} E/S n'ont pas encore de voie : elles y figureront sans adresse.` : ""}</span></div></div></div>
+  </div>
+  <aside class="poste-catalogue" id="pt-catalogue" aria-label="Catalogue matériel"></aside>
+  <div class="poste-inspecteur" id="pt-inspecteur" aria-label="Inspecteur"></div></div>
   </section>`;
+  parcoursMateriel({m, rien, sansVoie: cables.length - places.length, aValider: aValider.length, prop});
   brancherListeES(pts, "voie");
   const appliquer = () => agir(api("/api/materiel/action", {action: "appliquer"})).then(() => { toast("Matériel proposé appliqué : à vérifier puis valider."); rechargerMateriel(); });
   $("#m-calc").onclick = () => rien ? appliquer() : confirmer("Recalculer le matériel ?", "Les cartes actuelles sont remplacées par la proposition. C'est refusé si des E/S occupent déjà des voies : libérez-les d'abord.", "Recalculer", appliquer);
+  // Retour du 16/11 (15 h 08) : réserve réglable ici, 20 % au moins (le moteur refuse en dessous).
+  if ($("#m-reserve")) $("#m-reserve").onchange = ev => {
+    const v = Number(ev.target.value);
+    if (!(v >= 20 && v <= 90)) { toast("Réserve par carte : entre 20 et 90 %.", true); ev.target.value = Math.round(m.reserve_min * 100); return; }
+    agir(api("/api/modules", {action: "reserve", taux: v / 100}), `Réserve de ${v} % par carte : ${rien ? "elle sera appliquée au calcul" : "recalculez ou réimplantez pour l'appliquer"}.`).then(rechargerMateriel, rechargerMateriel);
+  };
   if ($("#m-profil")) $("#m-profil").onchange = ev => agir(api("/api/materiel/action", {action: "profil", profil: ev.target.value})).then(rechargerMateriel);
   $("#m-cartes").onclick = () => modaleModules();
+  if ($("#m-declarer-gamme")) $("#m-declarer-gamme").onclick = () => { E.gammePourAutomate = m.automate; location.hash = "#/standards"; };
   document.querySelectorAll("[data-carte]").forEach(x => x.onclick = () => modaleVoiesCarte(x.dataset.carte));
   if ($("#m-valider")) $("#m-valider").onclick = () => agir(api("/api/materiel/action", {action: "valider"})).then(() => { toast("Matériel validé."); rechargerMateriel(); });
   if ($("#m-deval")) $("#m-deval").onclick = () => agir(api("/api/materiel/action", {action: "valider", valide: false})).then(rechargerMateriel);
@@ -2188,10 +3782,30 @@ function vueMateriel() {
   $("#m-lib").onclick = () => confirmer("Libérer les voies non validées ?", "Les E/S dont la voie n'est pas validée perdent leur carte, leur voie et leur adresse. Les voies validées restent.", "Libérer",
     async () => { const r = await agir(api("/api/modules", {action: "liberer"})); toast(`${r.liberees} voie(s) libérée(s).`); rechargerMateriel(); });
   liaisonsRepartition();
-  $("#x-xl").onclick = () => telecharger("liste_es");
-  $("#x-ca").onclick = () => telecharger("cartes");
-  $("#x-xsy").onclick = () => telecharger("es_xsy");
-  $("#x-txt").onclick = () => telecharger("es_txt");
+  liaisonsComposition();
+  posteMateriel();
+  if (rien && (["M340", "M580"].includes(m.plateforme) || !m.automate)) demarrageMateriel({m, d, prop, cables});
+  // Retour du 18/11 (16 h 21) : les téléchargements sont dans Recette et livrables, seul endroit où l'on livre.
+  $("#m-livrables").onclick = () => { location.hash = "#/recette"; };
+  rubanMateriel();
+}
+/* Lot 5c : ruban de l'écran Matériel. Les commandes du titre, du bandeau, de l'onglet des voies et de celui des
+   livrables (avant : barre « Autres actions » et boutons dispersés) sont rangées par tâche. Les téléchargements
+   sont dans Recette (retour du 18/11) : le groupe « Livrables » n'y renvoie que. Boutons déplacés,
+   jamais recréés. Matériel pas encore calculé : pas de ruban, seul le cadre de démarrage s'affiche (13 h 40). */
+function rubanMateriel() {
+  if (document.querySelector("#vue .etat-vide")) return Coque.ruban(null);
+  const id = x => document.getElementById(x);
+  Coque.ruban([
+    {nom: "Matériel", commandes: [{el: id("m-calc"), icone: "carte", grand: true},
+      {el: id("m-valider"), icone: "valider", grand: true}, {el: id("m-deval"), icone: "valider", grand: true},
+      {el: id("m-cartes"), icone: "modifier", libelle: "Ajuster les cartes"}]},
+    {nom: "Voies des E/S", commandes: [{el: id("m-impl"), icone: "es", libelle: "Implanter les E/S sans voie"},
+      {el: id("m-lib"), icone: "supprimer", libelle: "Libérer les voies non validées"},
+      {el: id("x-val"), icone: "valider"}, {el: id("x-val-tout"), icone: "valider", libelle: "Valider les voies affichées"}]},
+    {nom: "Livrables", commandes: [{el: id("m-livrables"), icone: "recette", grand: true, libelle: "Livrables"}]}]);
+  document.querySelectorAll("#vue .boutons-ligne, #vue .bloc-tete .droite").forEach(x => {
+    if (!x.querySelector("button")) x.style.display = "none"; });
 }
 /* Import du référentiel depuis Excel : contrôle, aperçu des différences, application avec motif. */
 function modaleImportReferentiel() {
@@ -2230,6 +3844,8 @@ async function telecharger(quoi) {
   const url = URL.createObjectURL(await r.blob());
   const a = document.createElement("a"); a.href = url; a.download = nom; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
+  const bilan = (r.headers.get("X-OGIAS-Bilan") || "").split(";");
+  if (bilan.length === 2) return toast(`Fichier ${nom} téléchargé : ${bilan[0]} pièce(s) produite(s), ${bilan[1]} non produite(s) — motifs dans 00_journal.html.`);
   toast(`Fichier ${nom} téléchargé.`);
 }
 function modaleES(p, niveau = "contenu") {
@@ -2272,6 +3888,17 @@ function placeES(p) {
 function modaleVoiesCarte(cleCarte) {
   const d = E.es, carte = d.modules.find(x => x.module === cleCarte);
   if (!carte) return modaleModules(cleCarte);
+  const v = voiesCarte(cleCarte);
+  const m = ouvrirModale(`<div class="boite-tete"><h2>Carte ${esc(cleCarte)} — ${esc(carte.reference)}</h2>
+      <p>${v.resume}</p></div>
+    <div class="boite-corps">${v.table}<div class="erreur-form" id="m-err"></div></div>
+    <div class="boite-pied"><button id="cv-carte">Modifier la carte…</button><button class="prim" data-fermer>Fermer</button></div>`, true);
+  v.brancher(m, () => modaleVoiesCarte(cleCarte));
+}
+/* Voies d'une carte : tableau et commandes de réaffectation, affichés dans l'inspecteur du poste matériel
+   ou dans une fenêtre (même code, mêmes classes). */
+function voiesCarte(cleCarte) {
+  const d = E.es, carte = d.modules.find(x => x.module === cleCarte);
   const cables = d.points.filter(p => p.raccordement !== "Communication");
   const occupant = {}, occupees = {};
   cables.forEach(p => { const [k, v] = placeES(p); if (k) { (occupees[k] ||= new Set()).add(v); if (k === cleCarte) occupant[v] = p; } });
@@ -2286,16 +3913,16 @@ function modaleVoiesCarte(cleCarte) {
       : `<tr class="libre"><td class="mono">${v}</td><td colspan="3" class="sec">libre</td>
         <td>${sansVoie.length ? `<select class="cv-placer" data-voie="${v}" aria-label="Placer une E/S sur la voie ${v}"><option value="">Placer une E/S sans voie…</option>${sansVoie.map(p => `<option value="${esc(p.ident_eq)}|${esc(p.cle)}">${esc(p.nom)}</option>`).join("")}</select>` : ""}</td></tr>`;
   }).join("");
-  const m = ouvrirModale(`<div class="boite-tete"><h2>Carte ${esc(cleCarte)} — ${esc(carte.reference)}</h2>
-      <p>${carte.voies} voies ${esc(carte.nature)} · ${carte.occupees} occupée(s) · réserve ${carte.reserve} (${Math.round(carte.taux * 100)} %)${carte.sous_seuil && carte.occupees ? " · sous le seuil" : ""}</p></div>
-    <div class="boite-corps"><table class="voies-carte"><thead><tr><th>Voie</th><th>E/S</th><th>Équipement</th><th>État</th><th>Réaffecter</th></tr></thead><tbody>${lignes}</tbody></table>
-    <div class="erreur-form" id="m-err"></div></div>
-    <div class="boite-pied"><button id="cv-carte">Modifier la carte…</button><button class="prim" data-fermer>Fermer</button></div>`, true);
+  const resume = `${carte.voies} voies ${esc(carte.nature)} · ${carte.occupees} occupée(s) · réserve ${carte.reserve} (${Math.round(carte.taux * 100)} %)${carte.sous_seuil && carte.occupees ? " · sous le seuil" : ""}`;
+  const table = `<table class="voies-carte"><thead><tr><th>Voie</th><th>E/S</th><th>Équipement</th><th>État</th><th>Réaffecter</th></tr></thead><tbody>${lignes}</tbody></table>`;
+  return {carte, resume, table, brancher: (m, rouvrir) => brancherVoiesCarte(m, cleCarte, rouvrir)};
+}
+function brancherVoiesCarte(m, cleCarte, rouvrir) {
   const q = x => m.querySelector(x);
   const deplacer = async (ident_eq, cle, cible) => {
     const [module, voie] = cible.split("|");
-    try { await api("/api/es/definir", {ident_eq, cle, module, voie}); E.es = await api("/api/es"); toast(`E/S placée sur ${module} voie ${voie} : à valider.`); modaleVoiesCarte(cleCarte); rechargerMateriel(); }
-    catch (e) { q("#m-err").textContent = e.message; }
+    try { await api("/api/es/definir", {ident_eq, cle, module, voie}); E.es = await api("/api/es"); toast(`E/S placée sur ${module} voie ${voie} : à valider.`); if (rouvrir) rouvrir(); rechargerMateriel(); }
+    catch (e) { const z = q("#m-err") || q(".erreur-form"); if (z) z.textContent = e.message; else toast(e.message, true); }
   };
   m.querySelectorAll(".cv-deplacer").forEach(s => s.onchange = () => {
     if (!s.value) return;
@@ -2307,7 +3934,7 @@ function modaleVoiesCarte(cleCarte) {
     const [ident_eq, cle] = s.value.split("|");
     deplacer(ident_eq, cle, `${cleCarte}|${s.dataset.voie}`);
   });
-  q("#cv-carte").onclick = () => modaleModules(cleCarte);
+  if (q("#cv-carte")) q("#cv-carte").onclick = () => modaleModules(cleCarte);
 }
 function modaleModules(edition) {
   const d = E.es, x0 = edition ? d.modules.find(x => x.module === edition) : null;

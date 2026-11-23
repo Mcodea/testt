@@ -1,5 +1,236 @@
 # Instructions en cours de route
 
+## [nouveau] 22/11/2026 — Fusions et lot 8 (Claude)
+
+Sur demande de l'utilisateur (« fais les fusions »), toute la chaîne `claude/*` (jusqu'à `claude/assistant-modeles`)
+est fusionnée en avance rapide dans `main` et `claude/referentiel-v2` ; `release/1.0` passe par la PR #2 (CI
+complète Windows et portable). Lot 8 fait : modèles de livrables rangés par logiciel cible
+(`validation/modeles_par_logiciel/README.md`). Orientation validée ensuite : **formats d'export appris**
+(OGIAS ouvert à tout constructeur) ; lot 1 fait (liste des E/S physiques, `validation/formats_appris/README.md`),
+suivants : télétransmission par supervision, IHM, XML. Le dernier message de l'utilisateur à la session du 19/11 (pièce
+jointe) n'a pas été lu : limite d'usage atteinte. Le lui redemander.
+
+**Agent actif : libre** (22/11/2026, Claude).
+
+## [nouveau] 16/11/2026 — Refonte industrielle de l'interface (Claude)
+
+Demande de l'utilisateur : refonte ergonomique complète (cahier en 15 points). Branche dédiée
+**`claude/refonte-ui-industrielle`**, partie de `cdb7299` (`codex/ui-validation-20261114`) ; aucune fusion,
+`main` et `release/1.0` intouchés. Bilan, causes et captures avant / après :
+`validation/interface_v1/refonte_16_11/README.md`. Points clés pour la suite :
+- **un seul système graphique** : `industrial-ui.css` (jetons, structure, composants, écrans, un bloc par
+  largeur d'écran). Ne plus ajouter de correctifs en fin de fichier ni de couleur en dur ;
+- l'écran courant est exposé au CSS par `body[data-ecran]` (les anciennes règles `data-view` restent
+  inactives volontairement) ; la barre d'état est remplie par `V31.render` ;
+- l'échec de la CI de `codex/ui-validation-20261114` (détail des variables + 13 px) est corrigé à sa cause ;
+- nouveaux tests `tests_web/test_geometrie_resolutions.py` (4 résolutions) : à garder verts.
+
+**Agent actif : libre** (16/11/2026, Claude) ; dépôt `Mcodea/testt`.
+
+## En cours — diagnostic de la CI du lot Formulaires
+
+Le run **43317537003** (66c1005) a passé Windows/Linux, qualité et portable,
+mais échoué au job navigateur. Les 65 tests locaux restent verts ; la cause
+distante n’est pas encore établie. Les journaux détaillés ne sont pas accessibles
+par les pages publiques sans authentification, l’API étant filtrée ici.
+
+Ajout **tests_web/conftest.py** : en cas d’échec sur GitHub Actions uniquement,
+annotation contenant le test et l’assertion, sans changer résultat, seuil ou
+sélection de test. Vérifié par un échec volontaire hors dépôt : code retour 1
+conservé, une annotation, échappement %/retours à la ligne. Cinq tests ciblés
+et 18 sous-cas passent aussi avec GITHUB_ACTIONS=true. Attendre ce diagnostic,
+puis corriger la cause démontrée et obtenir une CI verte avant la vraie passation.
+Les anciennes mentions de fin de lot ci-dessous précèdent cet échec distant.
+
+## Passation à Claude — contraste des formulaires terminé
+
+**Dernier commit fonctionnel : `efe3b1f`**, base publique `c43f713`.
+Le commit portant cette passation ne change que le suivi. Codex laisse la main.
+
+### Étape exacte de reprise
+
+1. Dans **/workspace/testt**, dépôt **Mcodea/testt**, branche
+   **claude/referentiel-v2** : `git fetch origin && git pull --rebase`.
+   Ne jamais reprendre dans l’ancien clone privé, ne jamais importer son
+   historique, pousser seulement sur la branche commune, sans --force ni fusion.
+2. Relire le diff **c43f713..efe3b1f** et
+   **validation/interface_v1/formulaires_12_11/README.md**. Le seul code
+   produit modifié est **industrial-ui.css : 20 lignes** ; aucun JavaScript,
+   moteur, état, API, structure, événement, identifiant, donnée ou export changé.
+3. Aucun lot UI ni fichier utile non commité laissé en cours. Reprendre le
+   backlog du cahier dans le domaine Claude. Si l’utilisateur demande de
+   poursuivre la refonte, prochain contrôle UI : fenêtres de détail/adoption
+   et paramétrage matériel, avec les mêmes contraintes visuelles ; ne pas
+   engager l’intégration fonctionnelle R3/R8 sous couvert de présentation.
+
+### Ce qui est terminé
+
+- Labels et titre de création lisibles en sombre ; boutons et badge du mode
+  reprennent la palette ; une seule carte, champs compacts, actions accessibles
+  à 1366/1920/2560 px. Les fonctions de création et de validation à la
+  soumission ne changent pas, ni les modes Neuf/Existant.
+- Onglets des listes : contraste texte/fond d’au moins **4,5:1**, conservé
+  dans les quatre listes. Consultations de protocoles et listes sans écriture.
+- Cartes des niveaux d’adressage : contour de sélection de **2 px** visible
+  indépendamment du focus, en remplacement de l’ancienne ombre supprimée ;
+  bordures de statut et comportement de sélection existants préservés.
+- **Cinq nouveaux tests, 18 sous-cas**, après reproduction des échecs.
+  Objets API/listes identiques, projet de test identique à l’octet après
+  consultation ; aucun POST pendant les changements de thème contrôlés.
+- **16 captures avant/après** non retouchées, comparaison HTML, SHA-256,
+  verification.json et performance.json dans **formulaires_12_11/**.
+  Aucune maquette de création fournie : comparaison à l’écran antérieur et
+  à la palette du chat ; les maquettes d’origine restent intactes.
+
+### Qualité et limites
+
+- **730 tests Python**, 18 sous-cas, 0 ignoré, 194,22 s ; couverture moteur
+  **89,283831 %**, exports **100 %**. **65 tests navigateur**, 70 sous-cas,
+  0 ignoré, 110,68 s. Ruff, mypy 49 fichiers, JS, dépendances et audit données
+  conformes (0 détection / 0 échec de lecture).
+- Sept seuils du banc inchangés passent : rendu **75,9 ms**, filtre **97,4 ms**,
+  adressage **0,719 s**. CI complète publique déclenchée au push ; statut du
+  HEAD : https://github.com/Mcodea/testt/actions?query=branch%3Aclaude%2Freferentiel-v2.
+  La base a passé **43286205755** ; ne pas reprendre l’ancienne mention de quota.
+- L’accessibilité WCAG **globale** reste partielle : le contraste prouvé porte
+  sur ces éléments ciblés. Aucun nouvel export déclaré qualifié ; essais
+  réels Control Expert 14.1, TOPKAPI et S4W-Tools toujours en attente.
+  A1 et D5-b restent en décision. Aucune fusion, release ou étiquette créée.
+
+## Historique — reprise du contrôle visuel des formulaires
+
+Demande du chat : continuer. Périmètre prudent : présentation uniquement,
+selon la consigne visuelle du 12/11 ; aucune intégration fonctionnelle R3/R8,
+aucun changement de moteur, état, API, données ou export. Base c43f713 et
+CI publique verte du run 43286205755, aucune nouvelle contribution distante.
+Audit navigateur des formulaires/création et fenêtres secondaires ; corriger
+uniquement les anomalies CSS/layout reproduites, avec tests et captures.
+
+## Passation à Claude — lot UI reporté sur le bon dépôt public
+
+**Dernier commit fonctionnel : `01287a2`**, présentation industrielle adaptée
+aux ajouts matériels récents. **`7466f35`** : corrections U9 reportées. Ce commit
+de passation ne change que la documentation. Codex laisse la main à Claude.
+
+### Étape exacte de reprise
+
+1. Travailler dans **Mcodea/testt**, branche **claude/referentiel-v2** :
+   `git fetch origin && git checkout claude/referentiel-v2 && git pull --rebase`.
+   Workspace de cette session : **/workspace/testt**. L’ancien clone
+   /workspace/OGIAS pointe toujours sur le dépôt privé ; ne pas y reprendre
+   ce développement, ne pas lui ajouter une destination publique.
+2. Relire BINOME.md et les commits depuis **085b1c7**. Le dépôt public garde
+   sa racine **4d084b4** : seuls des fichiers UI/tests ont été reportés, aucun
+   historique privé, aucun ancien commit fusionné. Ne rien refaire des lots finis.
+3. Aucun lot UI Codex en cours ni fichier utile non commité. Poursuivre le
+   backlog moteur/documentation de Claude, puis proposer la prochaine stable
+   après essai utilisateur. Les écrans R3/R8, conflits R4 et rapports d’impact
+   restent à répartir dans un futur lot UI ; pas de changement métier dans la
+   refonte visuelle. Aucune fusion de PR, --force, étiquette ou release d’agent.
+
+### Réalisé et préservé
+
+- U9 : destinations correctes des points bloquants ; table Variables 44 px et
+  cases clavier 24 px ; vues inchangées (« Adresses automate », identifiant
+  exchange conservé), état vide/colonnes au resize, Échap et retour du focus
+  respectant modale/recherche au premier plan.
+- Refonte : industrial-ui.css après v031.css ; gabarit latéral libellé et
+  deux classes S4W seulement dans app.js. Palette sombre #0B0F19 / #0F1623 /
+  #111827, bordures #1E293B ; fontes locales et nombres tabulaires, commandes
+  et tableaux compacts, racks/voies lisibles. La préférence de thème et son
+  stockage ne changent pas : lune = sombre, soleil = variante claire technique.
+- Les ajouts matériels de Claude (CPS, CPU, communication, grilles et catalogue,
+  nomenclature), ses algorithmes, ses exports et leurs correctifs récents sont
+  préservés. Composition présentée en grille ; références « à choisir » jamais
+  devinées. Les fonctions, événements, identifiants, état et appels API restent
+  inchangés dans le lot visuel. Aucun moteur/donnée/serveur/workflow modifié.
+- Les maquettes d’origine restent intactes ; la demande visuelle du chat du
+  12/11 remplace leur palette/formes. Pas de contenu de démonstration ajouté
+  au produit. Les captures montrent uniquement l’API de projets de tests isolés.
+- **validation/interface_v1/industriel_12_11/** : 28 captures régénérées sur
+  la version publique, comparaison.html, mesures, SHA-256, verification.json
+  et performance.json. Nouveau test de composition/rack sans écriture.
+
+### Vérifications de cette version publique
+
+- **730 tests Python**, 18 sous-cas, 0 ignoré (201,87 s), couverture moteur
+  **89,283831 %**, exports **100 %**. **60 tests navigateur**, 52 sous-cas,
+  0 ignoré (97,98 s), dont sept cas de présentation. Projets inchangés à l’octet
+  après les interactions visuelles ; aucun POST lors du thème/détail.
+- Ruff, mypy 49 fichiers, JS et audit strict des dépendances conformes ;
+  audit données **0 détection / 0 échec de lecture**. Sept seuils du banc
+  inchangés passent : rendu **84 ms**, filtre **100,2 ms**, adressage **0,621 s**.
+- **CI publique active et gratuite sur les runners standards**. La base
+  de Claude a passé le run **43276436661**, cinq jobs. Le push de ce lot
+  déclenche la même CI complète Windows/Linux, navigateur/performance, qualité
+  et portable. Suivre son statut réel (ne pas reprendre l’ancienne mention de
+  quota privé) : https://github.com/Mcodea/testt/actions?query=branch%3Aclaude%2Freferentiel-v2.
+- L’API GitHub est filtrée par l’environnement, mais les pages publiques
+  Actions sont lisibles ; aucun blocage de quota en déduire. PR_DESCRIPTION.md
+  est prêt pour une PR utilisateur vers release/1.0 ; aucune fusion automatique.
+- A1 et D5-b restent en décision : pas de 193 E/S ni renommages V1, pas de
+  CT/FDC_/CMD_/CONS_ réintroduit. R1 validé, STB limité aux registres de l’îlot,
+  aucune adresse maître inventée. Preuves réelles Control Expert 14.1, TOPKAPI
+  et S4W-Tools toujours attendues ; pas de qualification ou de livraison 1.0
+  annoncée sur la seule base des tests. Dépassement matériel non fabriqué pour
+  une capture ; sa bordure reprend l’état existant du moteur.
+
+## Historique de cette session — correction du dépôt de destination
+
+La consigne « testt » désigne le nouveau dépôt public, pas une branche de l’ancien.
+La visibilité publique et la CI verte du run 43276436661 ont été vérifiées.
+Report de fichiers UI/tests uniquement depuis le lot déjà testé, sans import
+d’historique privé ; ajouts matériels et exports de Claude préservés.
+BINOME.md et la passation du 12/11 à 16 h 40 font foi.
+
+## [nouveau] 12/11/2026 17 h 30 — Matériel M340 / M580 complet (Claude, demande de l'utilisateur)
+
+L'utilisateur trouvait la partie matériel incomplète. Ajouts (choix utilisateur : alimentation / CPU / racks,
+communication, toutes les cartes d'E/S, rack réaliste + nomenclature ; **pas** de borniers ni câbles) :
+- catalogue `genvar/data/materiel_schneider.json` sourcé : 8 alimentations BMX CPS, processeurs M340 (5) et
+  M580 (4 confirmés), 5 modules de communication M340, extension BMX XBE 1000 / câbles / TSX TLY EX / cache
+  BMX XEM 010, 20 cartes (dont 48 V, CA, relais, triac, température) et 6 cartes mixtes / comptage (listées,
+  non placées automatiquement). 3 cartes de départ sont marquées « à confirmer » (absentes des sources lues) ;
+- choix de l'automaticien `Ouvrage.materiel_config` (`POST /api/materiel/action {action: "config", …}`),
+  contrôlés contre le catalogue ; processeur déduit du champ Automate s'il en porte la référence exacte ;
+  rien n'est deviné (« à choisir ») ; consommations non intégrées (« bilan à vérifier ») ;
+- rack réaliste : emplacement CPS, processeur (00, ou 00-01 en M580), communication, cartes, libres, XBE ;
+- nomenclature de commande (`GET /api/materiel` → `nomenclature`, export `quoi=nomenclature`).
+Tests : `tests/test_materiel_complet.py`, `tests_web/test_retours_essai_12_11.py::TestMaterielComplet`.
+
+## [nouveau] 12/11/2026 16 h 40 — PASSATION À CODEX : tout ce qui a changé pendant ton arrêt (à lire en premier)
+
+**Agent actif : libre** (Claude s'arrête ; Codex reprend). Règles du binôme inchangées (`docs/BINOME.md`).
+
+1. **Nouveau dépôt** : on travaille désormais dans **`Mcodea/testt`** (public, CI gratuite), plus dans
+   `Mcodea/OGIAS` (resté privé : son historique contient d'anciennes données de sites réels, ne jamais le
+   rendre public ni y recopier d'historique). `testt` repart sans historique de l'état du 12/11 (`b5cae68`).
+   Branches : `claude/referentiel-v2` (seule branche où les agents poussent), `release/1.0` (stable, fusion
+   par l'utilisateur uniquement), `main`. Licence : tous droits réservés (`LICENCE.md`). CI complète (Linux,
+   Windows, navigateur, zip portable) verte au départ (run 43247608193).
+2. **Retours d'essai du 12/11** (`docs/RETOURS_ESSAI_12_11.md`) — moteur fait par Claude : M1 gamme non
+   décrite sans repli M340 ; M2 `GET /api/parcours` (points bloquants / à vérifier par étape) ; M3 suppression
+   et récupération d'un brouillon de référentiel ; M4 dossier de recette (`quoi=dossier_recette`) ; M5
+   répartition des E/S (groupes de secours proposés puis confirmés, cartes distinctes, emplacements libres
+   par rack, motif de chaque voie) ; M6 gamme Advantys STB (`genvar/data/materiel_stb.json`, îlot numéroté
+   comme le logiciel Advantys `1/127`, `2/-`, `3/1`…, image d'E/S Modbus 40001 / 45392).
+3. **Interface faite par Claude pendant ton arrêt** (ne pas refaire) : U1 défilement du référentiel ; U2
+   « Supprimer le brouillon » / « Récupérer » ; U3 protocoles en liste déroulante à cases à cocher ; U4
+   panneau « Pour passer à l'étape suivante » + état vide de l'étape 1 ; U5 bouton soleil / lune (icônes
+   ajoutées au sprite Lucide, empreinte du manifeste mise à jour) ; U6 « télétransmission » au lieu de « table
+   d'échange » ; U7 bloc « Répartition des E/S », îlot STB, **vue des voies d'une carte** avec déplacement /
+   placement ; U8 bouton « Dossier de recette ». Tests : `tests_web/test_retours_essai_12_11.py`.
+4. **Ton lot** : **U9 cohérence générale** des écrans (navigation, tableaux, commandes groupées, lisibilité),
+   à partir des prochaines remarques de l'utilisateur ; ne rien changer au moteur (`genvar/`).
+5. **Décisions de l'utilisateur à respecter** : S2 validé (secours sur cartes distinctes, désactivable) ;
+   S1 STB décrit, **périmètre arrêté aux registres Modbus de l'îlot, pas d'adresses %MW** (ne pas lui
+   redemander de captures) ; D5-b et A1 toujours **en attente** : ne pas les appliquer.
+6. **Contrôles avant chaque envoi** : `pytest tests`, `pytest tests_web`, `ruff check --config ruff.toml .`,
+   `node --check` sur les JS, `python outils/verifier_donnees.py` (0 détection, jamais de liste blanche).
+   État au départ : 675 tests moteur et 44 tests navigateur verts.
+7. **Version** : le numéro affiché est encore 0.32 ; la prochaine version stable (0.33) sera proposée à
+   l'utilisateur après son essai, par pull request vers `release/1.0` qu'il fusionne lui-même.
+
 ## [nouveau] 12/11/2026 16 h 30 — Dépôt de travail : `Mcodea/testt` (public)
 
 Le travail continue dans **`Mcodea/testt`**, public pour que la CI soit gratuite. Il repart de l'état du
@@ -90,9 +321,11 @@ du parcours quand le nom du programme automate est vide). À traiter au prochain
 1. `Session._operation_lourde` : si la copie horodatée échoue, l'ouvrage est
    rétabli mais pas le référentiel figé (`self.catalogue`) ; cas d'une
    restauration de copie. Rétablir aussi le référentiel figé, avec test.
-2. Homonymes (P8) : deux ouvrages sans `nom_projet` ne sont jamais comparés ;
+2. [traité le 22/11] Homonymes (P8) : deux ouvrages sans `nom_projet` ne sont jamais comparés ;
    ajouter une alerte (pas une erreur) quand des ouvrages en charte 12 sans
-   projet déclaré produiraient des noms identiques.
+   projet déclaré produiraient des noms identiques. Fait : `genvar/homonymes.py` (alerte « déclarez le nom du
+   programme automate », jamais d'erreur ni de renommage), point « à vérifier » du parcours (message lisible
+   « repère : message », lien vers l'équipement). Tests : `tests/test_homonymes_p8.py`.
 Pour l'utilisateur : `BI_DIS` = disponible et `BI_DSC` = discordance (sa
 décision du 11/11) diffèrent du PDF VANNE_MV (`BI_DIS` = discordance).
 

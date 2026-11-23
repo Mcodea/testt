@@ -25,13 +25,58 @@ from .modele import (Ouvrage, Equipement, SousEnsemble, UniteFonctionnelle, Sign
                      plan_adresses, appliquer_plan, signaux_retenus, registre_modbus)
 from .export_xsy import exporter_xsy
 from .export_xlsx import exporter_table
+from . import charte
 
 RE_ADRESSE_ECHANGE = re.compile(r"^%MW\d+(\.\d{1,2})?$")
 RE_ADRESSE_PHYSIQUE = re.compile(r"^%(I|Q|IW|QW)[\d.]+$")
 
 
+RESERVE_MINIMALE = 0.20      # réserve de voies par carte en dessous de laquelle on ne descend pas
+
+
 class RegleMetier(Exception):
     """Opération refusée par une règle de l'outil ; le message s'affiche tel quel."""
+
+
+def controler_plages(plages) -> dict:
+    """Plan mémoire {famille: (premier mot, dernier mot)} contrôlé : entiers, 0 ≤ début ≤ fin ≤ 65535, toutes les
+    familles présentes, aucun recouvrement. Lève RegleMetier ; sert à l'ouvrage et aux plans d'adressage (19/11)."""
+    from .modele import ORDRE_ZONES
+    if not isinstance(plages, dict):
+        raise RegleMetier("Plan mémoire attendu : une plage par famille.")
+    lues = {}
+    for f in ORDRE_ZONES:
+        if f not in plages:
+            raise RegleMetier(f"Plage {f} manquante.")
+        try:
+            debut, fin = (int(str(x).strip()) for x in plages[f])
+        except (TypeError, ValueError):
+            raise RegleMetier(f"Plage {f} : début et fin en nombres entiers (mots %MW).") from None
+        if not 0 <= debut <= fin <= 65535:
+            raise RegleMetier(f"Plage {f} : %MW{debut} à %MW{fin} invalide (0 ≤ début ≤ fin ≤ 65535).")
+        lues[f] = (debut, fin)
+    ordre = sorted(lues.items(), key=lambda x: x[1][0])
+    for (fa, (_, fin_a)), (fb, (debut_b, _)) in zip(ordre, ordre[1:]):
+        if debut_b <= fin_a:
+            raise RegleMetier(f"Plages {fa} et {fb} en recouvrement (%MW{debut_b} à %MW{fin_a}).")
+    return lues
+
+
+def alertes_plages(lues) -> list[str]:
+    if lues["RTR"][1] - lues["RTR"][0] < lues["TR"][1] - lues["TR"][0]:
+        return ["La plage RTR est plus courte que la plage TR : certains retours ne pourront pas être placés en "
+                "miroir de leur téléréglage."]
+    return []
+
+
+def controler_decalage(decalage) -> int:
+    try:
+        decalage = int(decalage)
+    except (TypeError, ValueError):
+        raise RegleMetier("Décalage : un nombre entier (0 par défaut).") from None
+    if abs(decalage) > 65535:
+        raise RegleMetier("Décalage : entre -65535 et 65535.")
+    return decalage
 
 
 @dataclass
@@ -445,7 +490,7 @@ class Session:
     # ================================================================== sous-ensembles
     def _verifier_se(self, code, ancien=None):
         code = (code or "").strip().upper()
-        if not re.match(r"^[A-Z0-9]{2}$", code):
+        if not charte.conforme(charte.SOUS_ENSEMBLE, code):
             raise RegleMetier("Le code d'un sous-ensemble fait 2 caractères (lettres majuscules ou chiffres).")
         if code != ancien and any(s.code == code for s in self.ouvrage.sous_ensembles):
             raise RegleMetier(f"Le sous-ensemble {code} existe déjà.")
@@ -1058,14 +1103,93 @@ class Session:
         nouveau.ident = uuid.uuid4().hex[:8]
         nouveau.adresses, nouveau.adresses_es = {}, {}
         pris = {int(e.numero) for e in self.ouvrage.equipements
-                if e.type == eq.type and (self.ouvrage.charte_12() or e.sous_ensemble == eq.sous_ensemble)
+                if e.type == eq.type and (not self.ouvrage.se_dans_repere() or e.sous_ensemble == eq.sous_ensemble)
                 and e.numero.isdigit()}
         libres = [n for n in range(1, 100) if n not in pris]
         if not libres:
             raise RegleMetier("Plus aucun numéro libre pour ce type dans l'ouvrage."
-                              if self.ouvrage.charte_12() else "Plus aucun numéro libre pour ce type dans ce sous-ensemble.")
+                              if not self.ouvrage.se_dans_repere() else "Plus aucun numéro libre pour ce type dans ce sous-ensemble.")
         nouveau.numero = f"{libres[0]:02d}"
         return nouveau
+
+    # Champs descriptifs modifiables dans la grille d'ingénierie (19/11, lot 5) : ni repère, ni signaux, ni adresses.
+    CHAMPS_GRILLE = {"libelle": "Désignation", "uf": "UF", "local": "Local"}
+
+    def appliquer_en_masse(self, idents, champ, valeur):
+        """Même valeur pour plusieurs équipements (grille d'ingénierie). Tout ou rien : chaque équipement est
+        contrôlé avant la première écriture. Un attribut sans objet pour un type est sauté (compté à part).
+        Renvoie {"modifies", "inchanges", "sans_objet", "valeur"}. Les équipements ne repassent pas « à valider »."""
+        from . import attributs
+        idents = list(dict.fromkeys(idents or []))
+        eqs = [self.ouvrage.equipement(i) for i in idents]
+        if not eqs or any(e is None for e in eqs):
+            raise RegleMetier("Sélection vide ou équipement introuvable.")
+        valeur = " ".join(str(valeur or "").split())
+        if champ == "libelle":
+            if len(valeur) > 32:
+                raise RegleMetier("Désignation : 32 caractères au plus (libellés de supervision).")
+            cibles, sans_objet = eqs, 0
+        elif champ == "uf":
+            if valeur and not any(u.code == valeur for u in self.ouvrage.unites):
+                raise RegleMetier(f"Unité fonctionnelle {valeur} inconnue.")
+            cibles, sans_objet = eqs, 0
+        elif champ == "local":
+            valeur, cibles, sans_objet = valeur[:40], eqs, 0
+        elif champ.startswith("attr:"):
+            a = attributs.trouver(champ[5:])
+            if a is None or a.get("archive"):
+                raise RegleMetier("Attribut inconnu ou archivé.")
+            try:
+                valeur = attributs.valider(a, valeur)
+            except attributs.AttributRefuse as exc:
+                raise RegleMetier(str(exc)) from None
+            cibles = [e for e in eqs if not a.get("types") or e.type in a["types"]]
+            sans_objet = len(eqs) - len(cibles)
+        else:
+            raise RegleMetier("Colonne non modifiable dans la grille (type, numéro et modèle se changent sur la fiche).")
+        modifies = 0
+        for e in cibles:
+            if champ.startswith("attr:"):
+                code = champ[5:]
+                if (e.attributs or {}).get(code, "") == valeur:
+                    continue
+                if valeur:
+                    e.attributs[code] = valeur
+                else:
+                    e.attributs.pop(code, None)
+            else:
+                if getattr(e, champ) == valeur:
+                    continue
+                setattr(e, champ, valeur)
+            modifies += 1
+        if modifies:
+            # Désignation, UF et local apparaissent dans des documents : l'ouvrage validé repasse en contrôle ;
+            # un attribut est une donnée descriptive (même règle que definir_attribut).
+            self._change(devalider=not champ.startswith("attr:"))
+        return {"modifies": modifies, "inchanges": len(cibles) - modifies, "sans_objet": sans_objet, "valeur": valeur}
+
+    def definir_attribut(self, ident_eq, code, valeur):
+        """Valeur d'un attribut de l'atelier sur un équipement (19/11, lot 4), contrôlée selon sa définition ; vide =
+        retirée. Donnée descriptive : ni adresse ni validation ne changent."""
+        from . import attributs
+        eq = self.ouvrage.equipement(ident_eq)
+        if eq is None:
+            raise RegleMetier("Équipement introuvable.")
+        a = attributs.trouver(code)
+        if a is None or a.get("archive"):
+            raise RegleMetier("Attribut inconnu ou archivé.")
+        if a.get("types") and eq.type not in a["types"]:
+            raise RegleMetier(f"L'attribut « {a['nom']} » ne concerne pas le type {eq.type}.")
+        try:
+            v = attributs.valider(a, valeur)
+        except attributs.AttributRefuse as exc:
+            raise RegleMetier(str(exc)) from None
+        if v:
+            eq.attributs[code] = v
+        else:
+            eq.attributs.pop(code, None)
+        self._change(devalider=False)
+        return v
 
     def supprimer_equipement(self, ident):
         self.ouvrage.equipements = [e for e in self.ouvrage.equipements if e.ident != ident]
@@ -1536,7 +1660,7 @@ class Session:
         """Homonymes avec les autres ouvrages enregistrés du même programme automate (P8 / R9).
         Lecture seule des fichiers ; un fichier illisible ou archivé est ignoré."""
         from . import homonymes, projets
-        if not homonymes.perimetre(self.ouvrage):
+        if not homonymes.perimetre(self.ouvrage) and self.ouvrage.lieu_dans_le_nom:
             return []
         moi = os.path.abspath(self.chemin) if self.chemin else ""
         autres = []
@@ -1797,10 +1921,55 @@ class Session:
             raise RegleMetier("Réservation introuvable.")
         self._change(devalider=False)
 
+    def definir_plages(self, plages):
+        """Plan mémoire de l'ouvrage : {famille: (premier mot, dernier mot)}, convention du maître d'ouvrage (18/11).
+
+        Contrôlé avant toute écriture (rien n'est modifié si une plage est refusée) : entiers, 0 ≤ début ≤ fin ≤ 65535,
+        aucune famille en recouvrement. Les adresses déjà attribuées ou validées ne bougent JAMAIS : une adresse validée
+        hors de sa nouvelle plage est signalée par R-VAR-06 ; les propositions suivent la nouvelle plage au prochain
+        calcul. Renvoie les alertes non bloquantes (miroir TR / RTR impossible si la plage RTR est plus courte)."""
+        lues = controler_plages(plages)
+        self.ouvrage.zones = {f: d for f, (d, _) in lues.items()}
+        self.ouvrage.zones_fin = {f: x for f, (_, x) in lues.items()}
+        self._change(devalider=False)          # aucune validation retirée : les adresses validées restent
+        return alertes_plages(lues)
+
+    def reprendre_reglages(self, source):
+        """Reprendre les outils et conventions d'un autre ouvrage (même maître d'ouvrage, 18/11).
+
+        `source` : un Ouvrage (lu depuis son fichier). Sont repris : supervision, IHM, plan mémoire %MW (contrôlé comme
+        une saisie), décalage Modbus. L'automate et la communication ne sont repris que s'ils sont encore vides ici :
+        changer l'automate d'un ouvrage déjà équipé changerait sa configuration matérielle. Rien d'autre n'est copié
+        (identification, équipements, adresses). Renvoie la liste de ce qui a été repris, et les alertes."""
+        from .modele import ORDRE_ZONES, zone
+        avant = copy.deepcopy(self.ouvrage)
+        repris, alertes = [], []
+        try:
+            alertes = self.definir_plages({f: zone(source, f) for f in ORDRE_ZONES})
+            repris.append("plan mémoire %MW")
+            self.declarer_protocole(True, int(getattr(source, "decalage_modbus", 0) or 0))
+            repris.append(f"décalage Modbus ({int(getattr(source, 'decalage_modbus', 0) or 0)})")
+            for champ, nom in (("supervision", "supervision"), ("ihm", "IHM")):
+                setattr(self.ouvrage, champ, getattr(source, champ, "") or "")
+                repris.append(f"{nom} ({getattr(self.ouvrage, champ) or 'aucune'})")
+            for champ, nom in (("automate", "automate"), ("communication", "communication")):
+                valeur = getattr(source, champ, "") or ""
+                if valeur and not getattr(self.ouvrage, champ):
+                    setattr(self.ouvrage, champ, valeur)
+                    repris.append(f"{nom} ({valeur})")
+                elif valeur and getattr(self.ouvrage, champ) != valeur:
+                    alertes.append(f"{nom.capitalize()} conservé ({getattr(self.ouvrage, champ)}) : celui de l'autre ouvrage "
+                                   f"({valeur}) n'est pas repris sur un ouvrage déjà renseigné.")
+        except Exception:
+            self.ouvrage = avant                       # tout ou rien
+            raise
+        self._change(devalider=False)
+        return {"repris": repris, "alertes": alertes}
+
     def declarer_protocole(self, declare, decalage=0):
-        """Convention « registre = mot %MW + décalage » confirmée par l'automaticien pour cet ouvrage."""
-        if int(decalage) not in (0, 1):
-            raise RegleMetier("Décalage : 0 ou 1.")
+        """Décalage des adresses de télétransmission, saisi par l'utilisateur (entier, 0 par défaut). Il ne touche
+        jamais l'adresse automate. `declare` est conservé pour les fichiers et appels existants (retour du 18/11)."""
+        decalage = controler_decalage(decalage)
         self.ouvrage.protocole_declare, self.ouvrage.decalage_modbus = bool(declare), int(decalage)
         self._change(devalider=False)
 
@@ -1812,14 +1981,10 @@ class Session:
     def exporter_topkapi(self, chemin_zip):
         """Fichier d'import de variables TOPKAPI (.$$t, format relevé sur un projet réel, NON qualifié en 6.3)
         et compte rendu des points exclus. Refusé s'il reste un conflit d'adressage."""
-        import zipfile
         from . import adressage, formats_topkapi as ft
         plan = adressage.calculer(self)
         if plan.conflits:
             raise RegleMetier(f"Export TOPKAPI refusé : {len(plan.conflits)} conflit(s) d'adressage (ex. {plan.conflits[0][1]}).")
-        if not self.ouvrage.protocole_declare:
-            raise RegleMetier("Déclarez d'abord la convention protocolaire (registre = mot %MW + décalage) dans "
-                              "l'écran Adressage : sans elle, aucune adresse TOPKAPI n'est certaine.")
         variables = {(v.ident_eq, v.cle): v for v in self.variables()}
         points, exclus = [], []
         for a in plan.affectations:
@@ -1847,14 +2012,17 @@ class Session:
         rapport = [f"Export TOPKAPI d'OGIAS — {base}", "",
                    "STATUT : NON QUALIFIÉ. Format .$$t « Version 1 » relevé sur un projet TOPKAPI réel (2008-2018) ;",
                    "à importer d'abord dans une COPIE d'application TOPKAPI 6.3, puis à vérifier point par point.", "",
-                   f"Convention déclarée : adresse TOPKAPI = mot %MW + décalage {self.ouvrage.decalage_modbus} ; bit en hexadécimal (mot$bit).",
+                   f"Adresse TOPKAPI = adresse automate (mot %MW) + décalage {self.ouvrage.decalage_modbus} (0 par défaut ; un décalage se règle de préférence dans la supervision) ; bit en hexadécimal (mot$bit).",
                    "Codes de format écrits : 0 = bit (TS, TC), 2 = mot 16 bits (INT).",
                    "Dans le projet de référence, les télécommandes étaient des mots entiers (format 0 sur une adresse de mot) :",
                    "les TC d'OGIAS sont des bits ; vérifiez la commande attendue par le programme automate.", "",
                    f"{len(points)} point(s) exporté(s), {len(exclus)} exclu(s) :"] + [f"- {x}" for x in exclus]
-        with zipfile.ZipFile(chemin_zip, "w", zipfile.ZIP_DEFLATED) as z:
-            z.writestr(f"{base}.$$t", ft.ecrire_octets(points))
-            z.writestr("LISEZ-MOI_export_TOPKAPI.txt", "\r\n".join(rapport).encode("utf-8"))
+        try:                                    # fichier préparé avant l'archive : aucun zip partiel en cas de refus
+            table = ft.ecrire_octets(points)
+        except ft.FormatTopkapiInvalide as exc:
+            raise RegleMetier(f"Export TOPKAPI refusé : {exc}") from exc
+        ft.ecrire_archive(chemin_zip, {f"{base}.$$t": table,
+                                       "LISEZ-MOI_export_TOPKAPI.txt": "\r\n".join(rapport).encode("utf-8")})
         return self._marquer_exporte((len(points), exclus))
 
     def manque_adresses(self):
@@ -2185,12 +2353,94 @@ class Session:
             raise RegleMetier("Rack 0 à 15, position 0 à 31, 1 à 128 voies.")
         if any(m.rack == rack and m.position == position for m in self.ouvrage.modules):
             raise RegleMetier(f"Un module est déjà déclaré en {rack}.{position}.")
+        self._verifier_emplacement_libre(rack, position)
+        # Audit du 16/11 : une référence du catalogue impose sa nature et son nombre de voies.
+        carte = self._carte_catalogue(reference, self.ouvrage.automate)
+        if carte is not None:
+            if carte["nature"] != nature or int(carte["voies"]) != voies:
+                raise RegleMetier(f"{carte['reference']} est une carte {carte['nature']} de {carte['voies']} voies "
+                                  f"(catalogue) : nature {nature} et {voies} voies refusées.")
         m = Module(rack, position, nature, voies, reference.strip(), libelle.strip())
         self.ouvrage.modules.append(m)
         self.ouvrage.modules.sort(key=lambda x: (x.rack, x.position))
         self.ouvrage.materiel_valide = False
         self._change(devalider=False)
         return m.cle
+
+    @staticmethod
+    def _carte_catalogue(reference, automate=""):
+        """Carte du catalogue matériel de la gamme de l'automate correspondant à la référence (espaces ignorés)."""
+        ref = re.sub(r"\s+", "", reference or "").upper()
+        if not ref:
+            return None
+        try:
+            from .materiel import catalogue_pour
+            cartes = catalogue_pour(automate)["_cartes"]
+        except Exception:               # catalogue illisible : la saisie libre reste possible, signalée ailleurs
+            return None
+        return next((c for r, c in cartes.items() if re.sub(r"\s+", "", r).upper() == ref), None)
+
+    def _rack_retenu(self, rack):
+        return next((r for r in self.ouvrage.racks if int(r.get("numero", -1)) == int(rack)), None)
+
+    def _verifier_emplacement_libre(self, rack, position):
+        """Refuse une carte sur un emplacement réservé (processeur, communication) ou hors du rack retenu."""
+        r = self._rack_retenu(rack)
+        if r is None:
+            return
+        if int(position) >= int(r.get("positions", 0)):
+            raise RegleMetier(f"Le rack {rack} ({r.get('reference', '')}) n'a que {r.get('positions')} emplacements "
+                              f"(0 à {int(r.get('positions', 1)) - 1}).")
+        occupe = next((o for o in r.get("occupation", []) if int(o["position"]) == int(position)), None)
+        if occupe or int(position) in [int(x) for x in r.get("cpu", [])]:
+            role = (occupe or {}).get("role", "processeur")
+            raise RegleMetier(f"L'emplacement {rack}.{position} est réservé ({role}).")
+
+    def installer_communication(self, rack, position, reference):
+        """Installe un module de communication du catalogue sur un emplacement libre du rack retenu (M340 / M580).
+        La référence est ajoutée aux choix de l'ouvrage ; le matériel repasse « à valider »."""
+        from . import materiel
+        try:
+            rack, position = int(rack), int(position)
+        except (TypeError, ValueError):
+            raise RegleMetier("Rack et position : nombres entiers.")
+        r = self._rack_retenu(rack)
+        if r is None:
+            raise RegleMetier("Retenez d'abord le matériel (« Recalculer le matériel ») avant d'équiper un emplacement.")
+        plat = materiel.plateforme_materiel(self.ouvrage.automate)[0]
+        coms = {c["reference"] for c in materiel.catalogue_pour(self.ouvrage.automate).get("communication", {}).get(plat, [])}
+        if reference not in coms:
+            raise RegleMetier(f"Module de communication inconnu du catalogue {plat} : {reference}.")
+        if any(m.rack == rack and m.position == position for m in self.ouvrage.modules):
+            raise RegleMetier(f"Une carte d'E/S occupe déjà l'emplacement {rack}.{position}.")
+        self._verifier_emplacement_libre(rack, position)
+        r.setdefault("occupation", []).append({"position": position, "reference": reference, "role": "communication"})
+        r["occupation"].sort(key=lambda o: int(o["position"]))
+        r["cpu"] = sorted({*[int(x) for x in r.get("cpu", [])], position})
+        cfg = dict(self.ouvrage.materiel_config or {})
+        cfg["communication"] = [*cfg.get("communication", []), reference]
+        self.ouvrage.materiel_config = cfg
+        self.ouvrage.materiel_valide = False
+        self._change(devalider=False)
+        return f"{rack}.{position}"
+
+    def retirer_communication(self, rack, position):
+        """Libère l'emplacement d'un module de communication du rack retenu."""
+        r = self._rack_retenu(rack)
+        occ = next((o for o in (r or {}).get("occupation", [])
+                    if int(o["position"]) == int(position) and o.get("role") == "communication"), None)
+        if occ is None:
+            raise RegleMetier(f"Aucun module de communication en {rack}.{position}.")
+        r["occupation"].remove(occ)
+        r["cpu"] = [x for x in r.get("cpu", []) if int(x) != int(position)]
+        cfg = dict(self.ouvrage.materiel_config or {})
+        coms = list(cfg.get("communication", []))
+        if occ["reference"] in coms:
+            coms.remove(occ["reference"])
+        cfg["communication"] = coms
+        self.ouvrage.materiel_config = cfg
+        self.ouvrage.materiel_valide = False
+        self._change(devalider=False)
 
     def modifier_module(self, cle, rack, position, nature, voies, reference="", libelle=""):
         """Modifie une carte déclarée. Les E/S placées suivent un changement de rack ou de position (adresses
@@ -2245,9 +2495,13 @@ class Session:
         self._change(devalider=False)
 
     def definir_reserve(self, taux):
-        taux = float(taux)
-        if not 0 <= taux < 1:
-            raise RegleMetier("Réserve minimale : entre 0 et 99 %.")
+        try:
+            taux = float(taux)
+        except (TypeError, ValueError):
+            raise RegleMetier("Réserve minimale : un pourcentage, 20 % au moins.")
+        # Retour du 16/11 (15 h 08) : la réserve se règle à l'étape Matériel, jamais sous 20 %.
+        if not (RESERVE_MINIMALE <= taux <= 0.9) or taux != taux:
+            raise RegleMetier(f"Réserve minimale : entre {RESERVE_MINIMALE:.0%} et 90 % des voies de chaque carte.")
         self.ouvrage.reserve_min = taux
         self.ouvrage.materiel_valide = False
         self._change(devalider=False)
@@ -2395,6 +2649,83 @@ class Session:
         from .cartes_es import bilan_modules
         return bilan_modules(self.points(), self.ouvrage.modules, self.ouvrage.reserve_min)
 
+    def definir_config_materiel(self, alimentation=None, processeur=None, communication=None, cartes=None):
+        """Choix matériel M340 / M580 de l'automaticien, contrôlé contre le catalogue (référence inconnue refusée).
+        Une valeur None laisse le choix actuel ; une chaîne vide le retire. Le matériel repasse « à valider »."""
+        from . import materiel
+        try:
+            plat = materiel.plateforme_materiel(self.ouvrage.automate)[0]
+            cat = materiel.catalogue_pour(self.ouvrage.automate)
+        except materiel.CatalogueMaterielErreur as exc:
+            raise RegleMetier(str(exc)) from exc
+        if plat not in cat["plateformes"]:
+            raise RegleMetier(f"Choix d'alimentation, de processeur et de communication réservés aux M340 / M580 "
+                              f"(plateforme {plat}).")
+        actuel = dict(self.ouvrage.materiel_config or {})
+        demande = {k: v for k, v in (("alimentation", alimentation), ("processeur", processeur),
+                                     ("communication", communication), ("cartes", cartes)) if v is not None}
+        nouveau = {**actuel, **demande}
+        retenu = materiel.config_materiel(cat, plat, "", nouveau)
+        for cle in ("alimentation", "processeur"):
+            if str(demande.get(cle) or "").strip() and not retenu[cle]:
+                raise RegleMetier(f"Référence inconnue du catalogue {plat} : {demande[cle]}.")
+        if "communication" in demande and len(retenu["communication"]) != len([c for c in demande["communication"] if c]):
+            raise RegleMetier(f"Module de communication inconnu du catalogue {plat}.")
+        if "cartes" in demande and len(retenu["cartes"]) != len([r for r in demande["cartes"].values() if r]):
+            raise RegleMetier("Carte inconnue ou de mauvaise nature.")
+        self.ouvrage.materiel_config = {"alimentation": retenu["alimentation"], "processeur": retenu["processeur"],
+                                        "communication": retenu["communication"], "cartes": retenu["cartes"]}
+        self.ouvrage.materiel_valide = False
+        self._change(devalider=False)
+        # Le rack déjà retenu suit le choix d'alimentation et de processeur (emplacements réservés)
+        for r in self.ouvrage.racks:
+            if "alimentation" in r and ("alimentation" in demande):
+                r["alimentation"] = retenu["alimentation"] or "Alimentation à choisir"
+            if "processeur" in demande:
+                for o in r.get("occupation", []):
+                    if o.get("role") == "processeur":
+                        o["reference"] = retenu["processeur"] or "Processeur à choisir"
+        return self.ouvrage.materiel_config
+
+    def nomenclature_materiel(self):
+        """Nomenclature de commande du matériel retenu (M340 / M580) ; [] sans racks retenus."""
+        from . import materiel
+        if not self.ouvrage.racks or any(r.get("nim") for r in self.ouvrage.racks):
+            return []
+        try:
+            cat = materiel.catalogue_pour(self.ouvrage.automate)
+        except materiel.CatalogueMaterielErreur:
+            cat = None
+        return materiel.nomenclature(self.ouvrage.racks, self.ouvrage.modules, cat=cat)
+
+    def exporter_nomenclature(self, chemin):
+        from .export_xlsx import ecrire_xlsx
+        lignes = self.nomenclature_materiel()
+        if not lignes:
+            raise RegleMetier("Aucun matériel retenu : calculez et appliquez d'abord le matériel.")
+        o = self.ouvrage
+        ecrire_xlsx(chemin, [("Nomenclature", ["Référence", "Désignation", "Quantité", "Rôle"],
+                              [[x["reference"], x["designation"], x["quantite"], x["role"]] for x in lignes],
+                              [26, 60, 10, 26]),
+                             ("Ouvrage", ["Champ", "Valeur"], [["Ouvrage", o.prefixe()], ["Libellé", o.libelle],
+                                                               ["Automate", o.automate], ["Révision", o.revision],
+                                                               ["Matériel validé", "oui" if o.materiel_valide else "non"],
+                                                               ["Remarque", "Bilan de consommation à vérifier ; "
+                                                                "références à confirmer à la commande."]], [24, 60])])
+        return chemin
+
+    def exporter_es_cartes(self, chemin):
+        """Liste des E/S par carte d'après la trame de l'utilisateur (architecture + une feuille par carte)."""
+        from .export_es_cartes import exporter
+        from .materiel import plateforme
+        if not self.ouvrage.modules:
+            raise RegleMetier("Aucune carte d'E/S : calculez ou déclarez d'abord le matériel.")
+        erreurs = self.erreurs_materiel()
+        if erreurs:
+            raise RegleMetier(f"Export refusé : {len(erreurs)} erreur(s) de cartes ou de voies (ex. {erreurs[0]})")
+        plat = plateforme(self.ouvrage.automate)[0] if self.ouvrage.automate else ""
+        return self._marquer_exporte(exporter(chemin, self.ouvrage, self.points(), plat))
+
     def exporter_cartes_es(self, chemin):
         from .export_cartes_es import exporter
         return self._marquer_exporte(exporter(chemin, self.ouvrage, self.points()))
@@ -2411,6 +2742,30 @@ class Session:
         for autre in self.points():
             if (autre.ident_eq, autre.cle) != (p.ident_eq, p.cle) and autre.adresse.upper() == a:
                 raise RegleMetier(f"Adresse {a} déjà utilisée par {autre.nom}.")
+        self._verifier_voie_sur_carte(p.point, a)
+
+    def _verifier_voie_sur_carte(self, point, adresse):
+        """Audit du 16/11 : une voie ne peut viser qu'une carte déclarée, de même nature, dans ses voies.
+        Le contrôle s'applique dès que des cartes sont déclarées (sans cartes, l'adresse reste une saisie libre
+        signalée par la recette)."""
+        if not self.ouvrage.modules:
+            return
+        m = re.fullmatch(r"%(?:IW|QW|I|Q)(\d{1,2})\.(\d{1,2})\.(\d{1,3})", adresse.strip().upper())
+        if not m:
+            return
+        cle, voie = f"{int(m[1])}.{int(m[2])}", int(m[3])
+        mod = next((x for x in self.ouvrage.modules if x.cle == cle), None)
+        if mod is None:
+            raise RegleMetier(f"Aucune carte n'est déclarée en {cle} : placez l'E/S sur une carte du rack.")
+        if mod.nature != point:
+            raise RegleMetier(f"La carte {cle} ({mod.reference or mod.nature}) reçoit des {mod.nature}, pas une {point}.")
+        if voie >= mod.voies:
+            raise RegleMetier(f"La carte {cle} n'a que {mod.voies} voies (0 à {mod.voies - 1}) : voie {voie} impossible.")
+
+    def erreurs_materiel(self):
+        """Erreurs bloquantes de cohérence carte / voie (module absent, nature, voie hors carte, doublon)."""
+        from .cartes_es import controler
+        return [msg for niveau, _rep, msg, _i in controler(self.points(), self.ouvrage.modules) if niveau == "Erreur"]
 
     def ajouter_es(self, ident_eq, point, code, designation, type_logique=None):
         """E/S supplémentaire propre à l'équipement (famille ES). Renvoie sa clé."""
@@ -2508,7 +2863,8 @@ class Session:
             cables = [p for p in pts if p.raccordement != "Communication"]
             return proposer(pts, self.ouvrage.automate, profil if profil is not None else self.ouvrage.profil_cartes,
                             self.ouvrage.reserve_min, min_cartes=self._cartes_minimales_secours(cables),
-                            emplacements_libres=self.ouvrage.emplacements_libres_rack)
+                            emplacements_libres=self.ouvrage.emplacements_libres_rack,
+                            config=self.ouvrage.materiel_config)
         except CatalogueMaterielErreur as exc:
             raise RegleMetier(str(exc)) from exc
 
@@ -2542,6 +2898,9 @@ class Session:
         if valide:
             if not self.ouvrage.modules:
                 raise RegleMetier("Aucune carte : calculez ou déclarez d'abord le matériel.")
+            erreurs = self.erreurs_materiel()
+            if erreurs:
+                raise RegleMetier(f"Matériel incohérent ({len(erreurs)} erreur(s)) : {erreurs[0]} Corrigez avant de valider.")
             _, manquantes, _ = self.apercu_implantation()
             if manquantes:
                 detail = ", ".join(f"{n} {k}" for k, n in manquantes.items())

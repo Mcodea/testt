@@ -1,0 +1,18 @@
+{
+ "_explication": "Commandes du registre du lot 0 retirées VOLONTAIREMENT par la refonte. Chaque retrait indique où la fonction se retrouve : aucune fonction n'est perdue. L'essai tests_web/test_registre_commandes.py refuse toute autre disparition.",
+ "materiel": {
+  "[ptOnglet=controles]": "Lot 5c : l'onglet « Contrôles » de l'inspecteur répétait les points de contrôle de l'étape, désormais dans l'onglet « Contrôles » du panneau de sortie (lot 2b), visible sur tous les écrans.",
+  "#x-es-cartes": "Retour du 18/11 : téléchargement déplacé dans Recette et livrables (seul endroit où l'on livre, après les contrôles) ; Matériel garde le bouton « Livrables » qui y mène.",
+  "#x-xl": "Retour du 18/11 : téléchargement déplacé dans Recette et livrables (seul endroit où l'on livre, après les contrôles) ; Matériel garde le bouton « Livrables » qui y mène.",
+  "#x-ca": "Retour du 18/11 : téléchargement déplacé dans Recette et livrables (seul endroit où l'on livre, après les contrôles) ; Matériel garde le bouton « Livrables » qui y mène.",
+  "#x-xsy": "Retour du 18/11 : téléchargement déplacé dans Recette et livrables (seul endroit où l'on livre, après les contrôles) ; Matériel garde le bouton « Livrables » qui y mène.",
+  "#x-txt": "Retour du 18/11 : téléchargement déplacé dans Recette et livrables (seul endroit où l'on livre, après les contrôles) ; Matériel garde le bouton « Livrables » qui y mène."
+ },
+ "variables": {
+  "#v31-var-more": "Lot 5d : le menu « Autres actions » (···) cachait trois commandes, désormais visibles : « Valider la sélection » au ruban, « Réserver une plage » = « Paramètres d'adressage » au ruban, export de la table des variables dans Recette et livrables.",
+  "[varView]": "Retour du 18/11 (19 h 28) : la télétransmission lit l'adresse automate ; une seule colonne « Adresse télétransmission », donc les vues Toutes / Adresses automate / Télétransmission, qui ne faisaient que masquer l'une des deux colonnes, n'ont plus d'objet."
+ },
+ "recette": {
+  "[i]": "18/11 (cohérence d'abord) : les constats s'affichent d'abord « Par règle » (une ligne par règle) ; les boutons « Aller à l'étape » / « Ouvrir la fiche » de chaque constat restent dans la vue « Détail », ouverte par « Voir les N constats » ou le bouton Détail."
+ }
+}

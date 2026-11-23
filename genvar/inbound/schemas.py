@@ -17,6 +17,10 @@ class InputKind(str, Enum):
     INVENTORY = "inventaire"
     PLC_VARIABLES = "variables_existantes"
     PHYSICAL_IO = "liste_es_existante"
+    # Aller-retour Excel (19/11, inspiré de l'import comparé « par repère ») : la liste exportée par OGIAS, modifiée
+    # puis réimportée. Chaque ligne est comparée à l'ouvrage : nouvelle, modifiée, inchangée, erronée ; les
+    # équipements absents du fichier sont « obsolètes » (gardés par défaut, supprimés seulement sur choix explicite).
+    EQUIPMENT_SYNC = "equipements_aller_retour"
 
 
 class Severity(str, Enum):
@@ -27,6 +31,7 @@ class Severity(str, Enum):
 
 class RowAction(str, Enum):
     CREATE = "a_creer"
+    UPDATE = "a_modifier"
     ALREADY_EXISTS = "deja_present"
     REJECT = "refuse"
     EMPTY = "ligne_vide"
@@ -82,6 +87,8 @@ class ImportPreview:
     rows: tuple[PreviewRow, ...]
     diagnostics: tuple[Diagnostic, ...] = ()
     schema_version: int = 1
+    # Aller-retour : équipements de l'ouvrage absents du fichier ({ident, repere, libelle, protege, motif}).
+    obsoletes: tuple = ()
 
     def to_report(self, *, include_rows: bool = True, offset: int = 0,
                   limit: int | None = None) -> dict[str, object]:
@@ -97,6 +104,7 @@ class ImportPreview:
             "statistiques": self.counts,
             "integrable": self.can_commit,
             "diagnostics_globaux": [diagnostic(d) for d in self.diagnostics],
+            "obsoletes": [dict(o) for o in self.obsoletes],
         }
         if offset < 0 or (limit is not None and limit <= 0):
             raise ValueError("Pagination invalide : décalage positif et limite strictement positive requis.")
@@ -104,7 +112,12 @@ class ImportPreview:
                                            "limite": limit, "affichees": 0}
         result["pagination"] = pagination
         if include_rows:
-            selected = self.rows[offset: offset + limit if limit is not None else None]
+            lignes = self.rows
+            if self.kind == InputKind.EQUIPMENT_SYNC:
+                # Aller-retour : ce qui demande l'attention d'abord (refus, modifications, ajouts), l'inchangé ensuite.
+                ordre = {RowAction.REJECT: 0, RowAction.UPDATE: 1, RowAction.CREATE: 2}
+                lignes = tuple(sorted(self.rows, key=lambda r: ordre.get(r.action, 3)))
+            selected = lignes[offset: offset + limit if limit is not None else None]
             pagination["affichees"] = len(selected)
             result["lignes"] = [
                 {"feuille": row.source.sheet, "ligne": row.source.line,
@@ -130,7 +143,8 @@ class ImportPreview:
 
     @property
     def can_commit(self) -> bool:
-        return not self.errors and any(r.action == RowAction.CREATE for r in self.rows)
+        return not self.errors and (any(r.action in (RowAction.CREATE, RowAction.UPDATE) for r in self.rows)
+                                    or any(not o["protege"] for o in self.obsoletes))
 
     @property
     def counts(self) -> dict[str, int]:
@@ -138,6 +152,7 @@ class ImportPreview:
         for row in self.rows:
             out[row.action.value] += 1
         out["total"] = len(self.rows)
+        out["obsoletes"] = len(self.obsoletes)
         out["erreurs"] = len(self.errors)
         out["avertissements"] = len(self.warnings)
         return out
@@ -151,6 +166,8 @@ class StagedImport:
     created: int
     unchanged: int
     source_digest: str
+    modified: int = 0
+    deleted: int = 0
 
 
 class InboundError(ValueError):

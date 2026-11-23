@@ -4,6 +4,10 @@
 
 ## 1. Une seule branche
 
+Dépôt de travail : **Mcodea/testt**, public. `testt` est le nom du dépôt.
+L’ancien dépôt Mcodea/OGIAS reste privé ; ne jamais transférer son historique.
+La CI complète fonctionne sur le dépôt public.
+
 - Branche commune : **`claude/referentiel-v2`** (PR #1 vers `release/1.0`).
 - Ne **jamais** pousser sur `release/1.0`, `main` ni une autre branche. Aucun agent ne fusionne la PR :
   l'utilisateur la relit et la fusionne.

@@ -241,7 +241,7 @@ def _physique(session, plan, plat, controleur, points, eqs):
 def _simuler_besoins(session, plan, manquantes):
     """Cartes qu'il faudrait AJOUTER (simulation, rien n'est ajouté)."""
     try:
-        cat = materiel.catalogue()
+        cat = materiel.catalogue_pour(session.ouvrage.automate)
         profil = session.ouvrage.profil_cartes if session.ouvrage.profil_cartes in cat["profils"] else cat["profil_defaut"]
         for nature, n in sorted(manquantes.items()):
             ref = cat["profils"][profil][nature]
@@ -317,18 +317,21 @@ def _teletransmission(session, plan, plat, controleur, eqs):
             a.etat, a.motif = "en conflit", "identifiant de point réservé"
         elif plat == "S4W":
             a.etat, a.motif = "non résolue", "SOFREL S4W : identification des points S4W-Tools non connue d'OGIAS."
-        elif not o.protocole_declare:
-            a.etat = "non résolue"
-            a.motif = ("Convention protocolaire non déclarée (registre = mot %MW + décalage) : à confirmer dans "
-                       "les paramètres de communication de l'ouvrage.")
         elif not va.adresse:
             a.etat, a.motif = "non résolue", "variable source sans adresse"
         else:
             reg = registre_modbus(va.adresse, o.decalage_modbus)
+            if reg.startswith("-"):
+                a.etat, a.motif = "en conflit", f"décalage {o.decalage_modbus} : adresse de télétransmission négative ({reg})"
+                plan.conflits.append(("teletransmission", f"{va.nom} : {a.motif}."))   # exports refusés
+                plan.affectations.append(a)
+                continue
             a.proposee = reg
             a.etat = "validée" if va.etat == "validée" else "proposée"
-            a.regle = (f"Registre = mot de {va.adresse} + décalage {o.decalage_modbus} (convention déclarée) ; "
-                       f"source {va.nom}.")
+            # Retours du 18/11 : la télétransmission reprend l'adresse automate ; l'utilisateur peut saisir un
+            # décalage (0 par défaut), appliqué à la télétransmission seulement, jamais à l'adresse automate.
+            a.regle = (f"Adresse automate {va.adresse}" + (f" + décalage {o.decalage_modbus}" if o.decalage_modbus else "")
+                       + f" ; source {va.nom}.")
             if reg in reserves_points:
                 a.etat, a.motif = "en conflit", f"registre {reg} réservé"
         plan.affectations.append(a)

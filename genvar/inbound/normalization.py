@@ -7,10 +7,19 @@ from genvar.rapprochement import normaliser as normaliser_io
 from .schemas import InputKind, InboundError, SourceData, SourceTable
 
 
+# Colonnes de la liste d'équipements exportée par OGIAS pour l'aller-retour (en plus de celles de l'inventaire).
+SYNONYMES_ALLER_RETOUR = {"uf": ("UF", "UNITÉ FONCTIONNELLE", "UNITE FONCTIONNELLE"),
+                          "local": ("LOCAL", "EMPLACEMENT"),
+                          "ident": ("IDENTIFIANT OGIAS", "IDENTIFIANT OGIAS (NE PAS MODIFIER)")}
+
+
 def _aliases(kind: InputKind) -> dict[str, set[str]]:
     if kind == InputKind.INVENTORY:
         return {name: {inventaire._norm(label) for label in labels}
                 for name, labels in inventaire.SYNONYMES.items()}
+    if kind == InputKind.EQUIPMENT_SYNC:
+        return {name: {inventaire._norm(label) for label in labels}
+                for name, labels in {**inventaire.SYNONYMES, **SYNONYMES_ALLER_RETOUR}.items()}
     if kind == InputKind.PLC_VARIABLES:
         return {name: {import_sources._normaliser(label) for label in labels}
                 for name, labels in import_sources.ALIASES.items()}
@@ -21,7 +30,7 @@ def _aliases(kind: InputKind) -> dict[str, set[str]]:
 
 
 def _header_key(kind: InputKind, header: str) -> str:
-    if kind == InputKind.INVENTORY:
+    if kind in (InputKind.INVENTORY, InputKind.EQUIPMENT_SYNC):
         return inventaire._norm(header)
     if kind == InputKind.PLC_VARIABLES:
         return import_sources._normaliser(header)
@@ -38,7 +47,17 @@ def columns(kind: InputKind, headers: tuple[str, ...]) -> dict[str, int]:
                 if name in result:
                     raise InboundError(f"Colonnes ambiguës : le champ « {name} » apparaît plusieurs fois.")
                 result[name] = idx
-    required = {InputKind.INVENTORY: {"repere"},
+    if kind == InputKind.EQUIPMENT_SYNC:
+        # Colonnes d'attributs de l'atelier (19/11, lot 4) : « Nom [CODE] », telles que l'export les écrit.
+        import re
+        for idx, cell in enumerate(headers):
+            m = re.search(r"\[([A-Z][A-Z0-9_]{0,19})\]\s*$", str(cell or ""))
+            if m:
+                cle = "attr:" + m.group(1)
+                if cle in result:
+                    raise InboundError(f"Colonnes ambiguës : l'attribut {m.group(1)} apparaît plusieurs fois.")
+                result[cle] = idx
+    required = {InputKind.INVENTORY: {"repere"}, InputKind.EQUIPMENT_SYNC: {"repere"},
                 InputKind.PLC_VARIABLES: {"nom"},
                 InputKind.PHYSICAL_IO: {"nom", "equipement", "fonction"}}[kind]
     missing = required - set(result)

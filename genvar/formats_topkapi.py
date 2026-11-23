@@ -15,6 +15,7 @@ Dans le projet de référence, l'adresse TOPKAPI est le numéro de mot JBUS de l
 %MW du programme (station JBUS, adresses Modicon désactivées). OGIAS n'applique cette correspondance que
 lorsqu'elle est déclarée dans les paramètres de communication de l'ouvrage ; sinon le point reste « non résolu ».
 """
+import zipfile
 from dataclasses import dataclass, field
 
 ENTETE = ["VAR_MNEMO", "VAR_ADRESS", "VAR_FORMAT", "VAR_TEXT", "VAR_F4", "VAR_F5", "VAR_HISTO", "VAR_ECHANT",
@@ -85,11 +86,23 @@ def ecrire_octets(points):
         for champ in (p.mnemo, p.adresse, p.format, p.texte):
             if "\t" in champ or "\r" in champ or "\n" in champ:
                 raise FormatTopkapiInvalide(f"{p.mnemo} : tabulation ou retour à la ligne interdit.")
-        lignes.append("\t".join([p.mnemo, p.adresse, p.format, p.texte] + list(p.autres)))
-    try:
-        return ("\r\n".join(lignes) + "\r\n").encode(ENCODAGE)
-    except UnicodeEncodeError as exc:
-        raise FormatTopkapiInvalide(f"Caractère non représentable en Windows-1252 : {exc.object[exc.start:exc.end]!r}.") from exc
+        ligne = "\t".join([p.mnemo, p.adresse, p.format, p.texte] + list(p.autres))
+        try:
+            ligne.encode(ENCODAGE)
+        except UnicodeEncodeError as exc:
+            raise FormatTopkapiInvalide(f"{p.mnemo} : caractère non représentable en Windows-1252 : "
+                                        f"{exc.object[exc.start:exc.end]!r}.") from exc
+        lignes.append(ligne)
+    return ("\r\n".join(lignes) + "\r\n").encode(ENCODAGE)
+
+
+def ecrire_archive(chemin_zip, membres):
+    """Archive zip {nom: octets} écrite seulement si tous les membres sont prêts (aucun fichier partiel en cas
+    d'erreur), membres à date fixe pour des octets reproductibles."""
+    from .export_xlsx import ecrire_membre
+    with zipfile.ZipFile(chemin_zip, "w", zipfile.ZIP_DEFLATED) as z:
+        for nom, octets in membres.items():
+            ecrire_membre(z, nom, octets)
 
 
 def controler(points):

@@ -12,7 +12,7 @@ from sorep_web.serveur import Application
 
 def donnees(lieu="MRGS", code="RV", libelle="Ouvrage de recette fictif", **kw):
     d = {"lieu": lieu, "code_ouvrage": code, "numero_ouvrage": "01", "libelle": libelle,
-         "automate": "M580", "localisation": "", "communication": "Modbus TCP",
+         "automate": "Sch - M580", "localisation": "", "communication": "Modbus TCP/IP",
          "revision": "A"}
     d.update(kw)
     return d

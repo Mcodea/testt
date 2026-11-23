@@ -6,8 +6,8 @@ Tool » (Unity Variables Management) :
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <VariablesExchangeFile>
  <fileHeader company="Schneider Automation" product="…" dateTime="date_and_time#…"
-             content="Variable source file" DTDVersion="41"></fileHeader>
- <contentHeader name="Project" version="0.0.000"></contentHeader>
+             content="Fichier source variables" DTDVersion="41"></fileHeader>
+ <contentHeader name="…" version="0.0.001" dateTime="…">[<comment>…</comment>]</contentHeader>
  <dataBlock>
   <variables name="…" typeName="…" topologicalAddress="…"><comment>…</comment></variables>
  </dataBlock>

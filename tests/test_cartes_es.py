@@ -121,11 +121,18 @@ class TestCartesES(unittest.TestCase):
         s.ajouter_module(0, 2, "ET", 16)
         s.ajouter_module(0, 4, "ST", 8)
         p = self.es()["ET_S2E0OD01_DEF"]
-        s.definir_es(p.ident_eq, p.cle, module="0.4", voie=1)        # ET sur un module de sorties
         q = self.es()["ET_S2W3EX02_MA"]
-        s.definir_es(q.ident_eq, q.cle, module="0.2", voie=20)       # voie hors module
         r = self.es()["ET_S2W3EX02_DEF"]
-        s.definir_es(r.ident_eq, r.cle, module="0.7", voie=0)        # module non déclaré
+        # Audit du 16/11 : ces placements incohérents sont refusés à la saisie…
+        for x, module, voie, motif in ((p, "0.4", 1, "reçoit des ST"), (q, "0.2", 20, "n'a que 16 voies"),
+                                       (r, "0.7", 0, "Aucune carte")):
+            with self.assertRaisesRegex(RegleMetier, motif):
+                s.definir_es(x.ident_eq, x.cle, module=module, voie=voie)
+        # … et restent détectés par la recette s'ils viennent d'un ancien fichier.
+        for x, adresse in ((p, "%I0.4.1"), (q, "%I0.2.20"), (r, "%I0.7.0")):
+            s.ouvrage.equipement(x.ident_eq).adresses_es[x.cle] = adresse
+        with self.assertRaisesRegex(RegleMetier, "Matériel incohérent"):
+            s.valider_materiel()
         messages = [a.message for a in s.anomalies() if a.niveau == "Erreur"]
         self.assertTrue(any("nature ST" in m for m in messages))
         self.assertTrue(any("hors du module 0.2" in m for m in messages))

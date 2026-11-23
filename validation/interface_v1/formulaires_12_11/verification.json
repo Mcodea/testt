@@ -1,0 +1,33 @@
+{
+  "date_utc": "2026-11-12",
+  "base": "c43f7138076196c5021ea5d058a53d5a82b53461",
+  "code_produit_modifie": [
+    "sorep_web/static/industrial-ui.css"
+  ],
+  "nouveaux_tests": 5,
+  "sous_cas_nouveaux": 18,
+  "captures_avant_apres": 16,
+  "python": {
+    "reussis": 730,
+    "sous_cas": 18,
+    "ignores": 0,
+    "secondes": 194.22,
+    "couverture": 89.2838308195338,
+    "couverture_exports": 100
+  },
+  "navigateur": {
+    "reussis": 65,
+    "sous_cas": 70,
+    "ignores": 0,
+    "secondes": 110.68
+  },
+  "statique": "ruff, mypy 49 fichiers, JS conformes",
+  "dependances": "audit strict conforme",
+  "donnees": {
+    "detections": 0,
+    "echecs_lecture": 0
+  },
+  "performance": "sept seuils inchanges passes ; performance.json",
+  "ci": "https://github.com/Mcodea/testt/actions?query=branch%3Aclaude%2Freferentiel-v2",
+  "limites": "Preuves locales de contraste des formulaires, pas une certification WCAG globale ; qualification industrielle en attente."
+}

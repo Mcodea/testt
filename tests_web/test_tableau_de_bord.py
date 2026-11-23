@@ -14,7 +14,7 @@ class TestTableauDeBord(ServeurNavigateur):
                                                    'code': 'XTST', 'libelle': 'Lieu fictif'})
         self.api('/api/fiche-ouvrage', {'action': 'creer', 'identification': {
             'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': f'{self.numero:02d}',
-            'libelle': 'Tableau de bord fictif', 'automate': 'M340', 'revision': 'A'}})
+            'libelle': 'Tableau de bord fictif', 'automate': 'Sch - M340', 'revision': 'A'}})
         self.ident = self.api('/api/equipement/ajouter', {'type': 'HV', 'numero': '01', 'se': '00'})['ident']
         self.api('/api/equipement/proposition', {'ident_eq': self.ident, 'decision': 'retenir'})
         self.api('/api/equipement/valider', {'idents': [self.ident], 'valide': True})
@@ -64,7 +64,7 @@ class TestTableauDeBord(ServeurNavigateur):
         for route, titre in (('inventaire', 'Équipements'), ('es', 'Liste des E/S'),
                              ('materiel', 'Matériel'), ('variables', 'Variables'), ('recette', 'Recette')):
             with self.subTest(route=route):
-                etape = self.page.locator(f'#v31-progress [data-nav="#/{route}"]')
+                etape = self.page.locator(f'#o-parcours [data-nav="#/{route}"]')
                 self.assertTrue(etape.is_visible())
                 self.assertIn(' : ', etape.get_attribute('title'))
                 etape.click()

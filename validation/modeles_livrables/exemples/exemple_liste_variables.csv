@@ -1,0 +1,4 @@
+Repère;Variable;Famille;Type;Adresse automate;Registre Modbus;Libellé
+<#DEBUT_VARIABLES#>
+<#REPERE#>;<#NOM#>;<#FAMILLE#>;<#TYPE#>;<#ADRESSE#>;<#REGISTRE_MODBUS#>;<#LIBELLE#>
+<#FIN_VARIABLES#>

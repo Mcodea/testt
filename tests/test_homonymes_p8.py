@@ -49,11 +49,33 @@ class TestHomonymes(unittest.TestCase):
         self.assertEqual(anomalies[0].ident_eq, a.ouvrage.equipements[0].ident)
         self.assertEqual(anomalies[0].repere, "XTSTRV01MV01")
 
-    def test_programmes_differents_ou_non_declares_aucune_anomalie(self):
+    def test_programmes_differents_aucune_anomalie(self):
         a = _session(self.cat, "XTST", "PRG_A")
         self.assertEqual(homonymes(a.ouvrage, a.catalogue, self._autre(_session(self.cat, "XTSB", "PRG_B"))), [])
+
+    def test_sans_programme_declare_alerte_et_non_erreur(self):
         vide = _session(self.cat, "XTST", "")
-        self.assertEqual(homonymes(vide.ouvrage, vide.catalogue, self._autre(_session(self.cat, "XTSB", ""))), [])
+        anomalies = homonymes(vide.ouvrage, vide.catalogue, self._autre(_session(self.cat, "XTSB", "  ")))
+        self.assertEqual(len(anomalies), 1)
+        self.assertEqual((anomalies[0].niveau, anomalies[0].etape, anomalies[0].code),
+                         ("Alerte", "Variables", "R-NOM-05"))
+        self.assertIn("TS_RV01MV01_OUV", anomalies[0].message)
+        self.assertIn("déclarez le nom du programme automate", anomalies[0].message)
+        self.assertEqual(anomalies[0].ident_eq, vide.ouvrage.equipements[0].ident)
+
+    def test_sans_programme_d_un_seul_cote_aucune_anomalie(self):
+        vide = _session(self.cat, "XTST", "")
+        self.assertEqual(homonymes(vide.ouvrage, vide.catalogue, self._autre(_session(self.cat, "XTSB", "PRG"))), [])
+        prg = _session(self.cat, "XTST", "PRG")
+        self.assertEqual(homonymes(prg.ouvrage, prg.catalogue, self._autre(_session(self.cat, "XTSB", ""))), [])
+
+    def test_sans_programme_lieu_dans_le_nom_aucune_alerte(self):
+        a = _session(self.cat, "XTST", "", lieu_dans_le_nom=True)
+        b = _session(self.cat, "XTSB", "")
+        self.assertEqual(homonymes(a.ouvrage, a.catalogue, self._autre(b)), [])
+        c = _session(self.cat, "XTST", "")
+        d = _session(self.cat, "XTSB", "", lieu_dans_le_nom=True)
+        self.assertEqual(homonymes(c.ouvrage, c.catalogue, self._autre(d)), [])
 
     def test_lieu_dans_le_nom_pas_de_collision(self):
         a = _session(self.cat, "XTST", "PRG", lieu_dans_le_nom=True)
@@ -96,6 +118,21 @@ class TestSessionHomonymes(unittest.TestCase):
         self.assertEqual(chemin_b.read_bytes(), octets)
         (projets / "illisible.ouvrage.json").write_text("{", encoding="utf-8")
         self.assertEqual(len(a.anomalies_homonymes()), len(anomalies))      # fichier illisible ignoré
+
+    def test_sans_programme_alerte_au_parcours_a_verifier(self):
+        projets = Path(chemins.dossier_projets())
+        projets.mkdir(parents=True, exist_ok=True)
+        _session(self.cat, "XTSB", "").enregistrer(str(projets / "XTSBRV01.ouvrage.json"))
+        a = _session(self.cat, "XTST", "")
+        a.enregistrer(str(projets / "XTSTRV01.ouvrage.json"))
+        anomalies = a.anomalies_homonymes()
+        self.assertEqual([x.niveau for x in anomalies], ["Alerte"])
+        etape = next(e for e in a.parcours() if e["vue"] == "variables")
+        points = [p for p in etape["bloquants"] + etape["a_verifier"] if p["code"] == "homonyme"]
+        self.assertEqual(len(points), 1)
+        self.assertEqual(points[0]["gravite"], "à vérifier")
+        self.assertTrue(points[0]["message"].startswith("XTSTRV01MV01 : "))
+        self.assertEqual(points[0]["ident_eq"], a.ouvrage.equipements[0].ident)
 
     def test_recette_web_signale_l_homonyme(self):
         from sorep_web.serveur import Application

@@ -39,10 +39,11 @@ class TestListesIdentification(unittest.TestCase):
     def test_refus_valeurs_inconnues_et_codes_invalides(self):
         with self.assertRaises(RegleMetier):
             self.app.identifier_selection({"champ": "lieu", "valeur": "XXXX"})
-        with self.assertRaises(RegleMetier):
-            self.app.listes_ouvrage_action({"action": "ajouter", "groupe": "lieux", "code": "TST", "libelle": "Invalide"})
-        with self.assertRaises(RegleMetier):
-            self.app.listes_ouvrage_action({"action": "ajouter", "groupe": "types_ouvrage", "code": "123", "libelle": "Invalide"})
+        # 19/11 : les listes servent à toutes les chartes de nommage (1 à 8 lettres majuscules ou chiffres) ; la
+        # longueur exacte est contrôlée par la charte de l'ouvrage (charte OGIAS : 4 et 2, inchangée).
+        for groupe, code in (("lieux", "T-ST"), ("lieux", "ABCDEFGHI"), ("types_ouvrage", "R V"), ("types_ouvrage", "")):
+            with self.subTest(groupe=groupe, code=code), self.assertRaises(RegleMetier):
+                self.app.listes_ouvrage_action({"action": "ajouter", "groupe": groupe, "code": code, "libelle": "Invalide"})
         with self.assertRaises(RegleMetier):
             self.app.identifier_selection({"champ": "automate", "valeur": "M999"})
         self.assertEqual(self.app.ouvrage({})["identification"]["lieu"], "")
@@ -67,11 +68,11 @@ class TestListesIdentification(unittest.TestCase):
         self.assertEqual(self.app.s.ouvrage.code_ouvrage, "RV")
 
     def test_protocoles_multiple_et_sans_doublons(self):
-        self.app.identifier_selection({"champ": "communication", "valeurs": ["Modbus TCP", "SOFREL S4W", "Modbus TCP"]})
-        self.assertEqual(self.app.s.ouvrage.communication, "Modbus TCP, SOFREL S4W")
+        self.app.identifier_selection({"champ": "communication", "valeurs": ["Modbus TCP/IP", "LACBUS IP", "Modbus TCP/IP"]})
+        self.assertEqual(self.app.s.ouvrage.communication, "Modbus TCP/IP, LACBUS IP")
         with self.assertRaises(RegleMetier):
             self.app.identifier_selection({"champ": "communication", "valeurs": ["Nouveau protocole non déclaré"]})
-        self.assertEqual(self.app.s.ouvrage.communication, "Modbus TCP, SOFREL S4W")
+        self.assertEqual(self.app.s.ouvrage.communication, "Modbus TCP/IP, LACBUS IP")
 
     def test_referentiel_modifiable_sans_modifier_projet(self):
         self.app.identifier_type({"code": "RV"})

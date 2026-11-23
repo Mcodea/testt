@@ -1,12 +1,12 @@
 # OGIAS 1.0 — Conformité et point de reprise
 
-Mis à jour le 10 novembre 2026. Branche active `claude/referentiel-v2`, reprise V2 `8718342`.
+Mis à jour le 12 novembre 2026. Dépôt public **Mcodea/testt**, branche active `claude/referentiel-v2`.
 Référence unique : [CAHIER_DES_CHARGES_V1.md](docs/CAHIER_DES_CHARGES_V1.md),
 lu en entier. Les deux classeurs (tous les onglets/cellules), les trois maquettes
 et `validation/README.md` ont été lus. Les six fichiers ont été importés à l’identique
 au commit `fb329f0` ; la branche distante apporte ensuite le classeur anonymisé
 et la correction descriptive du nombre de codes (commit `aa68c3b`). La consigne active demande la reprise V2 de l’interface et de l’adoption.
-A1, R1 et D5-b restent en décision ; la qualification industrielle attend les preuves utilisateur.
+A1 et D5-b restent en décision ; R1 validé le 11/11 ; la qualification industrielle attend les preuves utilisateur.
 Historique V0.31 conservé : [docs/ETAT_TRAVAIL_V031.md](docs/ETAT_TRAVAIL_V031.md).
 
 ## Règle de suivi
@@ -17,6 +17,121 @@ texte et doivent toutes être prouvées avant « fait ». Un test hérité qui n
 couvre qu’une partie de l’exigence laisse la ligne « partiel ». Une capture de
 l’application sans comparaison à la maquette ne prouve pas la conformité UI.
 Les critères de sortie demeurent bloquants hors preuves utilisateur de section 8.
+
+## Checkpoint — session Claude du 22/11/2026
+
+- Dépôt `Mcodea/testt`. Sur instruction de l'utilisateur (« fais les fusions »), toute la chaîne de branches
+  (`referentiel-v2` → `assistant-modeles`, lots 1 à 7) est fusionnée dans `main` et `claude/referentiel-v2`.
+- **P8, point 2 de la relecture du 12/11** (règle R-NOM-05) : deux ouvrages sans programme automate déclaré et avec le lieu hors
+  du nom sont désormais comparés ; un nom identique est une **alerte** (pas une erreur), jamais un renommage.
+  Le parcours la range en « à vérifier » avec un message lisible et le lien vers l'équipement (il affichait la
+  représentation brute de l'anomalie). Tests : `tests/test_homonymes_p8.py` (5 nouveaux).
+- **Lot 8 — modèles de livrables rangés par logiciel cible** (suite du principe « typicals » du 19/11) : chaque
+  modèle déclare sa destination (automate, supervision, IHM) et son logiciel ; l'ouvrage ne retient que ceux de ses
+  logiciels ; un type sans brique est « manquant » au journal, jamais comblé par un autre logiciel ; couverture par
+  logiciel à l'écran. Notice et captures : `validation/modeles_par_logiciel/`. Tests :
+  `tests/test_modeles_par_logiciel.py`, `tests_web/test_coque_bureau.py::test_modeles_par_logiciel_cible`.
+- **Message non lu** : la session du 19/11 a atteint sa limite hebdomadaire à 21 h 47 ; le message suivant de
+  l'utilisateur (pièce jointe, envoyée trois fois les 19 et 20/11) n'a jamais été traité et n'est pas récupérable
+  ici. Question restée ouverte : quels automates et quelles supervisions les clients emploient (Control Expert seul
+  ou aussi TIA Portal ; TOPKAPI seul ou aussi PcVue, Vijeo, Panorama).
+- **Formats d'export appris, lot 1 (liste des E/S physiques)** — orientation validée par l'utilisateur : OGIAS ouvert
+  à tout constructeur ; il n'exporte vers les outils des constructeurs que la liste des E/S physiques, la
+  télétransmission et l'IHM, dont le format est APPRIS une fois depuis un vrai fichier ; chaque export est relu et
+  contrôlé ; qualification après un premier essai réel confirmé, puis contrôle automatique. Notice :
+  `validation/formats_appris/README.md`. Lot 2 fait : télétransmission (chaque supervision) et IHM. Suivant : XML.
+- Feuille de route d'ingénierie : `docs/FEUILLE_DE_ROUTE.md` (objectifs priorisés, règles non négociables).
+- **Gammes de matériel déclarées par l'atelier** (chaque client a un automate différent) : la gamme d'un automate
+  non livré se déclare une fois (racks, cartes, texte de reconnaissance) ; OGIAS la calcule comme une gamme livrée.
+  Notice : `validation/gammes_materiel/README.md`.
+- **Schneider et Siemens** (décision de l'utilisateur, 22/11 ; message perdu du 19/11 non retrouvé) : gamme livrée
+  Siemens S7-1500 (références vérifiées, sources dans `genvar/data/gammes_livrees.json`) ; formats appris en classeur
+  Excel pour les tables de variables TIA Portal. S7-1200 non livré (module AQ non commandable, passage à G2).
+- Vérifié localement : 875 tests Python (5 ignorés), 121 tests navigateur, `outils/ci.py static`
+  (ruff, mypy moteur), audit données 0 détection.
+
+## Point CI en cours — lot Formulaires
+
+Run 43317537003 : Windows/Linux, qualité et portable verts ; navigateur échoué.
+Cause encore inconnue (65 tests locaux passent). Diagnostic d’échec ajouté
+dans tests_web/conftest.py, annotations publiques sans changement des assertions
+ni des résultats. Reprise exacte : lire l’annotation du prochain run, corriger
+le défaut démontré et obtenir une CI verte. Codex reste actif sur ce point.
+
+## Checkpoint actif — contraste des formulaires, 12/11/2026
+
+- Reprise utilisateur « continuer », base publique c43f713, CI précédente verte
+  run 43286205755. Aucun commit nouveau de Claude à reprendre.
+- Périmètre strict conservé : présentation uniquement. Une feuille produit
+  modifiée, **industrial-ui.css : 20 lignes** ; aucun JavaScript, moteur,
+  état, API, structure, événement, donnée ni export changé.
+- Anomalies reproduites : labels/titre de création trop sombres, boutons/badge
+  conservant leur ancienne palette, double bordure du formulaire, contraste
+  de l’onglet actif des listes et repère de sélection des niveaux d’adressage
+  supprimé avec les ombres. Correction par les couleurs du thème et un contour
+  de sélection ; aucun comportement ni règle de validation remanié.
+- **Cinq nouveaux tests et 18 sous-cas** : contraste WCAG au moins 4,5:1 sur
+  les éléments ciblés, Neuf/Existant, clair/sombre, trois résolutions ; parcours
+  des quatre listes, trois niveaux, focus/actions accessibles ; données API
+  et listes inchangées, projet de test identique à l’octet.
+- **730 Python / 18 sous-cas**, 0 ignoré, 194,22 s ; **65 navigateur / 70
+  sous-cas**, 0 ignoré, 110,68 s. Couverture moteur **89,283831 %**, exports
+  **100 %**. Statique et dépendances conformes. Sept seuils du banc inchangés
+  passent : rendu **75,9 ms**, filtre **97,4 ms**, adressage **0,719 s**.
+- **16 captures avant/après non retouchées** et preuves :
+  validation/interface_v1/formulaires_12_11/. Aucune maquette de création
+  n’étant fournie, comparaison à l’écran antérieur et à la palette du chat ;
+  les maquettes originales ne sont pas modifiées. Pas de certification WCAG
+  globale ; la ligne V1-4-45 reste partielle.
+- Dernier commit fonctionnel **efe3b1f**, passation à Claude, agent libre.
+  Étape exacte de reprise dans docs/INSTRUCTIONS_EN_COURS.md.
+- Audit données **0/0** ; statut CI du lot : verification.json / Actions publiques.
+  A1, D5-b et qualification réelle restent dans leur état ; aucune release.
+
+## Checkpoint historique — report UI terminé sur le dépôt public Mcodea/testt
+
+- Le nom testt désigne le **nouveau dépôt public**, pas une branche de l’ancien.
+  Base publique conservée : **085b1c7**, racine **4d084b4**. Aucun historique privé
+  importé. Branche commune : **claude/referentiel-v2** ; aucune fusion d’agent.
+- Première CI publique vérifiée : run **43276436661 vert**. L’ancienne limite
+  de crédit concernait le dépôt privé. Workflow public complet conservé : Linux,
+  Windows, couverture, navigateur, performance, qualité et portable. Suivi :
+  https://github.com/Mcodea/testt/actions?query=branch%3Aclaude%2Freferentiel-v2.
+- Lot U9 reporté **7466f35** : bonne destination des points bloquants, lignes
+  Variables 44 px et cases 24 px, état vide/redimensionnement, fermeture Échap
+  respectant les fenêtres au premier plan et retour du focus. Tests ciblés :
+  25 tests et 29 sous-cas, avec la nouvelle composition matérielle de Claude.
+- Passation à Claude : dernier commit fonctionnel **01287a2**, agent libre.
+  Reprise exacte dans docs/INSTRUCTIONS_EN_COURS.md.
+- Lot visuel : couche industrial-ui.css, lien index.html, gabarit latéral et
+  deux classes S4W d’app.js. Fonctions, événements, identifiants, état, API,
+  structures et export inchangés dans ce lot. Les catalogues, nomenclature et
+  correctifs d’exports de Claude sont préservés, ainsi que ses tests unitaires.
+- La consigne visuelle du chat du 12/11 remplace palette/formes lavande des
+  anciennes maquettes. Préférence de thème conservée ; bouton lune pour la
+  palette sombre, variante claire technique. Aucune donnée injectée au produit.
+- Preuves du **dépôt public** : validation/interface_v1/industriel_12_11/
+  (captures régénérées, comparaison, mesures, vérifications et performance).
+  Les fichiers restent identiques à l’octet après les interactions visuelles.
+- **730 tests Python**, 18 sous-cas, 0 ignoré, 201,87 s ; couverture moteur
+  **89,283831 %**, exports **100 %**. **60 tests navigateur**, 52 sous-cas, 0 ignoré, 97,98 s ;
+  statique conforme (mypy 49 fichiers, ruff, JS), audit dépendances conforme.
+  Audit données 0/0 ; sept seuils de performance inchangés passent
+  (rendu 84 ms, filtre 100,2 ms, adressage 0,621 s). Détails dans verification.json. La qualification sur les logiciels réels
+  reste en attente ; aucune livraison 1.0 ni compatibilité industrielle déduite.
+
+### Conformité — consigne visuelle du 12/11
+
+| Exigence | État | Preuve |
+| --- | --- | --- |
+| Palette sombre exacte et bordures nettes, sans ombres/dégradés décoratifs | fait | industrial-ui.css ; test_palette_typographie_et_theme_sans_ecriture ; comparaison.html. |
+| Polices locales et chasse fixe tabulaire sur les éléments techniques | fait | tests ressources embarquées conservés ; tests design palette/voies/composition. |
+| Couleurs de plateforme sur les cibles existantes | fait | test_raccourcis_existants_et_exports_identifies ; test_cibles_sofrel_et_topkapi_sans_inventer_de_donnees. |
+| Espace de travail, navigation et actions compactes | fait | test_workspace_et_captures_trois_resolutions ; sept écrans, trois tailles. |
+| Densité et en-têtes fixes | fait | tests Variables densité/colonnes ; test_entete_reste_visible_au_defilement_sans_modifier_les_variables. |
+| Grilles de rack et composition, voies occupées/libres | fait | test_composition_et_rack_existant_en_sombre_sans_ecriture ; test_voies_occupees_et_libres_gardent_leurs_actions ; captures non retouchées. |
+| Dépassement matériel | partiel | Bordure rouge liée à l’état existant de jauge ; aucun conflit fabriqué pour produire une capture ; pas de qualification revendiquée. |
+| Anti-régression de l’état et des données | fait | Sept tests design, fichiers et valeurs API inchangés après interaction ; aucun POST lors du thème/détail ; validation/adoption existantes conservées. |
 
 ## Checkpoint — session planifiée Claude du 11/11/2026 (20 h 20 UTC)
 
@@ -146,31 +261,31 @@ Les critères de sortie demeurent bloquants hors preuves utilisateur de section 
 | V1-3-21 (L60) | Installation vierge : ce référentiel est publié comme révision 1. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
 | V1-3-22 (L61) | Installation existante : il est publié comme nouvelle révision, historique conservé. Les ouvrages existants gardent leur révision figée tant qu'ils ne l'adoptent pas. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
 | V1-3-23 (L62) | Un projet existant importé garde ses noms et adresses d'origine. | partiel | tests/test_adoption_controlee.py et tests_web/test_adoption.py : refus, annulation et sauvegarde identiques, adresses conservées ; couverture des imports V1 et qualification industrielle encore partielles. |
-| V1-4-01 (L70) | fond lavande doux ; | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
-| V1-4-02 (L71) | grandes cartes blanches arrondies, sans bordure grise ; | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
-| V1-4-03 (L72) | barre latérale indigo à icônes ; | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
-| V1-4-04 (L73) | indigo principal, corail en contraste ; | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
-| V1-4-05 (L74) | grands chiffres, beaucoup d'espace. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
-| V1-4-06 (L80) | **Couleurs :** | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
-| V1-4-07 (L81) | fond `#EEF1FB`, cartes `#FFFFFF`, survol `#F5F7FE`, ligne sélectionnée `#EEF0FD` ; | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
-| V1-4-08 (L82) | barre latérale en dégradé `#4F5BD5` → `#3D47B8` ; | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
-| V1-4-09 (L83) | principal `#5B63E6` (teinte claire `#E4E6FB`) ; | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
-| V1-4-10 (L84) | corail `#F28C5B`, au plus un élément par écran ; | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
-| V1-4-11 (L85) | texte `#1E2340`, texte secondaire `#7A80A0`, séparateurs `#EDEFF7` ; | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
-| V1-4-12 (L86) | états : validé `#2BA36B` / `#E3F5EC`, à valider `#E39B2D` / `#FCF1DE`, erreur et conflit `#E0524A` / `#FCE6E4`. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
-| V1-4-13 (L87) | **Formes :** | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
-| V1-4-14 (L88) | cartes : rayon de 20 px, ombre `0 10px 30px rgba(61,71,184,.08)`, marge intérieure de 24 px ; | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
-| V1-4-15 (L89) | boutons et champs : rayon de 12 px, 40 px de haut ; | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
-| V1-4-16 (L90) | pastilles et filtres en gélule ; | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
-| V1-4-17 (L91) | panneaux et fenêtres : rayon de 24 px. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
+| V1-4-01 (L70) | fond lavande doux ; | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
+| V1-4-02 (L71) | grandes cartes blanches arrondies, sans bordure grise ; | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
+| V1-4-03 (L72) | barre latérale indigo à icônes ; | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
+| V1-4-04 (L73) | indigo principal, corail en contraste ; | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
+| V1-4-05 (L74) | grands chiffres, beaucoup d'espace. | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
+| V1-4-06 (L80) | **Couleurs :** | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
+| V1-4-07 (L81) | fond `#EEF1FB`, cartes `#FFFFFF`, survol `#F5F7FE`, ligne sélectionnée `#EEF0FD` ; | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
+| V1-4-08 (L82) | barre latérale en dégradé `#4F5BD5` → `#3D47B8` ; | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
+| V1-4-09 (L83) | principal `#5B63E6` (teinte claire `#E4E6FB`) ; | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
+| V1-4-10 (L84) | corail `#F28C5B`, au plus un élément par écran ; | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
+| V1-4-11 (L85) | texte `#1E2340`, texte secondaire `#7A80A0`, séparateurs `#EDEFF7` ; | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
+| V1-4-12 (L86) | états : validé `#2BA36B` / `#E3F5EC`, à valider `#E39B2D` / `#FCF1DE`, erreur et conflit `#E0524A` / `#FCE6E4`. | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
+| V1-4-13 (L87) | **Formes :** | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
+| V1-4-14 (L88) | cartes : rayon de 20 px, ombre `0 10px 30px rgba(61,71,184,.08)`, marge intérieure de 24 px ; | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
+| V1-4-15 (L89) | boutons et champs : rayon de 12 px, 40 px de haut ; | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
+| V1-4-16 (L90) | pastilles et filtres en gélule ; | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
+| V1-4-17 (L91) | panneaux et fenêtres : rayon de 24 px. | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
 | V1-4-18 (L92) | Jamais de carte dans une carte. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
 | V1-4-19 (L93) | **Typographie :** | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
 | V1-4-20 (L94) | Inter et JetBrains Mono, embarquées ; | fait | Polices WOFF2 locales et licences OFL, tests_web/test_ressources_embarquees.py ; chargement réel avec accès extérieur refusé, chasse fixe mesurée. Captures comparées : validation/interface_v2/maquettes/README.md. |
-| V1-4-21 (L95) | échelle 12 / 13 / 14 / 16 / 20 / 32 px ; | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
+| V1-4-21 (L95) | échelle 12 / 13 / 14 / 16 / 20 / 32 px ; | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
 | V1-4-22 (L96) | noms de variables, repères et adresses en police à chasse fixe. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
 | V1-4-23 (L97) | **Icônes :** Lucide (licence ISC), embarquées. Jamais d'emoji. | partiel | 19 géométries Lucide ISC embarquées pour V31.icon, rendu SVG, empreintes et licence testés dans tests_web/test_ressources_embarquees.py ; autres surfaces historiques et glyphes à vérifier. Comparaison : validation/interface_v2/maquettes/. |
-| V1-4-24 (L98) | **Transitions :** 180 ms, sans animation décorative. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
-| V1-4-25 (L102) | Barre latérale de 80 px : Accueil, Ouvrages, Référentiel, Paramètres, À propos. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
+| V1-4-24 (L98) | **Transitions :** 180 ms, sans animation décorative. | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
+| V1-4-25 (L102) | Barre latérale de 80 px : Accueil, Ouvrages, Référentiel, Paramètres, À propos. | partiel | Valeur visuelle remplacée par la consigne utilisateur du 12/11 ; industrial-ui.css, tests_web/test_design_industriel.py et validation/interface_v1/industriel_12_11/comparaison.html. Ancienne référence conservée. |
 | V1-4-26 (L103) | Aucun menu horizontal, ruban ou onglet de documents. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
 | V1-4-27 (L104) | Dans un ouvrage, les 5 étapes en gélules forment la seule navigation : Équipements → Liste des E/S → Matériel → Variables → Recette. Chaque étape affiche son état et le nombre de points à traiter. | partiel | tests_web/test_tableau_de_bord.py::test_cinq_etapes_accessibles_sans_ecriture : cinq liens, titres et états, fichier identique après navigation ; compte des points par étape encore à compléter. |
 | V1-4-28 (L105) | Le tableau de bord de l'ouvrage est la page d'arrivée : | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
@@ -190,7 +305,7 @@ Les critères de sortie demeurent bloquants hors preuves utilisateur de section 
 | V1-4-42 (L122) | Le panneau de détail propose : Valider, Saisir (avec contrôle immédiat), Déverrouiller (avec motif), Réserver. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
 | V1-4-43 (L123) | Un blocage (référentiel non publié, propositions non décidées, conflit) laisse le bouton visible mais désactivé, avec la raison et un lien vers la correction. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
 | V1-4-44 (L124) | Projet existant : les adresses importées sont validées et protégées. Aucune n'est recalculée. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
-| V1-4-45 (L128) | Accessibilité WCAG AA et navigation complète au clavier. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
+| V1-4-45 (L128) | Accessibilité WCAG AA et navigation complète au clavier. | partiel | Contraste des labels/titres, onglets et cartes de niveau prouvé sur les formulaires ciblés (test_formulaires_industriels.py, 4,5:1 minimum) ; clavier/focus Variables conservés. Captures formulaires_12_11/. Audit WCAG complet encore partiel. |
 | V1-4-46 (L129) | Affichage correct de 1366×768 à 2560×1440. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
 | V1-4-47 (L130) | Annulation (Ctrl+Z) des modifications de l'ouvrage. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |
 | V1-4-48 (L131) | Chaque action a un retour visible : chargement, succès, erreur avec la cause et la solution. | partiel | Fonctions/tests hérités de df38702 à vérifier contre cette exigence ; preuve V1 non encore établie. |

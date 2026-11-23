@@ -64,15 +64,42 @@ def emplacements_libres(racks, modules):
     sortie = {}
     for r in racks:
         n = int(r.get("numero", 0))
-        pris = len(r.get("cpu") or []) + len([m for m in modules if int(m.rack) == n])
+        pris = len(r.get("cpu") or []) + len([m for m in modules
+                                              if int(m["rack"] if isinstance(m, dict) else m.rack) == n])
         sortie[n] = int(r.get("positions", 0)) - pris
     return sortie
 
 
-def gamme(automate):
-    """Code de gamme décrite (S4W, STB, M580, M340) ou None si l'automate n'est pas reconnu."""
+def gamme_livree(automate):
+    """Code d'une gamme livrée (S4W, STB, M580, M340) reconnue dans le texte, sinon None."""
     a = re.sub(r"\s+", "", (automate or "").upper())
     return next((code for code, motifs in _GAMMES if any(m in a for m in motifs)), None)
+
+
+def gamme(automate):
+    """Code de gamme décrite : livrée (S4W, STB, M580, M340), sinon déclarée par l'atelier ; None si inconnue."""
+    livree = gamme_livree(automate)
+    if livree:
+        return livree
+    from .gammes_materiel import reconnaitre
+    g = reconnaitre(automate)
+    return g["code"] if g else None
+
+
+def est_atelier(plat):
+    return bool(plat) and plat not in ("S4W", "STB", "M580", "M340", "Non décrite")
+
+
+def catalogue_pour(automate, chemin=None):
+    """Catalogue de la gamme de l'automate : celui d'une gamme déclarée par l'atelier, sinon le catalogue livré."""
+    g = gamme(automate)
+    if est_atelier(g):
+        cle = "atelier:" + g
+        if cle not in _CACHE:
+            from .gammes_materiel import catalogue as cat_atelier
+            _CACHE[cle] = cat_atelier(g)
+        return _CACHE[cle]
+    return catalogue(chemin)
 
 
 def plateforme(automate):
@@ -89,12 +116,19 @@ def plateforme_materiel(automate):
     """Plateforme pour le **calcul du matériel** : comme `plateforme`, mais un automate renseigné d'une gamme non
     décrite dans le catalogue (Premium, Quantum…) est refusé : aucune configuration d'une autre gamme n'est jamais
     proposée à sa place (retour d'essai n° 8 du 12/11/2026)."""
-    if (automate or "").strip() and gamme(automate) is None:
+    if not (automate or "").strip():
+        # Audit du 16/11 : plus de M340 supposé en silence ; la source décide de la gamme du matériel.
         raise CatalogueMaterielErreur(
-            f"Automate « {automate} » : cette gamme n'est pas décrite dans le catalogue matériel d'OGIAS. Aucune "
-            "configuration n'est proposée, pour ne pas présenter le matériel d'une autre gamme. Gammes prises en "
-            "charge : Modicon M340 (BMX P34…), Modicon M580 (BME P58 / H58…), Advantys STB (STB NIP 2212), "
-            "SOFREL S4W.")
+            "Source d'acquisition non renseignée dans la fiche de l'ouvrage : choisissez-la (M340, M580, S4W, "
+            "STB…) avant de calculer le matériel. Aucune gamme n'est supposée.")
+    if gamme(automate) is None:
+        raise CatalogueMaterielErreur(
+            f"Source « {automate} » : cette gamme n'est pas décrite dans le catalogue matériel d'OGIAS. Aucune "
+            "configuration n'est proposée, pour ne pas présenter le matériel d'une autre gamme. Gammes livrées : "
+            "Modicon M340 (BMX P34…), Modicon M580 (BME P58 / H58…), Advantys STB (STB NIP 2212), SOFREL S4W, "
+            "Siemens S7-1500. "
+            "Pour tout autre automate, déclarez sa gamme (cartes, racks) dans Standards d'ingénierie › Gammes de "
+            "matériel : OGIAS la calcule ensuite comme une gamme livrée.")
     return plateforme(automate)
 
 
@@ -152,10 +186,11 @@ class Proposition:
     modules: list = field(default_factory=list)       # [{"rack", "position", "nature", "voies", "reference"}]
     remarques: list = field(default_factory=list)
     applicable: bool = True                           # False : proposition à titre indicatif (S4W)
+    config: dict = field(default_factory=dict)        # choix retenus (alimentation, processeur, communication…)
 
     def dict(self):
         return {"plateforme": self.plateforme, "profil": self.profil, "racks": self.racks, "modules": self.modules,
-                "remarques": self.remarques, "applicable": self.applicable,
+                "remarques": self.remarques, "applicable": self.applicable, "config": self.config,
                 "besoins": [dict(b.__dict__, reserve=b.reserve) for b in self.besoins]}
 
 
@@ -257,26 +292,62 @@ def proposer_s4w(points, reserve=0.2, chemin=None):
     return p
 
 
-def proposer(points, automate="", profil="", reserve=0.2, chemin=None, min_cartes=None, emplacements_libres=0):
+def _sans_espace(ref):
+    return re.sub(r"\s+", "", str(ref or "")).upper()
+
+
+def config_materiel(cat, plat, automate="", config=None):
+    """Choix de l'automaticien (alimentation, processeur, modules de communication, carte par nature), contrôlés
+    contre le catalogue. Le processeur se déduit du champ Automate s'il en porte la référence exacte."""
+    config = dict(config or {})
+    alims = {_sans_espace(a["reference"]): a["reference"] for a in cat.get("alimentations", [])}
+    cpus = {_sans_espace(c["reference"]): c["reference"] for c in cat.get("processeurs", {}).get(plat, [])}
+    coms = {_sans_espace(c["reference"]): c["reference"] for c in cat.get("communication", {}).get(plat, [])}
+    sortie = {"alimentation": alims.get(_sans_espace(config.get("alimentation")), ""),
+              "processeur": cpus.get(_sans_espace(config.get("processeur")))
+              or cpus.get(_sans_espace(automate), ""),
+              "communication": [coms[_sans_espace(c)] for c in config.get("communication") or []
+                                if _sans_espace(c) in coms],
+              "cartes": {n: r for n, r in (config.get("cartes") or {}).items()
+                         if n in NATURES and cat["_cartes"].get(r, {}).get("nature") == n}}
+    return sortie
+
+
+def proposer(points, automate="", profil="", reserve=0.2, chemin=None, min_cartes=None, emplacements_libres=0,
+             config=None):
     """Proposition déterministe de racks et cartes. N'écrit rien.
 
     `min_cartes` {nature: n} : nombre minimal de cartes par nature (n = taille du plus grand groupe de secours
     confirmé ayant des E/S de cette nature, B4 : un équipement et son secours sur des cartes distinctes).
-    `emplacements_libres` : emplacements laissés libres dans chaque rack pour une extension (B3)."""
+    `emplacements_libres` : emplacements laissés libres dans chaque rack pour une extension (B3).
+    `config` : choix de l'automaticien (alimentation, processeur, communication, carte par nature) ; ce qui n'est
+    pas choisi reste « à choisir » dans la nomenclature, jamais deviné."""
     if not 0 <= reserve < 1:
         raise ValueError("Réserve minimale : entre 0 et 100 % exclus.")
     plat, remarque = plateforme_materiel(automate)
     if plat == "S4W":
         return proposer_s4w(points, reserve)
     if plat == "STB":
-        return proposer_stb(points, reserve, min_cartes=min_cartes, emplacements_libres=emplacements_libres)
-    cat = catalogue(chemin)
+        return proposer_stb(points, reserve, min_cartes=min_cartes, emplacements_libres=emplacements_libres,
+                            automate=automate)
+    cat = catalogue_pour(automate, chemin)
     profil = profil if profil in cat["profils"] else cat["profil_defaut"]
     p = Proposition(plat, profil, remarques=[remarque] if remarque else [])
+    if cat.get("_atelier"):
+        p.remarques.append(cat["statut"] if cat.get("_livree") else
+                           "Gamme déclarée par l'atelier : références et capacités à vérifier sur la documentation "
+                           f"{cat.get('_constructeur', 'du constructeur')}.")
+        absentes = sorted(n for n, nb in compter(points).items() if nb and not cat["profils"][profil].get(n))
+        if absentes:
+            raise CatalogueMaterielErreur(
+                f"Gamme {plat} : aucune carte {', '.join(absentes)} déclarée alors que l'ouvrage en a besoin. "
+                "Complétez la gamme dans Standards d'ingénierie › Gammes de matériel.")
+    choix = config_materiel(cat, plat, automate, config)
+    p.config = choix
     pc = cat["plateformes"][plat]
     cartes = []
     for nature, nb in compter(points).items():
-        ref = cat["profils"][profil][nature]
+        ref = choix["cartes"].get(nature) or cat["profils"][profil][nature]
         voies = int(cat["_cartes"][ref]["voies"])
         utiles = max(1, math.floor(voies * (1 - reserve)))
         n = math.ceil(nb / utiles) if nb else 0
@@ -292,10 +363,11 @@ def proposer(points, automate="", profil="", reserve=0.2, chemin=None, min_carte
         return p
     racks = sorted(pc["racks"], key=lambda r: int(r["positions"]))
     cpu = list(pc["positions_cpu"])
+    coms = choix["communication"]
     numero, reste, libres_voulus = 0, cartes, max(0, int(emplacements_libres))
     manque_libres = False
     while reste:
-        fixes = len(cpu) if numero == 0 else 0
+        fixes = len(cpu) + len(coms) if numero == 0 else 0
         libres_max = int(racks[-1]["positions"]) - fixes - libres_voulus
         if libres_max < 1:                         # rack trop petit pour garder les emplacements libres
             libres_max, manque_libres = int(racks[-1]["positions"]) - fixes, True
@@ -304,9 +376,17 @@ def proposer(points, automate="", profil="", reserve=0.2, chemin=None, min_carte
         rack = next((r for r in racks if int(r["positions"]) >= besoin), racks[-1])
         if int(rack["positions"]) < besoin:
             manque_libres = True
-        occupees = cpu if numero == 0 else []
+        occupation = []
+        if numero == 0:
+            occupation = [{"position": x, "reference": choix["processeur"] or "Processeur à choisir",
+                           "role": "processeur"} for x in cpu]
+            debut = max(cpu) + 1 if cpu else 0
+            occupation += [{"position": debut + i, "reference": c, "role": "communication"}
+                           for i, c in enumerate(coms)]
+        occupees = [o["position"] for o in occupation]
         p.racks.append({"numero": numero, "reference": rack["reference"], "positions": int(rack["positions"]),
-                        "cpu": occupees})
+                        "cpu": occupees, "occupation": occupation,
+                        "alimentation": choix["alimentation"] or "Alimentation à choisir"})
         pos = [x for x in range(int(rack["positions"])) if x not in occupees]
         for (nature, ref, voies), position in zip(lot, pos):
             p.modules.append({"rack": numero, "position": position, "nature": nature, "voies": voies,
@@ -317,13 +397,72 @@ def proposer(points, automate="", profil="", reserve=0.2, chemin=None, min_carte
                            + (" ; impossible pour au moins un rack (rack le plus grand atteint)." if manque_libres
                               else "."))
     if len(p.racks) > 1:
-        p.remarques.append(f"{len(p.racks) - 1} rack(s) d'extension : liaison d'extension de rack à prévoir "
-                           "(référence à confirmer).")
+        ext = cat.get("extension", {})
+        p.remarques.append(f"{len(p.racks) - 1} rack(s) d'extension : {ext.get('regle', 'liaison d’extension à prévoir.')}")
+        maxi = next((c.get("racks_max") for c in cat.get("processeurs", {}).get(plat, [])
+                     if c["reference"] == choix["processeur"]), None)
+        if maxi and len(p.racks) > int(maxi):
+            p.remarques.append(f"{len(p.racks)} racks pour un {choix['processeur']} limité à {maxi} : choisissez un "
+                               "processeur plus puissant ou des cartes plus denses.")
+    if not choix["alimentation"]:
+        p.remarques.append("Alimentation à choisir (emplacement CPS de chaque rack).")
+    if not choix["processeur"]:
+        p.remarques.append("Processeur à choisir (référence exacte du catalogue).")
+    p.remarques.append("Bilan de consommation des racks non calculé (consommations non intégrées) : à vérifier "
+                       f"avec l'outil {cat.get('_constructeur', 'Schneider')}.")
     return p
 
 
+def nomenclature(racks, modules, chemin=None, cat=None):
+    """Nomenclature de commande : [{reference, designation, quantite, role}] d'après les racks et cartes retenus
+    (alimentation, processeur, communication, cartes, extension, caches des emplacements libres)."""
+    cat = cat if cat is not None else catalogue(chemin)
+    desig = {c["reference"]: c.get("description", "") for c in cat["cartes"] + cat.get("cartes_speciales", [])}
+    for a in cat.get("alimentations", []):
+        desig[a["reference"]] = a.get("description") or (
+            f"Alimentation {a['entree']}, {a['puissance_w']} W" + (" (redondante)" if a["redondante"] else ""))
+    for plat in cat.get("processeurs", {}).values():
+        for c in plat:
+            desig[c["reference"]] = "Processeur — " + c["description"]
+    for plat in cat.get("communication", {}).values():
+        for c in plat:
+            desig[c["reference"]] = "Communication — " + c["description"]
+    for nom, plat in cat.get("plateformes", {}).items():
+        for r in plat["racks"]:
+            desig[r["reference"]] = f"Rack {nom} {r['positions']} emplacements (+ emplacement d'alimentation)"
+    ext = cat.get("extension", {})
+    desig.update({ext.get("module", ""): "Module d'extension de rack", ext.get("terminaison", ""): "Terminaison de bus X",
+                  ext.get("cache", ""): "Cache de protection d'emplacement libre", ext.get("cable", ""): "Câble d'extension de bus X"})
+    lignes: dict[tuple, int] = {}
+
+    def ajouter(ref, role, n=1):
+        if n > 0:
+            lignes[(ref, role)] = lignes.get((ref, role), 0) + n
+    get = lambda m, k: m[k] if isinstance(m, dict) else getattr(m, k)  # noqa: E731
+    for r in racks:
+        ajouter(r.get("reference", ""), "rack")
+        ajouter(r.get("alimentation") or "Alimentation à choisir", "alimentation")
+        for o in r.get("occupation", []):
+            if o["role"] == "processeur" and o["position"] != min(x["position"] for x in r["occupation"]
+                                                                  if x["role"] == "processeur"):
+                continue                               # un processeur M580 occupe deux emplacements
+            ajouter(o["reference"], o["role"])
+    for m in modules:
+        ajouter(get(m, "reference") or f"Carte {get(m, 'nature')} (référence à préciser)", "carte")
+    if len(racks) > 1:
+        ajouter(ext.get("module", "Module d'extension"), "extension", len(racks))
+        ajouter(ext.get("cable", "Câble d'extension"), "extension", len(racks) - 1)
+        ajouter(ext.get("terminaison", "Terminaison"), "extension", 2)
+    libres = sum(max(0, v) for v in emplacements_libres(racks, modules).values())
+    if libres and ext.get("cache"):
+        ajouter(ext["cache"], "cache d'emplacement libre", libres)
+    ordre = {"rack": 0, "alimentation": 1, "processeur": 2, "communication": 3, "carte": 4, "extension": 5}
+    return [{"reference": ref, "designation": desig.get(ref, ""), "quantite": n, "role": role}
+            for (ref, role), n in sorted(lignes.items(), key=lambda x: (ordre.get(x[0][1], 9), x[0][0]))]
+
+
 # ---------------------------------------------------------------------------- Advantys STB
-def proposer_stb(points, reserve=0.2, chemin=None, min_cartes=None, emplacements_libres=0):
+def proposer_stb(points, reserve=0.2, chemin=None, min_cartes=None, emplacements_libres=0, automate=""):
     """Composition d'îlot(s) Advantys STB : interface réseau (NIM), distribution 24 V CC (PDM), modules d'E/S
     (profil du catalogue), embases, plaque de terminaison. Contrôles des guides Schneider : 32 modules d'E/S au
     plus par îlot, courant du bus logique fourni par le NIM (1 200 mA de 0 à 60 °C).
@@ -333,7 +472,14 @@ def proposer_stb(points, reserve=0.2, chemin=None, min_cartes=None, emplacements
     n'est donc proposée ni inventée."""
     cat = catalogue_stb(chemin)
     profil = cat["profil_defaut"]
-    pr, nim, pdm = cat["profils"][profil], cat["nim"], cat["pdm"]
+    pr, nim, pdm = cat["profils"][profil], dict(cat["nim"]), cat["pdm"]
+    # Interface réseau nommée dans la source de l'ouvrage (ex. STB NIP 2311) : la référence est reprise telle
+    # quelle ; seules les limites du STB NIP 2212 sont documentées dans le catalogue, appliquées à titre indicatif.
+    m = re.search(r"STBN[IO][A-Z]?\d{4}", _sans_espace(automate))
+    nim_choisi = bool(m) and m is not None and m.group(0) != _sans_espace(nim["reference"])
+    if nim_choisi and m is not None:
+        ref = m.group(0)
+        nim["reference"] = f"{ref[:3]} {ref[3:6]} {ref[6:]}"
     p = Proposition("STB", profil, applicable=False, remarques=[
         "Îlot à saisir dans le logiciel Advantys dans l'ordre de la composition (emplacement / nœud), puis à "
         "télécharger dans le NIM.",
@@ -342,6 +488,10 @@ def proposer_stb(points, reserve=0.2, chemin=None, min_cartes=None, emplacements
         "adresse n'est proposée.",
         "Gamme Advantys STB commercialisée avec annonce de fin de vie (fin de fabrication 01/12/2027) : pour un "
         "ouvrage neuf, vérifier la gamme de remplacement (Edge I/O NTS)."])
+    if nim_choisi:
+        p.remarques.append(f"Interface réseau {nim['reference']} reprise de la source de l'ouvrage : ses limites (courant "
+                           "du bus logique, nombre de modules) ne sont pas dans le catalogue ; celles du STB NIP 2212 "
+                           "sont appliquées à titre indicatif, à vérifier sur sa fiche.")
     modules = []
     for nature, nb in compter(points).items():
         ref = pr[nature]

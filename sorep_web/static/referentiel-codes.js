@@ -11,6 +11,7 @@ function brancherNavigationReferentiel() {
  });
 }
 function vueCodesReferentiel() {
+ if(typeof Coque!=='undefined')Coque.ruban(null);   // lot 5f
  const lex=E.refObjet==='lexique', corr=E.refObjet==='correspondances';
  const titre=lex?'Lexique':corr?'Correspondances':'Dictionnaire des E/S', ed=E.ref.source==='brouillon';
  const lignes=E.ref[E.refObjet]||[], q=(E.refCodeQuery||'').toLocaleLowerCase('fr');
@@ -26,7 +27,7 @@ function vueCodesReferentiel() {
   <div class="ref-codes-table v31-card"><header><h2>${titre}</h2>
    <label class="v31-search-field">${V31.icon('search',16)}<input id="ref-codes-query" type="search" aria-label="${corr?'Rechercher dans les correspondances':'Rechercher dans le '+(lex?'lexique':'dictionnaire')}" placeholder="Rechercher…" value="${esc(E.refCodeQuery||'')}"></label>
    <button type="button" id="ref-codes-add" ${ed?'':'disabled title="Créer un brouillon pour ajouter une entrée"'}>Ajouter</button></header>
-  <div class="ref-codes-scroll"><table><thead><tr>${colonnes.map(n=>`<th scope="col">${n}</th>`).join('')}</tr></thead><tbody>
+  <div class="ref-codes-scroll"><table data-o-tableau><thead><tr>${colonnes.map(n=>`<th scope="col">${n}</th>`).join('')}</tr></thead><tbody>
    ${visibles.map(r=>`<tr tabindex="0" data-ref-code="${esc(r.cle)}" aria-selected="${selection?.cle===r.cle}" aria-label="${esc(lex?r.mot:r.cle)}">${cellules(r).map((v,i)=>`<td class="${i===1?'mono':''}">${esc(v||'—')}</td>`).join('')}</tr>`).join('')||`<tr><td colspan="${colonnes.length}" class="vide">Aucune entrée pour cette recherche.</td></tr>`}
   </tbody></table></div>
   <footer>${filtre.length?`<span>${filtre.length} entrée(s) · page ${page+1}/${Math.ceil(filtre.length/100)}</span>`:'<span>Aucun résultat</span>'}

@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OGIAS — maquette de la coque de bureau (lot 2)</title>
+<!-- Maquette statique : jetons réels (ogias.css), données du projet FICTIF de démonstration (XTSTRV01). -->
+<link rel="stylesheet" href="../../../sorep_web/static/ogias.css">
+<style>
+@font-face{font-family:OGIAS-Inter;src:url('../../../sorep_web/static/assets/fonts/InterVariable.woff2') format('woff2');font-weight:100 900}
+@font-face{font-family:OGIAS-Mono;src:url('../../../sorep_web/static/assets/fonts/JetBrainsMono-Regular.woff2') format('woff2')}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{display:grid;grid-template-rows:32px auto minmax(0,1fr) auto var(--o-h-etat);overflow:hidden;line-height:1.4}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+.ico{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ico.g{width:22px;height:22px}
+.mono{font-family:var(--o-mono);font-size:var(--o-t-s)}
+
+/* ------------------------------------------------ barre de titre et menus */
+.tb{display:flex;align-items:center;gap:var(--o-e-3);padding:0 var(--o-e-3) 0 var(--o-e-2);background:var(--o-nuit);color:var(--o-nuit-texte);font-size:var(--o-t-s)}
+.tb .marque{display:flex;align-items:center;gap:var(--o-e-2);font-weight:650;letter-spacing:.06em}
+.tb .marque img{width:18px;height:18px;border-radius:var(--o-r-m)}
+.tb nav{display:flex}
+.tb nav button{padding:6px 9px;border-radius:var(--o-r-s);color:var(--o-nuit-texte)}
+.tb nav button:hover{background:var(--o-nuit-2)}
+.tb .vide{flex:1}
+.tb .cmd{display:flex;align-items:center;gap:var(--o-e-2);width:420px;height:22px;padding:0 var(--o-e-2);border:1px solid var(--o-nuit-ligne);border-radius:var(--o-r-m);background:var(--o-nuit-2);color:var(--o-nuit-texte-2)}
+.tb .cmd kbd{margin-left:auto;font-size:var(--o-t-xs)}
+.tb .ouvrage{display:flex;align-items:center;gap:var(--o-e-2);color:var(--o-nuit-texte-2)}
+.tb .ouvrage b{color:var(--o-nuit-texte);font-family:var(--o-mono);font-weight:400}
+
+/* ------------------------------------------------ ruban */
+.rb{background:var(--o-surface);border-bottom:1px solid var(--o-ligne)}
+.rb-onglets{display:flex;gap:2px;padding:0 var(--o-e-2);border-bottom:1px solid var(--o-ligne);background:var(--o-surface-2)}
+.rb-onglets button{padding:5px 12px;font-size:var(--o-t-s);color:var(--o-texte-2);border-bottom:2px solid transparent}
+.rb-onglets button.on{color:var(--o-texte);font-weight:600;border-bottom-color:var(--o-action-plein);background:var(--o-surface)}
+.rb-onglets button.ctx{color:var(--o-action)}
+.rb-onglets .ctx-tete{align-self:center;margin-left:var(--o-e-3);font-size:var(--o-t-xs);color:var(--o-action);text-transform:uppercase;letter-spacing:.06em}
+.rb-groupes{display:flex;align-items:stretch;padding:var(--o-e-1) var(--o-e-2) 0;min-height:72px}
+.rb-groupe{display:flex;flex-direction:column;padding:0 var(--o-e-2);border-right:1px solid var(--o-ligne)}
+.rb-groupe .cmds{display:flex;gap:2px;align-items:flex-start;flex:1}
+.rb-groupe .nom{text-align:center;font-size:var(--o-t-xs);color:var(--o-texte-3);padding:2px 0 3px}
+.grand{display:flex;flex-direction:column;align-items:center;gap:3px;width:68px;padding:5px 2px;border-radius:var(--o-r-m);font-size:var(--o-t-xs);text-align:center;line-height:1.2}
+.grand:hover,.petit:hover{background:var(--o-surface-3)}
+.grand.prim .ico{color:var(--o-action)}
+.pile{display:flex;flex-direction:column;gap:1px}
+.petit{display:flex;align-items:center;gap:6px;padding:3px 8px 3px 4px;border-radius:var(--o-r-m);font-size:var(--o-t-s);white-space:nowrap}
+.petit .ico{width:14px;height:14px;color:var(--o-texte-2)}
+
+/* ------------------------------------------------ espace de travail */
+.ws{display:grid;grid-template-columns:260px minmax(0,1fr) 300px;min-height:0;background:var(--o-fond);gap:1px}
+.panneau{background:var(--o-surface);display:flex;flex-direction:column;min-height:0}
+.p-tete{display:flex;align-items:center;justify-content:space-between;height:30px;padding:0 var(--o-e-3);font-size:var(--o-t-xs);font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--o-texte-2);border-bottom:1px solid var(--o-ligne);background:var(--o-surface-2)}
+.p-tete .ico{width:14px;height:14px}
+
+/* explorateur */
+.filtre{display:flex;align-items:center;gap:6px;margin:var(--o-e-2);height:var(--o-h-champ);padding:0 var(--o-e-2);border:1px solid var(--o-champ-bord);border-radius:var(--o-r-m);color:var(--o-texte-3);font-size:var(--o-t-s)}
+.sect{padding:6px var(--o-e-3) 4px;font-size:var(--o-t-xs);font-weight:650;color:var(--o-texte-3);text-transform:uppercase;letter-spacing:.07em}
+.etape{display:grid;grid-template-columns:18px 1fr auto;align-items:center;gap:6px;height:26px;padding:0 var(--o-e-3);font-size:var(--o-t-s)}
+.etape small{color:var(--o-texte-3);font-size:var(--o-t-xs)}
+.etape.on{background:var(--o-action-fond);box-shadow:inset 2px 0 0 var(--o-action-plein);font-weight:600}
+.pastille{width:16px;height:16px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:700;border:1.5px solid var(--o-ligne-forte);color:var(--o-texte-3)}
+.pastille.ok{border-color:var(--o-ok-filet);background:var(--o-ok-filet);color:var(--o-sur-action)}
+.pastille.al{border-color:var(--o-alerte-filet);color:var(--o-alerte)}
+.arbre{flex:1;overflow:auto;padding-bottom:var(--o-e-2)}
+.noeud{display:flex;align-items:center;gap:6px;height:24px;padding:0 var(--o-e-3);font-size:var(--o-t-s);white-space:nowrap}
+.noeud .chev{width:12px;height:12px;color:var(--o-texte-3)}
+.noeud.n1{padding-left:24px}.noeud.n2{padding-left:44px}
+.noeud .type{font-family:var(--o-mono);font-size:10px;color:var(--o-texte-3);width:18px}
+.noeud .rep{font-family:var(--o-mono);font-size:var(--o-t-s)}
+.noeud .lib{color:var(--o-texte-2);overflow:hidden;text-overflow:ellipsis}
+.noeud .compte{margin-left:auto;font-size:var(--o-t-xs);color:var(--o-texte-3)}
+.noeud .etat{margin-left:auto;width:7px;height:7px;border-radius:50%;background:var(--o-ok-filet)}
+.noeud.sel{background:var(--o-action-fond);box-shadow:inset 2px 0 0 var(--o-action-plein)}
+.noeud:hover:not(.sel){background:var(--o-surface-3)}
+
+/* centre : onglets de documents, fil, contenu */
+.docs{display:flex;align-items:flex-end;height:32px;padding:0 var(--o-e-2);gap:2px;background:var(--o-surface-2);border-bottom:1px solid var(--o-ligne)}
+.doc{display:flex;align-items:center;gap:8px;height:28px;padding:0 10px 0 12px;font-size:var(--o-t-s);color:var(--o-texte-2);border:1px solid transparent;border-bottom:0;border-radius:var(--o-r-m) var(--o-r-m) 0 0}
+.doc.on{background:var(--o-surface);color:var(--o-texte);border-color:var(--o-ligne);margin-bottom:-1px;height:29px;box-shadow:inset 0 2px 0 var(--o-action-plein)}
+.doc .x{width:12px;height:12px;color:var(--o-texte-3)}
+.doc .mono{font-size:var(--o-t-s)}
+
+.fil{display:flex;align-items:center;gap:0;padding:10px var(--o-e-4);border-bottom:1px solid var(--o-ligne);background:var(--o-surface)}
+.fil-titre{font-size:var(--o-t-xs);font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--o-texte-3);margin-right:var(--o-e-4);writing-mode:horizontal-tb}
+.maillon{display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:var(--o-r-m);min-width:0}
+.maillon:hover{background:var(--o-surface-3)}
+.maillon .m{width:10px;height:10px;border-radius:50%;border:2px solid var(--o-ligne-forte);background:var(--o-surface);flex:none}
+.maillon.cur .m{border-radius:2px;width:12px;height:12px;border-color:var(--o-action-plein);background:var(--o-action-plein)}
+.maillon.ok .m{border-color:var(--o-ok-filet)}
+.maillon.al .m{border-color:var(--o-alerte-filet)}
+.maillon b{display:block;font-size:var(--o-t-s);font-weight:600;white-space:nowrap}
+.maillon small{display:block;font-size:var(--o-t-xs);color:var(--o-texte-2);white-space:nowrap}
+.maillon.al small{color:var(--o-alerte)}
+.maillon.ok small{color:var(--o-ok)}
+.lien{flex:1;min-width:16px;height:2px;background:var(--o-action-plein);opacity:.35;margin:0 2px}
+
+.contenu{flex:1;overflow:auto;min-height:0}
+.entete{display:flex;align-items:center;gap:var(--o-e-3);padding:var(--o-e-3) var(--o-e-4) 0}
+.entete h1{margin:0;font-size:var(--o-t-xl);font-family:var(--o-mono);font-weight:500;letter-spacing:.01em}
+.entete .desc{color:var(--o-texte-2);font-size:var(--o-t-s)}
+.badge{display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 6px;border-radius:var(--o-r-s);font-size:var(--o-t-xs);font-weight:600;border:1px solid}
+.badge.ok{color:var(--o-ok);background:var(--o-ok-fond);border-color:var(--o-ok-filet)}
+.badge.al{color:var(--o-alerte);background:var(--o-alerte-fond);border-color:var(--o-alerte-filet)}
+.etat-p{display:inline-flex;align-items:center;gap:6px}
+.etat-p::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--o-texte-3)}
+.etat-p.al{color:var(--o-alerte)}.etat-p.al::before{background:var(--o-alerte-filet)}
+.etat-p.ok{color:var(--o-ok)}.etat-p.ok::before{background:var(--o-ok-filet)}
+.badge.n{color:var(--o-texte-2);background:var(--o-surface-2);border-color:var(--o-ligne)}
+.sous{display:flex;gap:0;margin:var(--o-e-3) var(--o-e-4) 0;border-bottom:1px solid var(--o-ligne)}
+.sous button{padding:6px 12px;font-size:var(--o-t-s);color:var(--o-texte-2);border-bottom:2px solid transparent;margin-bottom:-1px}
+.sous button.on{color:var(--o-texte);font-weight:600;border-bottom-color:var(--o-action-plein)}
+.sous button i{font-style:normal;color:var(--o-texte-3);margin-left:4px}
+.barre-table{display:flex;align-items:center;gap:var(--o-e-2);padding:var(--o-e-2) var(--o-e-4);font-size:var(--o-t-s);color:var(--o-texte-2)}
+.barre-table .vide{flex:1}
+.mini{display:flex;align-items:center;gap:5px;height:24px;padding:0 8px;border:1px solid var(--o-ligne-forte);border-radius:var(--o-r-m);font-size:var(--o-t-s);color:var(--o-texte)}
+.mini .ico{width:14px;height:14px}
+table{border-collapse:separate;border-spacing:0;width:calc(100% - 2 * var(--o-e-4));margin:0 var(--o-e-4);font-size:var(--o-t-s);border:1px solid var(--o-ligne);border-radius:var(--o-r-m)}
+th{position:sticky;top:0;height:28px;padding:0 8px;text-align:left;font-weight:600;color:var(--o-texte-2);background:var(--o-surface-2);border-bottom:1px solid var(--o-ligne);white-space:nowrap}
+th .tri{width:10px;height:10px;vertical-align:-1px;margin-left:3px;color:var(--o-texte-3)}
+td{height:var(--o-h-ligne);padding:0 8px;border-bottom:1px solid var(--o-ligne);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:var(--o-surface-2)}
+tr.sel td{background:var(--o-action-fond)!important}
+td.calc{color:var(--o-texte-3);font-style:italic}
+td.fam span{display:inline-block;min-width:24px;text-align:center;font-family:var(--o-mono);font-size:10.5px;padding:1px 3px;border-radius:var(--o-r-s);border:1px solid var(--o-ligne-forte);color:var(--o-texte-2)}
+.case{width:13px;height:13px;border:1px solid var(--o-champ-bord);border-radius:2px;display:inline-block;vertical-align:-2px;background:var(--o-surface)}
+tr.sel .case{background:var(--o-action-plein);border-color:var(--o-action-plein)}
+
+/* inspecteur : grille de propriétés */
+.prop-tete{padding:var(--o-e-3);border-bottom:1px solid var(--o-ligne)}
+.prop-tete .mono{font-size:var(--o-t-m)}
+.prop-tete small{display:block;color:var(--o-texte-2);font-size:var(--o-t-xs);margin-top:2px}
+.grp{border-bottom:1px solid var(--o-ligne)}
+.grp>div:first-child{display:flex;align-items:center;gap:6px;height:26px;padding:0 var(--o-e-3);font-size:var(--o-t-xs);font-weight:650;color:var(--o-texte-2);text-transform:uppercase;letter-spacing:.06em;background:var(--o-surface-2)}
+.grp .chev{width:11px;height:11px;transform:rotate(90deg)}
+.pp{display:grid;grid-template-columns:112px 1fr;align-items:center;min-height:26px;font-size:var(--o-t-s);border-top:1px solid var(--o-ligne)}
+.pp>span:first-child{padding:0 var(--o-e-3);color:var(--o-texte-2);height:100%;display:flex;align-items:center;border-right:1px solid var(--o-ligne)}
+.pp>span:last-child{padding:0 var(--o-e-2)}
+.pp .lecture{color:var(--o-texte-2)}
+.pp .champ{display:block;height:22px;line-height:20px;padding:0 6px;border:1px solid var(--o-champ-bord);border-radius:var(--o-r-s);color:var(--o-texte-3);font-style:italic}
+.pp .valeur-ok{color:var(--o-ok);font-weight:600}
+.aide{margin:var(--o-e-3);padding:var(--o-e-2) var(--o-e-3);font-size:var(--o-t-xs);color:var(--o-texte-2);border-left:2px solid var(--o-action-plein);background:var(--o-surface-2)}
+
+/* panneau de sortie et barre d'état */
+.sortie{background:var(--o-surface);border-top:1px solid var(--o-ligne-forte)}
+.so-tete{display:flex;align-items:center;gap:2px;height:28px;padding:0 var(--o-e-2);background:var(--o-surface-2);border-bottom:1px solid var(--o-ligne)}
+.so-tete button{padding:4px 10px;font-size:var(--o-t-s);color:var(--o-texte-2);border-radius:var(--o-r-s)}
+.so-tete button.on{background:var(--o-surface);color:var(--o-texte);font-weight:600;box-shadow:inset 0 -2px 0 var(--o-action-plein)}
+.so-tete .vide{flex:1}
+.so-l{display:grid;grid-template-columns:18px 130px 1fr auto;align-items:center;gap:8px;height:24px;padding:0 var(--o-e-3);font-size:var(--o-t-s);border-bottom:1px solid var(--o-ligne)}
+.so-l .ou{color:var(--o-texte-2)}
+.so-l a{color:var(--o-action);text-decoration:none;font-size:var(--o-t-xs)}
+.so-l .ico{width:14px;height:14px}
+.so-l .al{color:var(--o-alerte-filet)}.so-l .ok{color:var(--o-ok-filet)}
+.etat-b{display:flex;align-items:center;gap:var(--o-e-4);padding:0 var(--o-e-3);font-size:var(--o-t-xs);background:var(--o-nuit);color:var(--o-nuit-texte-2)}
+.etat-b b{color:var(--o-nuit-texte);font-weight:500}
+.etat-b .vide{flex:1}
+.etat-b .ico{width:12px;height:12px;vertical-align:-2px;margin-right:4px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+ <symbol id="i-copie" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></symbol>
+ <symbol id="i-suppr" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+ <symbol id="i-valider" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+ <symbol id="i-controle" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+ <symbol id="i-import" viewBox="0 0 24 24"><path d="M12 4v11M8 11l4 4 4-4M5 20h14"/></symbol>
+ <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 20h14"/></symbol>
+ <symbol id="i-modele" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="6" rx="1"/><rect x="4" y="14" width="7" height="6" rx="1"/><rect x="13" y="14" width="7" height="6" rx="1"/></symbol>
+ <symbol id="i-retour" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
+ <symbol id="i-chercher" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+ <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+ <symbol id="i-bas" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+ <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+ <symbol id="i-alerte" viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/></symbol>
+ <symbol id="i-cadenas" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+ <symbol id="i-filtre" viewBox="0 0 24 24"><path d="M4 5h16l-6 7v6l-4 2v-8z"/></symbol>
+ <symbol id="i-colonnes" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="1"/><path d="M10 4v16M15 4v16"/></symbol>
+ <symbol id="i-excel" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="m9 8 6 8M15 8l-6 8"/></symbol>
+ <symbol id="i-lune" viewBox="0 0 24 24"><path d="M20 14A8 8 0 1 1 10 4a6.5 6.5 0 0 0 10 10z"/></symbol>
+</svg>
+
+<header class="tb">
+ <span class="marque"><img src="../../../sorep_web/static/assets/ogias-icone-512.png" alt="">OGIAS</span>
+ <nav aria-label="Menus"><button>Fichier</button><button>Édition</button><button>Affichage</button><button>Ouvrage</button><button>Outils</button><button>Aide</button></nav>
+ <span class="vide"></span>
+ <span class="cmd"><svg class="ico"><use href="#i-chercher"/></svg>Rechercher une commande, un repère, une variable…<kbd class="mono">Ctrl K</kbd></span>
+ <span class="vide"></span>
+ <span class="ouvrage"><b>XTSTRV01</b> Réservoir fictif de démonstration · révision A</span>
+ <button title="Thème sombre"><svg class="ico"><use href="#i-lune"/></svg></button>
+</header>
+
+<section class="rb" aria-label="Ruban">
+ <div class="rb-onglets">
+  <button>Accueil</button><button>Ouvrage</button><button class="on">Équipements</button><button>Automatisme</button><button>Livrables</button><button>Affichage</button>
+  <span class="ctx-tete">Outils de l'équipement</span><button class="ctx">PM01</button>
+ </div>
+ <div class="rb-groupes">
+  <div class="rb-groupe"><div class="cmds">
+    <button class="grand prim"><svg class="ico g"><use href="#i-plus"/></svg>Nouvel équipement</button>
+    <div class="pile"><button class="petit"><svg class="ico"><use href="#i-copie"/></svg>Dupliquer</button><button class="petit"><svg class="ico"><use href="#i-plus"/></svg>Unité fonctionnelle</button><button class="petit"><svg class="ico"><use href="#i-suppr"/></svg>Supprimer</button></div>
+   </div><div class="nom">Inventaire</div></div>
+  <div class="rb-groupe"><div class="cmds">
+    <button class="grand"><svg class="ico g"><use href="#i-modele"/></svg>Appliquer un modèle</button>
+    <div class="pile"><button class="petit"><svg class="ico"><use href="#i-retour"/></svg>Revenir au standard</button><button class="petit"><svg class="ico"><use href="#i-plus"/></svg>E/S personnalisée</button></div>
+   </div><div class="nom">Modèle</div></div>
+  <div class="rb-groupe"><div class="cmds">
+    <button class="grand prim"><svg class="ico g"><use href="#i-valider"/></svg>Valider le paramétrage</button>
+    <button class="grand"><svg class="ico g"><use href="#i-controle"/></svg>Contrôler l'ouvrage</button>
+   </div><div class="nom">Validation</div></div>
+  <div class="rb-groupe"><div class="cmds">
+    <div class="pile"><button class="petit"><svg class="ico"><use href="#i-import"/></svg>Importer un inventaire</button><button class="petit"><svg class="ico"><use href="#i-export"/></svg>Exporter la liste</button></div>
+   </div><div class="nom">Échanges</div></div>
+ </div>
+</section>
+
+<div class="ws">
+ <aside class="panneau" aria-label="Explorateur">
+  <div class="p-tete">Explorateur</div>
+  <div class="filtre"><svg class="ico"><use href="#i-chercher"/></svg>Filtrer : repère, libellé, type</div>
+  <div class="sect">Parcours</div>
+  <div class="etape on"><span class="pastille ok">✓</span>Équipements<small>15 / 15</small></div>
+  <div class="etape"><span class="pastille ok">✓</span>Liste des E/S<small>45 / 45</small></div>
+  <div class="etape"><span class="pastille al">3</span>Matériel<small>à valider</small></div>
+  <div class="etape"><span class="pastille">4</span>Variables<small>120 proposées</small></div>
+  <div class="etape"><span class="pastille">5</span>Recette<small>4 / 7 prêts</small></div>
+  <div class="sect" style="margin-top:6px">Ouvrage</div>
+  <div class="arbre">
+   <div class="noeud"><svg class="ico chev" style="transform:rotate(90deg)"><use href="#i-chev"/></svg><span class="rep">XTSTRV01</span><span class="lib">Réservoir fictif</span></div>
+   <div class="noeud n1"><svg class="ico chev" style="transform:rotate(90deg)"><use href="#i-chev"/></svg><span class="lib">Hors unité fonctionnelle</span><span class="compte">15</span></div>
+   <div class="noeud n2 sel"><span class="type">PM</span><span class="rep">PM01</span><span class="lib">Groupe de pompage</span><span class="etat"></span></div>
+   <div class="noeud n2"><span class="type">MV</span><span class="rep">MV02</span><span class="lib">Vanne motorisée</span><span class="etat"></span></div>
+   <div class="noeud n2"><span class="type">HV</span><span class="rep">HV03</span><span class="lib">Vanne manuelle</span><span class="etat"></span></div>
+   <div class="noeud n2"><span class="type">PM</span><span class="rep">PM04</span><span class="lib">Groupe de pompage</span><span class="etat"></span></div>
+   <div class="noeud n2"><span class="type">MV</span><span class="rep">MV05</span><span class="lib">Vanne motorisée</span><span class="etat"></span></div>
+   <div class="noeud n2"><span class="type">HV</span><span class="rep">HV06</span><span class="lib">Vanne manuelle</span><span class="etat"></span></div>
+   <div class="noeud n2"><span class="type">PM</span><span class="rep">PM07</span><span class="lib">Groupe de pompage</span><span class="etat"></span></div>
+   <div class="noeud n2"><span class="type">MV</span><span class="rep">MV08</span><span class="lib">Vanne motorisée</span><span class="etat"></span></div>
+   <div class="noeud n2"><span class="type">HV</span><span class="rep">HV09</span><span class="lib">Vanne manuelle</span><span class="etat"></span></div>
+   <div class="noeud n2"><span class="type">PM</span><span class="rep">PM10</span><span class="lib">Groupe de pompage</span><span class="etat"></span></div>
+   <div class="noeud n1"><svg class="ico chev"><use href="#i-chev"/></svg><span class="lib">Matériel</span><span class="compte">rack 0</span></div>
+  </div>
+ </aside>
+
+ <main class="panneau" aria-label="Zone de travail">
+  <div class="docs">
+   <span class="doc">Équipements</span>
+   <span class="doc on"><span class="mono">XTSTRV01PM01</span><svg class="ico x"><use href="#i-x"/></svg></span>
+   <span class="doc">Matériel<svg class="ico x"><use href="#i-x"/></svg></span>
+  </div>
+  <div class="fil" aria-label="Fil de l'information">
+   <span class="fil-titre">Fil</span>
+   <span class="maillon cur ok"><span class="m"></span><span><b>Équipement PM01</b><small>paramétrage validé</small></span></span><span class="lien"></span>
+   <span class="maillon ok"><span class="m"></span><span><b>3 E/S physiques</b><small>contenu validé</small></span></span><span class="lien"></span>
+   <span class="maillon al"><span class="m"></span><span><b>Carte 0.2 · voies 30 à 32</b><small>voies à valider</small></span></span><span class="lien"></span>
+   <span class="maillon al"><span class="m"></span><span><b>10 variables</b><small>adresses proposées</small></span></span><span class="lien"></span>
+   <span class="maillon"><span class="m"></span><span><b>Supervision</b><small>10 libellés</small></span></span>
+  </div>
+  <div class="contenu">
+   <div class="entete"><h1>XTSTRV01PM01</h1><span class="badge ok">Validé</span><span class="desc">Groupe de pompage · Hydraulique · sous-ensemble 00 · aucun modèle</span></div>
+   <div class="sous"><button class="on">Fil des informations<i>10</i></button><button>E/S physiques<i>3</i></button><button>Informations fonctionnelles<i>10</i></button><button>Lignes de supervision<i>0</i></button></div>
+   <div class="barre-table"><span>10 informations · 3 câblées, 7 calculées par l'automate</span><span class="vide"></span>
+    <button class="mini"><svg class="ico"><use href="#i-filtre"/></svg>Filtrer</button><button class="mini"><svg class="ico"><use href="#i-colonnes"/></svg>Colonnes</button><button class="mini"><svg class="ico"><use href="#i-excel"/></svg>Copier vers Excel</button></div>
+   <table>
+    <thead><tr><th style="width:28px"><span class="case"></span></th><th>Information<svg class="ico tri"><use href="#i-bas"/></svg></th><th>Fam.</th><th>E/S physique</th><th>Voie</th><th>Variable automate</th><th>Type</th><th>Adresse</th><th>Libellé de supervision</th><th>État</th></tr></thead>
+    <tbody>
+     <tr class="sel"><td><span class="case"></span></td><td>En marche</td><td class="fam"><span>TS</span></td><td class="mono">ET_RV01PM01_MA</td><td class="mono">%I0.2.30</td><td class="mono">TS_RV01PM01_MA</td><td>BOOL</td><td class="mono">%MW1000.0</td><td>PM01 — En marche</td><td><span class="etat-p al">proposée</span></td></tr>
+     <tr><td><span class="case"></span></td><td>Défaut thermique</td><td class="fam"><span>TS</span></td><td class="mono">ET_RV01PM01_DEFTH</td><td class="mono">%I0.2.31</td><td class="mono">TS_RV01PM01_DEFTH</td><td>BOOL</td><td class="mono">%MW1000.1</td><td>PM01 — Défaut thermique</td><td><span class="etat-p al">proposée</span></td></tr>
+     <tr><td><span class="case"></span></td><td>Mode local</td><td class="fam"><span>TS</span></td><td class="mono">ET_RV01PM01_LOC</td><td class="mono">%I0.2.32</td><td class="mono">TS_RV01PM01_LOC</td><td>BOOL</td><td class="mono">%MW1000.2</td><td>PM01 — Mode local</td><td><span class="etat-p al">proposée</span></td></tr>
+     <tr><td><span class="case"></span></td><td>Défaut général</td><td class="fam"><span>TS</span></td><td class="calc">calculée</td><td class="calc">—</td><td class="mono">TS_RV01PM01_DEF</td><td>BOOL</td><td class="mono">%MW1000.3</td><td>PM01 — Défaut général</td><td><span class="etat-p al">proposée</span></td></tr>
+     <tr><td><span class="case"></span></td><td>Disponible</td><td class="fam"><span>TS</span></td><td class="calc">calculée</td><td class="calc">—</td><td class="mono">TS_RV01PM01_DISPO</td><td>BOOL</td><td class="mono">%MW1000.4</td><td>PM01 — Disponible</td><td><span class="etat-p al">proposée</span></td></tr>
+     <tr><td><span class="case"></span></td><td>Hors service</td><td class="fam"><span>TS</span></td><td class="calc">calculée</td><td class="calc">—</td><td class="mono">TS_RV01PM01_HS</td><td>BOOL</td><td class="mono">%MW1000.5</td><td>PM01 — Hors service</td><td><span class="etat-p al">proposée</span></td></tr>
+     <tr><td><span class="case"></span></td><td>Mode automatique</td><td class="fam"><span>TS</span></td><td class="calc">calculée</td><td class="calc">—</td><td class="mono">TS_RV01PM01_AUTO</td><td>BOOL</td><td class="mono">%MW1000.6</td><td>PM01 — Mode automatique</td><td><span class="etat-p al">proposée</span></td></tr>
+     <tr><td><span class="case"></span></td><td>Mode manuel</td><td class="fam"><span>TS</span></td><td class="calc">calculée</td><td class="calc">—</td><td class="mono">TS_RV01PM01_MANU</td><td>BOOL</td><td class="mono">%MW1000.7</td><td>PM01 — Mode manuel</td><td><span class="etat-p al">proposée</span></td></tr>
+     <tr><td><span class="case"></span></td><td>Heures de fonctionnement</td><td class="fam"><span>CP</span></td><td class="calc">calculée</td><td class="calc">—</td><td class="mono">CP_RV01PM01_HF</td><td>DINT</td><td class="mono">%MW3500</td><td>PM01 — Heures de fonctionnement</td><td><span class="etat-p al">proposée</span></td></tr>
+     <tr><td><span class="case"></span></td><td>Nombre de démarrages</td><td class="fam"><span>CP</span></td><td class="calc">calculée</td><td class="calc">—</td><td class="mono">CP_RV01PM01_NDEM</td><td>DINT</td><td class="mono">%MW3502</td><td>PM01 — Nombre de démarrages</td><td><span class="etat-p al">proposée</span></td></tr>
+    </tbody>
+   </table>
+  </div>
+ </main>
+
+ <aside class="panneau" aria-label="Inspecteur">
+  <div class="p-tete">Propriétés</div>
+  <div class="prop-tete"><span class="mono">TS_RV01PM01_MA</span><small>Variable de l'équipement XTSTRV01PM01 · ligne sélectionnée</small></div>
+  <div class="grp"><div><svg class="ico chev"><use href="#i-chev"/></svg>Variable</div>
+   <div class="pp"><span>Nom</span><span class="mono">TS_RV01PM01_MA</span></div>
+   <div class="pp"><span>Famille</span><span>TS · télésignalisation</span></div>
+   <div class="pp"><span>Type</span><span>BOOL · 1 bit</span></div>
+   <div class="pp"><span>Libellé</span><span>PM01 — En marche</span></div>
+   <div class="pp"><span>Commentaire</span><span>Pompe PM01 – TS En marche</span></div>
+  </div>
+  <div class="grp"><div><svg class="ico chev"><use href="#i-chev"/></svg>Adresse</div>
+   <div class="pp"><span>Proposée</span><span class="mono">%MW1000.0</span></div>
+   <div class="pp"><span>Règle</span><span class="lecture">Première place libre de la plage TS</span></div>
+   <div class="pp"><span>État</span><span><span class="badge al">à valider</span></span></div>
+  </div>
+  <div class="grp"><div><svg class="ico chev"><use href="#i-chev"/></svg>Source</div>
+   <div class="pp"><span>E/S physique</span><span class="mono">ET_RV01PM01_MA</span></div>
+   <div class="pp"><span>Voie</span><span class="mono">%I0.2.30</span></div>
+   <div class="pp"><span>Sens</span><span>1 = En marche</span></div>
+  </div>
+  <div class="aide">Valider l'adresse la protège : elle ne sera plus jamais recalculée sans votre accord.</div>
+ </aside>
+</div>
+
+<section class="sortie" aria-label="Panneau de sortie">
+ <div class="so-tete"><button class="on">Contrôles<span class="badge al" style="margin-left:6px">2</span></button><button>Journal</button><button>Résultats de recherche</button><span class="vide"></span><button title="Réduire"><svg class="ico" style="width:14px;height:14px"><use href="#i-bas"/></svg></button></div>
+ <div class="so-l"><svg class="ico al"><use href="#i-alerte"/></svg><span class="ou">Variables</span><span>120 adresses proposées, pas encore validées (ex. TS_RV01PM01_MA)</span><a href="#">Aller à la source</a></div>
+ <div class="so-l"><svg class="ico al"><use href="#i-alerte"/></svg><span class="ou">Matériel</span><span>45 voies proposées à vérifier puis valider</span><a href="#">Aller à la source</a></div>
+</section>
+
+<footer class="etat-b" role="status">
+ <span><b>XTSTRV01</b> · projet neuf</span><span>Révision A</span><span>Référentiel non publié</span><span><svg class="ico"><use href="#i-cadenas"/></svg>Adresses validées protégées</span>
+ <span class="vide"></span><span>Enregistré</span><span>Exports non qualifiés</span><span>OGIAS 0.32</span>
+</footer>
+</body>
+</html>

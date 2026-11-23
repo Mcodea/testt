@@ -30,6 +30,10 @@ class FicheProjet:
     equipements: int
     variables_existantes: int
     erreur: str = ""
+    # Identification (19/11) : l'unicité et la numérotation ne dépendent plus de la forme du repère (charte du client).
+    lieu: str = ""
+    code_ouvrage: str = ""
+    numero_ouvrage: str = ""
 
 
 def repertoire():
@@ -50,7 +54,7 @@ def fiche(chemin):
         return FicheProjet(str(chemin), o.prefixe() or chemin.stem, o.libelle or "Sans libellé",
                            o.mode, o.automate, o.statut, o.revision,
                            _date(o.modifie_le or o.cree_le, chemin), o.archive,
-                           len(o.equipements), len(o.existantes))
+                           len(o.equipements), len(o.existantes), "", o.lieu, o.code_ouvrage, o.numero_ouvrage)
     except Exception as exc:
         return FicheProjet(str(chemin), chemin.stem, "Fichier à vérifier", "—", "—",
                            "Illisible", "—", _date("", chemin), False, 0, 0,

@@ -22,7 +22,7 @@ class TestVariablesV031(ServeurNavigateur):
             })
         self.api("/api/fiche-ouvrage", {"action": "creer", "identification": {
             "lieu": "XTST", "code_ouvrage": "RV", "numero_ouvrage": f"{self.numero:02d}",
-            "libelle": "Recette navigateur fictive", "automate": "M340", "revision": "A",
+            "libelle": "Recette navigateur fictive", "automate": "Sch - M340", "revision": "A",
         }})
         equipment = self.api("/api/equipement/ajouter", {
             "type": "HV", "numero": "01", "se": "00", "libelle": "Vanne fictive",
@@ -69,6 +69,111 @@ class TestVariablesV031(ServeurNavigateur):
         self.assertTrue(checkbox.is_checked())
         self.assertEqual(self.page.locator("#v31-close-detail").count(), 0)
 
+    def test_une_seule_colonne_adresse_teletransmission(self):
+        """Retour du 18/11 (19 h 28) : la télétransmission lit l'adresse automate ; une seule colonne, plus de vues
+        « Adresses automate » / « Télétransmission »."""
+        fichier = Path(self.api('/api/ouvrage')['chemin'])
+        avant = fichier.read_bytes()
+        self.assertEqual(self.page.locator('[data-var-view]').count(), 0)
+        entetes = self.page.locator('.v31-table thead th').evaluate_all('els => els.map(e => e.textContent.trim())')
+        self.assertIn('Adresse télétransmission', entetes)
+        self.assertNotIn('Adresse automate', entetes)
+        self.assertNotIn('Télétransmission', entetes)
+        # 20 h : la famille (TS, TC, TM, TR, RTR, CP) reste ; le type de donnée (BOOL, INT…) est ajouté à côté
+        self.assertEqual(entetes[2:4], ['Famille', 'Type'])
+        from genvar.modele import TAILLE_MOTS
+        self.assertIn(self.page.locator('.v31-variable-row').first.locator('td').nth(3).inner_text().strip(), TAILLE_MOTS)
+        # Adresse en %MW ; décalage Modbus saisi : les %MW affichés sont décalés (la supervision lit ces adresses)
+        premiere = self.page.locator('.v31-variable-row').first
+        nom = premiere.get_attribute('data-variable')
+        mot = lambda: int(premiere.locator('td').nth(5).inner_text().strip().removeprefix('%MW').split('.')[0])
+        avant_mot = mot()
+        self.api('/api/adressage/action', {'action': 'protocole', 'declare': True, 'decalage': 100})
+        self.page.evaluate('v31ReloadVariables()')          # attend la fin du rechargement
+        self.assertEqual(premiere.get_attribute('data-variable'), nom)
+        self.assertEqual(mot(), avant_mot + 100)
+        self.api('/api/adressage/action', {'action': 'protocole', 'declare': True, 'decalage': 0})
+        avant = fichier.read_bytes()
+        self.assertEqual(fichier.read_bytes(), avant)
+
+    def test_rows_match_mockup_density_and_keep_accessible_selection(self):
+        fichier = Path(self.api('/api/ouvrage')['chemin'])
+        avant = fichier.read_bytes()
+        for largeur, hauteur in ((1366, 768), (1920, 1080), (2560, 1440)):
+            with self.subTest(largeur=largeur):
+                self.page.set_viewport_size({'width': largeur, 'height': hauteur})
+                ligne = self.page.locator('.v31-variable-row').first
+                # Lot 5d : gabarit dense commun (jeton --o-h-ligne, 28 px ; 44 px avant)
+                self.assertAlmostEqual(ligne.bounding_box()['height'], 28, delta=1)
+                case = ligne.locator('.v31-choose')
+                self.assertGreaterEqual(case.bounding_box()['width'], 24)
+                self.assertGreaterEqual(case.bounding_box()['height'], 24)
+                case.uncheck()
+                case.focus()
+                case.press('Space')
+                self.assertTrue(case.is_checked())
+                self.assertEqual(self.page.locator('#v31-close-detail').count(), 0)
+                self.assertTrue(self.page.evaluate('document.documentElement.scrollWidth <= innerWidth'))
+        self.assertEqual(fichier.read_bytes(), avant)
+
+    def test_empty_filter_uses_empty_state_without_zero_counter(self):
+        fichier = Path(self.api('/api/ouvrage')['chemin'])
+        avant = fichier.read_bytes()
+        self.page.locator('#v31-var-search').fill('aucune-variable-fictive-correspondante')
+        compteur = self.page.locator('.v31-table-footer > span').inner_text()
+        self.assertIn('Aucun résultat', compteur)
+        self.assertNotRegex(compteur, r'\b0\b')
+        self.assertEqual(self.page.locator('.v31-variable-row').count(), 0)
+        self.assertEqual(fichier.read_bytes(), avant)
+
+    def test_empty_filter_with_detail_spans_visible_columns_after_resize(self):
+        fichier = Path(self.api('/api/ouvrage')['chemin'])
+        avant = fichier.read_bytes()
+        self.page.locator('.v31-variable-row').first.click()
+        for vue in ('unique',):
+            self.page.locator('#v31-var-search').fill('aucune-variable-fictive-correspondante')
+            for largeur in (1366, 1920, 2560):
+                with self.subTest(vue=vue, largeur=largeur):
+                    self.page.set_viewport_size({'width': largeur, 'height': 1080})
+                    self.page.wait_for_function("""() => {
+                      const table=document.querySelector('.v31-table'), vide=table.querySelector('td[colspan]');
+                      return vide.colSpan === [...table.tHead.rows[0].cells].filter(e => getComputedStyle(e).display !== 'none').length;
+                    }""", timeout=3000)
+                    self.assertTrue(self.page.locator('#v31-close-detail').is_visible())
+            self.page.locator('#v31-var-search').fill('')
+        self.assertEqual(fichier.read_bytes(), avant)
+
+    def test_escape_closes_detail_and_restores_row_focus_without_write(self):
+        fichier = Path(self.api('/api/ouvrage')['chemin'])
+        avant = fichier.read_bytes()
+        ligne = self.page.locator('.v31-variable-row').first
+        nom = ligne.get_attribute('data-variable')
+        ligne.focus()
+        ligne.press('Enter')
+        self.page.wait_for_selector('#v31-close-detail')
+        self.page.keyboard.press('Escape')
+        self.page.wait_for_selector('#v31-close-detail', state='detached', timeout=3000)
+        self.assertTrue(self.page.locator(f'[data-variable="{nom}"]').evaluate('e => e === document.activeElement'))
+        self.assertEqual(fichier.read_bytes(), avant)
+
+    def test_escape_closes_foreground_before_variable_detail(self):
+        fichier = Path(self.api('/api/ouvrage')['chemin'])
+        avant = fichier.read_bytes()
+        self.page.locator('.v31-variable-row').first.click()
+        self.page.locator('#v31-edit-single').click()
+        self.page.wait_for_selector('#modale:not([hidden])')
+        self.page.keyboard.press('Escape')
+        self.assertFalse(self.page.locator('#modale').is_visible())
+        self.assertTrue(self.page.locator('#v31-close-detail').is_visible())
+        self.page.keyboard.press('Control+k')
+        self.page.wait_for_selector('#v31-search-dialog')
+        self.page.keyboard.press('Escape')
+        self.assertEqual(self.page.locator('#v31-search-dialog').count(), 0)
+        self.assertTrue(self.page.locator('#v31-close-detail').is_visible())
+        self.page.keyboard.press('Escape')
+        self.assertEqual(self.page.locator('#v31-close-detail').count(), 0)
+        self.assertEqual(fichier.read_bytes(), avant)
+
     def test_captures_aux_dimensions_des_maquettes(self):
         dossier = Path(os.environ.get("OGIAS_CAPTURE_DIR", "artifacts/ci/captures"))
         dossier.mkdir(parents=True, exist_ok=True)
@@ -78,10 +183,10 @@ class TestVariablesV031(ServeurNavigateur):
                                ("#/variables", "maquette-2-variables-1920.png")):
             self.page.goto(self.url + route, wait_until="networkidle")
             self.page.evaluate("document.fonts.ready")
-            self.assertEqual(self.page.locator("#v31-sidebar").bounding_box()["width"], 80)
+            self.assertEqual(self.page.locator("#o-explorateur").bounding_box()["width"], 232)
             self.assertTrue(self.page.evaluate("document.documentElement.scrollWidth <= innerWidth"))
             self.page.screenshot(path=str(dossier / fichier), full_page=True)
-            mesures[route] = {"navigation": self.page.locator("#v31-sidebar").bounding_box(),
+            mesures[route] = {"navigation": self.page.locator("#o-explorateur").bounding_box(),
                               "contenu": self.page.locator(".v31-dashboard, .v31-main-table").bounding_box()}
         premiere = self.page.locator(".v31-variable-row").first
         nom = premiere.get_attribute("data-variable")
@@ -96,27 +201,24 @@ class TestVariablesV031(ServeurNavigateur):
         self.page.locator(".v31-variable-row").first.click()
         for largeur in (1366, 1920, 2560):
             self.page.set_viewport_size({"width": largeur, "height": 1080})
-            for vue in ("all", "exchange", "tele"):
+            for vue in ("unique",):
                 with self.subTest(largeur=largeur, vue=vue):
-                    self.page.locator(f'[data-var-view="{vue}"]').click()
                     entetes = self.page.locator(".v31-table thead th").evaluate_all(
                         "els => els.filter(e => getComputedStyle(e).display !== 'none').map(e => ({texte:e.textContent.trim(),x:e.getBoundingClientRect().x}))")
                     cellules = self.page.locator(".v31-variable-row").first.locator("td").evaluate_all(
                         "els => els.filter(e => getComputedStyle(e).display !== 'none').map(e => ({texte:e.textContent.trim(),x:e.getBoundingClientRect().x}))")
                     self.assertEqual(len(entetes), len(cellules))
                     noms = [e["texte"] for e in entetes]
-                    self.assertIn("Source", noms)
+                    self.assertIn("Libellé", noms)
+                    self.assertNotIn("Source", noms)          # retour du 16/11 : colonne sans intérêt retirée
                     self.assertNotIn("Règle", noms)
-                    self.assertEqual("Télétransmission" in noms, largeur > 1400 and vue != "exchange")
                     for h, c in zip(entetes, cellules):
                         self.assertAlmostEqual(h["x"], c["x"], delta=1)
-                    self.assertIn("%MW", cellules[noms.index("Adresse automate")]["texte"])
+                    self.assertIn("%MW", cellules[noms.index("Adresse télétransmission")]["texte"])
 
     def test_view_headers_match_visible_cells(self):
-        for view, excluded, count in [("all", None, 8), ("exchange", "Télétransmission", 7),
-                                      ("tele", "Règle", 7)]:
+        for view, excluded, count in [("unique", "Télétransmission", 8)]:
             with self.subTest(view=view):
-                self.page.locator(f'[data-var-view="{view}"]').click()
                 headers = self.page.locator(".v31-table thead th").evaluate_all(
                     "els => els.filter(e => getComputedStyle(e).display !== 'none').map(e => e.textContent.trim())"
                 )

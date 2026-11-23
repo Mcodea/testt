@@ -1,33 +1,450 @@
 {
-  "statut": "Catalogue de départ à confirmer par l'automaticien (références, voies, emplacements CPU).",
-  "cartes": [
-    {"reference": "BMX DDI 6402K", "nature": "ET", "voies": 64, "description": "64 entrées TOR 24 V CC"},
-    {"reference": "BMX DDI 3202K", "nature": "ET", "voies": 32, "description": "32 entrées TOR 24 V CC"},
-    {"reference": "BMX DDI 1602",  "nature": "ET", "voies": 16, "description": "16 entrées TOR 24 V CC"},
-    {"reference": "BMX DDO 6402K", "nature": "ST", "voies": 64, "description": "64 sorties TOR transistor 24 V CC"},
-    {"reference": "BMX DDO 3202K", "nature": "ST", "voies": 32, "description": "32 sorties TOR transistor 24 V CC"},
-    {"reference": "BMX DDO 1602",  "nature": "ST", "voies": 16, "description": "16 sorties TOR transistor 24 V CC"},
-    {"reference": "BMX AMI 0810",  "nature": "EA", "voies": 8,  "description": "8 entrées analogiques"},
-    {"reference": "BMX AMI 0410",  "nature": "EA", "voies": 4,  "description": "4 entrées analogiques isolées"},
-    {"reference": "BMX AMO 0802",  "nature": "SA", "voies": 8,  "description": "8 sorties analogiques courant"},
-    {"reference": "BMX AMO 0410",  "nature": "SA", "voies": 4,  "description": "4 sorties analogiques isolées"},
-    {"reference": "BMX AMO 0210",  "nature": "SA", "voies": 2,  "description": "2 sorties analogiques isolées"}
-  ],
-  "profils": {
-    "64_8": {"libelle": "64 voies TOR · 8 voies analogiques",
-             "ET": "BMX DDI 6402K", "ST": "BMX DDO 6402K", "EA": "BMX AMI 0810", "SA": "BMX AMO 0802"},
-    "32_8": {"libelle": "32 voies TOR · 8 voies analogiques",
-             "ET": "BMX DDI 3202K", "ST": "BMX DDO 3202K", "EA": "BMX AMI 0810", "SA": "BMX AMO 0802"},
-    "16_4": {"libelle": "16 voies TOR · 4 voies analogiques",
-             "ET": "BMX DDI 1602", "ST": "BMX DDO 1602", "EA": "BMX AMI 0410", "SA": "BMX AMO 0410"}
+ "statut": "Catalogue Schneider M340 / M580 établi le 12/11/2026 : alimentations, processeurs, racks, extension et communication d'après le catalogue Modicon M340 (Cat25) ; cartes d'après le catalogue Modicon M340 Unity ; processeurs M580 d'après leurs fiches produit. Consommations non intégrées : bilan d'alimentation à vérifier.",
+ "cartes": [
+  {
+   "reference": "BMX DDI 6402K",
+   "nature": "ET",
+   "voies": 64,
+   "description": "64 entrées TOR 24 V CC",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf",
+   "signal": "24 V CC",
+   "raccordement": "connecteur 40 points × 2"
   },
-  "profil_defaut": "64_8",
-  "plateformes": {
-    "M340": {"racks": [{"reference": "BMX XBP 0400", "positions": 4}, {"reference": "BMX XBP 0600", "positions": 6},
-                        {"reference": "BMX XBP 0800", "positions": 8}, {"reference": "BMX XBP 1200", "positions": 12}],
-             "positions_cpu": [0]},
-    "M580": {"racks": [{"reference": "BME XBP 0400", "positions": 4}, {"reference": "BME XBP 0800", "positions": 8},
-                        {"reference": "BME XBP 1200", "positions": 12}],
-             "positions_cpu": [0, 1]}
+  {
+   "reference": "BMX DDI 3202K",
+   "nature": "ET",
+   "voies": 32,
+   "description": "32 entrées TOR 24 V CC",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf",
+   "signal": "24 V CC",
+   "raccordement": "connecteur 40 points"
+  },
+  {
+   "reference": "BMX DDI 1602",
+   "nature": "ET",
+   "voies": 16,
+   "description": "16 entrées TOR 24 V CC",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf",
+   "signal": "24 V CC",
+   "raccordement": "bornier 20 points"
+  },
+  {
+   "reference": "BMX DDO 6402K",
+   "nature": "ST",
+   "voies": 64,
+   "description": "64 sorties TOR transistor 24 V CC",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf",
+   "signal": "transistor 24 V CC 0,1 A",
+   "raccordement": "connecteur 40 points × 2"
+  },
+  {
+   "reference": "BMX DDO 3202K",
+   "nature": "ST",
+   "voies": 32,
+   "description": "32 sorties TOR transistor 24 V CC",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf",
+   "signal": "transistor 24 V CC 0,1 A",
+   "raccordement": "connecteur 40 points"
+  },
+  {
+   "reference": "BMX DDO 1602",
+   "nature": "ST",
+   "voies": 16,
+   "description": "16 sorties TOR transistor 24 V CC",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf",
+   "signal": "transistor 24 V CC 0,5 A",
+   "raccordement": "bornier 20 points"
+  },
+  {
+   "reference": "BMX AMI 0810",
+   "nature": "EA",
+   "voies": 8,
+   "description": "8 entrées analogiques",
+   "source": "à confirmer : catalogue de départ d'OGIAS, absent des extraits consultés le 12/11/2026"
+  },
+  {
+   "reference": "BMX AMI 0410",
+   "nature": "EA",
+   "voies": 4,
+   "description": "4 entrées analogiques isolées",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf",
+   "signal": "±10 V, 0-20 / 4-20 mA, isolées, 16 bits",
+   "raccordement": "bornier 20 points"
+  },
+  {
+   "reference": "BMX AMO 0802",
+   "nature": "SA",
+   "voies": 8,
+   "description": "8 sorties analogiques courant",
+   "source": "à confirmer : catalogue de départ d'OGIAS, absent des extraits consultés le 12/11/2026"
+  },
+  {
+   "reference": "BMX AMO 0410",
+   "nature": "SA",
+   "voies": 4,
+   "description": "4 sorties analogiques isolées",
+   "source": "à confirmer : catalogue de départ d'OGIAS, absent des extraits consultés le 12/11/2026"
+  },
+  {
+   "reference": "BMX AMO 0210",
+   "nature": "SA",
+   "voies": 2,
+   "description": "2 sorties analogiques isolées",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf",
+   "signal": "±10 V, 0-20 / 4-20 mA, isolées",
+   "raccordement": "bornier 20 points"
+  },
+  {
+   "reference": "BMX DDI 1603",
+   "nature": "ET",
+   "voies": 16,
+   "description": "16 entrées TOR 48 V CC",
+   "signal": "48 V CC",
+   "raccordement": "bornier 20 points",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf"
+  },
+  {
+   "reference": "BMX DAI 1603",
+   "nature": "ET",
+   "voies": 16,
+   "description": "16 entrées TOR 48 V CA",
+   "signal": "48 V CA",
+   "raccordement": "bornier 20 points",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf"
+  },
+  {
+   "reference": "BMX DAI 1604",
+   "nature": "ET",
+   "voies": 16,
+   "description": "16 entrées TOR 100-120 V CA",
+   "signal": "100-120 V CA",
+   "raccordement": "bornier 20 points",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf"
+  },
+  {
+   "reference": "BMX DDO 1612",
+   "nature": "ST",
+   "voies": 16,
+   "description": "16 sorties TOR transistor 24 V CC, logique négative",
+   "signal": "transistor 24 V CC 0,5 A, logique négative",
+   "raccordement": "bornier 20 points",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf"
+  },
+  {
+   "reference": "BMX DRA 0805",
+   "nature": "ST",
+   "voies": 8,
+   "description": "8 sorties relais",
+   "signal": "relais 12-24 V CC / 24-240 V CA, 3 A",
+   "raccordement": "bornier 20 points",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf"
+  },
+  {
+   "reference": "BMX DRA 1605",
+   "nature": "ST",
+   "voies": 16,
+   "description": "16 sorties relais",
+   "signal": "relais 24 V CC / 240 V CA, 2 A",
+   "raccordement": "bornier 20 points",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf"
+  },
+  {
+   "reference": "BMX DAO 1605",
+   "nature": "ST",
+   "voies": 16,
+   "description": "16 sorties triac 100-240 V CA",
+   "signal": "triac 100-240 V CA, 0,6 A",
+   "raccordement": "bornier 20 points",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf"
+  },
+  {
+   "reference": "BMX ART 0414",
+   "nature": "EA",
+   "voies": 4,
+   "description": "4 entrées température isolées (thermocouple, sonde, résistance)",
+   "signal": "bas niveau : Pt100 / Pt1000 / thermocouples, 15 bits + signe",
+   "raccordement": "connecteur 40 points",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf"
+  },
+  {
+   "reference": "BMX ART 0814",
+   "nature": "EA",
+   "voies": 8,
+   "description": "8 entrées température isolées (thermocouple, sonde, résistance)",
+   "signal": "bas niveau : Pt100 / Pt1000 / thermocouples, 15 bits + signe",
+   "raccordement": "connecteur 40 points × 2",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf"
   }
+ ],
+ "profils": {
+  "64_8": {
+   "libelle": "64 voies TOR · 8 voies analogiques",
+   "ET": "BMX DDI 6402K",
+   "ST": "BMX DDO 6402K",
+   "EA": "BMX AMI 0810",
+   "SA": "BMX AMO 0802"
+  },
+  "32_8": {
+   "libelle": "32 voies TOR · 8 voies analogiques",
+   "ET": "BMX DDI 3202K",
+   "ST": "BMX DDO 3202K",
+   "EA": "BMX AMI 0810",
+   "SA": "BMX AMO 0802"
+  },
+  "16_4": {
+   "libelle": "16 voies TOR · 4 voies analogiques",
+   "ET": "BMX DDI 1602",
+   "ST": "BMX DDO 1602",
+   "EA": "BMX AMI 0410",
+   "SA": "BMX AMO 0410"
+  }
+ },
+ "profil_defaut": "64_8",
+ "plateformes": {
+  "M340": {
+   "racks": [
+    {
+     "reference": "BMX XBP 0400",
+     "positions": 4
+    },
+    {
+     "reference": "BMX XBP 0600",
+     "positions": 6
+    },
+    {
+     "reference": "BMX XBP 0800",
+     "positions": 8
+    },
+    {
+     "reference": "BMX XBP 1200",
+     "positions": 12
+    }
+   ],
+   "positions_cpu": [
+    0
+   ]
+  },
+  "M580": {
+   "racks": [
+    {
+     "reference": "BME XBP 0400",
+     "positions": 4,
+     "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+    },
+    {
+     "reference": "BME XBP 0800",
+     "positions": 8,
+     "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+    },
+    {
+     "reference": "BME XBP 1200",
+     "positions": 12,
+     "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+    }
+   ],
+   "positions_cpu": [
+    0,
+    1
+   ]
+  }
+ },
+ "cartes_speciales": [
+  {
+   "reference": "BMX DDM 16022",
+   "description": "8 entrées 24 V CC + 8 sorties transistor 0,5 A",
+   "raccordement": "bornier 20 points",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf"
+  },
+  {
+   "reference": "BMX DDM 16025",
+   "description": "8 entrées 24 V CC + 8 sorties relais",
+   "raccordement": "bornier 20 points",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf"
+  },
+  {
+   "reference": "BMX DDM 3202K",
+   "description": "16 entrées 24 V CC + 16 sorties transistor 0,1 A",
+   "raccordement": "connecteur 40 points",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf"
+  },
+  {
+   "reference": "BMX AMM 0600",
+   "description": "4 entrées + 2 sorties analogiques (non isolées entre voies)",
+   "raccordement": "bornier 20 points",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf"
+  },
+  {
+   "reference": "BMX EHC 0200",
+   "description": "Comptage 2 voies 60 kHz (6 entrées, 2 sorties)",
+   "raccordement": "connecteurs",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf"
+  },
+  {
+   "reference": "BMX EHC 0800",
+   "description": "Comptage 8 voies 10 kHz",
+   "raccordement": "connecteurs",
+   "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf"
+  }
+ ],
+ "remarque_speciales": "Cartes mixtes et de comptage : listées pour la nomenclature et la déclaration manuelle ; l'implantation automatique d'OGIAS ne place que des cartes d'une seule nature (ET, ST, EA ou SA).",
+ "alimentations": [
+  {
+   "reference": "BMX CPS 2000",
+   "entree": "100-240 V CA",
+   "puissance_w": 20,
+   "redondante": false,
+   "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+  },
+  {
+   "reference": "BMX CPS 2010",
+   "entree": "24 V CC",
+   "puissance_w": 17,
+   "redondante": false,
+   "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+  },
+  {
+   "reference": "BMX CPS 3020",
+   "entree": "24-48 V CC",
+   "puissance_w": 32,
+   "redondante": false,
+   "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+  },
+  {
+   "reference": "BMX CPS 3500",
+   "entree": "100-240 V CA",
+   "puissance_w": 36,
+   "redondante": false,
+   "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+  },
+  {
+   "reference": "BMX CPS 3540T",
+   "entree": "125 V CC",
+   "puissance_w": 36,
+   "redondante": false,
+   "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+  },
+  {
+   "reference": "BMX CPS 4002",
+   "entree": "100-240 V CA",
+   "puissance_w": 40,
+   "redondante": true,
+   "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+  },
+  {
+   "reference": "BMX CPS 4022",
+   "entree": "24-48 V CC",
+   "puissance_w": 40,
+   "redondante": true,
+   "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+  },
+  {
+   "reference": "BMX CPS 3522",
+   "entree": "125 V CC",
+   "puissance_w": 40,
+   "redondante": true,
+   "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+  }
+ ],
+ "processeurs": {
+  "M340": [
+   {
+    "reference": "BMX P34 1000",
+    "description": "Standard : 512 E/S TOR, 128 E/S ANA, liaison série Modbus",
+    "racks_max": 2,
+    "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+   },
+   {
+    "reference": "BMX P34 2000",
+    "description": "Performance : 1 024 E/S TOR, 256 E/S ANA, liaison série Modbus",
+    "racks_max": 4,
+    "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+   },
+   {
+    "reference": "BMX P34 20102",
+    "description": "Performance : liaison série Modbus + CANopen",
+    "racks_max": 4,
+    "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+   },
+   {
+    "reference": "BMX P34 2020",
+    "description": "Performance : liaison série Modbus + Ethernet Modbus/TCP",
+    "racks_max": 4,
+    "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+   },
+   {
+    "reference": "BMX P34 20302",
+    "description": "Performance : CANopen + Ethernet Modbus/TCP",
+    "racks_max": 4,
+    "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+   }
+  ],
+  "M580": [
+   {
+    "reference": "BME P58 1020",
+    "description": "Autonome, 4 Mo, 61 équipements Ethernet, 4 racks locaux",
+    "source": "https://se.com/us/en/product/BMEP581020/"
+   },
+   {
+    "reference": "BME P58 2020",
+    "description": "Autonome (fiche produit)",
+    "source": "https://res.cloudinary.com/sonepar-fr/raw/upload/s--WUFnHRiW--/v1/documents/1887/BMEP582020_FICHE_1.pdf"
+   },
+   {
+    "reference": "BME P58 2040",
+    "description": "Autonome, 8 Mo, 61 équipements Ethernet, 8 racks d'E/S déportées",
+    "source": "https://www.se.com/mk/en/product/BMEP582040/"
+   },
+   {
+    "reference": "BME P58 5040",
+    "description": "Autonome, 24 Mo, 8 racks locaux, 31 stations d'E/S déportées",
+    "source": "https://www.farnell.com/datasheets/3869181.pdf"
+   }
+  ]
+ },
+ "communication": {
+  "M340": [
+   {
+    "reference": "BMX NOE 0100",
+    "description": "Ethernet Modbus/TCP 10/100 Mbit/s (classe B30)",
+    "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+   },
+   {
+    "reference": "BMX NOE 0110",
+    "description": "Ethernet Modbus/TCP avec serveur web FactoryCast (classe C30)",
+    "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+   },
+   {
+    "reference": "BMX NOC 0401",
+    "description": "EtherNet/IP et Modbus/TCP 10/100 Mbit/s, 4 ports",
+    "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+   },
+   {
+    "reference": "BMX NOM 0200",
+    "description": "Liaison série, 2 voies",
+    "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+   },
+   {
+    "reference": "BMX NOR 0200H",
+    "description": "Module RTU (IEC 60870-5-101/104, DNP3)",
+    "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf"
+   }
+  ],
+  "M580": []
+ },
+ "extension": {
+  "module": "BMX XBE 1000",
+  "cable": "BMX XBC ••• (longueur à choisir : 0,8 / 1,5 / 3 / 5 / 12 m)",
+  "terminaison": "TSX TLY EX",
+  "cache": "BMX XEM 010",
+  "source": "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf",
+  "regle": "Un module BMX XBE 1000 par rack (emplacement XBE, à droite), câbles en chaîne entre racks, une terminaison TSX TLY EX à chaque extrémité de la chaîne."
+ },
+ "regles_emplacements": {
+  "source": "https://docs.rs-online.com/7c29/0900766b809526df.pdf",
+  "texte": "Alimentation dans l'emplacement CPS (hors emplacements numérotés) ; processeur en 00 (00 et 01 pour un M580) ; modules à partir de l'emplacement suivant."
+ },
+ "sources": [
+  "https://coevagi.com/wp-content/uploads/2024/01/Schneider-M340-Cat25.pdf",
+  "https://docs.rs-online.com/7c29/0900766b809526df.pdf"
+ ]
 }

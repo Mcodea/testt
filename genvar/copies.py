@@ -27,6 +27,7 @@ LIBELLES = {
     "restauration": "Avant la restauration d'une copie",
     "adoption": "Avant l'adoption du référentiel",
     "annulation-adoption": "Avant l'annulation d'une adoption",
+    "essais": "Avant le report d'un cahier d'essais",
 }
 _NOM = re.compile(r"\.avant-([a-z-]+?)-(\d{8})-(\d{6})-")
 _ANCIEN = re.compile(r"\.avant_adressage_(\d{8})_(\d{6})$")    # copies des versions antérieures

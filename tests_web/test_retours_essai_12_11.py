@@ -1,4 +1,7 @@
 """Écrans des retours d'essai du 12/11/2026 : points bloquants, thème, dossier de recette, répartition, îlot STB."""
+from pathlib import Path
+import os
+
 from support import ServeurNavigateur
 
 
@@ -11,7 +14,7 @@ class TestRetoursEssai(ServeurNavigateur):
                                                    'code': 'XTST', 'libelle': 'Lieu fictif'})
         self.api('/api/fiche-ouvrage', {'action': 'creer', 'identification': {
             'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': f'{40 + self.numero:02d}',
-            'libelle': 'Essai du 12/11', 'automate': 'M340', 'revision': 'A'}})
+            'libelle': 'Essai du 12/11', 'automate': 'Sch - M340', 'revision': 'A'}})
         self.context = self.browser.new_context(viewport={'width': 1600, 'height': 1000})
         self.addCleanup(self.context.close)
         self.page = self.context.new_page()
@@ -29,6 +32,43 @@ class TestRetoursEssai(ServeurNavigateur):
         self.assertIn("Pour passer à l'étape suivante", panneau.inner_text())
         self.assertIn('MV01', panneau.inner_text())
         self.assertGreaterEqual(panneau.locator('button[data-pp-vue]').count(), 1)
+
+    def test_point_bloquant_ouvre_le_bon_equipement_sans_ecriture(self):
+        for numero in ('01', '02'):
+            ident = self.api('/api/equipement/ajouter', {'type': 'MV', 'numero': numero, 'se': '00'})['ident']
+        fichier = Path(self.api('/api/ouvrage')['chemin'])
+        avant = fichier.read_bytes()
+        self.page.goto(self.url + '#/inventaire', wait_until='networkidle')
+        lien = self.page.locator(f'.pp-bloquants [data-pp-vue="ouvrage"][data-pp-eq="{ident}"]').first
+        lien.wait_for()
+        with self.page.expect_response(lambda r: '/api/equipement?ident=' + ident in r.url, timeout=5000) as reponse:
+            lien.click()
+        self.assertEqual(reponse.value.json()['ident'], ident)
+        self.page.wait_for_selector('#e-val', state='attached')     # dans le menu « ⋯ » de la fiche (16/11)
+        self.assertIn('MV02', self.page.locator('#contenu h1').inner_text())
+        self.assertEqual(fichier.read_bytes(), avant)
+        self.capture('u9-point-equipement.png')
+
+    def test_point_es_ouvre_la_liste_es_et_non_la_fiche_equipement(self):
+        ident = self.equipement_valide('01')
+        fichier = Path(self.api('/api/ouvrage')['chemin'])
+        avant = fichier.read_bytes()
+        self.page.goto(self.url + '#/es', wait_until='networkidle')
+        lien = self.page.locator(f'.pp-bloquants [data-pp-vue="es"][data-pp-eq="{ident}"]').first
+        lien.wait_for()
+        with self.page.expect_response(lambda r: r.url.endswith('/api/es'), timeout=5000) as reponse:
+            lien.click()
+        self.assertEqual(reponse.value.status, 200)
+        self.page.wait_for_function("document.querySelector('#v31-title')?.textContent === 'Liste des E/S'")
+        self.assertEqual(self.page.url, self.url + '#/es')
+        self.assertEqual(self.page.locator('#e-val').count(), 0)
+        self.assertEqual(fichier.read_bytes(), avant)
+        self.capture('u9-point-es.png')
+
+    def capture(self, nom):
+        dossier = Path(os.environ.get('OGIAS_CAPTURE_DIR', 'artifacts/ci/captures'))
+        dossier.mkdir(parents=True, exist_ok=True)
+        self.page.screenshot(path=str(dossier / nom), full_page=True)
 
     def test_bouton_de_theme_soleil_lune(self):
         self.page.goto(self.url + '#/ouvrages', wait_until='networkidle')
@@ -121,7 +161,7 @@ class TestEtatVide(ServeurNavigateur):
                                                    'code': 'XTST', 'libelle': 'Lieu fictif'})
         self.api('/api/fiche-ouvrage', {'action': 'creer', 'identification': {
             'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': '88', 'libelle': 'Vide',
-            'automate': 'M340', 'revision': 'A'}})
+            'automate': 'Sch - M340', 'revision': 'A'}})
         context = self.browser.new_context(viewport={'width': 1500, 'height': 1000})
         self.addCleanup(context.close)
         page = context.new_page()
@@ -143,7 +183,7 @@ class TestVoiesCarte(ServeurNavigateur):
                                                    'code': 'XTST', 'libelle': 'Lieu fictif'})
         self.api('/api/fiche-ouvrage', {'action': 'creer', 'identification': {
             'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': '77', 'libelle': 'Voies',
-            'automate': 'M340', 'revision': 'A'}})
+            'automate': 'Sch - M340', 'revision': 'A'}})
         i = self.api('/api/equipement/ajouter', {'type': 'MV', 'numero': '01', 'se': '00'})['ident']
         self.api('/api/equipement/proposition', {'ident_eq': i, 'decision': 'retenir'})
         self.api('/api/equipement/valider', {'idents': [i], 'valide': True})
@@ -171,4 +211,42 @@ class TestVoiesCarte(ServeurNavigateur):
         module, voie = cible.split('|')
         self.assertEqual((apres['module'], str(apres['voie'])), (module, voie))
         self.assertFalse(apres['validee'])
+        self.assertEqual(erreurs, [])
+
+
+class TestMaterielComplet(ServeurNavigateur):
+    def test_composition_rack_et_nomenclature(self):
+        self.api('/api/nouveau', {'mode': 'Neuf'})
+        if not any(x['code'] == 'XTST' for x in self.api('/api/listes-ouvrage')['lieux']):
+            self.api('/api/listes-ouvrage/action', {'action': 'ajouter', 'groupe': 'lieux',
+                                                   'code': 'XTST', 'libelle': 'Lieu fictif'})
+        self.api('/api/fiche-ouvrage', {'action': 'creer', 'identification': {
+            'lieu': 'XTST', 'code_ouvrage': 'RV', 'numero_ouvrage': '66', 'libelle': 'Matériel',
+            'automate': 'Sch - M340', 'revision': 'A'}})
+        i = self.api('/api/equipement/ajouter', {'type': 'PM', 'numero': '01', 'se': '00'})['ident']
+        self.api('/api/equipement/proposition', {'ident_eq': i, 'decision': 'retenir'})
+        self.api('/api/equipement/valider', {'idents': [i], 'valide': True})
+        pts = self.api('/api/es')['points']
+        self.api('/api/es/valider', {'niveau': 'contenu',
+                                     'paires': [{'ident_eq': p['ident_eq'], 'cle': p['cle']} for p in pts]})
+        context = self.browser.new_context(viewport={'width': 1500, 'height': 1000})
+        self.addCleanup(context.close)
+        page = context.new_page()
+        erreurs = []
+        page.on('pageerror', lambda e: erreurs.append(str(e)))
+        page.goto(self.url + '#/materiel', wait_until='networkidle')
+        page.locator('[data-cfg="alimentation"]').select_option('BMX CPS 3500')
+        page.wait_for_function("() => document.querySelector('[data-cfg=\"alimentation\"]')?.value === 'BMX CPS 3500'")
+        page.locator('[data-cfg="processeur"]').select_option('BMX P34 2020')
+        page.wait_for_function("() => document.querySelector('[data-cfg=\"processeur\"]')?.value === 'BMX P34 2020'")
+        self.api('/api/materiel/action', {'action': 'appliquer'})
+        page.reload(wait_until='networkidle')
+        page.locator('.emplacement.alim').first.wait_for()
+        self.assertIn('BMX CPS 3500', page.locator('.emplacement.alim').first.inner_text())
+        self.assertIn('BMX P34 2020', page.locator('.emplacement.cpu').first.inner_text())
+        page.locator('[data-onglet-mat="livrables"]').click()      # onglet « Nomenclature et livrables »
+        self.assertIn('Nomenclature de commande', page.locator('#vue').inner_text())
+        with page.expect_download() as dl:
+            page.locator('#m-nomenclature').click()
+        self.assertTrue(dl.value.suggested_filename.endswith('_nomenclature_materiel.xlsx'))
         self.assertEqual(erreurs, [])

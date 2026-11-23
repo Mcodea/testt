@@ -33,16 +33,27 @@ def _equipements(chemin, session):
                           [16, 8, 36, 30, 40, 12])])
 
 
+def _non_applicable(motif):
+    """Écriture d'une pièce sans objet pour cet ouvrage : elle est listée avec son motif, jamais remplacée."""
+    def ecrire(_chemin):
+        raise ValueError(motif)
+    return ecrire
+
+
 def _pieces(session):
-    """[(nom, libellé, fonction d'écriture(chemin))] dans l'ordre du dossier."""
+    """[(nom, libellé, fonction d'écriture(chemin))] dans l'ordre du dossier. Une pièce sans objet garde sa place
+    et lève son motif : elle figure parmi les pièces non produites du sommaire."""
     s, o = session, session.ouvrage
     pieces = [("01_equipements.xlsx", "Liste des équipements", lambda c: _equipements(c, s)),
-              ("02_liste_es.xlsx", "Liste des E/S (matériel et affectation)", s.exporter_liste_es)]
-    if o.modules:
-        pieces.append(("03_cartes_es.xlsx", "Cartes et voies", s.exporter_cartes_es))
+              ("02_liste_es.xlsx", "Liste des E/S (matériel et affectation)", s.exporter_liste_es),
+              ("03_cartes_es.xlsx", "Cartes et voies",
+               s.exporter_cartes_es if o.modules else
+               _non_applicable("Aucune carte d'E/S déclarée : matériel non encore retenu pour cet ouvrage."))]
     pieces.append(("04_variables.xlsx", "Variables et table de télétransmission", s.exporter_excel))
-    if o.mode == "Neuf":
-        pieces.append(("05_variables_control_expert.xsy", "Variables Control Expert (XSY)", s.exporter_xsy))
+    pieces.append(("05_variables_control_expert.xsy", "Variables Control Expert (XSY)",
+                   s.exporter_xsy if o.mode == "Neuf" else
+                   _non_applicable("Projet existant : le programme automate existe déjà ; aucun XSY n'est produit "
+                                   "(table de correspondances Excel en pièce 04).")))
     pieces.append(("06_topkapi.zip", "Table de télétransmission TOPKAPI (.$$t et compte rendu)", s.exporter_topkapi))
     return pieces
 
@@ -60,13 +71,18 @@ def constituer(session, dossier):
     for nom, libelle, ecrire in _pieces(session):
         chemin = os.path.join(dossier, nom)
         try:
-            ecrire(chemin)
+            resultat = ecrire(chemin)
         except (RegleMetier, ValueError, OSError) as exc:
             if os.path.exists(chemin):
                 os.unlink(chemin)
             non_produites.append({"fichier": nom, "libelle": libelle, "motif": str(exc)})
             continue
-        produites.append({"fichier": nom, "libelle": libelle, "sha256": _empreinte(chemin)})
+        piece = {"fichier": nom, "libelle": libelle, "sha256": _empreinte(chemin)}
+        if isinstance(resultat, tuple) and len(resultat) == 2 and isinstance(resultat[1], list) and resultat[1]:
+            # export partiel (ex. TOPKAPI : points sur deux mots exclus) : le sommaire le dit, sans le masquer
+            piece["remarque"] = (f"{resultat[0]} point(s) exporté(s), {len(resultat[1])} exclu(s) : "
+                                 "voir le compte rendu joint à la pièce.")
+        produites.append(piece)
     sommaire = os.path.join(dossier, "00_sommaire.html")
     with open(sommaire, "w", encoding="utf-8") as f:
         f.write(_sommaire_html(session, produites, non_produites))
@@ -102,8 +118,9 @@ def _sommaire_html(session, produites, non_produites):
     from . import VERSION
     o, e = session.ouvrage, html.escape
     parcours = [p for etape in session.parcours() for p in etape["bloquants"] + etape["a_verifier"]]
-    lignes = "".join(f"<tr><td>{e(p['fichier'])}</td><td>{e(p['libelle'])}</td><td><code>{p['sha256']}</code></td></tr>"
-                     for p in produites)
+    lignes = "".join(f"<tr><td>{e(p['fichier'])}</td><td>{e(p['libelle'])}"
+                     + (f"<br><i>{e(p['remarque'])}</i>" if p.get("remarque") else "")
+                     + f"</td><td><code>{p['sha256']}</code></td></tr>" for p in produites)
     absentes = "".join(f"<li><b>{e(p['libelle'])}</b> ({e(p['fichier'])}) : {e(p['motif'])}</li>"
                        for p in non_produites) or "<li>Aucune.</li>"
     points = "".join(f"<li>{e(p['message'])}</li>" for p in parcours) or "<li>Aucun.</li>"

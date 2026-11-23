@@ -1,0 +1,24 @@
+name: Audit IA Automatisme
+
+on:
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Charger le code
+        uses: actions/checkout@v4
+
+      - name: Configurer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Tester avec Claude Code
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Analyse ce logiciel d'automatisme et de supervision (Python/JS).
+            Exécute le code pour vérifier son fonctionnement et rédige un rapport détaillé en français avec les bugs trouvés et les améliorations possibles.
